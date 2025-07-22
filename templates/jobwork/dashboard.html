@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}Job Work Dashboard - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-tools"></i> Job Work Dashboard</h1>
+            <p class="text-muted">Track materials sent for job work and received back</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('jobwork.add_job_work') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> New Job Work
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card bg-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Total Jobs</h5>
+                            <h3>{{ stats.total_jobs }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-tools fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card bg-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Sent Jobs</h5>
+                            <h3>{{ stats.sent_jobs }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-arrow-right fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card bg-info">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Partial Received</h5>
+                            <h3>{{ stats.partial_received }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-exclamation-triangle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card bg-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Completed Jobs</h5>
+                            <h3>{{ stats.completed_jobs }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-outline-primary btn-sm w-100">
+                                <i class="fas fa-list"></i> View All Jobs
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('jobwork.list_job_works', status='sent') }}" class="btn btn-outline-warning btn-sm w-100">
+                                <i class="fas fa-clock"></i> Pending Returns
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('purchase.list_suppliers') }}" class="btn btn-outline-info btn-sm w-100">
+                                <i class="fas fa-truck"></i> Job Work Vendors
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('reports.jobwork_report') }}" class="btn btn-outline-secondary btn-sm w-100">
+                                <i class="fas fa-chart-bar"></i> Job Work Report
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Job Works and Pending Returns -->
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-clock"></i> Recent Job Works</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_jobs %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Job Number</th>
+                                        <th>Vendor</th>
+                                        <th>Status</th>
+                                        <th>Job Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for job in recent_jobs %}
+                                    <tr>
+                                        <td>{{ job.job_number }}</td>
+                                        <td>{{ job.job_supplier.name }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ 'success' if job.status == 'completed' else 'warning' if job.status == 'partial_received' else 'primary' }}">
+                                                {{ job.status.replace('_', ' ').title() }}
+                                            </span>
+                                        </td>
+                                        <td>{{ job.job_date.strftime('%m/%d/%Y') }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No job works found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-exclamation-triangle"></i> Pending Returns</h5>
+                </div>
+                <div class="card-body">
+                    {% if pending_jobs %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Job Number</th>
+                                        <th>Vendor</th>
+                                        <th>Expected Return</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for job in pending_jobs %}
+                                    <tr>
+                                        <td>{{ job.job_number }}</td>
+                                        <td>{{ job.job_supplier.name }}</td>
+                                        <td>{{ job.expected_return_date.strftime('%m/%d/%Y') if job.expected_return_date else '-' }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ url_for('jobwork.update_status', id=job.id, status='partial_received') }}" class="btn btn-outline-warning btn-sm">
+                                                    Partial
+                                                </a>
+                                                <a href="{{ url_for('jobwork.update_status', id=job.id, status='completed') }}" class="btn btn-outline-success btn-sm">
+                                                    Complete
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i> All job works are completed!
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Vendors -->
+    {% if top_vendors %}
+    <div class="row">
+        <div class="col-md-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-trophy"></i> Top Job Work Vendors</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for vendor_name, job_count in top_vendors %}
+                        <div class="col-md-3 mb-2">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6>{{ vendor_name }}</h6>
+                                    <h4>{{ job_count }}</h4>
+                                    <small class="text-muted">jobs</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

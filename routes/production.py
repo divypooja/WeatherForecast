@@ -1,0 +1,141 @@
+from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask_login import login_required, current_user
+from forms import ProductionForm
+from models import Production, Item, BOM, BOMItem
+from app import db
+from sqlalchemy import func
+
+production_bp = Blueprint('production', __name__)
+
+@production_bp.route('/dashboard')
+@login_required
+def dashboard():
+    # Production statistics
+    stats = {
+        'total_productions': Production.query.count(),
+        'planned_productions': Production.query.filter_by(status='planned').count(),
+        'in_progress_productions': Production.query.filter_by(status='in_progress').count(),
+        'completed_productions': Production.query.filter_by(status='completed').count(),
+        'total_boms': BOM.query.filter_by(is_active=True).count()
+    }
+    
+    # Recent productions
+    recent_productions = Production.query.order_by(Production.created_at.desc()).limit(10).all()
+    
+    # Today's production summary
+    from datetime import date
+    today_productions = Production.query.filter_by(production_date=date.today()).all()
+    
+    # Products with BOM
+    products_with_bom = db.session.query(Item).join(BOM).filter(BOM.is_active == True).all()
+    
+    return render_template('production/dashboard.html', 
+                         stats=stats, 
+                         recent_productions=recent_productions,
+                         today_productions=today_productions,
+                         products_with_bom=products_with_bom)
+
+@production_bp.route('/list')
+@login_required
+def list_productions():
+    page = request.args.get('page', 1, type=int)
+    status_filter = request.args.get('status', '', type=str)
+    
+    query = Production.query
+    if status_filter:
+        query = query.filter_by(status=status_filter)
+    
+    productions = query.order_by(Production.created_at.desc()).paginate(
+        page=page, per_page=20, error_out=False)
+    
+    return render_template('production/list.html', productions=productions, status_filter=status_filter)
+
+@production_bp.route('/add', methods=['GET', 'POST'])
+@login_required
+def add_production():
+    form = ProductionForm()
+    # Only show items that have BOM or are products
+    form.item_id.choices = [(i.id, f"{i.code} - {i.name}") for i in Item.query.filter(Item.item_type == 'product').all()]
+    
+    if form.validate_on_submit():
+        # Check if production number already exists
+        existing_production = Production.query.filter_by(production_number=form.production_number.data).first()
+        if existing_production:
+            flash('Production number already exists', 'danger')
+            return render_template('production/form.html', form=form, title='Add Production')
+        
+        production = Production(
+            production_number=form.production_number.data,
+            item_id=form.item_id.data,
+            quantity_planned=form.quantity_planned.data,
+            production_date=form.production_date.data,
+            notes=form.notes.data,
+            created_by=current_user.id
+        )
+        db.session.add(production)
+        db.session.commit()
+        flash('Production order created successfully', 'success')
+        return redirect(url_for('production.list_productions'))
+    
+    return render_template('production/form.html', form=form, title='Add Production')
+
+@production_bp.route('/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_production(id):
+    production = Production.query.get_or_404(id)
+    form = ProductionForm(obj=production)
+    form.item_id.choices = [(i.id, f"{i.code} - {i.name}") for i in Item.query.filter(Item.item_type == 'product').all()]
+    
+    if form.validate_on_submit():
+        # Check if production number already exists (excluding current production)
+        existing_production = Production.query.filter(
+            Production.production_number == form.production_number.data, 
+            Production.id != id
+        ).first()
+        if existing_production:
+            flash('Production number already exists', 'danger')
+            return render_template('production/form.html', form=form, title='Edit Production', production=production)
+        
+        production.production_number = form.production_number.data
+        production.item_id = form.item_id.data
+        production.quantity_planned = form.quantity_planned.data
+        production.production_date = form.production_date.data
+        production.notes = form.notes.data
+        
+        db.session.commit()
+        flash('Production order updated successfully', 'success')
+        return redirect(url_for('production.list_productions'))
+    
+    # Get BOM for the product if available
+    bom = BOM.query.filter_by(product_id=production.item_id, is_active=True).first()
+    bom_items = []
+    if bom:
+        bom_items = BOMItem.query.filter_by(bom_id=bom.id).all()
+    
+    return render_template('production/form.html', 
+                         form=form, 
+                         title='Edit Production', 
+                         production=production,
+                         bom_items=bom_items)
+
+@production_bp.route('/update_status/<int:id>/<status>')
+@login_required
+def update_status(id, status):
+    production = Production.query.get_or_404(id)
+    if status in ['planned', 'in_progress', 'completed']:
+        production.status = status
+        db.session.commit()
+        flash(f'Production status updated to {status}', 'success')
+    else:
+        flash('Invalid status', 'danger')
+    
+    return redirect(url_for('production.list_productions'))
+
+@production_bp.route('/bom')
+@login_required
+def list_bom():
+    page = request.args.get('page', 1, type=int)
+    boms = BOM.query.filter_by(is_active=True).paginate(
+        page=page, per_page=20, error_out=False)
+    
+    return render_template('production/bom_list.html', boms=boms)

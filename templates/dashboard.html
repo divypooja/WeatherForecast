@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+            <p class="text-muted">Welcome to Factory Management System</p>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card bg-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Total Items</h5>
+                            <h3>{{ stats.total_items }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-boxes fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card bg-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Low Stock Items</h5>
+                            <h3>{{ stats.low_stock_items }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-exclamation-triangle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card bg-info">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Open Purchase Orders</h5>
+                            <h3>{{ stats.open_purchase_orders }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-shopping-cart fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card bg-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Active Employees</h5>
+                            <h3>{{ stats.active_employees }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-2 mb-2">
+                            <a href="{{ url_for('inventory.add_item') }}" class="btn btn-outline-primary btn-sm w-100">
+                                <i class="fas fa-plus"></i> Add Item
+                            </a>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <a href="{{ url_for('purchase.add_purchase_order') }}" class="btn btn-outline-info btn-sm w-100">
+                                <i class="fas fa-plus"></i> New PO
+                            </a>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <a href="{{ url_for('sales.add_sales_order') }}" class="btn btn-outline-success btn-sm w-100">
+                                <i class="fas fa-plus"></i> New SO
+                            </a>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <a href="{{ url_for('hr.add_employee') }}" class="btn btn-outline-warning btn-sm w-100">
+                                <i class="fas fa-plus"></i> Add Employee
+                            </a>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <a href="{{ url_for('production.add_production') }}" class="btn btn-outline-secondary btn-sm w-100">
+                                <i class="fas fa-plus"></i> New Production
+                            </a>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <a href="{{ url_for('reports.dashboard') }}" class="btn btn-outline-dark btn-sm w-100">
+                                <i class="fas fa-chart-bar"></i> Reports
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activities -->
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-shopping-cart"></i> Recent Purchase Orders</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_pos %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>PO Number</th>
+                                        <th>Supplier</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for po in recent_pos %}
+                                    <tr>
+                                        <td>{{ po.po_number }}</td>
+                                        <td>{{ po.supplier.name }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ 'success' if po.status == 'closed' else 'warning' if po.status == 'partial' else 'primary' }}">
+                                                {{ po.status.title() }}
+                                            </span>
+                                        </td>
+                                        <td>{{ po.order_date.strftime('%m/%d/%Y') }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No purchase orders found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-exclamation-triangle"></i> Low Stock Alerts</h5>
+                </div>
+                <div class="card-body">
+                    {% if low_stock_items %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>Current Stock</th>
+                                        <th>Min Stock</th>
+                                        <th>UOM</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in low_stock_items %}
+                                    <tr>
+                                        <td>{{ item.name }}</td>
+                                        <td class="text-danger">{{ item.current_stock }}</td>
+                                        <td>{{ item.minimum_stock }}</td>
+                                        <td>{{ item.unit_of_measure }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">All items are above minimum stock levels.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

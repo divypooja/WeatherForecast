@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Purchase Orders - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-shopping-cart"></i> Purchase Orders</h1>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('purchase.add_purchase_order') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> New Purchase Order
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <form method="GET" class="d-flex">
+                <select name="status" class="form-select me-2" onchange="this.form.submit()">
+                    <option value="">All Status</option>
+                    <option value="open" {{ 'selected' if status_filter == 'open' }}>Open</option>
+                    <option value="partial" {{ 'selected' if status_filter == 'partial' }}>Partial</option>
+                    <option value="closed" {{ 'selected' if status_filter == 'closed' }}>Closed</option>
+                    <option value="cancelled" {{ 'selected' if status_filter == 'cancelled' }}>Cancelled</option>
+                </select>
+            </form>
+        </div>
+    </div>
+
+    <!-- Purchase Orders Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if pos.items %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>PO Number</th>
+                                <th>Supplier</th>
+                                <th>Order Date</th>
+                                <th>Expected Date</th>
+                                <th>Status</th>
+                                <th>Total Amount</th>
+                                <th>Created By</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for po in pos.items %}
+                            <tr>
+                                <td><strong>{{ po.po_number }}</strong></td>
+                                <td>{{ po.supplier.name }}</td>
+                                <td>{{ po.order_date.strftime('%m/%d/%Y') }}</td>
+                                <td>{{ po.expected_date.strftime('%m/%d/%Y') if po.expected_date else '-' }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if po.status == 'closed' else 'warning' if po.status == 'partial' else 'danger' if po.status == 'cancelled' else 'primary' }}">
+                                        {{ po.status.title() }}
+                                    </span>
+                                </td>
+                                <td>₹{{ po.total_amount }}</td>
+                                <td>{{ po.creator.username }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('purchase.edit_purchase_order', id=po.id) }}" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if pos.pages > 1 %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination">
+                        {% if pos.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('purchase.list_purchase_orders', page=pos.prev_num, status=status_filter) }}">Previous</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for page_num in pos.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != pos.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('purchase.list_purchase_orders', page=page_num, status=status_filter) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">…</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if pos.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('purchase.list_purchase_orders', page=pos.next_num, status=status_filter) }}">Next</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                    <h5>No purchase orders found</h5>
+                    <p class="text-muted">Start by creating your first purchase order.</p>
+                    <a href="{{ url_for('purchase.add_purchase_order') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create First PO
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

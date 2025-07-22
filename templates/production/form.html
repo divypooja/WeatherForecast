@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-cogs"></i> {{ title }}</h1>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('production.list_productions') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Productions
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Production Order Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.production_number.label(class="form-label") }}
+                                {{ form.production_number(class="form-control") }}
+                                {% if form.production_number.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.production_number.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.item_id.label(class="form-label") }}
+                                {{ form.item_id(class="form-select") }}
+                                {% if form.item_id.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.item_id.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.quantity_planned.label(class="form-label") }}
+                                {{ form.quantity_planned(class="form-control") }}
+                                {% if form.quantity_planned.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.quantity_planned.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.production_date.label(class="form-label") }}
+                                {{ form.production_date(class="form-control") }}
+                                {% if form.production_date.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.production_date.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.notes.label(class="form-label") }}
+                            {{ form.notes(class="form-control", rows="3") }}
+                            {% if form.notes.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.notes.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('production.list_productions') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> {{ 'Update' if production else 'Save' }} Production Order
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            {% if production and bom_items %}
+            <div class="card">
+                <div class="card-header">
+                    <h5>Bill of Materials</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Material</th>
+                                    <th>Required Qty</th>
+                                    <th>Total Required</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for bom_item in bom_items %}
+                                <tr>
+                                    <td>{{ bom_item.item.name }}</td>
+                                    <td>{{ bom_item.quantity_required }}</td>
+                                    <td>{{ bom_item.quantity_required * (production.quantity_planned if production else 1) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
