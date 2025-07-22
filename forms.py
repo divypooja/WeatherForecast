@@ -77,3 +77,12 @@ class ProductionForm(FlaskForm):
     quantity_planned = FloatField('Planned Quantity', validators=[DataRequired(), NumberRange(min=0)])
     production_date = DateField('Production Date', validators=[DataRequired()])
     notes = TextAreaField('Notes')
+
+class BOMForm(FlaskForm):
+    product_id = SelectField('Product', coerce=int, validators=[DataRequired()])
+    version = StringField('BOM Version', validators=[DataRequired(), Length(max=20)], default='1.0')
+
+class BOMItemForm(FlaskForm):
+    item_id = SelectField('Material/Component', coerce=int, validators=[DataRequired()])
+    quantity_required = FloatField('Quantity Required', validators=[DataRequired(), NumberRange(min=0)])
+    unit_cost = FloatField('Unit Cost', validators=[NumberRange(min=0)], default=0.0)
