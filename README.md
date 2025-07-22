@@ -32,10 +32,9 @@ A comprehensive Flask-based Factory Management System designed for small to medi
 
 ### Installation
 
-1. **Clone the repository**
+1. **Download files**
    ```bash
-   git clone <repository-url>
-   cd factory-management-system
+   # Download all project files to a folder
    ```
 
 2. **Create virtual environment**
@@ -46,26 +45,20 @@ A comprehensive Flask-based Factory Management System designed for small to medi
 
 3. **Install dependencies**
    ```bash
-   pip install -e .
+   pip install -r requirements-local.txt
    ```
 
-4. **Configure environment**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your database settings
-   ```
-
-5. **Initialize database**
-   ```bash
-   python cli.py create-admin
-   ```
-
-6. **Run the application**
+4. **Run the application**
    ```bash
    python main.py
    ```
 
-7. **Access the application**
+5. **Create admin user (first time only)**
+   ```bash
+   python cli.py create-admin
+   ```
+
+6. **Access the application**
    Open your browser to `http://localhost:5000`
 
 ## Development with VS Code
