@@ -11,6 +11,8 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **Simplified Setup**: Created requirements-local.txt and removed complex setup scripts for easier local deployment
 - **Enhanced BOM Features**: Users can now create BOMs, add materials/components, set quantities, and calculate total costs
 - **Theme Update**: Changed from dark theme to light theme for better user experience
+- **Dashboard Redesign**: Complete UI overhaul with modern sidebar navigation and clean card-based module layout matching professional factory management interface
+- **Fixed URL Routing**: Resolved template errors by updating dashboard URL references throughout the application
 
 ## User Preferences
 
