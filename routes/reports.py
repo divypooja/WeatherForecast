@@ -46,11 +46,21 @@ def inventory_report():
     total_stock_value = sum(item.current_stock * item.unit_price for item in items)
     low_stock_count = len([item for item in items if item.current_stock <= item.minimum_stock])
     
+    # Add pagination support
+    page = request.args.get('page', 1, type=int)
+    items_paginated = query.paginate(page=page, per_page=50, error_out=False)
+    
+    # Calculate additional stats
+    all_items = Item.query.all()
+    total_value = sum(item.current_stock * item.unit_price for item in all_items)
+    out_of_stock_count = len([item for item in all_items if item.current_stock == 0])
+    
     return render_template('reports/inventory_report.html', 
-                         items=items,
+                         items=items_paginated,
                          total_items=total_items,
-                         total_stock_value=total_stock_value,
+                         total_value=total_value,
                          low_stock_count=low_stock_count,
+                         out_of_stock_count=out_of_stock_count,
                          item_type_filter=item_type_filter,
                          low_stock_only=low_stock_only)
 

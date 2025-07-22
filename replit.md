@@ -4,6 +4,13 @@
 
 This is a comprehensive Flask-based Factory Management System designed for small to medium manufacturing companies. The application provides modular dashboards for managing various aspects of factory operations including inventory, purchase orders, sales, HR, job work, production, and reporting.
 
+## Recent Changes (January 22, 2025)
+
+- **Fixed BOM Functionality**: Added complete Bill of Materials (BOM) system with forms, routes, and templates
+- **Fixed Report Templates**: Created missing inventory_report.html template to resolve template errors
+- **Simplified Setup**: Created requirements-local.txt and removed complex setup scripts for easier local deployment
+- **Enhanced BOM Features**: Users can now create BOMs, add materials/components, set quantities, and calculate total costs
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
