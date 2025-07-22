@@ -15,4 +15,7 @@ dependencies = [
     "sqlalchemy>=2.0.41",
     "flask-login>=0.6.3",
     "click>=8.2.1",
+    "pyjwt>=2.10.1",
+    "flask-dance>=7.1.0",
+    "oauthlib>=3.3.1",
 ]
