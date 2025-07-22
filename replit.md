@@ -10,6 +10,7 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **Fixed Report Templates**: Created missing inventory_report.html template to resolve template errors
 - **Simplified Setup**: Created requirements-local.txt and removed complex setup scripts for easier local deployment
 - **Enhanced BOM Features**: Users can now create BOMs, add materials/components, set quantities, and calculate total costs
+- **Theme Update**: Changed from dark theme to light theme for better user experience
 
 ## User Preferences
 
