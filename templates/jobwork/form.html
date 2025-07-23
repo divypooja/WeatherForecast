@@ -40,7 +40,7 @@
                             
                             <div class="col-md-6 mb-3">
                                 {{ form.customer_name.label(class="form-label") }}
-                                {{ form.customer_name(class="form-control") }}
+                                {{ form.customer_name(class="form-select") }}
                                 {% if form.customer_name.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.customer_name.errors %}
