@@ -6,7 +6,21 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 23, 2025)
 
-### Job Work Inventory Integration (Latest)
+### Comprehensive Quality Control System (Latest)
+- **Quality Issue Tracking**: Complete quality issue management system with unique issue numbers (QI-YYYY-0001 format)
+- **Issue Categorization**: Multiple issue types including Damage, Malfunction, Defect, Contamination, Dimension Error, and Material Defect
+- **Severity Management**: Four-tier severity system (Low, Medium, High, Critical) with color-coded badges and prioritization
+- **Production Integration**: Quality issues can be linked to specific production orders for complete traceability
+- **Cost Impact Analysis**: Financial tracking of quality issues with cost impact calculations
+- **Assignment System**: Issues can be assigned to team members with status tracking (Open, Investigating, Resolved, Closed)
+- **Root Cause Analysis**: Structured fields for root cause analysis, corrective actions, and preventive measures
+- **Quality Control Inspections**: Comprehensive inspection logging system with pass/fail quantities and rejection rate calculations
+- **Production Quality Metrics**: Enhanced production model to track good vs damaged quantities separately
+- **Quality Dashboard**: Real-time dashboard with KPIs, critical issues alerts, and quality trends
+- **Comprehensive Reports**: Quality analytics including issue trends, problematic items, and quality scores
+- **Navigation Integration**: Added Quality Control section to main navigation with shield icon
+
+### Job Work Inventory Integration
 - **Automatic Inventory Deduction**: When materials are sent to vendors, inventory is automatically deducted from stock
 - **Partial Return Tracking**: Materials received back (even partially) are automatically added back to inventory
 - **Inventory Validation**: System prevents sending materials when insufficient stock is available
