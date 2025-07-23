@@ -7,9 +7,11 @@
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2><i class="fas fa-truck"></i> {{ title }}</h2>
+                <h2><i class="fas fa-handshake"></i> 
+                    {% if title == 'Add Supplier' %}Add Business Partner{% else %}{{ title }}{% endif %}
+                </h2>
                 <a href="{{ url_for('purchase.list_suppliers') }}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left"></i> Back to Suppliers
+                    <i class="fas fa-arrow-left"></i> Back to Business Partners
                 </a>
             </div>
 
@@ -230,7 +232,7 @@
                         <div class="mb-3">
                             {{ form.remarks.label(class="form-label") }}
                             {{ form.remarks(class="form-control", rows="3") }}
-                            <small class="text-muted">Any special notes about this supplier</small>
+                            <small class="text-muted">Any special notes about this business partner</small>
                             {% if form.remarks.errors %}
                                 <div class="text-danger small">
                                     {% for error in form.remarks.errors %}
@@ -245,7 +247,7 @@
                                 <i class="fas fa-times"></i> Cancel
                             </a>
                             <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> Save Supplier
+                                <i class="fas fa-save"></i> Save Business Partner
                             </button>
                         </div>
                     </form>
