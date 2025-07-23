@@ -53,11 +53,11 @@
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                {{ form.so_date.label(class="form-label") }}
-                                {{ form.so_date(class="form-control") }}
-                                {% if form.so_date.errors %}
+                                {{ form.order_date.label(class="form-label") }}
+                                {{ form.order_date(class="form-control") }}
+                                {% if form.order_date.errors %}
                                     <div class="text-danger small">
-                                        {% for error in form.so_date.errors %}
+                                        {% for error in form.order_date.errors %}
                                             <div>{{ error }}</div>
                                         {% endfor %}
                                     </div>
@@ -77,9 +77,48 @@
                             </div>
                         </div>
                         
+                        <!-- Additional SO Fields -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.payment_terms.label(class="form-label") }}
+                                {{ form.payment_terms(class="form-control") }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.freight_terms.label(class="form-label") }}
+                                {{ form.freight_terms(class="form-control") }}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.validity_months.label(class="form-label") }}
+                                {{ form.validity_months(class="form-control") }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.delivery_notes.label(class="form-label") }}
+                                {{ form.delivery_notes(class="form-control", rows="2") }}
+                            </div>
+                        </div>
+                        
+                        <!-- Approval Section -->
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                {{ form.prepared_by.label(class="form-label") }}
+                                {{ form.prepared_by(class="form-control") }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.verified_by.label(class="form-label") }}
+                                {{ form.verified_by(class="form-control") }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.approved_by.label(class="form-label") }}
+                                {{ form.approved_by(class="form-control") }}
+                            </div>
+                        </div>
+                        
                         <div class="mb-3">
                             {{ form.notes.label(class="form-label") }}
-                            {{ form.notes(class="form-control", rows="3") }}
+                            {{ form.notes(class="form-control", rows="3", placeholder="Special terms and conditions...") }}
                             {% if form.notes.errors %}
                                 <div class="text-danger small">
                                     {% for error in form.notes.errors %}
