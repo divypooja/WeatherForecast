@@ -123,6 +123,10 @@
                     <i class="fas fa-users"></i>
                     Employees
                 </a>
+                <a class="nav-link {{ 'active' if 'expenses' in request.endpoint }}" href="{{ url_for('expenses.dashboard') }}">
+                    <i class="fas fa-receipt"></i>
+                    Factory Expenses
+                </a>
                 <a class="nav-link {{ 'active' if 'settings' in request.endpoint }}" href="{{ url_for('settings.dashboard') }}">
                     <i class="fas fa-cog"></i>
                     Settings

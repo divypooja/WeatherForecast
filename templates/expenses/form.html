@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-receipt me-2"></i>{{ title }}</h2>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('expenses.expense_list') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to List
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Basic Information Section -->
+                        <div class="mb-4">
+                            <h5 class="card-title text-primary border-bottom pb-2">
+                                <i class="fas fa-info-circle me-2"></i>Basic Information
+                            </h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.expense_date.label(class="form-label") }}
+                                        {{ form.expense_date(class="form-control") }}
+                                        {% if form.expense_date.errors %}
+                                            {% for error in form.expense_date.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.category.label(class="form-label") }}
+                                        {{ form.category(class="form-select") }}
+                                        {% if form.category.errors %}
+                                            {% for error in form.category.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.subcategory.label(class="form-label") }}
+                                        {{ form.subcategory(class="form-control") }}
+                                        {% if form.subcategory.errors %}
+                                            {% for error in form.subcategory.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.payment_method.label(class="form-label") }}
+                                        {{ form.payment_method(class="form-select") }}
+                                        {% if form.payment_method.errors %}
+                                            {% for error in form.payment_method.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                {{ form.description.label(class="form-label") }}
+                                {{ form.description(class="form-control", rows="3") }}
+                                {% if form.description.errors %}
+                                    {% for error in form.description.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Financial Details Section -->
+                        <div class="mb-4">
+                            <h5 class="card-title text-success border-bottom pb-2">
+                                <i class="fas fa-rupee-sign me-2"></i>Financial Details
+                            </h5>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        {{ form.amount.label(class="form-label") }}
+                                        <div class="input-group">
+                                            <span class="input-group-text">₹</span>
+                                            {{ form.amount(class="form-control", step="0.01") }}
+                                        </div>
+                                        {% if form.amount.errors %}
+                                            {% for error in form.amount.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        {{ form.tax_amount.label(class="form-label") }}
+                                        <div class="input-group">
+                                            <span class="input-group-text">₹</span>
+                                            {{ form.tax_amount(class="form-control", step="0.01") }}
+                                        </div>
+                                        {% if form.tax_amount.errors %}
+                                            {% for error in form.tax_amount.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Total Amount</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">₹</span>
+                                            <input type="text" class="form-control" id="total_amount" readonly placeholder="0.00">
+                                        </div>
+                                        <small class="text-muted">Auto-calculated</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Vendor Details Section -->
+                        <div class="mb-4">
+                            <h5 class="card-title text-info border-bottom pb-2">
+                                <i class="fas fa-building me-2"></i>Vendor/Supplier Details <small class="text-muted">(Optional)</small>
+                            </h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.vendor_name.label(class="form-label") }}
+                                        {{ form.vendor_name(class="form-control") }}
+                                        {% if form.vendor_name.errors %}
+                                            {% for error in form.vendor_name.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.vendor_contact.label(class="form-label") }}
+                                        {{ form.vendor_contact(class="form-control") }}
+                                        {% if form.vendor_contact.errors %}
+                                            {% for error in form.vendor_contact.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.invoice_number.label(class="form-label") }}
+                                        {{ form.invoice_number(class="form-control") }}
+                                        {% if form.invoice_number.errors %}
+                                            {% for error in form.invoice_number.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.invoice_date.label(class="form-label") }}
+                                        {{ form.invoice_date(class="form-control") }}
+                                        {% if form.invoice_date.errors %}
+                                            {% for error in form.invoice_date.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recurring and Notes Section -->
+                        <div class="mb-4">
+                            <h5 class="card-title text-warning border-bottom pb-2">
+                                <i class="fas fa-sync me-2"></i>Additional Information
+                            </h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check mb-3">
+                                        {{ form.is_recurring(class="form-check-input") }}
+                                        {{ form.is_recurring.label(class="form-check-label") }}
+                                        {% if form.is_recurring.errors %}
+                                            {% for error in form.is_recurring.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.recurring_frequency.label(class="form-label") }}
+                                        {{ form.recurring_frequency(class="form-select", disabled=True) }}
+                                        {% if form.recurring_frequency.errors %}
+                                            {% for error in form.recurring_frequency.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                {{ form.notes.label(class="form-label") }}
+                                {{ form.notes(class="form-control", rows="3") }}
+                                {% if form.notes.errors %}
+                                    {% for error in form.notes.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('expenses.expense_list') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>
+                                {% if expense %}Update Expense{% else %}Create Expense{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help/Instructions -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-question-circle me-2"></i>Instructions</h6>
+                </div>
+                <div class="card-body">
+                    <small>
+                        <h6>Categories:</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Utilities:</strong> Electricity, water, gas, internet</li>
+                            <li><strong>Maintenance:</strong> Equipment repairs, facility maintenance</li>
+                            <li><strong>Salary:</strong> Employee salaries, benefits, overtime</li>
+                            <li><strong>Materials:</strong> Raw materials, consumables</li>
+                            <li><strong>Overhead:</strong> Factory overhead costs</li>
+                            <li><strong>Transport:</strong> Transportation and logistics</li>
+                            <li><strong>Others:</strong> Miscellaneous expenses</li>
+                        </ul>
+
+                        <h6>Recurring Expenses:</h6>
+                        <p>Check "Recurring Expense" for regular monthly/quarterly/yearly costs like rent, utilities, etc.</p>
+
+                        <h6>Approval Process:</h6>
+                        <p>All expenses require admin approval before payment processing.</p>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-calculate total amount
+function calculateTotal() {
+    const amount = parseFloat(document.getElementById('amount').value) || 0;
+    const taxAmount = parseFloat(document.getElementById('tax_amount').value) || 0;
+    const total = amount + taxAmount;
+    document.getElementById('total_amount').value = total.toFixed(2);
+}
+
+// Add event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    const amountField = document.getElementById('amount');
+    const taxAmountField = document.getElementById('tax_amount');
+    const recurringCheckbox = document.getElementById('is_recurring');
+    const frequencySelect = document.getElementById('recurring_frequency');
+    
+    if (amountField) amountField.addEventListener('input', calculateTotal);
+    if (taxAmountField) taxAmountField.addEventListener('input', calculateTotal);
+    
+    // Enable/disable frequency based on recurring checkbox
+    if (recurringCheckbox && frequencySelect) {
+        recurringCheckbox.addEventListener('change', function() {
+            frequencySelect.disabled = !this.checked;
+            if (!this.checked) {
+                frequencySelect.value = '';
+            }
+        });
+        
+        // Initial state
+        frequencySelect.disabled = !recurringCheckbox.checked;
+    }
+    
+    // Calculate initial total
+    calculateTotal();
+});
+</script>
+{% endblock %}

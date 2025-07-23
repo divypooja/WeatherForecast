@@ -447,3 +447,97 @@ class MaterialInspection(db.Model):
     item = db.relationship('Item', backref='material_inspections')
     inspector = db.relationship('User', backref='material_inspections')
     job_work = db.relationship('JobWork', backref='material_inspections')
+
+class FactoryExpense(db.Model):
+    __tablename__ = 'factory_expenses'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    expense_number = db.Column(db.String(50), unique=True, nullable=False)  # EXP-YYYY-0001
+    
+    # Basic Details
+    expense_date = db.Column(db.Date, nullable=False)
+    category = db.Column(db.String(50), nullable=False)  # utilities, maintenance, salary, materials, overhead, transport, others
+    subcategory = db.Column(db.String(100))  # electricity, water, repair, cleaning, etc.
+    description = db.Column(db.String(500), nullable=False)
+    
+    # Financial Details
+    amount = db.Column(db.Numeric(15, 2), nullable=False)
+    tax_amount = db.Column(db.Numeric(15, 2), default=0.0)
+    total_amount = db.Column(db.Numeric(15, 2), nullable=False)
+    payment_method = db.Column(db.String(50))  # cash, bank_transfer, cheque, upi, card
+    
+    # Vendor/Supplier Details (optional)
+    vendor_name = db.Column(db.String(200))
+    vendor_contact = db.Column(db.String(100))
+    invoice_number = db.Column(db.String(100))
+    invoice_date = db.Column(db.Date)
+    
+    # Approval and Processing
+    status = db.Column(db.String(20), default='pending')  # pending, approved, rejected, paid
+    requested_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    approved_by_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    approval_date = db.Column(db.DateTime)
+    payment_date = db.Column(db.Date)
+    
+    # Documentation
+    receipt_path = db.Column(db.String(500))  # Path to uploaded receipt/invoice
+    notes = db.Column(db.Text)
+    
+    # Recurring Expense Support
+    is_recurring = db.Column(db.Boolean, default=False)
+    recurring_frequency = db.Column(db.String(20))  # monthly, quarterly, yearly
+    parent_expense_id = db.Column(db.Integer, db.ForeignKey('factory_expenses.id'))
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    requested_by = db.relationship('User', foreign_keys=[requested_by_id], backref='requested_expenses')
+    approved_by = db.relationship('User', foreign_keys=[approved_by_id], backref='approved_expenses')
+    child_expenses = db.relationship('FactoryExpense', backref=db.backref('parent_expense', remote_side=[id]))
+    
+    @classmethod
+    def generate_expense_number(cls):
+        """Generate next expense number in format EXP-YYYY-0001"""
+        from datetime import datetime
+        current_year = datetime.now().year
+        
+        # Find the latest expense number for current year
+        latest_expense = cls.query.filter(
+            cls.expense_number.like(f'EXP-{current_year}-%')
+        ).order_by(cls.expense_number.desc()).first()
+        
+        if latest_expense:
+            # Extract the sequence number and increment
+            last_sequence = int(latest_expense.expense_number.split('-')[-1])
+            next_sequence = last_sequence + 1
+        else:
+            next_sequence = 1
+        
+        return f'EXP-{current_year}-{next_sequence:04d}'
+    
+    @property
+    def category_display(self):
+        """Return user-friendly category name"""
+        categories = {
+            'utilities': 'Utilities & Infrastructure',
+            'maintenance': 'Maintenance & Repairs',
+            'salary': 'Salaries & Benefits',
+            'materials': 'Raw Materials & Supplies',
+            'overhead': 'Factory Overhead',
+            'transport': 'Transportation & Logistics',
+            'others': 'Other Expenses'
+        }
+        return categories.get(self.category, self.category.title())
+    
+    @property
+    def status_badge_class(self):
+        """Return Bootstrap badge class for status"""
+        status_classes = {
+            'pending': 'bg-warning',
+            'approved': 'bg-success',
+            'rejected': 'bg-danger',
+            'paid': 'bg-primary'
+        }
+        return status_classes.get(self.status, 'bg-secondary')
