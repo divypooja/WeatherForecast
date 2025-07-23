@@ -57,6 +57,7 @@ def create_app():
     from routes.settings import settings_bp
     from routes.admin import admin_bp
     from routes.quality import quality_bp
+    from routes.material_inspection import material_inspection
     
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -70,6 +71,7 @@ def create_app():
     app.register_blueprint(settings_bp, url_prefix='/settings')
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(quality_bp, url_prefix='/quality')
+    app.register_blueprint(material_inspection, url_prefix='/inspection')
     
     # Create database tables
     with app.app_context():

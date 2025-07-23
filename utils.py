@@ -153,6 +153,43 @@ def generate_quality_issue_number():
     
     return f"QI-{current_year}-{next_sequence:04d}"
 
+def generate_next_number(prefix, table_name, column_name, year_based=True):
+    """
+    Generate the next sequential number with given prefix
+    
+    Args:
+        prefix: Prefix for the number (e.g., 'INSPECT', 'QI', 'SO')
+        table_name: Name of the database table
+        column_name: Name of the column containing the numbers
+        year_based: Whether to include year in format (default: True)
+    
+    Returns:
+        Next sequential number in format PREFIX-YYYY-0001 or PREFIX-0001
+    """
+    from app import db
+    from sqlalchemy import text
+    
+    current_year = datetime.now().year
+    
+    if year_based:
+        pattern = f'{prefix}-{current_year}-%'
+        format_template = f'{prefix}-{current_year}-{{:04d}}'
+    else:
+        pattern = f'{prefix}-%'
+        format_template = f'{prefix}-{{:04d}}'
+    
+    # Dynamic query using table name
+    query = text(f"SELECT {column_name} FROM {table_name} WHERE {column_name} LIKE :pattern ORDER BY {column_name} DESC LIMIT 1")
+    result = db.session.execute(query, {'pattern': pattern}).fetchone()
+    
+    if result:
+        # Extract the sequence number and increment
+        sequence = int(result[0].split('-')[-1]) + 1
+    else:
+        sequence = 1
+    
+    return format_template.format(sequence)
+
 def admin_required(f):
     """Decorator to require admin role for certain views"""
     from functools import wraps
