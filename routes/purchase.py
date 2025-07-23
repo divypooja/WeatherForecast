@@ -101,7 +101,7 @@ def add_purchase_order():
         item.bom_rate = bom_rate if bom_rate is not None else item.unit_price
         items.append(item)
     
-    return render_template('purchase/form_enhanced.html', form=form, title='Add Purchase Order', items=items)
+    return render_template('purchase/form_simple.html', form=form, title='Add Purchase Order', items=items)
 
 @purchase_bp.route('/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
