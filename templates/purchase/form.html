@@ -173,12 +173,22 @@
                 </div>
             </div>
             
-            <!-- Document Management Section -->
-            {% if po %}
-                {% set documents = get_documents_for_transaction('purchase_order', po.id) %}
-                {% set transaction_type = 'purchase_order' %}
-                {% set transaction_id = po.id %}
-                {% include 'documents/_document_card.html' %}
+            <!-- Document Management Section - Only show for existing purchase orders -->
+            {% if po and po.id %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-paperclip me-2"></i>Supporting Documents</h5>
+                </div>
+                <div class="card-body">
+                    <a href="{{ url_for('documents.upload_document', transaction_type='purchase_order', transaction_id=po.id) }}" 
+                       class="btn btn-outline-primary">
+                        <i class="fas fa-upload me-1"></i>Upload Documents
+                    </a>
+                    <p class="text-muted mt-2 mb-0">
+                        <small>Upload purchase contracts, invoices, and supporting documents for this purchase order.</small>
+                    </p>
+                </div>
+            </div>
             {% endif %}
         </div>
     </div>

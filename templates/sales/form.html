@@ -220,8 +220,8 @@
         </div>
     </div>
 
-    <!-- Document Management Section -->
-    {% if so %}
+    <!-- Document Management Section - Only show for existing sales orders -->
+    {% if so and so.id %}
     <div class="row mt-4">
         <div class="col-md-8">
             <div class="card">
