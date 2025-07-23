@@ -1,7 +1,7 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for
+from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_required, current_user
 from app import db
-from models import MaterialInspection, PurchaseOrder, JobWork, Item, User
+from models import MaterialInspection, PurchaseOrder, JobWork, Item, User, PurchaseOrderItem
 from forms import MaterialInspectionForm
 from datetime import datetime
 from utils import generate_next_number
@@ -200,3 +200,60 @@ def view_inspection(inspection_id):
     return render_template('material_inspection/detail.html',
                          title=f'Inspection {inspection.inspection_number}',
                          inspection=inspection)
+
+@material_inspection.route('/api/po_items/<int:po_id>')
+@login_required
+def get_po_items(po_id):
+    """Get items from a Purchase Order for inspection"""
+    try:
+        po = PurchaseOrder.query.get_or_404(po_id)
+        items = []
+        
+        for po_item in po.items:
+            items.append({
+                'item_id': po_item.item.id,
+                'item_code': po_item.item.code,
+                'item_name': po_item.item.name,
+                'quantity': float(po_item.quantity_ordered),
+                'unit': po_item.item.unit_of_measure
+            })
+        
+        return jsonify({
+            'success': True,
+            'items': items,
+            'po_number': po.po_number
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
+@material_inspection.route('/api/job_items/<int:job_id>')
+@login_required
+def get_job_items(job_id):
+    """Get items from a Job Work for inspection"""
+    try:
+        job = JobWork.query.get_or_404(job_id)
+        items = []
+        
+        # JobWork has a single item, not multiple items like PurchaseOrder
+        if job.item:
+            items.append({
+                'item_id': job.item.id,
+                'item_code': job.item.code,
+                'item_name': job.item.name,
+                'quantity': float(job.quantity_sent),
+                'unit': job.item.unit_of_measure
+            })
+        
+        return jsonify({
+            'success': True,
+            'items': items,
+            'job_number': job.job_number
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
