@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from forms import SalesOrderForm, SupplierForm
-from models import SalesOrder, SalesOrderItem, Supplier, Item
+from models import SalesOrder, SalesOrderItem, Supplier, Item, BOMItem
 from app import db
 from sqlalchemy import func
 from utils import generate_so_number
@@ -138,9 +138,20 @@ def add_sales_order():
         flash('Sales Order created successfully', 'success')
         return redirect(url_for('sales.edit_sales_order', id=so.id))
     
-    # Get items for the items section
-    items = Item.query.all()
-    return render_template('sales/form.html', form=form, title='Add Sales Order', items=items)
+    # Get items with BOM rates for the items section
+    items = db.session.query(Item).outerjoin(
+        BOMItem, Item.id == BOMItem.item_id
+    ).add_columns(
+        BOMItem.unit_cost.label('bom_rate')
+    ).all()
+    
+    # Convert to list of Item objects with bom_rate attribute
+    enhanced_items = []
+    for item, bom_rate in items:
+        item.bom_rate = bom_rate if bom_rate is not None else item.unit_price
+        enhanced_items.append(item)
+    
+    return render_template('sales/form.html', form=form, title='Add Sales Order', items=enhanced_items)
 
 @sales_bp.route('/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -158,8 +169,20 @@ def edit_sales_order(id):
         if existing_so:
             flash('SO number already exists', 'danger')
             so_items = SalesOrderItem.query.filter_by(sales_order_id=id).all()
-            items = Item.query.all()
-            return render_template('sales/form.html', form=form, title='Edit Sales Order', so=so, so_items=so_items, items=items)
+            # Get items with BOM rates
+            items = db.session.query(Item).outerjoin(
+                BOMItem, Item.id == BOMItem.item_id
+            ).add_columns(
+                BOMItem.unit_cost.label('bom_rate')
+            ).all()
+            
+            # Convert to list of Item objects with bom_rate attribute
+            enhanced_items = []
+            for item, bom_rate in items:
+                item.bom_rate = bom_rate if bom_rate is not None else item.unit_price
+                enhanced_items.append(item)
+            
+            return render_template('sales/form.html', form=form, title='Edit Sales Order', so=so, so_items=so_items, items=enhanced_items)
         
         so.so_number = form.so_number.data
         so.customer_id = form.customer_id.data
@@ -184,8 +207,20 @@ def edit_sales_order(id):
             if not inventory_deduction_result['success']:
                 flash(f'Cannot confirm sales order: {inventory_deduction_result["message"]}', 'danger')
                 so_items = SalesOrderItem.query.filter_by(sales_order_id=id).all()
-                items = Item.query.all()
-                return render_template('sales/form.html', form=form, title='Edit Sales Order', so=so, so_items=so_items, items=items)
+                # Get items with BOM rates
+                items = db.session.query(Item).outerjoin(
+                    BOMItem, Item.id == BOMItem.item_id
+                ).add_columns(
+                    BOMItem.unit_cost.label('bom_rate')
+                ).all()
+                
+                # Convert to list of Item objects with bom_rate attribute
+                enhanced_items = []
+                for item, bom_rate in items:
+                    item.bom_rate = bom_rate if bom_rate is not None else item.unit_price
+                    enhanced_items.append(item)
+                
+                return render_template('sales/form.html', form=form, title='Edit Sales Order', so=so, so_items=so_items, items=enhanced_items)
         
         # If status changed from 'confirmed' to another status, restore inventory
         elif old_status == 'confirmed' and so.status != 'confirmed':
@@ -197,14 +232,26 @@ def edit_sales_order(id):
     
     # Get SO items for display
     so_items = SalesOrderItem.query.filter_by(sales_order_id=id).all()
-    items = Item.query.all()
+    
+    # Get items with BOM rates for display
+    items = db.session.query(Item).outerjoin(
+        BOMItem, Item.id == BOMItem.item_id
+    ).add_columns(
+        BOMItem.unit_cost.label('bom_rate')
+    ).all()
+    
+    # Convert to list of Item objects with bom_rate attribute
+    enhanced_items = []
+    for item, bom_rate in items:
+        item.bom_rate = bom_rate if bom_rate is not None else item.unit_price
+        enhanced_items.append(item)
     
     return render_template('sales/form.html', 
                          form=form, 
                          title='Edit Sales Order', 
                          so=so, 
                          so_items=so_items, 
-                         items=items)
+                         items=enhanced_items)
 
 @sales_bp.route('/customers')
 @login_required
