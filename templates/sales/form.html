@@ -23,7 +23,7 @@
     }
     #soItemsTable .input-group {
         margin-bottom: 0;
-        min-width: 100px;
+        min-width: 120px;
         width: 100%;
     }
     #soItemsTable .form-control-sm {
@@ -37,7 +37,7 @@
     }
     #soItemsTable .input-group .form-control {
         border-right: none;
-        min-width: 60px;
+        min-width: 80px;
         text-align: center;
     }
     #soItemsTable .form-control {
@@ -243,21 +243,33 @@
                     </button>
                 </div>
                 <div class="card-body">
-                    <div class="table-responsive">
+                    <div class="table-responsive" style="overflow-x: auto;">
+                        <style>
+                            #soItemsTable { min-width: 1200px; table-layout: auto; }
+                            #soItemsTable input, #soItemsTable select, #soItemsTable textarea { 
+                                min-width: 100%; 
+                                box-sizing: border-box; 
+                            }
+                            #soItemsTable .input-group { min-width: 120px; }
+                            .table-responsive { 
+                                max-height: 600px; 
+                                overflow-y: auto; 
+                            }
+                        </style>
                         <table class="table table-bordered" id="soItemsTable">
                             <thead class="table-light">
                                 <tr>
-                                    <th style="width: 5%">No.</th>
-                                    <th style="width: 10%">Item Code</th>
-                                    <th style="width: 20%">Item + Description</th>
-                                    <th style="width: 12%">Specification</th>
-                                    <th style="width: 9%">HSN Code</th>
-                                    <th style="width: 15%">GST Rate</th>
-                                    <th style="width: 7%">UOM</th>
-                                    <th style="width: 8%">Qty</th>
-                                    <th style="width: 10%">Rate</th>
-                                    <th style="width: 12%">Amount</th>
-                                    <th style="width: 10%; text-align: center;">Action</th>
+                                    <th style="min-width: 50px;">No.</th>
+                                    <th style="min-width: 100px;">Item Code</th>
+                                    <th style="min-width: 200px;">Item + Description</th>
+                                    <th style="min-width: 120px;">Specification</th>
+                                    <th style="min-width: 100px;">HSN Code</th>
+                                    <th style="min-width: 120px;">GST Rate</th>
+                                    <th style="min-width: 80px;">UOM</th>
+                                    <th style="min-width: 100px;">Qty</th>
+                                    <th style="min-width: 130px;">Rate</th>
+                                    <th style="min-width: 130px;">Amount</th>
+                                    <th style="min-width: 80px;">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="soItemsBody">
@@ -349,26 +361,26 @@ function addSOItem() {
             <input type="text" class="form-control form-control-sm text-center fw-bold" name="hsn_code_new_${itemCounter}" placeholder="HSN Code" readonly>
         </td>
         <td class="align-middle">
-            <div class="input-group input-group-sm">
+            <div class="input-group input-group-sm" style="min-width: 120px;">
                 <input type="number" class="form-control" name="gst_rate_new_${itemCounter}" 
-                       step="0.01" min="0" max="100" placeholder="18" readonly>
+                       step="0.01" min="0" max="100" placeholder="18" readonly style="min-width: 80px;">
                 <span class="input-group-text">%</span>
             </div>
         </td>
         <td class="align-middle">
-            <input type="text" class="form-control form-control-sm text-center fw-bold" name="uom_new_${itemCounter}" placeholder="UOM" readonly>
+            <input type="text" class="form-control form-control-sm text-center fw-bold" name="uom_new_${itemCounter}" placeholder="UOM" readonly style="min-width: 80px;">
         </td>
         <td class="align-middle">
             <input type="number" class="form-control form-control-sm" name="qty_new_${itemCounter}" 
-                   step="0.01" min="0" onchange="calculateSOAmount(this)" placeholder="0">
+                   step="0.01" min="0" onchange="calculateSOAmount(this)" placeholder="0" style="min-width: 100px;">
         </td>
         <td class="align-middle">
             <input type="number" class="form-control form-control-sm" name="rate_new_${itemCounter}" 
-                   step="0.01" min="0" onchange="calculateSOAmount(this)" placeholder="0.00">
+                   step="0.01" min="0" onchange="calculateSOAmount(this)" placeholder="0.00" style="min-width: 130px;">
         </td>
         <td class="align-middle">
             <input type="number" class="form-control form-control-sm" name="amount_new_${itemCounter}" 
-                   readonly placeholder="0.00">
+                   readonly placeholder="0.00" style="min-width: 130px;">
         </td>
         <td class="align-middle text-center">
             <div class="btn-group" role="group">
