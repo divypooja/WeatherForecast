@@ -6,7 +6,16 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 23, 2025)
 
-### Admin Approval Dashboard System (Latest)
+### Job Work Inventory Integration (Latest)
+- **Automatic Inventory Deduction**: When materials are sent to vendors, inventory is automatically deducted from stock
+- **Partial Return Tracking**: Materials received back (even partially) are automatically added back to inventory
+- **Inventory Validation**: System prevents sending materials when insufficient stock is available
+- **Real-time Stock Updates**: Both outgoing and incoming materials update inventory levels immediately
+- **Detailed Activity Logging**: All inventory movements are tracked with timestamps and quantities in job work notes
+- **Smart Quantity Management**: Prevents over-receiving materials beyond what was originally sent
+- **Edit Protection**: When editing job works, inventory adjustments are handled automatically if quantities change
+
+### Admin Approval Dashboard System
 - **Centralized Approval Management**: Created comprehensive Admin Approval Dashboard at `/admin/approvals`
 - **Navigation Integration**: Added "Admin Approvals" link in sidebar navigation with warning icon for easy access
 - **Pending Request Views**: Displays all pending Purchase Orders, Production Orders, and Sales Orders requiring approval
