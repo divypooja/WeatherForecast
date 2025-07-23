@@ -38,7 +38,7 @@ def create_app():
     login_manager.login_message_category = 'info'
     
     # Import models
-    from models import User, Item, Supplier, Customer, PurchaseOrder, SalesOrder, Employee, JobWork, Production, BOM, NotificationSettings, NotificationLog, NotificationRecipient, CompanySettings
+    from models import User, Item, Supplier, Customer, PurchaseOrder, SalesOrder, Employee, JobWork, Production, BOM, NotificationSettings, NotificationLog, NotificationRecipient, CompanySettings, QualityIssue, QualityControlLog
     
     @login_manager.user_loader
     def load_user(user_id):
@@ -56,6 +56,7 @@ def create_app():
     from routes.reports import reports_bp
     from routes.settings import settings_bp
     from routes.admin import admin_bp
+    from routes.quality import quality_bp
     
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -68,6 +69,7 @@ def create_app():
     app.register_blueprint(reports_bp, url_prefix='/reports')
     app.register_blueprint(settings_bp, url_prefix='/settings')
     app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(quality_bp, url_prefix='/quality')
     
     # Create database tables
     with app.app_context():

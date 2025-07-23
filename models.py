@@ -228,6 +228,8 @@ class Production(db.Model):
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     quantity_planned = db.Column(db.Float, nullable=False)
     quantity_produced = db.Column(db.Float, default=0.0)
+    quantity_good = db.Column(db.Float, default=0.0)  # Good quality items
+    quantity_damaged = db.Column(db.Float, default=0.0)  # Damaged/defective items
     production_date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date())
     status = db.Column(db.String(20), default='planned')  # planned, in_progress, completed
     notes = db.Column(db.Text)
@@ -237,6 +239,7 @@ class Production(db.Model):
     # Relationships
     produced_item = db.relationship('Item', backref='productions')
     creator = db.relationship('User', backref='created_productions')
+    quality_issues = db.relationship('QualityIssue', backref='production', lazy=True, cascade='all, delete-orphan')
 
 class BOM(db.Model):
     __tablename__ = 'boms'
@@ -259,6 +262,52 @@ class BOMItem(db.Model):
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     quantity_required = db.Column(db.Float, nullable=False)
     unit_cost = db.Column(db.Float, default=0.0)
+
+class QualityIssue(db.Model):
+    __tablename__ = 'quality_issues'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    issue_number = db.Column(db.String(50), unique=True, nullable=False)
+    production_id = db.Column(db.Integer, db.ForeignKey('productions.id'), nullable=True)
+    item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
+    issue_type = db.Column(db.String(50), nullable=False)  # damage, malfunction, defect, contamination
+    severity = db.Column(db.String(20), nullable=False)  # low, medium, high, critical
+    quantity_affected = db.Column(db.Float, nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    root_cause = db.Column(db.Text)
+    corrective_action = db.Column(db.Text)
+    preventive_action = db.Column(db.Text)
+    status = db.Column(db.String(20), default='open')  # open, investigating, resolved, closed
+    detected_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    assigned_to = db.Column(db.Integer, db.ForeignKey('users.id'))
+    detected_date = db.Column(db.DateTime, default=datetime.utcnow)
+    resolved_date = db.Column(db.DateTime)
+    cost_impact = db.Column(db.Float, default=0.0)  # Financial impact
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    item = db.relationship('Item', backref='quality_issues')
+    detector = db.relationship('User', foreign_keys=[detected_by], backref='detected_issues')
+    assignee = db.relationship('User', foreign_keys=[assigned_to], backref='assigned_issues')
+
+class QualityControlLog(db.Model):
+    __tablename__ = 'quality_control_logs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    production_id = db.Column(db.Integer, db.ForeignKey('productions.id'), nullable=False)
+    inspection_date = db.Column(db.DateTime, default=datetime.utcnow)
+    inspector_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    batch_number = db.Column(db.String(50))
+    total_inspected = db.Column(db.Float, nullable=False)
+    passed_quantity = db.Column(db.Float, nullable=False)
+    failed_quantity = db.Column(db.Float, nullable=False)
+    rejection_rate = db.Column(db.Float, nullable=False)  # Percentage
+    inspection_notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    production_ref = db.relationship('Production', backref='quality_logs')
+    inspector = db.relationship('User', backref='quality_inspections')
 
 class NotificationSettings(db.Model):
     __tablename__ = 'notification_settings'
