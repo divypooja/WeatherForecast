@@ -52,7 +52,7 @@
                         </div>
                         
                         <div class="row">
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
                                 {{ form.quantity_planned.label(class="form-label") }}
                                 {{ form.quantity_planned(class="form-control") }}
                                 {% if form.quantity_planned.errors %}
@@ -64,12 +64,24 @@
                                 {% endif %}
                             </div>
                             
-                            <div class="col-md-6 mb-3">
-                                {{ form.production_date.label(class="form-label") }}
-                                {{ form.production_date(class="form-control") }}
-                                {% if form.production_date.errors %}
+                            <div class="col-md-4 mb-3">
+                                {{ form.start_date.label(class="form-label") }}
+                                {{ form.start_date(class="form-control") }}
+                                {% if form.start_date.errors %}
                                     <div class="text-danger small">
-                                        {% for error in form.production_date.errors %}
+                                        {% for error in form.start_date.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                {{ form.target_completion.label(class="form-label") }}
+                                {{ form.target_completion(class="form-control") }}
+                                {% if form.target_completion.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.target_completion.errors %}
                                             <div>{{ error }}</div>
                                         {% endfor %}
                                     </div>
