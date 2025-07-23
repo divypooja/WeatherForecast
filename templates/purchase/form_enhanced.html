@@ -135,17 +135,17 @@
                     <table class="table table-bordered" id="poItemsTable">
                         <thead class="table-light">
                             <tr>
-                                <th style="width: 5%">No.</th>
-                                <th style="width: 10%">RM Code</th>
-                                <th style="width: 25%">Item + Description</th>
-                                <th style="width: 15%">Drawing / Spec Sheet No.</th>
-                                <th style="width: 9%">HSN Code</th>
-                                <th style="width: 15%">GST Rate</th>
-                                <th style="width: 7%">UOM</th>
+                                <th style="width: 4%">No.</th>
+                                <th style="width: 8%">RM Code</th>
+                                <th style="width: 22%">Item + Description</th>
+                                <th style="width: 12%">Drawing / Spec Sheet No.</th>
+                                <th style="width: 8%">HSN Code</th>
+                                <th style="width: 12%">GST Rate</th>
+                                <th style="width: 6%">UOM</th>
                                 <th style="width: 8%">Qty</th>
-                                <th style="width: 10%">Rate</th>
-                                <th style="width: 12%">Amount</th>
-                                <th style="width: 5%">Action</th>
+                                <th style="width: 14%">Rate</th>
+                                <th style="width: 14%">Amount</th>
+                                <th style="width: 6%">Action</th>
                             </tr>
                         </thead>
                         <tbody id="poItemsBody">
@@ -199,16 +199,16 @@
                                     <td class="align-middle">
                                         <input type="number" class="form-control form-control-sm" name="qty_{{ item.id }}" 
                                                value="{{ item.qty or item.quantity_ordered }}" step="0.01" min="0" 
-                                               onchange="calculateAmount(this)" placeholder="0">
+                                               onchange="calculateAmount(this)" placeholder="0" style="min-width: 80px;">
                                     </td>
                                     <td class="align-middle">
                                         <input type="number" class="form-control form-control-sm" name="rate_{{ item.id }}" 
                                                value="{{ item.rate or item.unit_price or item.item.unit_price }}" step="0.01" min="0" 
-                                               onchange="calculateAmount(this)" placeholder="0.00">
+                                               onchange="calculateAmount(this)" placeholder="0.00" style="min-width: 100px;">
                                     </td>
                                     <td class="align-middle">
                                         <input type="number" class="form-control form-control-sm" name="amount_{{ item.id }}" 
-                                               value="{{ item.amount or item.total_price }}" readonly placeholder="0.00">
+                                               value="{{ item.amount or item.total_price }}" readonly placeholder="0.00" style="min-width: 100px;">
                                     </td>
                                     <td class="align-middle text-center">
                                         <button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">
