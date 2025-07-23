@@ -129,6 +129,7 @@ def add_sales_order():
             approved_by=form.approved_by.data,
             delivery_notes=form.delivery_notes.data,
             notes=form.notes.data,
+            status='draft',  # New sales orders always start as draft
             created_by=current_user.id
         )
         db.session.add(so)
