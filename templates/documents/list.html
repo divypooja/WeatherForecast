@@ -178,8 +178,8 @@
                                             <i class="fas fa-external-link-alt"></i>
                                         </a>
                                     {% elif document.transaction_type == 'job_work' %}
-                                        <a href="{{ url_for('jobwork.job_detail', id=document.transaction_id) }}" 
-                                           class="btn btn-outline-info" title="View Transaction">
+                                        <a href="{{ url_for('jobwork.list_job_works') }}" 
+                                           class="btn btn-outline-info" title="View Job Works">
                                             <i class="fas fa-external-link-alt"></i>
                                         </a>
                                     {% elif document.transaction_type == 'factory_expense' %}
