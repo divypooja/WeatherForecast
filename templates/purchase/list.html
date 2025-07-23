@@ -213,9 +213,6 @@ function changePoStatus(poId, newStatus) {
         
         fetch(`/purchase/change_status/${poId}`, {
             method: 'POST',
-            headers: {
-                'X-CSRFToken': '{{ csrf_token() }}'
-            },
             body: formData
         })
         .then(response => response.json())
