@@ -46,6 +46,9 @@ class PurchaseOrderForm(FlaskForm):
     supplier_id = SelectField('Supplier', validators=[DataRequired()], coerce=int)
     po_date = DateField('PO Date', validators=[DataRequired()])
     delivery_date = DateField('Expected Delivery Date')
+    payment_terms = StringField('Payment Terms', validators=[Length(max=100)])
+    freight_terms = StringField('Freight Terms', validators=[Length(max=100)])
+    validity_months = IntegerField('Validity (Months)', validators=[Optional(), NumberRange(min=1, max=12)])
     status = SelectField('Status', choices=[('draft', 'Draft'), ('sent', 'Sent'), ('received', 'Received'), ('cancelled', 'Cancelled')], default='draft')
     notes = TextAreaField('Notes')
     
