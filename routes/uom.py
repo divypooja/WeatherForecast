@@ -8,7 +8,7 @@ from decimal import Decimal
 
 uom_bp = Blueprint('uom', __name__)
 
-@uom_bp.route('/uom/dashboard')
+@uom_bp.route('/dashboard')
 @login_required
 def dashboard():
     """UOM management dashboard"""
@@ -36,14 +36,14 @@ def dashboard():
                          items_without_conversions=items_without_conversions,
                          unit_categories=unit_categories)
 
-@uom_bp.route('/uom/units')
+@uom_bp.route('/units')
 @login_required
 def units_list():
     """List all units of measure"""
     units = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
     return render_template('uom/units_list.html', units=units)
 
-@uom_bp.route('/uom/units/add', methods=['GET', 'POST'])
+@uom_bp.route('/units/add', methods=['GET', 'POST'])
 @login_required
 def add_unit():
     """Add new unit of measure"""
@@ -69,7 +69,7 @@ def add_unit():
     
     return render_template('uom/unit_form.html', form=form, title='Add Unit of Measure')
 
-@uom_bp.route('/uom/units/edit/<int:unit_id>', methods=['GET', 'POST'])
+@uom_bp.route('/units/edit/<int:unit_id>', methods=['GET', 'POST'])
 @login_required
 def edit_unit(unit_id):
     """Edit unit of measure"""
@@ -89,7 +89,7 @@ def edit_unit(unit_id):
     
     return render_template('uom/unit_form.html', form=form, title='Edit Unit of Measure', unit=unit)
 
-@uom_bp.route('/uom/conversions')
+@uom_bp.route('/conversions')
 @login_required
 def conversions_list():
     """List all UOM conversions"""
@@ -102,7 +102,7 @@ def conversions_list():
     
     return render_template('uom/conversions_list.html', conversions=conversions)
 
-@uom_bp.route('/uom/conversions/add', methods=['GET', 'POST'])
+@uom_bp.route('/conversions/add', methods=['GET', 'POST'])
 @login_required
 def add_conversion():
     """Add new UOM conversion"""
@@ -137,14 +137,14 @@ def add_conversion():
     
     return render_template('uom/conversion_form.html', form=form, title='Add UOM Conversion')
 
-@uom_bp.route('/uom/item-conversions')
+@uom_bp.route('/item-conversions')
 @login_required
 def item_conversions_list():
     """List all item-specific UOM conversions"""
     item_conversions = ItemUOMConversion.query.join(Item).order_by(Item.name).all()
     return render_template('uom/item_conversions_list.html', item_conversions=item_conversions)
 
-@uom_bp.route('/uom/item-conversions/add', methods=['GET', 'POST'])
+@uom_bp.route('/item-conversions/add', methods=['GET', 'POST'])
 @login_required
 def add_item_conversion():
     """Add new item-specific UOM conversion"""
@@ -192,7 +192,7 @@ def add_item_conversion():
     
     return render_template('uom/item_conversion_form.html', form=form, title='Add Item UOM Conversion')
 
-@uom_bp.route('/uom/item-conversions/edit/<int:conversion_id>', methods=['GET', 'POST'])
+@uom_bp.route('/item-conversions/edit/<int:conversion_id>', methods=['GET', 'POST'])
 @login_required
 def edit_item_conversion(conversion_id):
     """Edit item-specific UOM conversion"""
@@ -216,7 +216,7 @@ def edit_item_conversion(conversion_id):
     
     return render_template('uom/item_conversion_form.html', form=form, title='Edit Item UOM Conversion', conversion=conversion)
 
-@uom_bp.route('/uom/calculator', methods=['GET', 'POST'])
+@uom_bp.route('/calculator', methods=['GET', 'POST'])
 @login_required
 def calculator():
     """UOM calculator for quick conversions"""
