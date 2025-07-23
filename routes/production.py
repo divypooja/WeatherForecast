@@ -69,20 +69,80 @@ def add_production():
             flash('Production number already exists', 'danger')
             return render_template('production/form.html', form=form, title='Add Production')
         
+        # Get the BOM for the selected item
+        selected_item = Item.query.get(form.item_id.data)
+        active_bom = BOM.query.filter_by(product_id=form.item_id.data, is_active=True).first()
+        
+        material_shortages = []
+        bom_items = []
+        
+        if active_bom:
+            bom_items = BOMItem.query.filter_by(bom_id=active_bom.id).all()
+            
+            # Check material availability for each BOM item
+            for bom_item in bom_items:
+                required_qty = bom_item.quantity_required * form.quantity_planned.data
+                available_qty = bom_item.item.current_stock or 0
+                
+                if available_qty < required_qty:
+                    shortage_qty = required_qty - available_qty
+                    material_shortages.append({
+                        'item_code': bom_item.item.code,
+                        'item_name': bom_item.item.name,
+                        'required_qty': required_qty,
+                        'available_qty': available_qty,
+                        'shortage_qty': shortage_qty,
+                        'unit': bom_item.item.unit_of_measure
+                    })
+        
+        # If there are material shortages, show them and prevent production creation
+        if material_shortages:
+            shortage_message = "Cannot create production order. Material shortages detected:<br>"
+            for shortage in material_shortages:
+                shortage_message += f"• {shortage['item_code']} - {shortage['item_name']}: "
+                shortage_message += f"Need {shortage['required_qty']:.2f} {shortage['unit']}, "
+                shortage_message += f"Available {shortage['available_qty']:.2f} {shortage['unit']}, "
+                shortage_message += f"<strong>Short by {shortage['shortage_qty']:.2f} {shortage['unit']}</strong><br>"
+            
+            flash(shortage_message, 'danger')
+            return render_template('production/form.html', 
+                                 form=form, 
+                                 title='Add Production',
+                                 material_shortages=material_shortages,
+                                 bom_items=bom_items,
+                                 selected_item=selected_item)
+        
         production = Production(
             production_number=form.production_number.data,
             item_id=form.item_id.data,
             quantity_planned=form.quantity_planned.data,
-            production_date=form.start_date.data,
+            quantity_produced=form.quantity_produced.data or 0.0,
+            quantity_good=form.quantity_good.data or 0.0,
+            quantity_damaged=form.quantity_damaged.data or 0.0,
+            production_date=form.production_date.data,
+            status=form.status.data,
             notes=form.notes.data,
             created_by=current_user.id
         )
         db.session.add(production)
         db.session.commit()
-        flash('Production order created successfully', 'success')
+        flash('Production order created successfully! All required materials are available.', 'success')
         return redirect(url_for('production.list_productions'))
     
-    return render_template('production/form.html', form=form, title='Add Production')
+    # Get BOM items for display if an item is selected
+    bom_items = []
+    selected_item = None
+    if form.item_id.data:
+        selected_item = Item.query.get(form.item_id.data)
+        active_bom = BOM.query.filter_by(product_id=form.item_id.data, is_active=True).first()
+        if active_bom:
+            bom_items = BOMItem.query.filter_by(bom_id=active_bom.id).all()
+    
+    return render_template('production/form.html', 
+                         form=form, 
+                         title='Add Production',
+                         bom_items=bom_items,
+                         selected_item=selected_item)
 
 @production_bp.route('/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -104,7 +164,7 @@ def edit_production(id):
         production.production_number = form.production_number.data
         production.item_id = form.item_id.data
         production.quantity_planned = form.quantity_planned.data
-        production.production_date = form.start_date.data
+        production.production_date = form.production_date.data
         production.notes = form.notes.data
         
         db.session.commit()
@@ -264,3 +324,52 @@ def delete_bom(id):
     flash('BOM deactivated successfully', 'success')
     
     return redirect(url_for('production.list_bom'))
+
+@production_bp.route('/check_material_availability', methods=['POST'])
+@login_required
+def check_material_availability():
+    """API endpoint to check material availability for production planning"""
+    item_id = request.json.get('item_id')
+    quantity = float(request.json.get('quantity', 1))
+    
+    if not item_id:
+        return jsonify({'error': 'Item ID required'}), 400
+    
+    # Get BOM for the item
+    active_bom = BOM.query.filter_by(product_id=item_id, is_active=True).first()
+    
+    if not active_bom:
+        return jsonify({
+            'has_bom': False,
+            'message': 'No BOM found for this item'
+        })
+    
+    # Check material availability
+    bom_items = BOMItem.query.filter_by(bom_id=active_bom.id).all()
+    material_data = []
+    has_shortages = False
+    
+    for bom_item in bom_items:
+        required_qty = bom_item.quantity_required * quantity
+        available_qty = bom_item.item.current_stock or 0
+        is_sufficient = available_qty >= required_qty
+        
+        if not is_sufficient:
+            has_shortages = True
+        
+        material_data.append({
+            'item_code': bom_item.item.code,
+            'item_name': bom_item.item.name,
+            'quantity_required': bom_item.quantity_required,
+            'total_required': required_qty,
+            'available_qty': available_qty,
+            'is_sufficient': is_sufficient,
+            'shortage_qty': max(0, required_qty - available_qty),
+            'unit': bom_item.item.unit_of_measure
+        })
+    
+    return jsonify({
+        'has_bom': True,
+        'has_shortages': has_shortages,
+        'materials': material_data
+    })

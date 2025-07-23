@@ -157,10 +157,13 @@
         </div>
         
         <div class="col-md-4">
-            {% if production and bom_items %}
+            {% if bom_items %}
             <div class="card">
                 <div class="card-header">
-                    <h5>Bill of Materials</h5>
+                    <h5><i class="fas fa-list-alt"></i> Bill of Materials</h5>
+                    {% if selected_item %}
+                    <small class="text-muted">for {{ selected_item.code }} - {{ selected_item.name }}</small>
+                    {% endif %}
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -168,21 +171,69 @@
                             <thead>
                                 <tr>
                                     <th>Material</th>
-                                    <th>Required Qty</th>
-                                    <th>Total Required</th>
+                                    <th>Per Unit</th>
+                                    <th>Available</th>
+                                    <th>Status</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for bom_item in bom_items %}
-                                <tr>
-                                    <td>{{ bom_item.item.name }}</td>
-                                    <td>{{ bom_item.quantity_required }}</td>
-                                    <td>{{ bom_item.quantity_required * (production.quantity_planned if production else 1) }}</td>
+                                {% set planned_qty = 1 %}
+                                {% if production %}
+                                    {% set planned_qty = production.quantity_planned %}
+                                {% elif form.quantity_planned.data %}
+                                    {% set planned_qty = form.quantity_planned.data %}
+                                {% endif %}
+                                {% set total_required = bom_item.quantity_required * planned_qty %}
+                                {% set available = bom_item.item.current_stock or 0 %}
+                                {% set is_sufficient = available >= total_required %}
+                                <tr class="{% if not is_sufficient %}table-danger{% endif %}">
+                                    <td>
+                                        <small class="text-muted">{{ bom_item.item.code }}</small><br>
+                                        {{ bom_item.item.name }}
+                                    </td>
+                                    <td>{{ bom_item.quantity_required }} {{ bom_item.item.unit_of_measure }}</td>
+                                    <td>
+                                        <strong>{{ available }}</strong> {{ bom_item.item.unit_of_measure }}
+                                        <br><small class="text-muted">Need: {{ total_required }}</small>
+                                    </td>
+                                    <td>
+                                        {% if is_sufficient %}
+                                            <span class="badge bg-success">✓ OK</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">⚠ Short</span>
+                                            <br><small class="text-danger">{{ total_required - available }} short</small>
+                                        {% endif %}
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if material_shortages %}
+            <div class="card mt-3">
+                <div class="card-header bg-danger text-white">
+                    <h5><i class="fas fa-exclamation-triangle"></i> Material Shortages</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <strong>Cannot create production order!</strong><br>
+                        The following materials are insufficient:
+                    </div>
+                    {% for shortage in material_shortages %}
+                    <div class="border-bottom pb-2 mb-2">
+                        <strong>{{ shortage.item_code }} - {{ shortage.item_name }}</strong><br>
+                        <small class="text-muted">
+                            Required: {{ shortage.required_qty }} {{ shortage.unit }}<br>
+                            Available: {{ shortage.available_qty }} {{ shortage.unit }}<br>
+                            <span class="text-danger">Short by: {{ shortage.shortage_qty }} {{ shortage.unit }}</span>
+                        </small>
+                    </div>
+                    {% endfor %}
                 </div>
             </div>
             {% endif %}
@@ -196,7 +247,10 @@
 document.addEventListener('DOMContentLoaded', function() {
     const statusSelect = document.getElementById('status');
     const productionResults = document.getElementById('production-results');
+    const itemSelect = document.getElementById('item_id');
+    const quantityInput = document.getElementById('quantity_planned');
     
+    // Handle status change to show/hide production results
     if (statusSelect && productionResults) {
         statusSelect.addEventListener('change', function() {
             if (this.value === 'planned') {
@@ -209,6 +263,79 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             } else {
                 productionResults.style.display = 'block';
+            }
+        });
+    }
+    
+    // Add real-time material availability checking
+    function checkMaterialAvailability() {
+        const itemId = itemSelect ? itemSelect.value : null;
+        const quantity = quantityInput ? parseFloat(quantityInput.value) || 1 : 1;
+        
+        if (itemId && quantity > 0) {
+            // Update the BOM table calculations dynamically
+            const bomRows = document.querySelectorAll('tbody tr');
+            bomRows.forEach(row => {
+                const perUnitCell = row.cells[1];
+                const availableCell = row.cells[2];
+                const statusCell = row.cells[3];
+                
+                if (perUnitCell && availableCell && statusCell) {
+                    const perUnitText = perUnitCell.textContent.trim();
+                    const perUnitMatch = perUnitText.match(/^([\d.]+)/);
+                    const perUnit = perUnitMatch ? parseFloat(perUnitMatch[1]) : 0;
+                    
+                    const availableMatch = availableCell.innerHTML.match(/<strong>([\d.]+)<\/strong>/);
+                    const available = availableMatch ? parseFloat(availableMatch[1]) : 0;
+                    
+                    const totalRequired = perUnit * quantity;
+                    const isSufficient = available >= totalRequired;
+                    
+                    // Update the "Need" text
+                    availableCell.innerHTML = availableCell.innerHTML.replace(
+                        /Need: [\d.]+/,
+                        `Need: ${totalRequired.toFixed(2)}`
+                    );
+                    
+                    // Update row styling and status
+                    if (isSufficient) {
+                        row.className = '';
+                        statusCell.innerHTML = '<span class="badge bg-success">✓ OK</span>';
+                    } else {
+                        row.className = 'table-danger';
+                        const shortage = totalRequired - available;
+                        statusCell.innerHTML = `<span class="badge bg-danger">⚠ Short</span><br><small class="text-danger">${shortage.toFixed(2)} short</small>`;
+                    }
+                }
+            });
+        }
+    }
+    
+    // Add event listeners for real-time updates
+    if (quantityInput) {
+        quantityInput.addEventListener('input', checkMaterialAvailability);
+        quantityInput.addEventListener('change', checkMaterialAvailability);
+    }
+    
+    if (itemSelect) {
+        itemSelect.addEventListener('change', function() {
+            // Reload page to get new BOM data when item changes
+            if (this.value) {
+                const form = document.querySelector('form');
+                if (form) {
+                    // Set a flag to indicate we want to see BOM
+                    const hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = 'preview_bom';
+                    hiddenInput.value = '1';
+                    form.appendChild(hiddenInput);
+                    
+                    // Submit form to reload with BOM data
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        submitBtn.click();
+                    }
+                }
             }
         });
     }
