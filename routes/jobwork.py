@@ -241,7 +241,7 @@ Expected Return: {job.expected_return or 'Not specified'}
         else:
             flash(f'Failed to send Job Work order via {send_type.title()}. Please check your notification settings.', 'danger')
         
-        return redirect(url_for('jobwork.view_job_work', job_id=job.id))
+        return redirect(url_for('jobwork.list_job_works'))
     
     return render_template('jobwork/send.html', job=job, title=f'Send Job Work {job.job_number}')
 

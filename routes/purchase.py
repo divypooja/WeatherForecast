@@ -329,7 +329,7 @@ Items:
         else:
             flash(f'Failed to send Purchase Order via {send_type.title()}. Please check your notification settings.', 'danger')
         
-        return redirect(url_for('purchase.view_purchase_order', po_id=po.id))
+        return redirect(url_for('purchase.list_purchase_orders'))
     
     return render_template('purchase/send.html', po=po, title=f'Send Purchase Order {po.po_number}')
 
