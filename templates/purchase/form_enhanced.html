@@ -326,14 +326,21 @@ function addPOItem() {
         option.dataset.uom = item.unit_of_measure;
         option.dataset.price = item.bom_rate;  // This should be the BOM unit cost like 42.94
         
-        console.log(`Setting dataset for ${item.code}:`, {
-            'gst_rate (for GST field)': item.gst_rate,
-            'bom_rate (for Rate field)': item.bom_rate,
-            'unit_price (fallback)': item.unit_price,
-            'uom': item.unit_of_measure,
-            'dataset.gst': option.dataset.gst,
-            'dataset.price': option.dataset.price
+        console.log(`=== DATASET MAPPING FOR ${item.code} ===`);
+        console.log('Source data from backend:', {
+            gst_rate: item.gst_rate,
+            bom_rate: item.bom_rate, 
+            unit_price: item.unit_price,
+            hsn_code: item.hsn_code,
+            unit_of_measure: item.unit_of_measure
         });
+        console.log('Dataset attributes set:', {
+            'dataset.gst': option.dataset.gst,
+            'dataset.price': option.dataset.price,
+            'dataset.hsn': option.dataset.hsn,
+            'dataset.uom': option.dataset.uom
+        });
+        console.log('===============================');
         selectElement.appendChild(option);
     });
 }
@@ -375,48 +382,50 @@ function populateItemDetails(selectElement) {
             rateInput: rateInput ? rateInput.name : 'NOT FOUND'
         });
         
-        // Set values with detailed logging
+        console.log('=== FIELD MAPPING VERIFICATION ===');
+        console.log('Form Fields to Data Source Mapping:');
+        console.log('RM Code Field ← item.code:', selectedOption.dataset.code);
+        console.log('Description Field ← item.description:', selectedOption.dataset.description);
+        console.log('HSN Code Field ← item.hsn_code:', selectedOption.dataset.hsn);
+        console.log('GST Rate Field ← item.gst_rate:', selectedOption.dataset.gst);
+        console.log('UOM Field ← item.unit_of_measure:', selectedOption.dataset.uom);
+        console.log('Rate Field ← item.bom_rate:', selectedOption.dataset.price);
+        console.log('==================================');
+
+        // Clear all fields first to prevent conflicts
+        if (rmCodeInput) rmCodeInput.value = '';
+        if (descriptionTextarea) descriptionTextarea.value = '';
+        if (hsnInput) hsnInput.value = '';
+        if (gstInput) gstInput.value = '';
+        if (uomInput) uomInput.value = '';
+        if (rateInput) rateInput.value = '';
+
+        // Set values with explicit mapping
         if (rmCodeInput) {
             rmCodeInput.value = selectedOption.dataset.code || '';
-            console.log('Set RM Code:', rmCodeInput.value);
+            console.log('✓ RM Code set to:', rmCodeInput.value);
         }
         if (descriptionTextarea) {
             descriptionTextarea.value = selectedOption.dataset.description || '';
-            console.log('Set Description:', descriptionTextarea.value);
+            console.log('✓ Description set to:', descriptionTextarea.value);
         }
         if (hsnInput) {
             hsnInput.value = selectedOption.dataset.hsn || '';
-            console.log('Set HSN:', hsnInput.value);
+            console.log('✓ HSN Code set to:', hsnInput.value);
         }
         if (gstInput) {
-            const gstValue = selectedOption.dataset.gst || '0.0';
-            gstInput.value = '';  // Clear first
-            gstInput.value = gstValue;  // Then set
-            console.log('=== GST FIELD DEBUG ===');
-            console.log('GST field found:', gstInput);
-            console.log('GST field name:', gstInput.name);
-            console.log('Dataset.gst value:', selectedOption.dataset.gst);
-            console.log('Final GST value set:', gstValue);
-            console.log('GST input value after setting:', gstInput.value);
-            console.log('======================');
+            gstInput.value = selectedOption.dataset.gst || '0';
+            console.log('✓ GST Rate set to:', gstInput.value, '(should be 18 for castor)');
         }
         if (uomInput) {
             uomInput.value = selectedOption.dataset.uom || '';
-            console.log('Set UOM:', uomInput.value, 'from dataset.uom:', selectedOption.dataset.uom);
+            console.log('✓ UOM set to:', uomInput.value, '(should be "nos" for castor)');
         }
         if (rateInput) {
-            const rateValue = selectedOption.dataset.price || '0.00';
-            rateInput.value = '';  // Clear first
-            rateInput.value = rateValue;  // Then set
-            console.log('=== RATE FIELD DEBUG ===');
-            console.log('Rate field found:', rateInput);
-            console.log('Rate field name:', rateInput.name);
-            console.log('Dataset.price value:', selectedOption.dataset.price);
-            console.log('Final rate value set:', rateValue);
-            console.log('Rate input value after setting:', rateInput.value);
-            console.log('========================');
+            rateInput.value = selectedOption.dataset.price || '0.00';
+            console.log('✓ Rate set to:', rateInput.value, '(should be 42.94 for castor)');
         } else {
-            console.log('ERROR: Rate input field not found in row');
+            console.error('❌ Rate input field not found!');
         }
         
         console.log('=== Auto-population Complete ===');
