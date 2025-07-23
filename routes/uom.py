@@ -93,11 +93,7 @@ def edit_unit(unit_id):
 @login_required
 def conversions_list():
     """List all UOM conversions"""
-    conversions = UOMConversion.query.join(UnitOfMeasure, UOMConversion.from_unit_id == UnitOfMeasure.id)\
-                                   .add_columns(UnitOfMeasure.name.label('from_name'), UnitOfMeasure.symbol.label('from_symbol'))\
-                                   .join(UnitOfMeasure, UOMConversion.to_unit_id == UnitOfMeasure.id, aliased=True)\
-                                   .add_columns(UnitOfMeasure.name.label('to_name'), UnitOfMeasure.symbol.label('to_symbol'))\
-                                   .filter(UOMConversion.is_active == True)\
+    conversions = UOMConversion.query.filter(UOMConversion.is_active == True)\
                                    .order_by(UOMConversion.created_at.desc()).all()
     
     return render_template('uom/conversions_list.html', conversions=conversions)
