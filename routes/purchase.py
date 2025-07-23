@@ -123,9 +123,6 @@ def edit_purchase_order(id):
         po.status = form.status.data
         po.notes = form.notes.data
         
-        # Process enhanced PO items from form
-        process_po_items(po, request.form)
-        
         db.session.commit()
         flash('Purchase Order updated successfully', 'success')
         return redirect(url_for('purchase.list_purchase_orders'))
@@ -139,7 +136,7 @@ def edit_purchase_order(id):
         item.bom_rate = bom_rate if bom_rate is not None else item.unit_price
         items.append(item)
     
-    return render_template('purchase/form_enhanced.html', 
+    return render_template('purchase/form_simple.html', 
                          form=form, 
                          title='Edit Purchase Order', 
                          po=po, 
