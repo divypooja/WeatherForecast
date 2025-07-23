@@ -39,6 +39,7 @@ def create_app():
     
     # Import models
     from models import User, Item, Supplier, PurchaseOrder, SalesOrder, Employee, JobWork, Production, BOM, NotificationSettings, NotificationLog, NotificationRecipient, CompanySettings, QualityIssue, QualityControlLog, FactoryExpense, Document
+    from models_uom import UnitOfMeasure, UOMConversion, ItemUOMConversion, UOMConversionLog
     
     @login_manager.user_loader
     def load_user(user_id):
@@ -60,6 +61,7 @@ def create_app():
     from routes.material_inspection import material_inspection
     from routes.expenses import expenses_bp
     from routes.documents import documents_bp
+    from routes.uom import uom_bp
     
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -76,6 +78,7 @@ def create_app():
     app.register_blueprint(material_inspection, url_prefix='/inspection')
     app.register_blueprint(expenses_bp, url_prefix='/expenses')
     app.register_blueprint(documents_bp, url_prefix='/documents')
+    app.register_blueprint(uom_bp, url_prefix='/uom')
     
     # Template context processors
     @app.context_processor
