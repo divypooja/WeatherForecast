@@ -27,12 +27,42 @@ class ItemForm(FlaskForm):
                           validators=[DataRequired()])
 
 class SupplierForm(FlaskForm):
-    name = StringField('Supplier Name', validators=[DataRequired(), Length(max=100)])
-    contact_person = StringField('Contact Person', validators=[Length(max=100)])
-    phone = StringField('Phone', validators=[Length(max=20)])
-    email = StringField('Email', validators=[Optional(), Email(), Length(max=120)])
-    address = TextAreaField('Address')
-    gst_number = StringField('GST Number', validators=[Length(max=50)])
+    # Basic Information
+    name = StringField('Supplier Name', validators=[DataRequired(), Length(max=200)], 
+                      render_kw={"placeholder": "A.K. Metals"})
+    contact_person = StringField('Contact Person', validators=[Length(max=100)], 
+                                render_kw={"placeholder": "Mr. Rahul Kumar"})
+    phone = StringField('Mobile Number', validators=[Length(max=20)], 
+                       render_kw={"placeholder": "9876543210"})
+    email = StringField('Email', validators=[Optional(), Email(), Length(max=120)], 
+                       render_kw={"placeholder": "info@akmetals.com"})
+    
+    # Compliance Information
+    gst_number = StringField('GST Number', validators=[Length(max=50)], 
+                            render_kw={"placeholder": "29ABCDE1234F1Z9"})
+    pan_number = StringField('PAN Number', validators=[Optional(), Length(max=20)], 
+                            render_kw={"placeholder": "ABCDE1234F"})
+    
+    # Address Information
+    address = TextAreaField('Address', render_kw={"placeholder": "123, Industrial Area, Delhi"})
+    city = StringField('City', validators=[Length(max=100)], 
+                      render_kw={"placeholder": "Delhi"})
+    state = StringField('State', validators=[Length(max=100)], 
+                       render_kw={"placeholder": "Delhi"})
+    pin_code = StringField('Pin Code', validators=[Length(max=10)], 
+                          render_kw={"placeholder": "110001"})
+    
+    # Banking Information (Optional)
+    account_number = StringField('Account Number', validators=[Optional(), Length(max=50)], 
+                                render_kw={"placeholder": "123456789012"})
+    bank_name = StringField('Bank Name', validators=[Optional(), Length(max=200)], 
+                           render_kw={"placeholder": "State Bank of India"})
+    ifsc_code = StringField('IFSC Code', validators=[Optional(), Length(max=20)], 
+                           render_kw={"placeholder": "SBIN0001234"})
+    
+    # Additional Information
+    remarks = TextAreaField('Remarks', render_kw={"placeholder": "Preferred for steel items"})
+    is_active = BooleanField('Active', default=True)
 
 class CustomerForm(FlaskForm):
     name = StringField('Customer Name', validators=[DataRequired(), Length(max=100)])

@@ -230,8 +230,17 @@ def add_supplier():
             contact_person=form.contact_person.data,
             phone=form.phone.data,
             email=form.email.data,
+            gst_number=form.gst_number.data,
+            pan_number=form.pan_number.data,
             address=form.address.data,
-            gst_number=form.gst_number.data
+            city=form.city.data,
+            state=form.state.data,
+            pin_code=form.pin_code.data,
+            account_number=form.account_number.data,
+            bank_name=form.bank_name.data,
+            ifsc_code=form.ifsc_code.data,
+            remarks=form.remarks.data,
+            is_active=form.is_active.data
         )
         db.session.add(supplier)
         db.session.commit()
@@ -251,8 +260,17 @@ def edit_supplier(id):
         supplier.contact_person = form.contact_person.data
         supplier.phone = form.phone.data
         supplier.email = form.email.data
-        supplier.address = form.address.data
         supplier.gst_number = form.gst_number.data
+        supplier.pan_number = form.pan_number.data
+        supplier.address = form.address.data
+        supplier.city = form.city.data
+        supplier.state = form.state.data
+        supplier.pin_code = form.pin_code.data
+        supplier.account_number = form.account_number.data
+        supplier.bank_name = form.bank_name.data
+        supplier.ifsc_code = form.ifsc_code.data
+        supplier.remarks = form.remarks.data
+        supplier.is_active = form.is_active.data
         
         db.session.commit()
         flash('Supplier updated successfully', 'success')

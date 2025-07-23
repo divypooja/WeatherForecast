@@ -6,7 +6,19 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 23, 2025)
 
-### BOM Material Availability Checking System (Latest)
+### Comprehensive Supplier Management Enhancement (Latest)
+- **Enhanced Supplier Model**: Expanded supplier model with all comprehensive fields:
+  - Basic Information: Name, Contact Person, Mobile Number, Email
+  - Compliance Information: GST Number (mandatory for GST), PAN Number (optional)
+  - Address Information: Full Address, City, State, Pin Code
+  - Banking Information: Account Number, Bank Name, IFSC Code (all optional for payments)
+  - Additional Information: Remarks, Active/Inactive Status
+- **Professional Supplier Form**: Created sectioned supplier form with color-coded sections and helpful placeholders
+- **Updated Routes**: Enhanced add/edit supplier routes to handle all new comprehensive fields
+- **Field Validation**: Added proper validation and placeholders for all supplier fields
+- **Database Migration**: Updated supplier model structure for comprehensive supplier information storage
+
+### BOM Material Availability Checking System
 - **Complete BOM Integration**: Created comprehensive BOM for Castor Wheel with 6 component materials (Metal Bracket, Wheel PU/PP, Axle/Pin, Nut/Bolt, Washer, Grease/Oil)
 - **Real-time Material Validation**: Production form now checks BOM requirements against current inventory before allowing production creation
 - **Visual Shortage Indicators**: Production form displays material requirements table with green/red status badges showing availability vs shortages
