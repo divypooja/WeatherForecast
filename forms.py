@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SelectField, TextAreaField, FloatField, IntegerField, DateField, BooleanField, SelectMultipleField, ValidationError, DateTimeField
+from wtforms import StringField, PasswordField, SubmitField, SelectField, TextAreaField, FloatField, IntegerField, DateField, BooleanField, SelectMultipleField, ValidationError, DateTimeField
 from wtforms.validators import DataRequired, Length, Email, NumberRange, Optional
 from wtforms.widgets import CheckboxInput, ListWidget
 from models import User, Item, Supplier, QualityIssue, Production, PurchaseOrder, JobWork
@@ -386,3 +386,49 @@ class FactoryExpenseForm(FlaskForm):
     # Additional Information
     notes = TextAreaField('Notes', validators=[Optional()], 
                          render_kw={"placeholder": "Additional notes or comments"})
+    
+    submit = SubmitField('Save Expense')
+
+class SalaryRecordForm(FlaskForm):
+    salary_number = StringField('Salary Number', validators=[DataRequired()], render_kw={'readonly': True})
+    employee_id = SelectField('Employee', coerce=int, validators=[DataRequired()])
+    pay_period_start = DateField('Pay Period Start', validators=[DataRequired()])
+    pay_period_end = DateField('Pay Period End', validators=[DataRequired()])
+    basic_amount = FloatField('Basic Amount', validators=[DataRequired(), NumberRange(min=0.01)])
+    overtime_hours = FloatField('Overtime Hours', validators=[Optional(), NumberRange(min=0)], default=0)
+    overtime_rate = FloatField('Overtime Rate per Hour', validators=[Optional(), NumberRange(min=0)], default=0)
+    bonus_amount = FloatField('Bonus Amount', validators=[Optional(), NumberRange(min=0)], default=0)
+    deduction_amount = FloatField('Other Deductions', validators=[Optional(), NumberRange(min=0)], default=0)
+    advance_deduction = FloatField('Advance Deduction', validators=[Optional(), NumberRange(min=0)], default=0)
+    payment_method = SelectField('Payment Method', 
+                                choices=[('cash', 'Cash'), ('bank_transfer', 'Bank Transfer'), ('cheque', 'Cheque')])
+    notes = TextAreaField('Notes', render_kw={'rows': 3})
+    submit = SubmitField('Save Salary Record')
+    
+    def __init__(self, *args, **kwargs):
+        super(SalaryRecordForm, self).__init__(*args, **kwargs)
+        from models import Employee
+        self.employee_id.choices = [(0, 'Select Employee')] + [
+            (e.id, f"{e.name} ({e.employee_code})") 
+            for e in Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
+        ]
+
+class EmployeeAdvanceForm(FlaskForm):
+    advance_number = StringField('Advance Number', validators=[DataRequired()], render_kw={'readonly': True})
+    employee_id = SelectField('Employee', coerce=int, validators=[DataRequired()])
+    amount = FloatField('Advance Amount', validators=[DataRequired(), NumberRange(min=0.01)])
+    reason = StringField('Reason for Advance', validators=[DataRequired(), Length(max=200)])
+    advance_date = DateField('Advance Date', validators=[DataRequired()], default=datetime.utcnow().date())
+    repayment_months = IntegerField('Repayment Months', validators=[DataRequired(), NumberRange(min=1, max=24)], default=1)
+    payment_method = SelectField('Payment Method', 
+                                choices=[('cash', 'Cash'), ('bank_transfer', 'Bank Transfer'), ('cheque', 'Cheque')])
+    notes = TextAreaField('Notes', render_kw={'rows': 3})
+    submit = SubmitField('Save Advance Request')
+    
+    def __init__(self, *args, **kwargs):
+        super(EmployeeAdvanceForm, self).__init__(*args, **kwargs)
+        from models import Employee
+        self.employee_id.choices = [(0, 'Select Employee')] + [
+            (e.id, f"{e.name} ({e.employee_code})") 
+            for e in Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
+        ]

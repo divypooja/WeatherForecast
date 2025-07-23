@@ -232,6 +232,25 @@ class Employee(db.Model):
     joining_date = db.Column(db.Date, nullable=False)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    salary_records = db.relationship('SalaryRecord', backref='employee', lazy=True, cascade='all, delete-orphan')
+    advances = db.relationship('EmployeeAdvance', backref='employee', lazy=True, cascade='all, delete-orphan')
+    
+    @staticmethod
+    def generate_employee_code():
+        """Generate unique employee code"""
+        last_employee = Employee.query.order_by(Employee.id.desc()).first()
+        if last_employee:
+            # Extract number from code like "EMP-0001"
+            try:
+                last_num = int(last_employee.employee_code.split('-')[-1])
+                next_num = last_num + 1
+            except (ValueError, IndexError):
+                next_num = 1
+        else:
+            next_num = 1
+        return f"EMP-{next_num:04d}"
 
 class JobWork(db.Model):
     __tablename__ = 'job_works'
@@ -541,3 +560,97 @@ class FactoryExpense(db.Model):
             'paid': 'bg-primary'
         }
         return status_classes.get(self.status, 'bg-secondary')
+
+class SalaryRecord(db.Model):
+    __tablename__ = 'salary_records'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    salary_number = db.Column(db.String(50), unique=True, nullable=False)
+    employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=False)
+    pay_period_start = db.Column(db.Date, nullable=False)
+    pay_period_end = db.Column(db.Date, nullable=False)
+    basic_amount = db.Column(db.Float, nullable=False)
+    overtime_hours = db.Column(db.Float, default=0.0)
+    overtime_rate = db.Column(db.Float, default=0.0)
+    overtime_amount = db.Column(db.Float, default=0.0)
+    bonus_amount = db.Column(db.Float, default=0.0)
+    deduction_amount = db.Column(db.Float, default=0.0)
+    advance_deduction = db.Column(db.Float, default=0.0)  # Auto-deducted from advances
+    gross_amount = db.Column(db.Float, nullable=False)
+    net_amount = db.Column(db.Float, nullable=False)
+    status = db.Column(db.String(20), default='pending')  # pending, approved, paid
+    payment_date = db.Column(db.Date)
+    payment_method = db.Column(db.String(50))  # cash, bank_transfer, cheque
+    notes = db.Column(db.Text)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    approved_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    approved_at = db.Column(db.DateTime)
+    
+    # Relationships
+    creator = db.relationship('User', foreign_keys=[created_by], backref='created_salary_records')
+    approver = db.relationship('User', foreign_keys=[approved_by], backref='approved_salary_records')
+    
+    @staticmethod
+    def generate_salary_number():
+        """Generate unique salary record number"""
+        from datetime import datetime
+        year = datetime.now().year
+        last_record = SalaryRecord.query.filter(
+            SalaryRecord.salary_number.like(f'SAL-{year}-%')
+        ).order_by(SalaryRecord.id.desc()).first()
+        
+        if last_record:
+            try:
+                last_num = int(last_record.salary_number.split('-')[-1])
+                next_num = last_num + 1
+            except (ValueError, IndexError):
+                next_num = 1
+        else:
+            next_num = 1
+        
+        return f"SAL-{year}-{next_num:04d}"
+
+class EmployeeAdvance(db.Model):
+    __tablename__ = 'employee_advances'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    advance_number = db.Column(db.String(50), unique=True, nullable=False)
+    employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    remaining_amount = db.Column(db.Float, nullable=False)  # Amount yet to be deducted
+    reason = db.Column(db.String(200), nullable=False)
+    advance_date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date())
+    repayment_months = db.Column(db.Integer, default=1)  # Number of months to deduct
+    monthly_deduction = db.Column(db.Float, nullable=False)  # Amount to deduct per month
+    status = db.Column(db.String(20), default='pending')  # pending, approved, active, completed, cancelled
+    payment_method = db.Column(db.String(50))  # cash, bank_transfer, cheque
+    notes = db.Column(db.Text)
+    requested_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    approved_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    approved_at = db.Column(db.DateTime)
+    
+    # Relationships
+    requester = db.relationship('User', foreign_keys=[requested_by], backref='requested_advances')
+    approver = db.relationship('User', foreign_keys=[approved_by], backref='approved_advances')
+    
+    @staticmethod
+    def generate_advance_number():
+        """Generate unique advance number"""
+        from datetime import datetime
+        year = datetime.now().year
+        last_advance = EmployeeAdvance.query.filter(
+            EmployeeAdvance.advance_number.like(f'ADV-{year}-%')
+        ).order_by(EmployeeAdvance.id.desc()).first()
+        
+        if last_advance:
+            try:
+                last_num = int(last_advance.advance_number.split('-')[-1])
+                next_num = last_num + 1
+            except (ValueError, IndexError):
+                next_num = 1
+        else:
+            next_num = 1
+        
+        return f"ADV-{year}-{next_num:04d}"
