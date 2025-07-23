@@ -296,7 +296,7 @@
                 </td>
                 <td class="drawing-col">{{ item.drawing_spec_no or '' }}</td>
                 <td class="hsn-col">{{ item.hsn_code or item.item.hsn_code or '' }}</td>
-                <td class="gst-col">{{ item.gst_rate or item.item.gst_rate or '18.0' }}%</td>
+                <td class="gst-col">{{ item.gst_rate or item.item.gst_rate or '0.0' }}%</td>
                 <td class="uom-col">{{ item.uom or item.item.unit_of_measure }}</td>
                 <td class="qty-col">{{ item.qty or item.quantity_ordered }}</td>
                 <td class="rate-col">{{ "%.2f"|format(item.rate or item.unit_price) }}</td>
@@ -314,7 +314,7 @@
                 <td class="amount">{{ "%.2f"|format(po.total_amount / 1.18) }}</td>
             </tr>
             <tr>
-                <td class="label">IGST 18%</td>
+                <td class="label">Total GST</td>
                 <td class="amount">{{ "%.2f"|format(po.total_amount - (po.total_amount / 1.18)) }}</td>
             </tr>
             <tr class="grand-total">

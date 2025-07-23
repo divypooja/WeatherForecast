@@ -128,7 +128,7 @@
                                     </td>
                                     <td>
                                         <input type="number" class="form-control form-control-sm" name="gst_rate_{{ item.id }}" 
-                                               value="{{ item.gst_rate or item.item.gst_rate or 18.0 }}" step="0.01" min="0" max="100" placeholder="18.0">
+                                               value="{{ item.gst_rate or item.item.gst_rate or 0.0 }}" step="0.01" min="0" max="100" placeholder="GST %">
                                     </td>
                                     <td>
                                         <input type="text" class="form-control form-control-sm" name="uom_{{ item.id }}" 
@@ -164,7 +164,7 @@
                                 <td></td>
                             </tr>
                             <tr class="table-secondary">
-                                <td colspan="9" class="text-end"><strong>IGST 18%:</strong></td>
+                                <td colspan="9" class="text-end"><strong>Total GST:</strong></td>
                                 <td><input type="number" class="form-control form-control-sm" id="igstAmount" readonly placeholder="0.00"></td>
                                 <td></td>
                             </tr>
@@ -247,7 +247,7 @@ const itemsData = [
         name: "{{ item.name }}",
         description: "{{ item.description or '' }}",
         hsn_code: "{{ item.hsn_code or '' }}",
-        gst_rate: {{ item.gst_rate or 18.0 }},
+        gst_rate: {{ item.gst_rate or 0.0 }},
         unit_of_measure: "{{ item.unit_of_measure }}",
         unit_price: {{ item.unit_price or 0.0 }}
     }{% if not loop.last %},{% endif %}
@@ -280,7 +280,7 @@ function addPOItem() {
         </td>
         <td>
             <input type="number" class="form-control form-control-sm" name="gst_rate_new_${itemCounter}" 
-                   value="18.0" step="0.01" min="0" max="100" placeholder="18.0">
+                   value="0.0" step="0.01" min="0" max="100" placeholder="GST %">
         </td>
         <td>
             <input type="text" class="form-control form-control-sm" name="uom_new_${itemCounter}" placeholder="UOM">
@@ -357,7 +357,7 @@ function populateItemDetails(selectElement) {
             hsnInput.value = selectedOption.dataset.hsn || '';
         }
         if (gstInput) {
-            gstInput.value = selectedOption.dataset.gst || '18.0';
+            gstInput.value = selectedOption.dataset.gst || '0.0';
         }
         if (uomInput) {
             uomInput.value = selectedOption.dataset.uom || '';
@@ -388,19 +388,29 @@ function calculateAmount(element) {
 
 function calculateTotals() {
     let subTotal = 0;
-    const amountInputs = document.querySelectorAll('input[name*="amount"]');
+    let totalGstAmount = 0;
     
-    amountInputs.forEach(input => {
-        const amount = parseFloat(input.value) || 0;
-        subTotal += amount;
+    const tbody = document.getElementById('poItemsBody');
+    const rows = tbody.querySelectorAll('tr');
+    
+    rows.forEach(row => {
+        const amountInput = row.querySelector('input[name*="amount"]');
+        const gstInput = row.querySelector('input[name*="gst_rate"]');
+        
+        if (amountInput && gstInput) {
+            const amount = parseFloat(amountInput.value) || 0;
+            const gstRate = parseFloat(gstInput.value) || 0;
+            const gstAmount = (amount * gstRate) / 100;
+            
+            subTotal += amount;
+            totalGstAmount += gstAmount;
+        }
     });
     
-    const igstRate = 18; // 18% GST
-    const igstAmount = (subTotal * igstRate) / 100;
-    const grandTotal = subTotal + igstAmount;
+    const grandTotal = subTotal + totalGstAmount;
     
     document.getElementById('subTotal').value = subTotal.toFixed(2);
-    document.getElementById('igstAmount').value = igstAmount.toFixed(2);
+    document.getElementById('igstAmount').value = totalGstAmount.toFixed(2);
     document.getElementById('grandTotal').value = grandTotal.toFixed(2);
 }
 

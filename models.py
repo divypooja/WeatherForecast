@@ -90,7 +90,7 @@ class Item(db.Model):
     description = db.Column(db.Text)
     unit_of_measure = db.Column(db.String(20), nullable=False)  # kg, pcs, meter, etc.
     hsn_code = db.Column(db.String(20))  # HSN Code for GST
-    gst_rate = db.Column(db.Float, default=18.0)  # Default GST rate
+    gst_rate = db.Column(db.Float, default=0.0)  # GST rate (can be 0%, 5%, 12%, 18%, 28% etc.)
     current_stock = db.Column(db.Float, default=0.0)
     minimum_stock = db.Column(db.Float, default=0.0)
     unit_price = db.Column(db.Float, default=0.0)
