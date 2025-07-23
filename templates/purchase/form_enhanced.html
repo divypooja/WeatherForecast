@@ -288,7 +288,7 @@ function addPOItem() {
         </td>
         <td>
             <input type="number" class="form-control form-control-sm" name="gst_rate_new_${itemCounter}" 
-                   value="0.0" step="0.01" min="0" max="100" placeholder="GST %">
+                   step="0.01" min="0" max="100" placeholder="GST %">
         </td>
         <td>
             <input type="text" class="form-control form-control-sm" name="uom_new_${itemCounter}" placeholder="UOM">
@@ -390,7 +390,8 @@ function populateItemDetails(selectElement) {
         }
         if (gstInput) {
             const gstValue = selectedOption.dataset.gst || '0.0';
-            gstInput.value = gstValue;
+            gstInput.value = '';  // Clear first
+            gstInput.value = gstValue;  // Then set
             console.log('=== GST FIELD DEBUG ===');
             console.log('GST field found:', gstInput);
             console.log('GST field name:', gstInput.name);
@@ -405,7 +406,8 @@ function populateItemDetails(selectElement) {
         }
         if (rateInput) {
             const rateValue = selectedOption.dataset.price || '0.00';
-            rateInput.value = rateValue;
+            rateInput.value = '';  // Clear first
+            rateInput.value = rateValue;  // Then set
             console.log('=== RATE FIELD DEBUG ===');
             console.log('Rate field found:', rateInput);
             console.log('Rate field name:', rateInput.name);
@@ -418,6 +420,14 @@ function populateItemDetails(selectElement) {
         }
         
         console.log('=== Auto-population Complete ===');
+        
+        // Add a small delay to check if values stick
+        setTimeout(() => {
+            console.log('=== VALUES AFTER 100ms ===');
+            if (gstInput) console.log('GST field value after delay:', gstInput.value);
+            if (rateInput) console.log('Rate field value after delay:', rateInput.value);
+            console.log('==========================');
+        }, 100);
         
         if (rateInput) {
             calculateAmount(rateInput);
