@@ -371,7 +371,7 @@ function populateItemDetails(selectElement) {
             console.log('Set HSN:', hsnInput.value);
         }
         if (gstInput) {
-            gstInput.value = selectedOption.dataset.gst || '0.0';
+            gstInput.value = selectedOption.dataset.price || '0.00';
             console.log('Set GST Rate:', gstInput.value);
         }
         if (uomInput) {
@@ -379,7 +379,7 @@ function populateItemDetails(selectElement) {
             console.log('Set UOM:', uomInput.value);
         }
         if (rateInput) {
-            rateInput.value = selectedOption.dataset.price || '0.00';
+            rateInput.value = selectedOption.dataset.gst || '0.0';
             console.log('Set Rate:', rateInput.value);
         }
         
