@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from forms import PurchaseOrderForm, SupplierForm
-from models import PurchaseOrder, PurchaseOrderItem, Supplier, Item, DeliverySchedule, CompanySettings
+from models import PurchaseOrder, PurchaseOrderItem, Supplier, Item, DeliverySchedule, CompanySettings, BOMItem
 from app import db
 from sqlalchemy import func
 from datetime import datetime
@@ -93,7 +93,14 @@ def add_purchase_order():
         flash('Purchase Order created successfully', 'success')
         return redirect(url_for('purchase.edit_purchase_order', id=po.id))
     
-    items = Item.query.all()
+    # Get items with BOM rates where available
+    items_data = db.session.query(Item, BOMItem.unit_cost).outerjoin(BOMItem).all()
+    items = []
+    for item, bom_rate in items_data:
+        # Use BOM rate if available, otherwise fall back to item unit_price
+        item.bom_rate = bom_rate if bom_rate is not None else item.unit_price
+        items.append(item)
+    
     return render_template('purchase/form_enhanced.html', form=form, title='Add Purchase Order', items=items)
 
 @purchase_bp.route('/edit/<int:id>', methods=['GET', 'POST'])
@@ -112,7 +119,12 @@ def edit_purchase_order(id):
         if existing_po:
             flash('PO number already exists', 'danger')
             po_items = PurchaseOrderItem.query.filter_by(purchase_order_id=id).all()
-            items = Item.query.all()
+            # Get items with BOM rates where available
+            items_data = db.session.query(Item, BOMItem.unit_cost).outerjoin(BOMItem).all()
+            items = []
+            for item, bom_rate in items_data:
+                item.bom_rate = bom_rate if bom_rate is not None else item.unit_price
+                items.append(item)
             return render_template('purchase/form_enhanced.html', form=form, title='Edit Purchase Order', po=po, po_items=po_items, items=items)
         
         po.po_number = form.po_number.data
@@ -137,7 +149,12 @@ def edit_purchase_order(id):
     
     # Get PO items for display
     po_items = PurchaseOrderItem.query.filter_by(purchase_order_id=id).all()
-    items = Item.query.all()
+    # Get items with BOM rates where available
+    items_data = db.session.query(Item, BOMItem.unit_cost).outerjoin(BOMItem).all()
+    items = []
+    for item, bom_rate in items_data:
+        item.bom_rate = bom_rate if bom_rate is not None else item.unit_price
+        items.append(item)
     
     return render_template('purchase/form_enhanced.html', 
                          form=form, 
