@@ -46,10 +46,14 @@
                             <div class="col-md-12">
                                 <div class="mb-3">
                                     {{ form.item_id.label(class="form-label") }}
-                                    {{ form.item_id(class="form-select") }}
+                                    {{ form.item_id(class="form-select", id="itemSelect") }}
                                     {% for error in form.item_id.errors %}
                                         <div class="text-danger">{{ error }}</div>
                                     {% endfor %}
+                                    <div class="form-text" id="itemHelp">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Select a Purchase Order or Job Work above to automatically load available items.
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -194,14 +198,100 @@ document.addEventListener('DOMContentLoaded', function() {
     poSelect.addEventListener('change', function() {
         if (this.value && this.value !== '0') {
             jobSelect.value = '0';
+            loadPOItems(this.value);
+        } else {
+            clearItemSelect();
         }
     });
 
     jobSelect.addEventListener('change', function() {
         if (this.value && this.value !== '0') {
             poSelect.value = '0';
+            loadJobWorkItems(this.value);
+        } else {
+            clearItemSelect();
         }
     });
+    
+    // Function to load PO items
+    function loadPOItems(poId) {
+        const itemSelect = document.getElementById('itemSelect');
+        const itemHelp = document.getElementById('itemHelp');
+        
+        // Show loading state
+        itemSelect.innerHTML = '<option value="">Loading items...</option>';
+        itemSelect.disabled = true;
+        
+        fetch(`/inspection/api/po_items/${poId}`)
+            .then(response => response.json())
+            .then(data => {
+                itemSelect.innerHTML = '<option value="">Select Item from Purchase Order</option>';
+                
+                if (data.success && data.items.length > 0) {
+                    data.items.forEach(item => {
+                        const option = document.createElement('option');
+                        option.value = item.item_id;
+                        option.textContent = `${item.item_code} - ${item.item_name} (Ordered: ${item.quantity})`;
+                        itemSelect.appendChild(option);
+                    });
+                    itemHelp.innerHTML = '<i class="fas fa-check-circle text-success me-1"></i>Items loaded from selected Purchase Order.';
+                } else {
+                    itemHelp.innerHTML = '<i class="fas fa-exclamation-triangle text-warning me-1"></i>No items found in selected Purchase Order.';
+                }
+                itemSelect.disabled = false;
+            })
+            .catch(error => {
+                console.error('Error loading PO items:', error);
+                itemSelect.innerHTML = '<option value="">Error loading items</option>';
+                itemHelp.innerHTML = '<i class="fas fa-exclamation-circle text-danger me-1"></i>Error loading items from Purchase Order.';
+                itemSelect.disabled = false;
+            });
+    }
+    
+    // Function to load Job Work items
+    function loadJobWorkItems(jobId) {
+        const itemSelect = document.getElementById('itemSelect');
+        const itemHelp = document.getElementById('itemHelp');
+        
+        // Show loading state
+        itemSelect.innerHTML = '<option value="">Loading items...</option>';
+        itemSelect.disabled = true;
+        
+        fetch(`/inspection/api/job_items/${jobId}`)
+            .then(response => response.json())
+            .then(data => {
+                itemSelect.innerHTML = '<option value="">Select Item from Job Work</option>';
+                
+                if (data.success && data.items.length > 0) {
+                    data.items.forEach(item => {
+                        const option = document.createElement('option');
+                        option.value = item.item_id;
+                        option.textContent = `${item.item_code} - ${item.item_name} (Sent: ${item.quantity})`;
+                        itemSelect.appendChild(option);
+                    });
+                    itemHelp.innerHTML = '<i class="fas fa-check-circle text-success me-1"></i>Items loaded from selected Job Work.';
+                } else {
+                    itemHelp.innerHTML = '<i class="fas fa-exclamation-triangle text-warning me-1"></i>No items found in selected Job Work.';
+                }
+                itemSelect.disabled = false;
+            })
+            .catch(error => {
+                console.error('Error loading Job Work items:', error);
+                itemSelect.innerHTML = '<option value="">Error loading items</option>';
+                itemHelp.innerHTML = '<i class="fas fa-exclamation-circle text-danger me-1"></i>Error loading items from Job Work.';
+                itemSelect.disabled = false;
+            });
+    }
+    
+    // Function to clear item selection
+    function clearItemSelect() {
+        const itemSelect = document.getElementById('itemSelect');
+        const itemHelp = document.getElementById('itemHelp');
+        
+        itemSelect.innerHTML = '<option value="">Select Item</option>';
+        itemSelect.disabled = false;
+        itemHelp.innerHTML = '<i class="fas fa-info-circle me-1"></i>Select a Purchase Order or Job Work above to automatically load available items.';
+    }
 
     // Add event listeners for calculations
     [receivedQty, inspectedQty, passedQty, damagedQty, rejectedQty].forEach(element => {
