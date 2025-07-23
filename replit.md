@@ -6,7 +6,20 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 23, 2025)
 
-### Purchase Order & Sales Order Table UI/UX Enhancement (Latest)
+### Complete Document Management System (Latest)
+- **Comprehensive Document Upload**: Added document upload functionality to Factory Expenses with file preview and validation
+- **Central Document Management**: Created dedicated document management page accessible at `/documents/list` 
+- **Advanced Filtering System**: Implemented filtering by transaction type, document category, file type, and filename search
+- **Document Statistics**: Real-time statistics showing total documents, storage usage, file types, and transactions with documents
+- **Professional Document Interface**: Clean table interface with download, view, and transaction navigation options
+- **File Validation**: Support for PDF, Images (JPG, PNG), Word (DOC, DOCX), Excel (XLS, XLSX) with 10MB size limit
+- **Navigation Integration**: Added Documents section to main sidebar navigation for easy access
+- **Expense Document Integration**: Factory expenses now support multiple document attachments with preview functionality
+- **Document Storage**: Organized file storage in uploads/[transaction_type]/[transaction_id]/ directory structure
+- **Cross-Module Integration**: Documents linked to Purchase Orders, Sales Orders, Job Work, and Factory Expenses
+- **Document Detail Display**: Supporting documents section in expense detail pages with download/view capabilities
+
+### Purchase Order & Sales Order Table UI/UX Enhancement
 - **Unified Column Width Optimization**: Redesigned both Purchase Order and Sales Order tables with proper minimum widths for all columns
 - **Enhanced Field Sizing**: Increased GST Rate (120px), UOM (80px), Qty (100px), Rate (130px), and Amount (130px) column widths for better usability
 - **Responsive Table Design**: Added horizontal scrolling with 1200px minimum table width for comprehensive data display across both forms
