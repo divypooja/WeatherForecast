@@ -157,11 +157,18 @@ document.addEventListener('DOMContentLoaded', function() {
             const itemId = this.value;
             if (itemId) {
                 // Fetch BOM rate for selected item
-                fetch(`/api/get_item_bom_rate/${itemId}`)
-                    .then(response => response.json())
+                console.log('Fetching rate for item ID:', itemId);
+                fetch(`/jobwork/api/get_item_bom_rate/${itemId}`)
+                    .then(response => {
+                        console.log('Response status:', response.status);
+                        return response.json();
+                    })
                     .then(data => {
+                        console.log('API response:', data);
                         if (data.success) {
-                            rateInput.value = data.bom_rate || data.unit_price || '';
+                            const rate = data.bom_rate || data.unit_price || '';
+                            rateInput.value = rate;
+                            console.log('Rate set to:', rate);
                             // Show which rate was used
                             if (data.bom_rate) {
                                 console.log('BOM rate loaded:', data.bom_rate);
