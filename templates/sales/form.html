@@ -250,7 +250,7 @@
                                 min-width: 100%; 
                                 box-sizing: border-box; 
                             }
-                            #soItemsTable .input-group { min-width: 120px; }
+                            #soItemsTable .input-group { min-width: 120px; white-space: nowrap; }
                             .table-responsive { 
                                 max-height: 600px; 
                                 overflow-y: auto; 
@@ -361,10 +361,10 @@ function addSOItem() {
             <input type="text" class="form-control form-control-sm text-center fw-bold" name="hsn_code_new_${itemCounter}" placeholder="HSN Code" readonly>
         </td>
         <td class="align-middle">
-            <div class="input-group input-group-sm" style="min-width: 120px;">
+            <div class="input-group input-group-sm" style="min-width: 120px; white-space: nowrap;">
                 <input type="number" class="form-control" name="gst_rate_new_${itemCounter}" 
-                       step="0.01" min="0" max="100" placeholder="18" readonly style="min-width: 80px;">
-                <span class="input-group-text">%</span>
+                       step="0.01" min="0" max="100" placeholder="18" readonly style="min-width: 80px; flex: 1;">
+                <span class="input-group-text" style="white-space: nowrap;">%</span>
             </div>
         </td>
         <td class="align-middle">
@@ -431,13 +431,29 @@ function populateSOItemDetails(selectElement) {
         const uomInput = row.querySelector(`input[name*="uom"]`);
         const rateInput = row.querySelector(`input[name*="rate"]`);
         
+        // Debug logging for field mapping
+        console.log('=== SALES ORDER FIELD MAPPING DEBUG ===');
+        console.log('Selected item data:');
+        console.log('- Code:', selectedOption.dataset.code);
+        console.log('- GST Rate:', selectedOption.dataset.gst);
+        console.log('- Unit Price:', selectedOption.dataset.price);
+        console.log('Field targets:');
+        console.log('- GST Input found:', !!gstInput);
+        console.log('- Rate Input found:', !!rateInput);
+
         // Populate the fields
         if (itemCodeInput) itemCodeInput.value = selectedOption.dataset.code || '';
         if (descriptionTextarea) descriptionTextarea.value = selectedOption.dataset.description || '';
         if (hsnInput) hsnInput.value = selectedOption.dataset.hsn || '';
-        if (gstInput) gstInput.value = selectedOption.dataset.gst || '18';
+        if (gstInput) {
+            gstInput.value = selectedOption.dataset.gst || '18';
+            console.log('✓ GST Rate set to:', gstInput.value);
+        }
         if (uomInput) uomInput.value = selectedOption.dataset.uom || '';
-        if (rateInput) rateInput.value = selectedOption.dataset.price || '0.00';
+        if (rateInput) {
+            rateInput.value = selectedOption.dataset.price || '0.00';
+            console.log('✓ Rate set to:', rateInput.value);
+        }
         
         // Calculate amount if quantity is already entered
         calculateSOAmount(rateInput);
