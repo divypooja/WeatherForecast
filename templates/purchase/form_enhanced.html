@@ -185,6 +185,8 @@
                 <h5 class="card-title mb-0">Additional Information</h5>
             </div>
             <div class="card-body">
+                <!-- Approval Section - Only show during editing -->
+                {% if po %}
                 <div class="row">
                     <div class="col-md-4">
                         {{ form.prepared_by.label(class="form-label") }}
@@ -199,6 +201,7 @@
                         {{ form.approved_by(class="form-control") }}
                     </div>
                 </div>
+                {% endif %}
                 
                 <div class="row mt-3">
                     <div class="col-md-12">

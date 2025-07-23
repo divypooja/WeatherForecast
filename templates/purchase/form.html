@@ -100,7 +100,8 @@
                             </div>
                         </div>
                         
-                        <!-- Approval Section -->
+                        <!-- Approval Section - Only show during editing -->
+                        {% if po %}
                         <div class="row">
                             <div class="col-md-4 mb-3">
                                 {{ form.prepared_by.label(class="form-label") }}
@@ -115,6 +116,7 @@
                                 {{ form.approved_by(class="form-control") }}
                             </div>
                         </div>
+                        {% endif %}
                         
                         <div class="mb-3">
                             {{ form.notes.label(class="form-label") }}

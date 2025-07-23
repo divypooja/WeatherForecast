@@ -106,7 +106,7 @@ def add_purchase_order():
             verified_by=form.verified_by.data,
             approved_by=form.approved_by.data,
             delivery_notes=form.delivery_notes.data,
-            status=form.status.data,
+            status='draft',  # New purchase orders always start as draft
             notes=form.notes.data,
             created_by=current_user.id
         )
