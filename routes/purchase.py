@@ -123,7 +123,7 @@ def add_purchase_order():
         return redirect(url_for('purchase.edit_purchase_order', id=po.id))
     
     # Get items with BOM rates where available
-    items_data = db.session.query(Item, BOMItem.unit_cost).outerjoin(BOMItem).all()
+    items_data = db.session.query(Item, BOMItem.unit_cost).outerjoin(BOMItem, Item.id == BOMItem.item_id).all()
     items = []
     for item, bom_rate in items_data:
         # Use BOM rate if available, otherwise fall back to item unit_price
@@ -165,7 +165,7 @@ def edit_purchase_order(id):
             flash('PO number already exists', 'danger')
             po_items = PurchaseOrderItem.query.filter_by(purchase_order_id=id).all()
             # Get items with BOM rates where available
-            items_data = db.session.query(Item, BOMItem.unit_cost).outerjoin(BOMItem).all()
+            items_data = db.session.query(Item, BOMItem.unit_cost).outerjoin(BOMItem, Item.id == BOMItem.item_id).all()
             items = []
             for item, bom_rate in items_data:
                 item.bom_rate = bom_rate if bom_rate is not None else item.unit_price
@@ -196,7 +196,7 @@ def edit_purchase_order(id):
     # Get PO items for display
     po_items = PurchaseOrderItem.query.filter_by(purchase_order_id=id).all()
     # Get items with BOM rates where available
-    items_data = db.session.query(Item, BOMItem.unit_cost).outerjoin(BOMItem).all()
+    items_data = db.session.query(Item, BOMItem.unit_cost).outerjoin(BOMItem, Item.id == BOMItem.item_id).all()
     items = []
     for item, bom_rate in items_data:
         item.bom_rate = bom_rate if bom_rate is not None else item.unit_price
