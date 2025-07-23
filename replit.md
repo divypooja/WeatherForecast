@@ -6,7 +6,18 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 23, 2025)
 
-### Email and WhatsApp Communication with PDF Attachments (Latest)
+### Smart Production Form Workflow (Latest)
+- **Logical Field Display**: Production form now intelligently shows/hides fields based on production status
+- **Planning Phase**: When creating new production orders (status = 'planned'), only shows essential planning fields:
+  - Production Number, Item to Produce, Planned Quantity, Production Date, Status, Notes
+- **Production Phase**: Production result fields only appear when status changes to 'in_progress' or 'completed':
+  - Produced Quantity, Good Quality Quantity, Damaged/Defective Quantity
+- **Dynamic Interface**: JavaScript automatically shows/hides production result section based on status selection
+- **Data Integrity**: Prevents users from entering production results before production actually begins
+- **Template Fix**: Resolved ProductionForm template errors by mapping correct field names (production_date vs start_date)
+- **User Experience**: Clear section labeling and contextual help text guide users through the workflow
+
+### Email and WhatsApp Communication with PDF Attachments
 - **PDF Attachment Support**: Enhanced email sending functionality to automatically include PDF attachments of Purchase Orders and Job Work orders
 - **WeasyPrint Integration**: Added WeasyPrint library for server-side PDF generation from HTML templates
 - **Professional Send Forms**: Created dedicated send pages for both Purchase Orders and Job Work with recipient selection and custom messaging

@@ -89,7 +89,11 @@
                             </div>
                         </div>
                         
-                        <div class="row">
+                        <!-- Production Results - Only show when editing existing production or status is not 'planned' -->
+                        <div class="row" id="production-results" {% if not production and (not form.status.data or form.status.data == 'planned') %}style="display: none;"{% endif %}>
+                            <div class="col-12 mb-2">
+                                <h6 class="text-muted">Production Results (Fill during/after production)</h6>
+                            </div>
                             <div class="col-md-4 mb-3">
                                 {{ form.quantity_produced.label(class="form-label") }}
                                 {{ form.quantity_produced(class="form-control") }}
@@ -185,4 +189,29 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const statusSelect = document.getElementById('status');
+    const productionResults = document.getElementById('production-results');
+    
+    if (statusSelect && productionResults) {
+        statusSelect.addEventListener('change', function() {
+            if (this.value === 'planned') {
+                productionResults.style.display = 'none';
+                // Clear the production result fields when hiding
+                const productionFields = ['quantity_produced', 'quantity_good', 'quantity_damaged'];
+                productionFields.forEach(fieldName => {
+                    const field = document.getElementById(fieldName);
+                    if (field) field.value = '0.0';
+                });
+            } else {
+                productionResults.style.display = 'block';
+            }
+        });
+    }
+});
+</script>
 {% endblock %}
