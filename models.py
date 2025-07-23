@@ -312,11 +312,57 @@ class BOM(db.Model):
     product_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     version = db.Column(db.String(20), default='1.0')
     is_active = db.Column(db.Boolean, default=True)
+    description = db.Column(db.Text)  # BOM description/notes
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # UOM Integration
+    production_unit_id = db.Column(db.Integer, db.ForeignKey('uom_units.id'), nullable=True)  # Unit for production quantity
     
     # Relationships
     product = db.relationship('Item', backref='boms')
     items = db.relationship('BOMItem', backref='bom', lazy=True, cascade='all, delete-orphan')
+    production_unit = db.relationship('UnitOfMeasure', foreign_keys=[production_unit_id], primaryjoin="BOM.production_unit_id == UnitOfMeasure.id")
+    creator = db.relationship('User', foreign_keys=[created_by], backref='created_boms')
+    
+    def check_material_availability(self, production_quantity=1):
+        """Check if all materials are available for given production quantity"""
+        material_status = []
+        has_shortages = False
+        
+        for bom_item in self.items:
+            # Get required quantity in inventory unit
+            required_qty = bom_item.get_quantity_in_inventory_unit(production_quantity)
+            available_qty = bom_item.item.current_stock or 0
+            is_sufficient = available_qty >= required_qty
+            
+            if not is_sufficient:
+                has_shortages = True
+            
+            material_status.append({
+                'bom_item': bom_item,
+                'item': bom_item.item,
+                'required_qty': required_qty,
+                'available_qty': available_qty,
+                'is_sufficient': is_sufficient,
+                'shortage_qty': max(0, required_qty - available_qty),
+                'unit': bom_item.item.unit_of_measure
+            })
+        
+        return {
+            'materials': material_status,
+            'has_shortages': has_shortages,
+            'can_produce': not has_shortages
+        }
+    
+    def get_total_cost(self, production_quantity=1):
+        """Calculate total material cost for given production quantity"""
+        total_cost = 0
+        for bom_item in self.items:
+            required_qty = bom_item.get_quantity_in_inventory_unit(production_quantity)
+            item_cost = (bom_item.item.unit_price or 0) * required_qty
+            total_cost += item_cost
+        return total_cost
 
 class BOMItem(db.Model):
     __tablename__ = 'bom_items'
@@ -326,6 +372,54 @@ class BOMItem(db.Model):
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     quantity_required = db.Column(db.Float, nullable=False)
     unit_cost = db.Column(db.Float, default=0.0)
+    
+    # UOM Integration fields
+    bom_unit_id = db.Column(db.Integer, db.ForeignKey('uom_units.id'), nullable=True)  # Unit used in BOM
+    notes = db.Column(db.Text)  # Additional notes about this BOM item
+    
+    # Relationships
+    bom_unit = db.relationship('UnitOfMeasure', foreign_keys=[bom_unit_id], primaryjoin="BOMItem.bom_unit_id == UnitOfMeasure.id")
+    
+    def get_quantity_in_inventory_unit(self, production_quantity=1):
+        """Convert BOM quantity to inventory unit for the required production quantity"""
+        # Get item's UOM conversion configuration
+        item_conversion = ItemUOMConversion.query.filter_by(item_id=self.item_id).first()
+        
+        if not item_conversion:
+            # No UOM conversion configured, return as-is
+            return self.quantity_required * production_quantity
+        
+        # If BOM unit is specified and different from inventory unit
+        if self.bom_unit and self.bom_unit_id != item_conversion.inventory_unit_id:
+            # Find conversion between BOM unit and inventory unit
+            conversion = UOMConversion.query.filter(
+                ((UOMConversion.from_unit_id == self.bom_unit_id) & 
+                 (UOMConversion.to_unit_id == item_conversion.inventory_unit_id)) |
+                ((UOMConversion.from_unit_id == item_conversion.inventory_unit_id) & 
+                 (UOMConversion.to_unit_id == self.bom_unit_id))
+            ).first()
+            
+            if conversion:
+                # Apply conversion
+                if conversion.from_unit_id == self.bom_unit_id:
+                    # BOM unit -> Inventory unit
+                    converted_qty = self.quantity_required * conversion.conversion_factor
+                else:
+                    # Inventory unit -> BOM unit (reverse)
+                    converted_qty = self.quantity_required / conversion.conversion_factor
+                
+                return converted_qty * production_quantity
+        
+        # Default: return quantity as-is
+        return self.quantity_required * production_quantity
+    
+    def get_unit_display(self):
+        """Get display unit for this BOM item"""
+        if self.bom_unit:
+            return self.bom_unit.symbol
+        elif self.item:
+            return self.item.unit_of_measure
+        return "units"
 
 class QualityIssue(db.Model):
     __tablename__ = 'quality_issues'

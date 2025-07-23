@@ -309,20 +309,30 @@ class NotificationTestForm(FlaskForm):
 class BOMForm(FlaskForm):
     product_id = SelectField('Product', validators=[DataRequired()], coerce=int)
     version = StringField('Version', validators=[DataRequired(), Length(max=20)], default='1.0')
+    description = TextAreaField('Description/Notes', validators=[Optional(), Length(max=500)])
+    production_unit_id = SelectField('Production Unit', validators=[Optional()], coerce=int)
     is_active = BooleanField('Active', default=True)
+    submit = SubmitField('Save BOM')
     
     def __init__(self, *args, **kwargs):
         super(BOMForm, self).__init__(*args, **kwargs)
+        from models_uom import UnitOfMeasure
         self.product_id.choices = [(0, 'Select Product')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.filter_by(item_type='product').all()]
+        self.production_unit_id.choices = [(0, 'Same as Product Unit')] + [(u.id, f"{u.name} ({u.symbol})") for u in UnitOfMeasure.query.filter_by(is_active=True).all()]
 
 class BOMItemForm(FlaskForm):
     item_id = SelectField('Material/Component', validators=[DataRequired()], coerce=int)
     quantity_required = FloatField('Quantity Required', validators=[DataRequired(), NumberRange(min=0)])
+    bom_unit_id = SelectField('BOM Unit', validators=[Optional()], coerce=int)
     unit_cost = FloatField('Unit Cost', validators=[NumberRange(min=0)], default=0.0)
+    notes = TextAreaField('Notes', validators=[Optional(), Length(max=200)])
+    submit = SubmitField('Add to BOM')
     
     def __init__(self, *args, **kwargs):
         super(BOMItemForm, self).__init__(*args, **kwargs)
+        from models_uom import UnitOfMeasure
         self.item_id.choices = [(0, 'Select Item')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.filter(Item.item_type.in_(['material', 'consumable'])).all()]
+        self.bom_unit_id.choices = [(0, 'Use Inventory Unit')] + [(u.id, f"{u.name} ({u.symbol})") for u in UnitOfMeasure.query.filter_by(is_active=True).all()]
 
 class CompanySettingsForm(FlaskForm):
     company_name = StringField('Company Name', validators=[DataRequired(), Length(max=200)])
