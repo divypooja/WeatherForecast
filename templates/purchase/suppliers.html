@@ -6,11 +6,12 @@
 <div class="container">
     <div class="row mb-4">
         <div class="col">
-            <h1><i class="fas fa-truck"></i> Suppliers</h1>
+            <h1><i class="fas fa-handshake"></i> Business Partners</h1>
+            <p class="text-muted">Manage suppliers, customers, and business contacts</p>
         </div>
         <div class="col-auto">
             <a href="{{ url_for('purchase.add_supplier') }}" class="btn btn-primary">
-                <i class="fas fa-plus"></i> Add New Supplier
+                <i class="fas fa-plus"></i> Add Business Partner
             </a>
         </div>
     </div>
@@ -35,11 +36,11 @@
                     <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th>Supplier Details</th>
+                                <th>Business Partner Details</th>
                                 <th>Contact Information</th>
                                 <th>Location</th>
                                 <th>Compliance</th>
-                                <th>Status</th>
+                                <th>Type & Status</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -86,6 +87,15 @@
                                     {% endif %}
                                 </td>
                                 <td>
+                                    <div class="mb-1">
+                                        {% if supplier.partner_type == 'supplier' %}
+                                            <span class="badge bg-primary">Supplier</span>
+                                        {% elif supplier.partner_type == 'customer' %}
+                                            <span class="badge bg-info">Customer</span>
+                                        {% elif supplier.partner_type == 'both' %}
+                                            <span class="badge bg-success">Both</span>
+                                        {% endif %}
+                                    </div>
                                     {% if supplier.is_active %}
                                         <span class="badge bg-success"><i class="fas fa-check"></i> Active</span>
                                     {% else %}

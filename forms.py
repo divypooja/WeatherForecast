@@ -28,7 +28,7 @@ class ItemForm(FlaskForm):
 
 class SupplierForm(FlaskForm):
     # Basic Information
-    name = StringField('Supplier Name', validators=[DataRequired(), Length(max=200)], 
+    name = StringField('Business Partner Name', validators=[DataRequired(), Length(max=200)], 
                       render_kw={"placeholder": "A.K. Metals"})
     contact_person = StringField('Contact Person', validators=[Length(max=100)], 
                                 render_kw={"placeholder": "Mr. Rahul Kumar"})
@@ -36,6 +36,11 @@ class SupplierForm(FlaskForm):
                        render_kw={"placeholder": "9876543210"})
     email = StringField('Email', validators=[Optional(), Email(), Length(max=120)], 
                        render_kw={"placeholder": "info@akmetals.com"})
+    
+    # Partner Type
+    partner_type = SelectField('Partner Type', 
+                              choices=[('supplier', 'Supplier'), ('customer', 'Customer'), ('both', 'Both Supplier & Customer')],
+                              validators=[DataRequired()], default='supplier')
     
     # Compliance Information
     gst_number = StringField('GST Number', validators=[Length(max=50)], 
@@ -63,6 +68,10 @@ class SupplierForm(FlaskForm):
     # Additional Information
     remarks = TextAreaField('Remarks', render_kw={"placeholder": "Preferred for steel items"})
     is_active = BooleanField('Active', default=True)
+
+# Create alias for backward compatibility
+BusinessPartnerForm = SupplierForm
+CustomerForm = SupplierForm
 
 class CustomerForm(FlaskForm):
     name = StringField('Customer Name', validators=[DataRequired(), Length(max=100)])
