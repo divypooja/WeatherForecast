@@ -2,9 +2,23 @@
 
 ## Overview
 
-This is a comprehensive Flask-based Factory Management System designed for small to medium manufacturing companies. The application provides modular dashboards for managing various aspects of factory operations including inventory, purchase orders, sales, HR, job work, production, and reporting.
+This is a comprehensive Flask-based Factory Management System designed for small to medium manufacturing companies. The application provides modular dashboards for managing various aspects of factory operations including inventory, purchase orders, sales, HR, job work, production, reporting, and **Unit of Measure (UOM) conversions**.
 
 ## Recent Changes (January 23, 2025)
+
+### Complete UOM (Unit of Measure) Conversion System (Latest)
+- **Comprehensive UOM Models**: Created complete database models (UnitOfMeasure, UOMConversion, ItemUOMConversion, UOMConversionLog) for handling multi-unit operations
+- **Pre-loaded Unit System**: Initialized with 15 common units (Kg, g, Pcs, L, M, cm, etc.) across Weight, Count, Length, Volume, and Area categories
+- **Standard Conversions**: 18 pre-configured conversions (1 Kg = 1000g, 1 L = 1000ml, 1 M = 100cm, etc.) for manufacturing scenarios
+- **Item-Specific Conversions**: Configure each item's purchase/inventory/sale units independently with automatic conversion calculations
+- **Weight-to-Count Support**: Handle products bought by weight (Kg) but sold by count (pieces) with configurable weight per piece relationships
+- **Professional Dashboard**: UOM management interface with statistics, quick actions, unit categories, and conversion examples
+- **Calculator Tool**: Built-in conversion calculator for testing conversions before applying to transactions
+- **Navigation Integration**: Added UOM Management to main sidebar navigation for easy access
+- **Example Configurations**: Pre-configured 3 example items (Books: 1 Kg = 40 pieces, Medicine: 1 Kg = 100 pieces, Gold Jewelry: 1 Kg = 2 pieces)
+- **Multi-Unit Workflow**: Buy in Kg → Stock in Kg → Sell in pieces with automatic quantity conversions throughout the system
+- **Audit Trail**: Complete conversion logging system (UOMConversionLog) to track all conversion calculations with timestamps and user attribution
+- **Integration Ready**: UOM system designed to integrate with existing Purchase Orders, Sales Orders, and Inventory management
 
 ### Complete Document Management System (Latest)
 - **Comprehensive Document Upload**: Added document upload functionality to Factory Expenses with file preview and validation
