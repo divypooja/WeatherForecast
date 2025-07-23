@@ -89,7 +89,8 @@
         <div class="col-lg-6">
             <div class="card">
                 <div class="card-header">
-                    <h5><i class="fas fa-file-invoice text-primary me-2"></i>Pending PO Inspections</h5>
+                    <h5><i class="fas fa-file-invoice text-primary me-2"></i>Available PO Inspections</h5>
+                    <small class="text-muted">All Purchase Orders with items that may need inspection</small>
                 </div>
                 <div class="card-body">
                     {% if pending_po_inspections %}
@@ -99,6 +100,7 @@
                                     <tr>
                                         <th>PO Number</th>
                                         <th>Supplier</th>
+                                        <th>Status</th>
                                         <th>Items</th>
                                         <th>Action</th>
                                     </tr>
@@ -108,12 +110,23 @@
                                     <tr>
                                         <td><strong>{{ po.po_number }}</strong></td>
                                         <td>{{ po.supplier.name }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ 'success' if po.status == 'closed' else 'warning' if po.status == 'partial' else 'danger' if po.status == 'cancelled' else 'secondary' if po.status == 'draft' else 'primary' }}">
+                                                {{ po.status.title() }}
+                                            </span>
+                                        </td>
                                         <td>{{ po.items|length }} items</td>
                                         <td>
-                                            <a href="{{ url_for('material_inspection.inspect_purchase_order', po_id=po.id) }}" 
-                                               class="btn btn-sm btn-warning">
-                                                <i class="fas fa-search me-1"></i>Inspect
-                                            </a>
+                                            {% if po.status in ['draft'] %}
+                                                <span class="text-muted small">Send PO first</span>
+                                            {% elif po.inspection_status == 'completed' %}
+                                                <span class="badge bg-success">Completed</span>
+                                            {% else %}
+                                                <a href="{{ url_for('material_inspection.log_inspection') }}?po_id={{ po.id }}" 
+                                                   class="btn btn-sm btn-warning">
+                                                    <i class="fas fa-search me-1"></i>Inspect
+                                                </a>
+                                            {% endif %}
                                         </td>
                                     </tr>
                                     {% endfor %}
@@ -121,7 +134,7 @@
                             </table>
                         </div>
                     {% else %}
-                        <p class="text-muted text-center py-3">No Purchase Orders pending inspection.</p>
+                        <p class="text-muted text-center py-3">No Purchase Orders with items found.</p>
                     {% endif %}
                 </div>
             </div>

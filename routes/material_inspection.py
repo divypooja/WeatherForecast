@@ -12,10 +12,14 @@ material_inspection = Blueprint('material_inspection', __name__)
 @login_required
 def dashboard():
     """Material Inspection Dashboard"""
-    # Get pending inspections
-    pending_po_inspections = PurchaseOrder.query.filter_by(
-        inspection_status='pending'
+    # Get all POs that could need inspection - exclude only cancelled and closed without inspection needs  
+    all_pos_with_items = PurchaseOrder.query.filter(
+        ~PurchaseOrder.status.in_(['cancelled']),
+        ~PurchaseOrder.inspection_status.in_(['completed'])
     ).all()
+    
+    # Filter to only show POs that have items and could need inspection
+    pending_po_inspections = [po for po in all_pos_with_items if po.items]
     
     pending_job_inspections = JobWork.query.filter_by(
         inspection_status='pending'
