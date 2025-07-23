@@ -6,7 +6,17 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 23, 2025)
 
-### Complete Material Inspection System Implementation (Latest)
+### Email and WhatsApp Communication with PDF Attachments (Latest)
+- **PDF Attachment Support**: Enhanced email sending functionality to automatically include PDF attachments of Purchase Orders and Job Work orders
+- **WeasyPrint Integration**: Added WeasyPrint library for server-side PDF generation from HTML templates
+- **Professional Send Forms**: Created dedicated send pages for both Purchase Orders and Job Work with recipient selection and custom messaging
+- **Send Buttons**: Added paper plane icon buttons to Purchase Order and Job Work list pages for easy access to sending functionality
+- **Automatic PDF Generation**: Purchase Orders use existing enhanced print template; Job Work orders use custom PDF template with company branding
+- **Attachment Handling**: Enhanced notification service with send_email_with_attachment method supporting base64-encoded PDF attachments
+- **User Experience**: Clear notifications inform users that emails will include PDF attachments while WhatsApp sends text-only summaries
+- **Integration**: Seamlessly integrated with existing notification system settings and SendGrid email service
+
+### Complete Material Inspection System Implementation
 - **MaterialInspection Model**: Created comprehensive inspection tracking with unique inspection numbers (INSPECT-YYYY-0001 format)
 - **Database Structure**: Fixed database integrity issues and recreated material_inspections table with proper primary key
 - **Inspection Workflow**: Implemented inspection-first workflow where all PO and Job Work materials must be inspected before inventory updates

@@ -6,9 +6,32 @@ from app import db
 from sqlalchemy import func
 from datetime import datetime
 from utils import generate_po_number
-from services.notification_helpers import send_email_notification, send_whatsapp_notification
+from services.notification_helpers import send_email_notification, send_whatsapp_notification, send_email_with_attachment
 
 purchase_bp = Blueprint('purchase', __name__)
+
+def number_to_words(num):
+    """Convert number to words for amounts"""
+    ones = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+            "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", 
+            "eighteen", "nineteen"]
+    tens = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"]
+    
+    if num == 0:
+        return "zero"
+    
+    if num < 20:
+        return ones[num]
+    elif num < 100:
+        return tens[num // 10] + (" " + ones[num % 10] if num % 10 != 0 else "")
+    elif num < 1000:
+        return ones[num // 100] + " hundred" + (" " + number_to_words(num % 100) if num % 100 != 0 else "")
+    elif num < 100000:
+        return number_to_words(num // 1000) + " thousand" + (" " + number_to_words(num % 1000) if num % 1000 != 0 else "")
+    elif num < 10000000:
+        return number_to_words(num // 100000) + " lakh" + (" " + number_to_words(num % 100000) if num % 100000 != 0 else "")
+    else:
+        return number_to_words(num // 10000000) + " crore" + (" " + number_to_words(num % 10000000) if num % 10000000 != 0 else "")
 
 @purchase_bp.route('/dashboard')
 @login_required
@@ -316,7 +339,28 @@ Items:
         success = False
         if send_type == 'email':
             subject = f"Purchase Order {po.po_number} - {company.company_name if company else 'AK Innovations'}"
-            success = send_email_notification(recipient, subject, po_summary)
+            
+            # Generate PDF attachment
+            from weasyprint import HTML, CSS
+            from flask import render_template_string
+            
+            # Render PO as HTML for PDF conversion
+            po_html = render_template('purchase/po_print_enhanced.html', 
+                                    po=po, 
+                                    amount_words=number_to_words(int(po.total_amount)) if po.total_amount else 'zero',
+                                    company=company)
+            
+            # Convert to PDF
+            pdf_bytes = HTML(string=po_html, base_url=request.url_root).write_pdf()
+            
+            # Send email with PDF attachment
+            success = send_email_with_attachment(
+                recipient, 
+                subject, 
+                po_summary,
+                pdf_bytes,
+                f"PO_{po.po_number}.pdf"
+            )
         elif send_type == 'whatsapp':
             success = send_whatsapp_notification(recipient, po_summary)
         

@@ -4,8 +4,8 @@ from forms import JobWorkForm, JobWorkQuantityUpdateForm
 from models import JobWork, Supplier, Item, BOM, BOMItem, CompanySettings
 from app import db
 from sqlalchemy import func
-from utils import generate_job_number
-from services.notification_helpers import send_email_notification, send_whatsapp_notification
+from utils import generate_job_number  
+from services.notification_helpers import send_email_notification, send_whatsapp_notification, send_email_with_attachment
 
 jobwork_bp = Blueprint('jobwork', __name__)
 
@@ -232,7 +232,56 @@ Expected Return: {job.expected_return or 'Not specified'}
         success = False
         if send_type == 'email':
             subject = f"Job Work Order {job.job_number} - {company.company_name if company else 'AK Innovations'}"
-            success = send_email_notification(recipient, subject, job_summary)
+            
+            # Generate PDF attachment for Job Work
+            from weasyprint import HTML, CSS
+            from flask import render_template_string
+            
+            # Create a simple Job Work PDF template
+            job_html = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Job Work Order - {job.job_number}</title>
+                <style>
+                    body {{ font-family: Arial, sans-serif; margin: 20px; }}
+                    .header {{ text-align: center; margin-bottom: 30px; }}
+                    .details {{ margin-bottom: 20px; }}
+                    .details th, .details td {{ padding: 8px; text-align: left; }}
+                    table {{ width: 100%; border-collapse: collapse; }}
+                    th, td {{ border: 1px solid #ddd; }}
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h2>{company.company_name if company else 'AK Innovations'}</h2>
+                    <h3>Job Work Order</h3>
+                </div>
+                <table class="details">
+                    <tr><th>Job Number:</th><td>{job.job_number}</td></tr>
+                    <tr><th>Customer:</th><td>{job.customer_name}</td></tr>
+                    <tr><th>Item:</th><td>{job.item.name}</td></tr>
+                    <tr><th>Quantity Sent:</th><td>{job.quantity_sent} {job.item.unit_of_measure}</td></tr>
+                    <tr><th>Rate per Unit:</th><td>₹{job.rate_per_unit:.2f}</td></tr>
+                    <tr><th>Total Value:</th><td>₹{job.quantity_sent * job.rate_per_unit:.2f}</td></tr>
+                    <tr><th>Sent Date:</th><td>{job.sent_date}</td></tr>
+                    <tr><th>Expected Return:</th><td>{job.expected_return or 'Not specified'}</td></tr>
+                </table>
+            </body>
+            </html>
+            """
+            
+            # Convert to PDF
+            pdf_bytes = HTML(string=job_html, base_url=request.url_root).write_pdf()
+            
+            # Send email with PDF attachment
+            success = send_email_with_attachment(
+                recipient, 
+                subject, 
+                job_summary,
+                pdf_bytes,
+                f"JobWork_{job.job_number}.pdf"
+            )
         elif send_type == 'whatsapp':
             success = send_whatsapp_notification(recipient, job_summary)
         

@@ -64,6 +64,46 @@ class NotificationService:
             self._log_notification(NotificationType.EMAIL, to_email, subject, False, str(e))
             return False
     
+    def send_email_with_attachment(self, to_email: str, subject: str, content: str, attachment: dict, html_content: str = None) -> bool:
+        """Send email notification with attachment"""
+        if not self.sendgrid_client:
+            logger.warning("SendGrid client not initialized - check SENDGRID_API_KEY")
+            return False
+        
+        try:
+            from sendgrid.helpers.mail import Mail, Email, To, Content, Attachment
+            import base64
+            
+            from_email = Email("noreply@akfactory.com", "AK Innovations Factory")
+            to_email_obj = To(to_email)
+            
+            message = Mail(
+                from_email=from_email,
+                to_emails=to_email_obj,
+                subject=subject,
+                plain_text_content=content,
+                html_content=html_content or content
+            )
+            
+            # Add attachment
+            attached_file = Attachment()
+            attached_file.content = attachment['content']
+            attached_file.type = attachment['type']
+            attached_file.filename = attachment['filename']
+            attached_file.disposition = attachment['disposition']
+            message.attachment = attached_file
+            
+            response = self.sendgrid_client.send(message)
+            success = response.status_code in [200, 201, 202]
+            
+            self._log_notification(NotificationType.EMAIL, to_email, f"{subject} (with attachment)", success, response.status_code)
+            return success
+            
+        except Exception as e:
+            logger.error(f"Email with attachment sending failed: {e}")
+            self._log_notification(NotificationType.EMAIL, to_email, f"{subject} (with attachment)", False, str(e))
+            return False
+    
     def send_sms(self, to_phone: str, message: str) -> bool:
         """Send SMS notification"""
         if not self.twilio_client:

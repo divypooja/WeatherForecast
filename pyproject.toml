@@ -21,4 +21,5 @@ dependencies = [
     "twilio>=9.6.5",
     "sendgrid>=6.12.4",
     "schedule>=1.2.2",
+    "weasyprint>=65.1",
 ]
