@@ -128,7 +128,7 @@
                                     </td>
                                     <td>
                                         <input type="number" class="form-control form-control-sm" name="gst_rate_{{ item.id }}" 
-                                               value="{{ item.gst_rate or 18.0 }}" step="0.01" min="0" max="100" placeholder="18.0">
+                                               value="{{ item.gst_rate or item.item.gst_rate or 18.0 }}" step="0.01" min="0" max="100" placeholder="18.0">
                                     </td>
                                     <td>
                                         <input type="text" class="form-control form-control-sm" name="uom_{{ item.id }}" 
@@ -141,7 +141,7 @@
                                     </td>
                                     <td>
                                         <input type="number" class="form-control form-control-sm" name="rate_{{ item.id }}" 
-                                               value="{{ item.rate or item.unit_price }}" step="0.01" min="0" 
+                                               value="{{ item.rate or item.unit_price or item.item.unit_price }}" step="0.01" min="0" 
                                                onchange="calculateAmount(this)" placeholder="0.00">
                                     </td>
                                     <td>
@@ -315,6 +315,10 @@ function populateItemDetails(selectElement) {
             uom: selectedOption.dataset.uom
         });
         
+        // Additional logging to check actual values
+        console.log('GST field target:', gstInput);
+        console.log('Rate field target:', rateInput);
+        
         // Populate fields with item data
         const rmCodeInput = row.querySelector(`input[name*="rm_code"]`);
         const descriptionTextarea = row.querySelector(`textarea[name*="description"]`);
@@ -323,12 +327,30 @@ function populateItemDetails(selectElement) {
         const uomInput = row.querySelector(`input[name*="uom"]`);
         const rateInput = row.querySelector(`input[name*="rate"]`);
         
-        if (rmCodeInput) rmCodeInput.value = selectedOption.dataset.code || '';
-        if (descriptionTextarea) descriptionTextarea.value = selectedOption.dataset.description || '';
-        if (hsnInput) hsnInput.value = selectedOption.dataset.hsn || '';
-        if (gstInput) gstInput.value = selectedOption.dataset.gst || '18.0';  // This should be GST percentage (18)
-        if (uomInput) uomInput.value = selectedOption.dataset.uom || '';
-        if (rateInput) rateInput.value = selectedOption.dataset.price || '0.00';  // This should be unit price (37.94)
+        if (rmCodeInput) {
+            rmCodeInput.value = selectedOption.dataset.code || '';
+            console.log('Set RM Code:', rmCodeInput.value);
+        }
+        if (descriptionTextarea) {
+            descriptionTextarea.value = selectedOption.dataset.description || '';
+            console.log('Set Description:', descriptionTextarea.value);
+        }
+        if (hsnInput) {
+            hsnInput.value = selectedOption.dataset.hsn || '';
+            console.log('Set HSN:', hsnInput.value);
+        }
+        if (gstInput) {
+            gstInput.value = selectedOption.dataset.gst || '18.0';  // This should be GST percentage (18)
+            console.log('Set GST Rate:', gstInput.value, 'from dataset.gst:', selectedOption.dataset.gst);
+        }
+        if (uomInput) {
+            uomInput.value = selectedOption.dataset.uom || '';
+            console.log('Set UOM:', uomInput.value);
+        }
+        if (rateInput) {
+            rateInput.value = selectedOption.dataset.price || '0.00';  // This should be unit price (37.94)
+            console.log('Set Rate:', rateInput.value, 'from dataset.price:', selectedOption.dataset.price);
+        }
         
         calculateAmount(rateInput);
     }
