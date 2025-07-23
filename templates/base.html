@@ -129,6 +129,10 @@
                 <i class="fas fa-chart-bar"></i>
                 Reports
             </a>
+            <a class="nav-link {{ 'active' if 'quality' in request.endpoint }}" href="{{ url_for('quality.dashboard') }}">
+                <i class="fas fa-shield-alt"></i>
+                Quality Control
+            </a>
             
             <hr class="my-3">
             
