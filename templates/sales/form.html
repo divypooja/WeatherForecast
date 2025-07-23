@@ -224,10 +224,20 @@
     {% if so %}
     <div class="row mt-4">
         <div class="col-md-8">
-            {% set documents = get_documents_for_transaction('sales_order', so.id) %}
-            {% set transaction_type = 'sales_order' %}
-            {% set transaction_id = so.id %}
-            {% include 'documents/_document_card.html' %}
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-paperclip me-2"></i>Supporting Documents</h5>
+                </div>
+                <div class="card-body">
+                    <a href="{{ url_for('documents.upload_document', transaction_type='sales_order', transaction_id=so.id) }}" 
+                       class="btn btn-outline-primary">
+                        <i class="fas fa-upload me-1"></i>Upload Documents
+                    </a>
+                    <p class="text-muted mt-2 mb-0">
+                        <small>Upload invoices, contracts, and supporting documents for this sales order.</small>
+                    </p>
+                </div>
+            </div>
         </div>
     </div>
     {% endif %}
