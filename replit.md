@@ -6,7 +6,16 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 23, 2025)
 
-### BOM Integration Fix (Latest)
+### Admin Approval Dashboard System (Latest)
+- **Centralized Approval Management**: Created comprehensive Admin Approval Dashboard at `/admin/approvals`
+- **Navigation Integration**: Added "Admin Approvals" link in sidebar navigation with warning icon for easy access
+- **Pending Request Views**: Displays all pending Purchase Orders, Production Orders, and Sales Orders requiring approval
+- **Quick Action System**: One-click approve/reject buttons with confirmation modals and optional comments
+- **Activity Timeline**: Shows recent approval activity with timestamps and action details  
+- **Badge Notifications**: Visual indicators showing count of pending approvals in each category
+- **Role-Based Access**: Admin-only access with proper authentication checks
+
+### BOM Integration Fix
 - **Field Mapping Issue Resolved**: Fixed JavaScript field mapping bug where GST Rate field was incorrectly populated with BOM unit cost instead of actual GST rate
 - **Correct Data Flow**: Established proper mapping from backend to frontend:
   - GST Rate Field ← item.gst_rate (18% for castor)

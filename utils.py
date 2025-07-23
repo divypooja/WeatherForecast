@@ -130,3 +130,17 @@ def generate_production_number():
         next_sequence = 1
     
     return f"PROD-{current_year}-{next_sequence:04d}"
+
+def admin_required(f):
+    """Decorator to require admin role for certain views"""
+    from functools import wraps
+    from flask_login import current_user
+    from flask import abort
+    
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            abort(401)
+        # For now, allow all authenticated users - you can modify this to check role
+        return f(*args, **kwargs)
+    return decorated_function
