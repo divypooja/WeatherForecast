@@ -131,6 +131,28 @@ def generate_production_number():
     
     return f"PROD-{current_year}-{next_sequence:04d}"
 
+def generate_quality_issue_number():
+    """Generate unique quality issue number in format: QI-YYYY-0001"""
+    current_year = datetime.now().year
+    from models import QualityIssue
+    
+    # Get the latest quality issue number for current year
+    latest_issue = QualityIssue.query.filter(
+        QualityIssue.issue_number.like(f'QI-{current_year}-%')
+    ).order_by(QualityIssue.issue_number.desc()).first()
+    
+    if latest_issue:
+        # Extract sequence number and increment
+        try:
+            last_sequence = int(latest_issue.issue_number.split('-')[-1])
+            next_sequence = last_sequence + 1
+        except (ValueError, IndexError):
+            next_sequence = 1
+    else:
+        next_sequence = 1
+    
+    return f"QI-{current_year}-{next_sequence:04d}"
+
 def admin_required(f):
     """Decorator to require admin role for certain views"""
     from functools import wraps

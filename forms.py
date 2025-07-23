@@ -1,8 +1,8 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SelectField, TextAreaField, FloatField, IntegerField, DateField, BooleanField, SelectMultipleField, ValidationError
+from wtforms import StringField, PasswordField, SelectField, TextAreaField, FloatField, IntegerField, DateField, BooleanField, SelectMultipleField, ValidationError, DateTimeField
 from wtforms.validators import DataRequired, Length, Email, NumberRange, Optional
 from wtforms.widgets import CheckboxInput, ListWidget
-from models import User, Item, Supplier, Customer
+from models import User, Item, Supplier, Customer, QualityIssue, Production
 from datetime import datetime
 
 class LoginForm(FlaskForm):
@@ -42,41 +42,58 @@ class CustomerForm(FlaskForm):
     address = TextAreaField('Address')
 
 class PurchaseOrderForm(FlaskForm):
-    supplier_id = SelectField('Supplier', validators=[DataRequired()], coerce=int)
     po_number = StringField('PO Number', validators=[DataRequired(), Length(max=50)])
-    order_date = DateField('Order Date', validators=[DataRequired()])
-    expected_delivery = DateField('Expected Delivery')
-    payment_terms = StringField('Payment Terms', validators=[Length(max=50)], default='30 Days')
-    freight_terms = StringField('Freight Terms', validators=[Length(max=100)])
-    delivery_notes = TextAreaField('Delivery Notes')
-    validity_months = IntegerField('Validity (Months)', validators=[NumberRange(min=1, max=24)], default=6)
-    prepared_by = StringField('Prepared By', validators=[Length(max=100)])
-    verified_by = StringField('Verified By', validators=[Length(max=100)])
-    approved_by = StringField('Approved By', validators=[Length(max=100)])
-    notes = TextAreaField('Special Notes')
+    supplier_id = SelectField('Supplier', validators=[DataRequired()], coerce=int)
+    po_date = DateField('PO Date', validators=[DataRequired()])
+    delivery_date = DateField('Expected Delivery Date')
+    status = SelectField('Status', choices=[('draft', 'Draft'), ('sent', 'Sent'), ('received', 'Received'), ('cancelled', 'Cancelled')], default='draft')
+    notes = TextAreaField('Notes')
     
     def __init__(self, *args, **kwargs):
         super(PurchaseOrderForm, self).__init__(*args, **kwargs)
         self.supplier_id.choices = [(0, 'Select Supplier')] + [(s.id, s.name) for s in Supplier.query.all()]
 
+class PurchaseOrderItemForm(FlaskForm):
+    item_id = SelectField('Item', validators=[DataRequired()], coerce=int)
+    quantity_ordered = FloatField('Quantity', validators=[DataRequired(), NumberRange(min=0)])
+    unit_price = FloatField('Unit Price', validators=[DataRequired(), NumberRange(min=0)])
+    
+    def __init__(self, *args, **kwargs):
+        super(PurchaseOrderItemForm, self).__init__(*args, **kwargs)
+        self.item_id.choices = [(0, 'Select Item')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.all()]
+
 class SalesOrderForm(FlaskForm):
-    customer_id = SelectField('Customer', validators=[DataRequired()], coerce=int)
     so_number = StringField('SO Number', validators=[DataRequired(), Length(max=50)])
-    order_date = DateField('Order Date', validators=[DataRequired()])
-    delivery_date = DateField('Delivery Date')
+    customer_id = SelectField('Customer', validators=[DataRequired()], coerce=int)
+    so_date = DateField('SO Date', validators=[DataRequired()])
+    delivery_date = DateField('Expected Delivery Date')
+    status = SelectField('Status', choices=[('draft', 'Draft'), ('confirmed', 'Confirmed'), ('delivered', 'Delivered'), ('cancelled', 'Cancelled')], default='draft')
     notes = TextAreaField('Notes')
     
     def __init__(self, *args, **kwargs):
         super(SalesOrderForm, self).__init__(*args, **kwargs)
         self.customer_id.choices = [(0, 'Select Customer')] + [(c.id, c.name) for c in Customer.query.all()]
 
+class SalesOrderItemForm(FlaskForm):
+    item_id = SelectField('Item', validators=[DataRequired()], coerce=int)
+    quantity_ordered = FloatField('Quantity', validators=[DataRequired(), NumberRange(min=0)])
+    unit_price = FloatField('Unit Price', validators=[DataRequired(), NumberRange(min=0)])
+    
+    def __init__(self, *args, **kwargs):
+        super(SalesOrderItemForm, self).__init__(*args, **kwargs)
+        self.item_id.choices = [(0, 'Select Item')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.all()]
+
 class EmployeeForm(FlaskForm):
-    employee_id = StringField('Employee ID', validators=[DataRequired(), Length(max=20)])
+    employee_code = StringField('Employee Code', validators=[DataRequired(), Length(max=50)])
     name = StringField('Name', validators=[DataRequired(), Length(max=100)])
-    department = StringField('Department', validators=[DataRequired(), Length(max=50)])
-    position = StringField('Position', validators=[DataRequired(), Length(max=50)])
+    designation = StringField('Designation', validators=[Length(max=100)])
+    department = StringField('Department', validators=[Length(max=100)])
+    salary_type = SelectField('Salary Type', 
+                            choices=[('daily', 'Daily'), ('monthly', 'Monthly'), ('piece_rate', 'Piece Rate')],
+                            validators=[DataRequired()])
+    rate = FloatField('Rate', validators=[DataRequired(), NumberRange(min=0)])
     phone = StringField('Phone', validators=[Length(max=20)])
-    email = StringField('Email', validators=[Optional(), Email(), Length(max=120)])
+    address = TextAreaField('Address')
     hire_date = DateField('Hire Date', validators=[DataRequired()])
     salary = FloatField('Salary', validators=[NumberRange(min=0)])
     is_active = BooleanField('Active', default=True)
@@ -97,76 +114,72 @@ class JobWorkForm(FlaskForm):
         self.customer_name.choices = [('', 'Select Customer')] + [(s.name, s.name) for s in Supplier.query.order_by(Supplier.name).all()]
 
 class JobWorkQuantityUpdateForm(FlaskForm):
-    quantity_received = FloatField('Quantity Received', validators=[DataRequired(), NumberRange(min=0.01)])
+    quantity_received = FloatField('Quantity Received', validators=[DataRequired(), NumberRange(min=0)])
     received_date = DateField('Received Date', validators=[DataRequired()])
     notes = TextAreaField('Notes')
-    
-    def __init__(self, job=None, *args, **kwargs):
-        super(JobWorkQuantityUpdateForm, self).__init__(*args, **kwargs)
-        self.job = job
-    
-    def validate_quantity_received(self, field):
-        if self.job:
-            remaining = self.job.quantity_sent - self.job.quantity_received
-            if field.data > remaining:
-                raise ValidationError(f'Cannot receive more than remaining quantity ({remaining})')
 
 class ProductionForm(FlaskForm):
     production_number = StringField('Production Number', validators=[DataRequired(), Length(max=50)])
     item_id = SelectField('Item to Produce', validators=[DataRequired()], coerce=int)
-    quantity_planned = FloatField('Quantity Planned', validators=[DataRequired(), NumberRange(min=0)])
-    start_date = DateField('Start Date', validators=[DataRequired()])
-    target_completion = DateField('Target Completion')
+    quantity_planned = FloatField('Planned Quantity', validators=[DataRequired(), NumberRange(min=0)])
+    quantity_produced = FloatField('Produced Quantity', validators=[NumberRange(min=0)], default=0.0)
+    quantity_good = FloatField('Good Quality Quantity', validators=[NumberRange(min=0)], default=0.0)
+    quantity_damaged = FloatField('Damaged/Defective Quantity', validators=[NumberRange(min=0)], default=0.0)
+    production_date = DateField('Production Date', validators=[DataRequired()])
+    status = SelectField('Status', choices=[('planned', 'Planned'), ('in_progress', 'In Progress'), ('completed', 'Completed')], default='planned')
     notes = TextAreaField('Notes')
     
     def __init__(self, *args, **kwargs):
         super(ProductionForm, self).__init__(*args, **kwargs)
-        self.item_id.choices = [(0, 'Select Item')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.filter_by(item_type='product').all()]
+        self.item_id.choices = [(0, 'Select Item')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.all()]
 
-class BOMForm(FlaskForm):
-    product_id = SelectField('Product', validators=[DataRequired()], coerce=int)
-    version = StringField('Version', validators=[DataRequired(), Length(max=20)], default='1.0')
+class QualityIssueForm(FlaskForm):
+    issue_number = StringField('Issue Number', validators=[DataRequired(), Length(max=50)])
+    production_id = SelectField('Production Order', validators=[Optional()], coerce=int)
+    item_id = SelectField('Item', validators=[DataRequired()], coerce=int)
+    issue_type = SelectField('Issue Type', 
+                           choices=[('damage', 'Damage'), ('malfunction', 'Malfunction'), 
+                                  ('defect', 'Defect'), ('contamination', 'Contamination'),
+                                  ('dimension_error', 'Dimension Error'), ('material_defect', 'Material Defect')],
+                           validators=[DataRequired()])
+    severity = SelectField('Severity', 
+                         choices=[('low', 'Low'), ('medium', 'Medium'), ('high', 'High'), ('critical', 'Critical')],
+                         validators=[DataRequired()])
+    quantity_affected = FloatField('Quantity Affected', validators=[DataRequired(), NumberRange(min=0)])
+    description = TextAreaField('Description', validators=[DataRequired()])
+    root_cause = TextAreaField('Root Cause Analysis')
+    corrective_action = TextAreaField('Corrective Action')
+    preventive_action = TextAreaField('Preventive Action')
+    status = SelectField('Status', 
+                       choices=[('open', 'Open'), ('investigating', 'Investigating'), 
+                              ('resolved', 'Resolved'), ('closed', 'Closed')], 
+                       default='open')
+    assigned_to = SelectField('Assigned To', validators=[Optional()], coerce=int)
+    cost_impact = FloatField('Cost Impact', validators=[NumberRange(min=0)], default=0.0)
     
     def __init__(self, *args, **kwargs):
-        super(BOMForm, self).__init__(*args, **kwargs)
-        self.product_id.choices = [(0, 'Select Product')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.filter_by(item_type='product').all()]
+        super(QualityIssueForm, self).__init__(*args, **kwargs)
+        self.item_id.choices = [(0, 'Select Item')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.all()]
+        self.production_id.choices = [(0, 'Not linked to production')] + [(p.id, f"{p.production_number}") for p in Production.query.all()]
+        self.assigned_to.choices = [(0, 'Unassigned')] + [(u.id, u.username) for u in User.query.all()]
 
-class BOMItemForm(FlaskForm):
-    item_id = SelectField('Material/Component', validators=[DataRequired()], coerce=int)
-    quantity_required = FloatField('Quantity Required', validators=[DataRequired(), NumberRange(min=0)])
-    unit_cost = FloatField('Unit Cost', validators=[NumberRange(min=0)], default=0.0)
+class QualityControlLogForm(FlaskForm):
+    production_id = SelectField('Production Order', validators=[DataRequired()], coerce=int)
+    batch_number = StringField('Batch Number', validators=[Length(max=50)])
+    total_inspected = FloatField('Total Inspected', validators=[DataRequired(), NumberRange(min=0)])
+    passed_quantity = FloatField('Passed Quantity', validators=[DataRequired(), NumberRange(min=0)])
+    failed_quantity = FloatField('Failed Quantity', validators=[DataRequired(), NumberRange(min=0)])
+    inspection_notes = TextAreaField('Inspection Notes')
     
     def __init__(self, *args, **kwargs):
-        super(BOMItemForm, self).__init__(*args, **kwargs)
-        self.item_id.choices = [(0, 'Select Material/Component')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.filter(Item.item_type.in_(['material', 'consumable'])).all()]
+        super(QualityControlLogForm, self).__init__(*args, **kwargs)
+        self.production_id.choices = [(0, 'Select Production Order')] + [(p.id, f"{p.production_number} - {p.produced_item.name}") for p in Production.query.all()]
 
-# Notification Forms
+# ... rest of existing forms remain the same
+
 class MultiCheckboxField(SelectMultipleField):
     widget = ListWidget(prefix_label=False)
     option_widget = CheckboxInput()
-
-class NotificationSettingsForm(FlaskForm):
-    # Email settings
-    email_enabled = BooleanField('Enable Email Notifications', default=True)
-    sendgrid_api_key = StringField('SendGrid API Key', validators=[Optional(), Length(max=255)])
-    sender_email = StringField('Sender Email', validators=[Optional(), Email(), Length(max=120)], default='noreply@akfactory.com')
-    sender_name = StringField('Sender Name', validators=[Optional(), Length(max=100)], default='AK Innovations Factory')
-    
-    # SMS/WhatsApp settings
-    sms_enabled = BooleanField('Enable SMS Notifications', default=True)
-    whatsapp_enabled = BooleanField('Enable WhatsApp Notifications', default=True)
-    twilio_account_sid = StringField('Twilio Account SID', validators=[Optional(), Length(max=255)])
-    twilio_auth_token = StringField('Twilio Auth Token', validators=[Optional(), Length(max=255)])
-    twilio_phone_number = StringField('Twilio Phone Number', validators=[Optional(), Length(max=20)])
-    
-    # Notification preferences
-    low_stock_notifications = BooleanField('Low Stock Alerts', default=True)
-    order_status_notifications = BooleanField('Order Status Updates', default=True)
-    production_notifications = BooleanField('Production Updates', default=True)
-    
-    # Admin recipients
-    admin_email = StringField('Admin Email', validators=[Optional(), Email(), Length(max=120)])
-    admin_phone = StringField('Admin Phone', validators=[Optional(), Length(max=20)])
 
 class NotificationRecipientForm(FlaskForm):
     name = StringField('Name', validators=[DataRequired(), Length(max=100)])
@@ -185,6 +198,7 @@ class NotificationRecipientForm(FlaskForm):
             ('low_stock', 'Low Stock Alerts'),
             ('order_update', 'Order Updates'),
             ('production_complete', 'Production Complete'),
+            ('quality_issue', 'Quality Issues'),
             ('system_alert', 'System Alerts')
         ],
         validators=[DataRequired()]
@@ -219,6 +233,24 @@ class NotificationTestForm(FlaskForm):
                                validators=[DataRequired()])
     recipient = StringField('Recipient', validators=[DataRequired()])
     message = TextAreaField('Test Message', validators=[DataRequired()])
+
+class BOMForm(FlaskForm):
+    product_id = SelectField('Product', validators=[DataRequired()], coerce=int)
+    version = StringField('Version', validators=[DataRequired(), Length(max=20)], default='1.0')
+    is_active = BooleanField('Active', default=True)
+    
+    def __init__(self, *args, **kwargs):
+        super(BOMForm, self).__init__(*args, **kwargs)
+        self.product_id.choices = [(0, 'Select Product')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.filter_by(item_type='product').all()]
+
+class BOMItemForm(FlaskForm):
+    item_id = SelectField('Material/Component', validators=[DataRequired()], coerce=int)
+    quantity_required = FloatField('Quantity Required', validators=[DataRequired(), NumberRange(min=0)])
+    unit_cost = FloatField('Unit Cost', validators=[NumberRange(min=0)], default=0.0)
+    
+    def __init__(self, *args, **kwargs):
+        super(BOMItemForm, self).__init__(*args, **kwargs)
+        self.item_id.choices = [(0, 'Select Item')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.filter(Item.item_type.in_(['material', 'consumable'])).all()]
 
 class CompanySettingsForm(FlaskForm):
     company_name = StringField('Company Name', validators=[DataRequired(), Length(max=200)])
