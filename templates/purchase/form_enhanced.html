@@ -318,9 +318,9 @@ function populateItemDetails(selectElement) {
         if (rmCodeInput) rmCodeInput.value = selectedOption.dataset.code || '';
         if (descriptionTextarea) descriptionTextarea.value = selectedOption.dataset.description || '';
         if (hsnInput) hsnInput.value = selectedOption.dataset.hsn || '';
-        if (gstInput) gstInput.value = selectedOption.dataset.gst || '18.0';
+        if (gstInput) gstInput.value = selectedOption.dataset.gst || '18.0';  // GST percentage, not price
         if (uomInput) uomInput.value = selectedOption.dataset.uom || '';
-        if (rateInput) rateInput.value = selectedOption.dataset.price || '0.00';
+        if (rateInput) rateInput.value = selectedOption.dataset.price || '0.00';  // Unit price for Rate column
         
         calculateAmount(rateInput);
     }
