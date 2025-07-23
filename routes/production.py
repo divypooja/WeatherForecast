@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from forms import ProductionForm, BOMForm, BOMItemForm
 from models import Production, Item, BOM, BOMItem
+from models_uom import UnitOfMeasure, UOMConversion, ItemUOMConversion
 from app import db
 from sqlalchemy import func
 from utils import generate_production_number
@@ -217,19 +218,32 @@ def add_bom():
         existing_bom = BOM.query.filter_by(product_id=form.product_id.data, is_active=True).first()
         if existing_bom:
             flash('An active BOM already exists for this product. Please deactivate the existing BOM first.', 'warning')
-            return render_template('production/bom_form.html', form=form, title='Add BOM')
+            units = UnitOfMeasure.query.filter_by(is_active=True).all()
+            materials = Item.query.filter(Item.item_type.in_(['material', 'consumable'])).all()
+            return render_template('production/bom_form_uom.html', form=form, title='Add BOM', units=units, materials=materials)
         
-        bom = BOM(
-            product_id=form.product_id.data,
-            version=form.version.data,
-            is_active=True
-        )
+        bom = BOM()
+        bom.product_id = form.product_id.data
+        bom.version = form.version.data
+        bom.description = form.description.data
+        bom.production_unit_id = form.production_unit_id.data if form.production_unit_id.data != 0 else None
+        bom.is_active = form.is_active.data
+        bom.created_by = current_user.id
+        
         db.session.add(bom)
         db.session.commit()
         flash('BOM created successfully', 'success')
         return redirect(url_for('production.edit_bom', id=bom.id))
     
-    return render_template('production/bom_form.html', form=form, title='Add BOM')
+    # Get available units for UOM selection
+    units = UnitOfMeasure.query.filter_by(is_active=True).all()
+    materials = Item.query.filter(Item.item_type.in_(['material', 'consumable'])).all()
+    
+    return render_template('production/bom_form_uom.html', 
+                         form=form, 
+                         title='Add BOM',
+                         units=units,
+                         materials=materials)
 
 @production_bp.route('/bom/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -247,10 +261,15 @@ def edit_bom(id):
         ).first()
         if existing_bom:
             flash('An active BOM already exists for this product. Please deactivate the existing BOM first.', 'warning')
-            return render_template('production/bom_form.html', form=form, title='Edit BOM', bom=bom)
+            units = UnitOfMeasure.query.filter_by(is_active=True).all()
+            materials = Item.query.filter(Item.item_type.in_(['material', 'consumable'])).all()
+            return render_template('production/bom_form_uom.html', form=form, title='Edit BOM', bom=bom, units=units, materials=materials)
         
         bom.product_id = form.product_id.data
         bom.version = form.version.data
+        bom.description = form.description.data
+        bom.production_unit_id = form.production_unit_id.data if form.production_unit_id.data != 0 else None
+        bom.is_active = form.is_active.data
         
         db.session.commit()
         flash('BOM updated successfully', 'success')
@@ -262,12 +281,16 @@ def edit_bom(id):
     # Get materials for adding new items
     materials = Item.query.filter(Item.item_type.in_(['material', 'consumable'])).all()
     
-    return render_template('production/bom_form.html', 
+    # Get available units for UOM selection
+    units = UnitOfMeasure.query.filter_by(is_active=True).all()
+    
+    return render_template('production/bom_form_uom.html', 
                          form=form, 
                          title='Edit BOM', 
                          bom=bom,
                          bom_items=bom_items,
-                         materials=materials)
+                         materials=materials,
+                         units=units)
 
 @production_bp.route('/bom/<int:bom_id>/add_item', methods=['POST'])
 @login_required
@@ -288,12 +311,16 @@ def add_bom_item(bom_id):
         flash('This item is already in the BOM', 'warning')
         return redirect(url_for('production.edit_bom', id=bom_id))
     
-    bom_item = BOMItem(
-        bom_id=bom_id,
-        item_id=item_id,
-        quantity_required=quantity_required,
-        unit_cost=unit_cost
-    )
+    bom_unit_id = request.form.get('bom_unit_id', type=int)
+    notes = request.form.get('notes', '')
+    
+    bom_item = BOMItem()
+    bom_item.bom_id = bom_id
+    bom_item.item_id = item_id
+    bom_item.quantity_required = quantity_required
+    bom_item.unit_cost = unit_cost
+    bom_item.bom_unit_id = bom_unit_id if bom_unit_id != 0 else None
+    bom_item.notes = notes
     
     db.session.add(bom_item)
     db.session.commit()
