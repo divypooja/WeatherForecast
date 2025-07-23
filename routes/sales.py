@@ -64,7 +64,8 @@ def add_sales_order():
         existing_so = SalesOrder.query.filter_by(so_number=form.so_number.data).first()
         if existing_so:
             flash('SO number already exists', 'danger')
-            return render_template('sales/form.html', form=form, title='Add Sales Order')
+            items = Item.query.all()
+            return render_template('sales/form.html', form=form, title='Add Sales Order', items=items)
         
         so = SalesOrder(
             so_number=form.so_number.data,
@@ -86,7 +87,9 @@ def add_sales_order():
         flash('Sales Order created successfully', 'success')
         return redirect(url_for('sales.edit_sales_order', id=so.id))
     
-    return render_template('sales/form.html', form=form, title='Add Sales Order')
+    # Get items for the items section
+    items = Item.query.all()
+    return render_template('sales/form.html', form=form, title='Add Sales Order', items=items)
 
 @sales_bp.route('/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
