@@ -258,7 +258,7 @@
                                         <td class="align-middle">{{ item.item.specification or '-' }}</td>
                                         <td class="align-middle text-center"><strong>{{ item.item.hsn_code or '-' }}</strong></td>
                                         <td class="align-middle text-center"><strong>{{ item.item.gst_rate or 18.0 }}%</strong></td>
-                                        <td class="align-middle">{{ item.item.unit_of_measure }}</td>
+                                        <td class="align-middle text-center"><strong>{{ item.item.unit_of_measure }}</strong></td>
                                         <td class="align-middle">{{ item.quantity_ordered }}</td>
                                         <td class="align-middle">₹{{ item.unit_price }}</td>
                                         <td class="align-middle">₹{{ item.total_price }}</td>
@@ -344,7 +344,7 @@ function addSOItem() {
             </div>
         </td>
         <td class="align-middle">
-            <input type="text" class="form-control form-control-sm" name="uom_new_${itemCounter}" placeholder="UOM" readonly>
+            <input type="text" class="form-control form-control-sm text-center fw-bold" name="uom_new_${itemCounter}" placeholder="UOM" readonly>
         </td>
         <td class="align-middle">
             <input type="number" class="form-control form-control-sm" name="qty_new_${itemCounter}" 
