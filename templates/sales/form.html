@@ -90,11 +90,26 @@
                         </div>
                         
                         <div class="row">
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
                                 {{ form.validity_months.label(class="form-label") }}
                                 {{ form.validity_months(class="form-control") }}
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
+                                {{ form.status.label(class="form-label") }}
+                                {{ form.status(class="form-control") }}
+                                {% if form.status.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.status.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle text-info"></i> 
+                                    <strong>Note:</strong> Changing status to "Confirmed" will automatically deduct inventory quantities.
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
                                 {{ form.delivery_notes.label(class="form-label") }}
                                 {{ form.delivery_notes(class="form-control", rows="2") }}
                             </div>
@@ -279,7 +294,10 @@ function addSOItem() {
                    readonly placeholder="0.00">
         </td>
         <td>
-            <button type="button" class="btn btn-danger btn-sm" onclick="removeSORow(this)">
+            <button type="button" class="btn btn-success btn-sm me-1" onclick="saveSOItem(this.closest('tr'))" title="Save Item">
+                <i class="fas fa-save"></i>
+            </button>
+            <button type="button" class="btn btn-danger btn-sm" onclick="removeSORow(this)" title="Remove Row">
                 <i class="fas fa-trash"></i>
             </button>
         </td>
@@ -392,14 +410,105 @@ function removeSORow(button) {
 
 function removeSOItem(itemId) {
     if (confirm('Are you sure you want to remove this item?')) {
-        // Here you would make an AJAX call to remove the item from the database
-        // For now, just remove the row from the display
-        const row = document.querySelector(`tr[data-item-id="${itemId}"]`);
-        if (row) {
-            row.remove();
-            updateSOSubTotal();
-        }
+        // Make AJAX call to remove the item from the database
+        fetch(`/sales/remove_item/${itemId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const row = document.querySelector(`tr[data-item-id="${itemId}"]`);
+                if (row) {
+                    row.remove();
+                    updateSOSubTotal();
+                    // Show success message
+                    showMessage(data.message, 'success');
+                }
+            } else {
+                showMessage(data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('Error removing item', 'danger');
+        });
     }
+}
+
+function saveSOItem(row) {
+    const selectElement = row.querySelector('select[name*="item_id"]');
+    const qtyInput = row.querySelector('input[name*="qty"]');
+    const rateInput = row.querySelector('input[name*="rate"]');
+    
+    if (!selectElement.value || !qtyInput.value || !rateInput.value) {
+        showMessage('Please fill in all required fields (Item, Quantity, Rate)', 'warning');
+        return;
+    }
+    
+    // Get SO ID from the form or URL
+    const soId = getSalesOrderId();
+    if (!soId) {
+        showMessage('Sales Order must be saved first before adding items', 'warning');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('item_id', selectElement.value);
+    formData.append('quantity', qtyInput.value);
+    formData.append('unit_price', rateInput.value);
+    
+    fetch(`/sales/add_item/${soId}`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(data.message, 'success');
+            // Reload the page to show the saved item
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showMessage(data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('Error saving item', 'danger');
+    });
+}
+
+function getSalesOrderId() {
+    // Extract SO ID from URL path
+    const pathParts = window.location.pathname.split('/');
+    const editIndex = pathParts.indexOf('edit');
+    if (editIndex !== -1 && editIndex + 1 < pathParts.length) {
+        return pathParts[editIndex + 1];
+    }
+    return null;
+}
+
+function showMessage(message, type) {
+    // Create and show a Bootstrap alert
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Insert at the top of the main content
+    const mainContent = document.querySelector('.container-fluid');
+    mainContent.insertBefore(alertDiv, mainContent.firstChild);
+    
+    // Auto-dismiss after 3 seconds
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 3000);
 }
 
 // Calculate initial subtotal on page load
