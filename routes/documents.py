@@ -4,9 +4,60 @@ from app import db
 from models import Document, PurchaseOrder, SalesOrder, JobWork
 from forms_documents import DocumentUploadForm, DocumentForm
 from utils_documents import save_uploaded_file, get_documents_for_transaction, delete_document
+from sqlalchemy import func
 import os
 
 documents_bp = Blueprint('documents', __name__)
+
+@documents_bp.route('/list')
+@login_required
+def document_list():
+    """List all documents with filtering"""
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    
+    # Get filter parameters
+    transaction_type = request.args.get('transaction_type', '')
+    document_category = request.args.get('document_category', '')
+    file_type = request.args.get('file_type', '')
+    search = request.args.get('search', '')
+    
+    # Build query
+    query = Document.query.filter_by(is_active=True)
+    
+    if transaction_type:
+        query = query.filter(Document.transaction_type == transaction_type)
+    
+    if document_category:
+        query = query.filter(Document.document_category == document_category)
+    
+    if file_type:
+        query = query.filter(Document.file_type == file_type)
+    
+    if search:
+        query = query.filter(Document.original_filename.contains(search))
+    
+    documents = query.order_by(Document.uploaded_at.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    
+    # Calculate statistics
+    total_documents = Document.query.filter_by(is_active=True).count()
+    total_size = db.session.query(func.sum(Document.file_size)).filter_by(is_active=True).scalar() or 0
+    total_size_mb = round(total_size / 1024 / 1024, 2)
+    document_types_count = db.session.query(func.count(func.distinct(Document.file_type))).filter_by(is_active=True).scalar()
+    transactions_with_docs = db.session.query(func.count(func.distinct(Document.transaction_id))).filter_by(is_active=True).scalar()
+    
+    return render_template('documents/list.html',
+                         documents=documents,
+                         transaction_type=transaction_type,
+                         document_category=document_category,
+                         file_type=file_type,
+                         search=search,
+                         total_documents=total_documents,
+                         total_size_mb=total_size_mb,
+                         document_types_count=document_types_count,
+                         transactions_with_docs=transactions_with_docs)
 
 @documents_bp.route('/upload/<transaction_type>/<int:transaction_id>', methods=['GET', 'POST'])
 @login_required
