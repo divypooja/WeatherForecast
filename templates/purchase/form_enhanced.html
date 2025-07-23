@@ -254,6 +254,8 @@ const itemsData = [
     {% endfor %}
 ];
 
+console.log('Items data loaded:', itemsData);
+
 function addPOItem() {
     itemCounter++;
     const tbody = document.getElementById('poItemsBody');
@@ -317,6 +319,12 @@ function addPOItem() {
         option.dataset.gst = item.gst_rate;
         option.dataset.uom = item.unit_of_measure;
         option.dataset.price = item.unit_price;
+        
+        console.log('Setting option data for', item.code, ':', {
+            gst: item.gst_rate,
+            price: item.unit_price,
+            uom: item.unit_of_measure
+        });
         selectElement.appendChild(option);
     });
 }
