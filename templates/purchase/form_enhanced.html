@@ -255,7 +255,12 @@ const itemsData = [
     {% endfor %}
 ];
 
-console.log('Items data loaded:', itemsData);
+console.log('=== ITEMS DATA DEBUG ===');
+console.log('Total items loaded:', itemsData.length);
+itemsData.forEach(item => {
+    console.log(`Item ${item.code}: unit_price=${item.unit_price}, bom_rate=${item.bom_rate}`);
+});
+console.log('=======================');
 
 function addPOItem() {
     itemCounter++;
@@ -393,8 +398,17 @@ function populateItemDetails(selectElement) {
             console.log('Set UOM:', uomInput.value, 'from dataset.uom:', selectedOption.dataset.uom);
         }
         if (rateInput) {
-            rateInput.value = selectedOption.dataset.price || '0.00';
-            console.log('Set Rate:', rateInput.value, 'from dataset.price:', selectedOption.dataset.price);
+            const rateValue = selectedOption.dataset.price || '0.00';
+            rateInput.value = rateValue;
+            console.log('=== RATE DEBUG ===');
+            console.log('Rate field found:', rateInput);
+            console.log('Rate field name:', rateInput.name);
+            console.log('Dataset price value:', selectedOption.dataset.price);
+            console.log('Final rate value set:', rateValue);
+            console.log('Rate input value after setting:', rateInput.value);
+            console.log('==================');
+        } else {
+            console.log('ERROR: Rate input field not found in row');
         }
         
         console.log('=== Auto-population Complete ===');
