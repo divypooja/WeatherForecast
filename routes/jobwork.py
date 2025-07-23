@@ -68,6 +68,16 @@ def add_job_work():
             flash('Job number already exists', 'danger')
             return render_template('jobwork/form.html', form=form, title='Add Job Work')
         
+        # Check if there's sufficient inventory
+        item = Item.query.get(form.item_id.data)
+        if not item:
+            flash('Selected item not found', 'danger')
+            return render_template('jobwork/form.html', form=form, title='Add Job Work')
+            
+        if (item.current_stock or 0) < form.quantity_sent.data:
+            flash(f'Insufficient inventory. Available stock: {item.current_stock or 0} {item.unit_of_measure}', 'danger')
+            return render_template('jobwork/form.html', form=form, title='Add Job Work')
+
         job = JobWork(
             job_number=form.job_number.data,
             customer_name=form.customer_name.data,
@@ -79,9 +89,13 @@ def add_job_work():
             notes=form.notes.data,
             created_by=current_user.id
         )
+        
+        # Deduct from inventory when sending to vendor
+        item.current_stock = (item.current_stock or 0) - form.quantity_sent.data
+        
         db.session.add(job)
         db.session.commit()
-        flash('Job Work created successfully', 'success')
+        flash(f'Job Work created successfully. {form.quantity_sent.data} {item.unit_of_measure} deducted from inventory.', 'success')
         return redirect(url_for('jobwork.list_job_works'))
     
     return render_template('jobwork/form.html', form=form, title='Add Job Work')
@@ -101,6 +115,22 @@ def edit_job_work(id):
         if existing_job:
             flash('Job number already exists', 'danger')
             return render_template('jobwork/form.html', form=form, title='Edit Job Work', job=job)
+        
+        # Handle inventory adjustments if quantity_sent is changed
+        old_quantity_sent = job.quantity_sent
+        new_quantity_sent = form.quantity_sent.data
+        
+        if old_quantity_sent != new_quantity_sent:
+            item = job.item
+            quantity_difference = new_quantity_sent - old_quantity_sent
+            
+            # Check if there's sufficient inventory for increase
+            if quantity_difference > 0 and (item.current_stock or 0) < quantity_difference:
+                flash(f'Insufficient inventory for increase. Available stock: {item.current_stock or 0} {item.unit_of_measure}', 'danger')
+                return render_template('jobwork/form.html', form=form, title='Edit Job Work', job=job)
+            
+            # Adjust inventory: subtract additional sent quantity or add back if reduced
+            item.current_stock = (item.current_stock or 0) - quantity_difference
         
         job.job_number = form.job_number.data
         job.customer_name = form.customer_name.data
@@ -142,12 +172,21 @@ def update_quantity(id):
         job.quantity_received += additional_received
         job.received_date = form.received_date.data
         
+        # Add received quantity back to inventory
+        item = job.item
+        item.current_stock = (item.current_stock or 0) + additional_received
+        
         # Update notes
         if form.notes.data:
             if job.notes:
-                job.notes += f"\n\n[{form.received_date.data.strftime('%m/%d/%Y')}] {form.notes.data}"
+                job.notes += f"\n\n[{form.received_date.data.strftime('%m/%d/%Y')}] Received: {additional_received} {item.unit_of_measure}. {form.notes.data}"
             else:
-                job.notes = f"[{form.received_date.data.strftime('%m/%d/%Y')}] {form.notes.data}"
+                job.notes = f"[{form.received_date.data.strftime('%m/%d/%Y')}] Received: {additional_received} {item.unit_of_measure}. {form.notes.data}"
+        else:
+            if job.notes:
+                job.notes += f"\n\n[{form.received_date.data.strftime('%m/%d/%Y')}] Received: {additional_received} {item.unit_of_measure}"
+            else:
+                job.notes = f"[{form.received_date.data.strftime('%m/%d/%Y')}] Received: {additional_received} {item.unit_of_measure}"
         
         # Update status based on quantity received
         if job.quantity_received >= job.quantity_sent:
