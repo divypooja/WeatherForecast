@@ -78,14 +78,26 @@ class Supplier(db.Model):
     bank_name = db.Column(db.String(200))
     ifsc_code = db.Column(db.String(20))
     
+    # Partner Type - can be 'supplier', 'customer', or 'both'
+    partner_type = db.Column(db.String(20), default='supplier')  # supplier, customer, both
+    
     # Additional Information
     remarks = db.Column(db.Text)  # Any notes
-    is_active = db.Column(db.Boolean, default=True)  # Supplier status
+    is_active = db.Column(db.Boolean, default=True)  # Partner status
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
     purchase_orders = db.relationship('PurchaseOrder', backref='supplier', lazy=True)
+    sales_orders = db.relationship('SalesOrder', backref='customer', foreign_keys='SalesOrder.customer_id', lazy=True)
+    
+    @property
+    def is_supplier(self):
+        return self.partner_type in ['supplier', 'both']
+    
+    @property
+    def is_customer(self):
+        return self.partner_type in ['customer', 'both']
 
 class Customer(db.Model):
     __tablename__ = 'customers'
@@ -186,7 +198,7 @@ class SalesOrder(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     so_number = db.Column(db.String(50), unique=True, nullable=False)
-    customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=False)
+    customer_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=False)
     order_date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date())
     delivery_date = db.Column(db.Date)
     status = db.Column(db.String(20), default='pending')  # pending, partial, completed, cancelled

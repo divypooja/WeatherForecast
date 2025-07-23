@@ -230,6 +230,7 @@ def add_supplier():
             contact_person=form.contact_person.data,
             phone=form.phone.data,
             email=form.email.data,
+            partner_type=form.partner_type.data,
             gst_number=form.gst_number.data,
             pan_number=form.pan_number.data,
             address=form.address.data,
@@ -260,6 +261,7 @@ def edit_supplier(id):
         supplier.contact_person = form.contact_person.data
         supplier.phone = form.phone.data
         supplier.email = form.email.data
+        supplier.partner_type = form.partner_type.data
         supplier.gst_number = form.gst_number.data
         supplier.pan_number = form.pan_number.data
         supplier.address = form.address.data
