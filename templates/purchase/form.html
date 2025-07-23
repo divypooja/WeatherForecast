@@ -172,6 +172,13 @@
                     {% endif %}
                 </div>
             </div>
+            
+            <!-- Document Management Section -->
+            {% if po %}
+                {% set documents = get_documents_for_transaction('purchase_order', po.id) %}
+                {% set transaction_type = 'purchase_order' %}
+                {% set transaction_id = po.id %}
+                {% include 'documents/_document_card.html' %}
             {% endif %}
         </div>
     </div>

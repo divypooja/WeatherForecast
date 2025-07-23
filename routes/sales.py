@@ -5,6 +5,7 @@ from models import SalesOrder, SalesOrderItem, Supplier, Item
 from app import db
 from sqlalchemy import func
 from utils import generate_so_number
+from utils_documents import get_documents_for_transaction
 
 sales_bp = Blueprint('sales', __name__)
 

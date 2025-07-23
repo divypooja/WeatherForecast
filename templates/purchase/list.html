@@ -104,6 +104,9 @@
                                         <a href="{{ url_for('purchase.send_purchase_order', po_id=po.id) }}" class="btn btn-outline-success btn-sm" title="Send via Email/WhatsApp">
                                             <i class="fas fa-paper-plane"></i>
                                         </a>
+                                        <a href="{{ url_for('documents.upload_document', transaction_type='purchase_order', transaction_id=po.id) }}" class="btn btn-outline-warning btn-sm" title="Upload Documents">
+                                            <i class="fas fa-paperclip"></i>
+                                        </a>
                                         <a href="{{ url_for('purchase.delete_purchase_order', id=po.id) }}" class="btn btn-outline-danger btn-sm" 
                                            onclick="return confirm('Are you sure you want to delete this purchase order?')" title="Delete">
                                             <i class="fas fa-trash"></i>

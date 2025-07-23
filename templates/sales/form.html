@@ -220,6 +220,18 @@
         </div>
     </div>
 
+    <!-- Document Management Section -->
+    {% if so %}
+    <div class="row mt-4">
+        <div class="col-md-8">
+            {% set documents = get_documents_for_transaction('sales_order', so.id) %}
+            {% set transaction_type = 'sales_order' %}
+            {% set transaction_id = so.id %}
+            {% include 'documents/_document_card.html' %}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Sales Order Items Section -->
     <div class="row mt-4">
         <div class="col-12">

@@ -3,10 +3,12 @@ from flask_login import login_required, current_user
 from forms import PurchaseOrderForm, SupplierForm
 from models import PurchaseOrder, PurchaseOrderItem, Supplier, Item, DeliverySchedule, CompanySettings, BOMItem
 from app import db
+from utils_documents import get_documents_for_transaction
 from sqlalchemy import func
 from datetime import datetime
 from utils import generate_po_number
 from services.notification_helpers import send_email_notification, send_whatsapp_notification, send_email_with_attachment
+from utils_documents import get_documents_for_transaction
 
 purchase_bp = Blueprint('purchase', __name__)
 
