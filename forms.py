@@ -318,7 +318,7 @@ class BOMForm(FlaskForm):
         super(BOMForm, self).__init__(*args, **kwargs)
         from models_uom import UnitOfMeasure
         self.product_id.choices = [(0, 'Select Product')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.filter_by(item_type='product').all()]
-        self.production_unit_id.choices = [(0, 'Same as Product Unit')] + [(u.id, f"{u.name} ({u.symbol})") for u in UnitOfMeasure.query.filter_by(is_active=True).all()]
+        self.production_unit_id.choices = [(0, 'Same as Product Unit')] + [(u.id, f"{u.name} ({u.symbol})") for u in UnitOfMeasure.query.all()]
 
 class BOMItemForm(FlaskForm):
     item_id = SelectField('Material/Component', validators=[DataRequired()], coerce=int)
@@ -332,7 +332,7 @@ class BOMItemForm(FlaskForm):
         super(BOMItemForm, self).__init__(*args, **kwargs)
         from models_uom import UnitOfMeasure
         self.item_id.choices = [(0, 'Select Item')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.filter(Item.item_type.in_(['material', 'consumable'])).all()]
-        self.bom_unit_id.choices = [(0, 'Use Inventory Unit')] + [(u.id, f"{u.name} ({u.symbol})") for u in UnitOfMeasure.query.filter_by(is_active=True).all()]
+        self.bom_unit_id.choices = [(0, 'Use Inventory Unit')] + [(u.id, f"{u.name} ({u.symbol})") for u in UnitOfMeasure.query.all()]
 
 class CompanySettingsForm(FlaskForm):
     company_name = StringField('Company Name', validators=[DataRequired(), Length(max=200)])
