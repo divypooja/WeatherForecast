@@ -70,6 +70,45 @@
                                         <a href="{{ url_for('documents.upload_document', transaction_type='sales_order', transaction_id=so.id) }}" class="btn btn-outline-warning btn-sm" title="Upload Documents">
                                             <i class="fas fa-paperclip"></i>
                                         </a>
+                                        {% if current_user.role == 'admin' %}
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" title="Change Status">
+                                                <i class="fas fa-exchange-alt"></i>
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                {% if so.status != 'draft' %}
+                                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="changeSoStatus({{ so.id }}, 'draft')">
+                                                    <span class="badge bg-secondary me-2">Draft</span> Set as Draft
+                                                </a></li>
+                                                {% endif %}
+                                                {% if so.status != 'pending' %}
+                                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="changeSoStatus({{ so.id }}, 'pending')">
+                                                    <span class="badge bg-warning me-2">Pending</span> Set as Pending
+                                                </a></li>
+                                                {% endif %}
+                                                {% if so.status != 'confirmed' %}
+                                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="changeSoStatus({{ so.id }}, 'confirmed')">
+                                                    <span class="badge bg-primary me-2">Confirmed</span> Set as Confirmed
+                                                </a></li>
+                                                {% endif %}
+                                                {% if so.status != 'shipped' %}
+                                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="changeSoStatus({{ so.id }}, 'shipped')">
+                                                    <span class="badge bg-info me-2">Shipped</span> Set as Shipped
+                                                </a></li>
+                                                {% endif %}
+                                                {% if so.status != 'delivered' %}
+                                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="changeSoStatus({{ so.id }}, 'delivered')">
+                                                    <span class="badge bg-success me-2">Delivered</span> Set as Delivered
+                                                </a></li>
+                                                {% endif %}
+                                                {% if so.status != 'cancelled' %}
+                                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="changeSoStatus({{ so.id }}, 'cancelled')">
+                                                    <span class="badge bg-danger me-2">Cancelled</span> Set as Cancelled
+                                                </a></li>
+                                                {% endif %}
+                                            </ul>
+                                        </div>
+                                        {% endif %}
                                         <a href="{{ url_for('sales.delete_sales_order', id=so.id) }}" class="btn btn-outline-danger btn-sm" 
                                            onclick="return confirm('Are you sure you want to delete this sales order?')" title="Delete">
                                             <i class="fas fa-trash"></i>
@@ -131,4 +170,34 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function changeSoStatus(soId, newStatus) {
+    if (confirm(`Are you sure you want to change the status to "${newStatus.toUpperCase()}"?`)) {
+        const formData = new FormData();
+        formData.append('status', newStatus);
+        
+        fetch(`/sales/change_status/${soId}`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message and reload page
+                alert(data.message);
+                window.location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error changing status');
+        });
+    }
+}
+</script>
 {% endblock %}
