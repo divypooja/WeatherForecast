@@ -65,11 +65,11 @@
                             </div>
                             
                             <div class="col-md-6 mb-3">
-                                {{ form.expected_date.label(class="form-label") }}
-                                {{ form.expected_date(class="form-control") }}
-                                {% if form.expected_date.errors %}
+                                {{ form.expected_delivery.label(class="form-label") }}
+                                {{ form.expected_delivery(class="form-control") }}
+                                {% if form.expected_delivery.errors %}
                                     <div class="text-danger small">
-                                        {% for error in form.expected_date.errors %}
+                                        {% for error in form.expected_delivery.errors %}
                                             <div>{{ error }}</div>
                                         {% endfor %}
                                     </div>
@@ -77,25 +77,60 @@
                             </div>
                         </div>
                         
-                        <div class="mb-3">
-                            {{ form.notes.label(class="form-label") }}
-                            {{ form.notes(class="form-control", rows="3") }}
-                            {% if form.notes.errors %}
-                                <div class="text-danger small">
-                                    {% for error in form.notes.errors %}
-                                        <div>{{ error }}</div>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
+                        <!-- Additional PO Fields -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.payment_terms.label(class="form-label") }}
+                                {{ form.payment_terms(class="form-control") }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.freight_terms.label(class="form-label") }}
+                                {{ form.freight_terms(class="form-control") }}
+                            </div>
                         </div>
                         
-                        <div class="d-flex justify-content-between">
-                            <a href="{{ url_for('purchase.list_purchase_orders') }}" class="btn btn-secondary">
-                                <i class="fas fa-times"></i> Cancel
-                            </a>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.validity_months.label(class="form-label") }}
+                                {{ form.validity_months(class="form-control") }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.delivery_notes.label(class="form-label") }}
+                                {{ form.delivery_notes(class="form-control", rows="2") }}
+                            </div>
+                        </div>
+                        
+                        <!-- Approval Section -->
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                {{ form.prepared_by.label(class="form-label") }}
+                                {{ form.prepared_by(class="form-control") }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.verified_by.label(class="form-label") }}
+                                {{ form.verified_by(class="form-control") }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.approved_by.label(class="form-label") }}
+                                {{ form.approved_by(class="form-control") }}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.notes.label(class="form-label") }}
+                            {{ form.notes(class="form-control", rows="3", placeholder="Special terms and conditions...") }}
+                        </div>
+                        
+                        <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> {{ 'Update' if po else 'Save' }} Purchase Order
+                                <i class="fas fa-save"></i> {{ 'Update' if po else 'Create' }} Purchase Order
                             </button>
+                            {% if po %}
+                            <a href="{{ url_for('purchase.print_purchase_order', id=po.id) }}" class="btn btn-success" target="_blank">
+                                <i class="fas fa-print"></i> Print PO
+                            </a>
+                            {% endif %}
+                            <a href="{{ url_for('purchase.list_purchase_orders') }}" class="btn btn-secondary">Cancel</a>
                         </div>
                     </form>
                 </div>

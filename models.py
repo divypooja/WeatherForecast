@@ -33,6 +33,7 @@ class Supplier(db.Model):
     phone = db.Column(db.String(20))
     email = db.Column(db.String(120))
     address = db.Column(db.Text)
+    gst_number = db.Column(db.String(50))  # GST registration number
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
@@ -60,6 +61,8 @@ class Item(db.Model):
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     unit_of_measure = db.Column(db.String(20), nullable=False)  # kg, pcs, meter, etc.
+    hsn_code = db.Column(db.String(20))  # HSN Code for GST
+    gst_rate = db.Column(db.Float, default=18.0)  # Default GST rate
     current_stock = db.Column(db.Float, default=0.0)
     minimum_stock = db.Column(db.Float, default=0.0)
     unit_price = db.Column(db.Float, default=0.0)
@@ -79,14 +82,24 @@ class PurchaseOrder(db.Model):
     supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=False)
     order_date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date())
     expected_date = db.Column(db.Date)
+    payment_terms = db.Column(db.String(50), default='30 Days')  # Payment terms like "30 Days"
+    freight_terms = db.Column(db.String(100))  # Freight terms
+    delivery_notes = db.Column(db.Text)  # Special delivery instructions
+    validity_months = db.Column(db.Integer, default=6)  # PO validity in months
     status = db.Column(db.String(20), default='open')  # open, partial, closed, cancelled
+    subtotal = db.Column(db.Float, default=0.0)
+    gst_amount = db.Column(db.Float, default=0.0)
     total_amount = db.Column(db.Float, default=0.0)
     notes = db.Column(db.Text)
+    prepared_by = db.Column(db.String(100))  # Name of person who prepared
+    verified_by = db.Column(db.String(100))  # Name of person who verified
+    approved_by = db.Column(db.String(100))  # Name of person who approved
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
     items = db.relationship('PurchaseOrderItem', backref='purchase_order', lazy=True, cascade='all, delete-orphan')
+    delivery_schedules = db.relationship('DeliverySchedule', backref='purchase_order', lazy=True, cascade='all, delete-orphan')
     creator = db.relationship('User', backref='created_purchase_orders')
 
 class PurchaseOrderItem(db.Model):
@@ -95,6 +108,9 @@ class PurchaseOrderItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     purchase_order_id = db.Column(db.Integer, db.ForeignKey('purchase_orders.id'), nullable=False)
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
+    drawing_spec_no = db.Column(db.String(100))  # Drawing/Spec Sheet No.
+    hsn_code = db.Column(db.String(20))  # HSN Code for GST
+    gst_rate = db.Column(db.Float, default=18.0)  # GST Rate percentage
     quantity_ordered = db.Column(db.Float, nullable=False)
     quantity_received = db.Column(db.Float, default=0.0)
     unit_price = db.Column(db.Float, nullable=False)
@@ -261,3 +277,16 @@ class NotificationRecipient(db.Model):
     event_types = db.Column(db.String(200))  # comma-separated: low_stock,order_update,production
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class DeliverySchedule(db.Model):
+    __tablename__ = 'delivery_schedules'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    purchase_order_id = db.Column(db.Integer, db.ForeignKey('purchase_orders.id'), nullable=False)
+    item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
+    quantity = db.Column(db.Float, nullable=False)
+    delivery_date = db.Column(db.Date, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    item = db.relationship('Item', backref='delivery_schedules')

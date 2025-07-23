@@ -14,8 +14,10 @@ class ItemForm(FlaskForm):
     description = TextAreaField('Description')
     unit_of_measure = SelectField('Unit of Measure', 
                                 choices=[('pcs', 'Pieces'), ('kg', 'Kilograms'), ('meter', 'Meters'), 
-                                       ('liter', 'Liters'), ('box', 'Boxes'), ('set', 'Sets')],
+                                       ('liter', 'Liters'), ('box', 'Boxes'), ('set', 'Sets'), ('nos', 'Numbers')],
                                 validators=[DataRequired()])
+    hsn_code = StringField('HSN Code', validators=[Length(max=20)])
+    gst_rate = FloatField('GST Rate (%)', validators=[NumberRange(min=0, max=100)], default=18.0)
     current_stock = FloatField('Current Stock', validators=[NumberRange(min=0)], default=0.0)
     minimum_stock = FloatField('Minimum Stock', validators=[NumberRange(min=0)], default=0.0)
     unit_price = FloatField('Unit Price', validators=[NumberRange(min=0)], default=0.0)
@@ -29,6 +31,7 @@ class SupplierForm(FlaskForm):
     phone = StringField('Phone', validators=[Length(max=20)])
     email = StringField('Email', validators=[Optional(), Email(), Length(max=120)])
     address = TextAreaField('Address')
+    gst_number = StringField('GST Number', validators=[Length(max=50)])
 
 class CustomerForm(FlaskForm):
     name = StringField('Customer Name', validators=[DataRequired(), Length(max=100)])
@@ -42,7 +45,14 @@ class PurchaseOrderForm(FlaskForm):
     po_number = StringField('PO Number', validators=[DataRequired(), Length(max=50)])
     order_date = DateField('Order Date', validators=[DataRequired()])
     expected_delivery = DateField('Expected Delivery')
-    notes = TextAreaField('Notes')
+    payment_terms = StringField('Payment Terms', validators=[Length(max=50)], default='30 Days')
+    freight_terms = StringField('Freight Terms', validators=[Length(max=100)])
+    delivery_notes = TextAreaField('Delivery Notes')
+    validity_months = IntegerField('Validity (Months)', validators=[NumberRange(min=1, max=24)], default=6)
+    prepared_by = StringField('Prepared By', validators=[Length(max=100)])
+    verified_by = StringField('Verified By', validators=[Length(max=100)])
+    approved_by = StringField('Approved By', validators=[Length(max=100)])
+    notes = TextAreaField('Special Notes')
     
     def __init__(self, *args, **kwargs):
         super(PurchaseOrderForm, self).__init__(*args, **kwargs)
