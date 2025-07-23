@@ -168,13 +168,13 @@
                                         <i class="fas fa-eye"></i>
                                     </a>
                                     {% if document.transaction_type == 'purchase_order' %}
-                                        <a href="{{ url_for('purchase.po_detail', id=document.transaction_id) }}" 
-                                           class="btn btn-outline-info" title="View Transaction">
+                                        <a href="{{ url_for('purchase.list_purchase_orders') }}" 
+                                           class="btn btn-outline-info" title="View Purchase Orders">
                                             <i class="fas fa-external-link-alt"></i>
                                         </a>
                                     {% elif document.transaction_type == 'sales_order' %}
-                                        <a href="{{ url_for('sales.so_detail', id=document.transaction_id) }}" 
-                                           class="btn btn-outline-info" title="View Transaction">
+                                        <a href="{{ url_for('sales.list_sales_orders') }}" 
+                                           class="btn btn-outline-info" title="View Sales Orders">
                                             <i class="fas fa-external-link-alt"></i>
                                         </a>
                                     {% elif document.transaction_type == 'job_work' %}
@@ -184,7 +184,7 @@
                                         </a>
                                     {% elif document.transaction_type == 'factory_expense' %}
                                         <a href="{{ url_for('expenses.expense_detail', id=document.transaction_id) }}" 
-                                           class="btn btn-outline-info" title="View Transaction">
+                                           class="btn btn-outline-info" title="View Expense">
                                             <i class="fas fa-external-link-alt"></i>
                                         </a>
                                     {% endif %}

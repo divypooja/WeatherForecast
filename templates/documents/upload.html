@@ -11,16 +11,20 @@
         </div>
         <div class="col-auto">
             {% if transaction_type == 'purchase_order' %}
-                <a href="{{ url_for('purchase.po_detail', id=transaction.id) }}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left"></i> Back to Purchase Order
+                <a href="{{ url_for('purchase.list_purchase_orders') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Purchase Orders
                 </a>
             {% elif transaction_type == 'sales_order' %}
-                <a href="{{ url_for('sales.so_detail', id=transaction.id) }}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left"></i> Back to Sales Order
+                <a href="{{ url_for('sales.list_sales_orders') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Sales Orders
                 </a>
             {% elif transaction_type == 'job_work' %}
                 <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-secondary">
                     <i class="fas fa-arrow-left"></i> Back to Job Works
+                </a>
+            {% elif transaction_type == 'factory_expense' %}
+                <a href="{{ url_for('expenses.expense_detail', id=transaction.id) }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Expense
                 </a>
             {% endif %}
         </div>
