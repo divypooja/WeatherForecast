@@ -44,6 +44,13 @@
         font-size: 0.9rem;
         padding: 0.375rem 0.5rem;
     }
+    #soItemsTable .fw-bold {
+        font-weight: 600 !important;
+        color: var(--bs-dark);
+    }
+    #soItemsTable td.text-center {
+        font-weight: 600;
+    }
     #soItemsTable th {
         background-color: var(--bs-gray-100);
         font-weight: 600;
@@ -246,10 +253,10 @@
                                     {% for item in so_items %}
                                     <tr data-item-id="{{ item.id }}">
                                         <td class="align-middle text-center">{{ loop.index }}</td>
-                                        <td class="align-middle">{{ item.item.code }}</td>
+                                        <td class="align-middle text-center"><strong>{{ item.item.code }}</strong></td>
                                         <td class="align-middle">{{ item.item.name }}<br><small class="text-muted">{{ item.item.description }}</small></td>
                                         <td class="align-middle">{{ item.item.specification or '-' }}</td>
-                                        <td class="align-middle">{{ item.item.hsn_code or '-' }}</td>
+                                        <td class="align-middle text-center"><strong>{{ item.item.hsn_code or '-' }}</strong></td>
                                         <td class="align-middle text-center"><strong>{{ item.item.gst_rate or 18.0 }}%</strong></td>
                                         <td class="align-middle">{{ item.item.unit_of_measure }}</td>
                                         <td class="align-middle">{{ item.quantity_ordered }}</td>
@@ -314,7 +321,7 @@ function addSOItem() {
     row.innerHTML = `
         <td class="align-middle text-center">${rowCount}</td>
         <td class="align-middle">
-            <input type="text" class="form-control form-control-sm" name="item_code_new_${itemCounter}" placeholder="Item Code" readonly>
+            <input type="text" class="form-control form-control-sm text-center fw-bold" name="item_code_new_${itemCounter}" placeholder="Item Code" readonly>
         </td>
         <td class="align-middle">
             <select class="form-control form-control-sm" name="item_id_new_${itemCounter}" onchange="populateSOItemDetails(this)">
@@ -327,7 +334,7 @@ function addSOItem() {
             <input type="text" class="form-control form-control-sm" name="specification_new_${itemCounter}" placeholder="Specification">
         </td>
         <td class="align-middle">
-            <input type="text" class="form-control form-control-sm" name="hsn_code_new_${itemCounter}" placeholder="HSN Code" readonly>
+            <input type="text" class="form-control form-control-sm text-center fw-bold" name="hsn_code_new_${itemCounter}" placeholder="HSN Code" readonly>
         </td>
         <td class="align-middle">
             <div class="input-group input-group-sm">
