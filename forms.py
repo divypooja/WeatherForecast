@@ -1,8 +1,9 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SelectField, TextAreaField, FloatField, IntegerField, DateField, BooleanField, SelectMultipleField
-from wtforms.validators import DataRequired, Length, Email, NumberRange, Optional, ValidationError
+from wtforms import StringField, PasswordField, SelectField, TextAreaField, FloatField, IntegerField, DateField, BooleanField, SelectMultipleField, ValidationError
+from wtforms.validators import DataRequired, Length, Email, NumberRange, Optional
 from wtforms.widgets import CheckboxInput, ListWidget
 from models import User, Item, Supplier, Customer
+from datetime import datetime
 
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=4, max=25)])
@@ -93,6 +94,21 @@ class JobWorkForm(FlaskForm):
     def __init__(self, *args, **kwargs):
         super(JobWorkForm, self).__init__(*args, **kwargs)
         self.item_id.choices = [(0, 'Select Item')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.all()]
+
+class JobWorkQuantityUpdateForm(FlaskForm):
+    quantity_received = FloatField('Quantity Received', validators=[DataRequired(), NumberRange(min=0.01)])
+    received_date = DateField('Received Date', validators=[DataRequired()])
+    notes = TextAreaField('Notes')
+    
+    def __init__(self, job=None, *args, **kwargs):
+        super(JobWorkQuantityUpdateForm, self).__init__(*args, **kwargs)
+        self.job = job
+    
+    def validate_quantity_received(self, field):
+        if self.job:
+            remaining = self.job.quantity_sent - self.job.quantity_received
+            if field.data > remaining:
+                raise ValidationError(f'Cannot receive more than remaining quantity ({remaining})')
 
 class ProductionForm(FlaskForm):
     production_number = StringField('Production Number', validators=[DataRequired(), Length(max=50)])

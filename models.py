@@ -206,8 +206,10 @@ class JobWork(db.Model):
     customer_name = db.Column(db.String(100), nullable=False)
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     quantity_sent = db.Column(db.Float, nullable=False)
+    quantity_received = db.Column(db.Float, default=0.0)
     rate_per_unit = db.Column(db.Float, nullable=False)
     sent_date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date())
+    received_date = db.Column(db.Date)
     expected_return = db.Column(db.Date)
     status = db.Column(db.String(20), default='sent')  # sent, partial_received, completed
     notes = db.Column(db.Text)

@@ -41,6 +41,7 @@
                                 <th>Customer</th>
                                 <th>Sent Date</th>
                                 <th>Expected Return</th>
+                                <th>Quantity Progress</th>
                                 <th>Status</th>
                                 <th>Created By</th>
                                 <th>Actions</th>
@@ -54,6 +55,15 @@
                                 <td>{{ job.sent_date.strftime('%m/%d/%Y') if job.sent_date else '-' }}</td>
                                 <td>{{ job.expected_return.strftime('%m/%d/%Y') if job.expected_return else '-' }}</td>
                                 <td>
+                                    <div class="d-flex flex-column">
+                                        <small>{{ job.quantity_received }}/{{ job.quantity_sent }} {{ job.item.unit_of_measure }}</small>
+                                        <div class="progress" style="height: 8px;">
+                                            <div class="progress-bar bg-{{ 'success' if job.status == 'completed' else 'warning' if job.status == 'partial_received' else 'primary' }}" 
+                                                 style="width: {{ (job.quantity_received / job.quantity_sent * 100) if job.quantity_sent > 0 else 0 }}%"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
                                     <span class="badge bg-{{ 'success' if job.status == 'completed' else 'warning' if job.status == 'partial_received' else 'primary' }}">
                                         {{ job.status.replace('_', ' ').title() }}
                                     </span>
@@ -65,6 +75,9 @@
                                             <i class="fas fa-edit"></i>
                                         </a>
                                         {% if job.status != 'completed' %}
+                                        <a href="{{ url_for('jobwork.update_quantity', id=job.id) }}" class="btn btn-outline-success btn-sm" title="Update Quantity">
+                                            <i class="fas fa-plus-circle"></i>
+                                        </a>
                                         <div class="btn-group btn-group-sm">
                                             <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
                                                 Status
