@@ -38,7 +38,7 @@ def create_app():
     login_manager.login_message_category = 'info'
     
     # Import models
-    from models import User, Item, Supplier, PurchaseOrder, SalesOrder, Employee, JobWork, Production, BOM, NotificationSettings, NotificationLog, NotificationRecipient, CompanySettings, QualityIssue, QualityControlLog, FactoryExpense
+    from models import User, Item, Supplier, PurchaseOrder, SalesOrder, Employee, JobWork, Production, BOM, NotificationSettings, NotificationLog, NotificationRecipient, CompanySettings, QualityIssue, QualityControlLog, FactoryExpense, Document
     
     @login_manager.user_loader
     def load_user(user_id):
@@ -59,6 +59,7 @@ def create_app():
     from routes.quality import quality_bp
     from routes.material_inspection import material_inspection
     from routes.expenses import expenses_bp
+    from routes.documents import documents_bp
     
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -74,6 +75,13 @@ def create_app():
     app.register_blueprint(quality_bp, url_prefix='/quality')
     app.register_blueprint(material_inspection, url_prefix='/inspection')
     app.register_blueprint(expenses_bp, url_prefix='/expenses')
+    app.register_blueprint(documents_bp, url_prefix='/documents')
+    
+    # Template context processors
+    @app.context_processor
+    def utility_processor():
+        from utils_documents import get_file_icon, format_file_size
+        return dict(get_file_icon=get_file_icon, format_file_size=format_file_size)
     
     # Create database tables
     with app.app_context():

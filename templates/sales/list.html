@@ -67,6 +67,9 @@
                                         <a href="{{ url_for('sales.edit_sales_order', id=so.id) }}" class="btn btn-outline-primary btn-sm" title="Edit">
                                             <i class="fas fa-edit"></i>
                                         </a>
+                                        <a href="{{ url_for('documents.upload_document', transaction_type='sales_order', transaction_id=so.id) }}" class="btn btn-outline-warning btn-sm" title="Upload Documents">
+                                            <i class="fas fa-paperclip"></i>
+                                        </a>
                                         <a href="{{ url_for('sales.delete_sales_order', id=so.id) }}" class="btn btn-outline-danger btn-sm" 
                                            onclick="return confirm('Are you sure you want to delete this sales order?')" title="Delete">
                                             <i class="fas fa-trash"></i>

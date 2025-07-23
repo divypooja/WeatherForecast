@@ -77,6 +77,9 @@
                                         <a href="{{ url_for('jobwork.send_job_work', job_id=job.id) }}" class="btn btn-outline-success btn-sm" title="Send via Email/WhatsApp">
                                             <i class="fas fa-paper-plane"></i>
                                         </a>
+                                        <a href="{{ url_for('documents.upload_document', transaction_type='job_work', transaction_id=job.id) }}" class="btn btn-outline-warning btn-sm" title="Upload Documents">
+                                            <i class="fas fa-paperclip"></i>
+                                        </a>
                                         {% if job.status != 'completed' %}
                                         <a href="{{ url_for('jobwork.update_quantity', id=job.id) }}" class="btn btn-outline-success btn-sm" title="Update Quantity">
                                             <i class="fas fa-plus-circle"></i>

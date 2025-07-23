@@ -143,6 +143,16 @@
                     </form>
                 </div>
             </div>
+            
+            <!-- Document Management Section -->
+            {% if job %}
+            <div class="col-md-4">
+                {% set documents = get_documents_for_transaction('job_work', job.id) %}
+                {% set transaction_type = 'job_work' %}
+                {% set transaction_id = job.id %}
+                {% include 'documents/_document_card.html' %}
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
