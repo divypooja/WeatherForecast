@@ -6,6 +6,18 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 23, 2025)
 
+### BOM Integration Fix (Latest)
+- **Field Mapping Issue Resolved**: Fixed JavaScript field mapping bug where GST Rate field was incorrectly populated with BOM unit cost instead of actual GST rate
+- **Correct Data Flow**: Established proper mapping from backend to frontend:
+  - GST Rate Field ← item.gst_rate (18% for castor)
+  - Rate Field ← item.bom_rate (42.94 for castor from BOM system)
+  - HSN Code Field ← item.hsn_code 
+  - UOM Field ← item.unit_of_measure ("nos" for castor)
+- **Backend Verification**: Confirmed backend API correctly provides BOM rates (42.94) vs item unit prices (37.94)
+- **Enhanced Debugging**: Added comprehensive field mapping verification to track data flow from database to form fields
+
+## Previous Changes
+
 - **Enhanced Purchase Order System**: Completed industrial-standard Purchase Order forms with comprehensive fields:
   - No., RM Code, Item + Description, Drawing/Spec Sheet No., HSN Code, GST Rate, UOM, Qty, Rate, Amount
   - Professional print templates with company letterhead and tax calculations
