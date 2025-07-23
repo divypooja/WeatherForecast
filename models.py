@@ -201,3 +201,60 @@ class BOMItem(db.Model):
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     quantity_required = db.Column(db.Float, nullable=False)
     unit_cost = db.Column(db.Float, default=0.0)
+
+class NotificationSettings(db.Model):
+    __tablename__ = 'notification_settings'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    # Email settings
+    email_enabled = db.Column(db.Boolean, default=True)
+    sendgrid_api_key = db.Column(db.String(255))
+    sender_email = db.Column(db.String(120), default='noreply@akfactory.com')
+    sender_name = db.Column(db.String(100), default='AK Innovations Factory')
+    
+    # SMS/WhatsApp settings
+    sms_enabled = db.Column(db.Boolean, default=True)
+    whatsapp_enabled = db.Column(db.Boolean, default=True)
+    twilio_account_sid = db.Column(db.String(255))
+    twilio_auth_token = db.Column(db.String(255))
+    twilio_phone_number = db.Column(db.String(20))
+    
+    # Notification preferences
+    low_stock_notifications = db.Column(db.Boolean, default=True)
+    order_status_notifications = db.Column(db.Boolean, default=True)
+    production_notifications = db.Column(db.Boolean, default=True)
+    
+    # Recipients
+    admin_email = db.Column(db.String(120))
+    admin_phone = db.Column(db.String(20))
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class NotificationLog(db.Model):
+    __tablename__ = 'notification_logs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    type = db.Column(db.String(20), nullable=False)  # email, sms, whatsapp
+    recipient = db.Column(db.String(255), nullable=False)
+    subject = db.Column(db.String(255))
+    message = db.Column(db.Text)
+    success = db.Column(db.Boolean, nullable=False)
+    response = db.Column(db.Text)
+    sent_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Optional: Link to specific events
+    event_type = db.Column(db.String(50))  # low_stock, order_update, production_complete
+    event_id = db.Column(db.Integer)  # ID of the related record
+
+class NotificationRecipient(db.Model):
+    __tablename__ = 'notification_recipients'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120))
+    phone = db.Column(db.String(20))
+    notification_types = db.Column(db.String(100))  # comma-separated: email,sms,whatsapp
+    event_types = db.Column(db.String(200))  # comma-separated: low_stock,order_update,production
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

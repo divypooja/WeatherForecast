@@ -54,6 +54,7 @@ def create_app():
     from routes.production import production_bp
     from routes.hr import hr_bp
     from routes.reports import reports_bp
+    from routes.settings import settings_bp
     
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -64,6 +65,7 @@ def create_app():
     app.register_blueprint(production_bp, url_prefix='/production')
     app.register_blueprint(hr_bp, url_prefix='/hr')
     app.register_blueprint(reports_bp, url_prefix='/reports')
+    app.register_blueprint(settings_bp, url_prefix='/settings')
     
     # Create database tables
     with app.app_context():
@@ -73,6 +75,11 @@ def create_app():
     from cli import init_db_command, create_admin_command
     app.cli.add_command(init_db_command)
     app.cli.add_command(create_admin_command)
+    
+    # Start notification scheduler in production
+    if not app.debug:
+        from services.scheduler import notification_scheduler
+        notification_scheduler.start()
     
     return app
 

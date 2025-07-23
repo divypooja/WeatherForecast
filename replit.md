@@ -4,15 +4,15 @@
 
 This is a comprehensive Flask-based Factory Management System designed for small to medium manufacturing companies. The application provides modular dashboards for managing various aspects of factory operations including inventory, purchase orders, sales, HR, job work, production, and reporting.
 
-## Recent Changes (January 22, 2025)
+## Recent Changes (January 23, 2025)
 
-- **Fixed BOM Functionality**: Added complete Bill of Materials (BOM) system with forms, routes, and templates
-- **Fixed Report Templates**: Created missing inventory_report.html template to resolve template errors
-- **Simplified Setup**: Created requirements-local.txt and removed complex setup scripts for easier local deployment
-- **Enhanced BOM Features**: Users can now create BOMs, add materials/components, set quantities, and calculate total costs
-- **Theme Update**: Changed from dark theme to light theme for better user experience
-- **Dashboard Redesign**: Complete UI overhaul with modern sidebar navigation and clean card-based module layout matching professional factory management interface
-- **Fixed URL Routing**: Resolved template errors by updating dashboard URL references throughout the application
+- **SMS/Email/WhatsApp Notifications Integration**: Implemented comprehensive notification system using Twilio (SMS/WhatsApp) and SendGrid (Email)
+- **Settings Interface**: Added complete settings dashboard in navigation sidebar for managing notification API credentials and configurations
+- **Notification Management**: Created recipient management system with configurable notification types and event preferences
+- **Automated Alerts**: Integrated low stock alerts, order status updates, and production completion notifications
+- **Background Scheduler**: Added automated notification scheduler for periodic checks and system health monitoring
+- **Notification Logging**: Comprehensive logging system to track all notification attempts and delivery status
+- **Test Notifications**: Built-in testing interface for validating notification settings and credentials
 
 ## User Preferences
 
