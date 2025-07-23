@@ -6,6 +6,18 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 23, 2025)
 
+### Complete Unified Business Partner System (Latest)
+- **Eliminated Customer Model**: Completely removed separate Customer model and table from the codebase
+- **Single Table Architecture**: All business partners (suppliers, customers, and hybrid partners) now use unified `suppliers` table with `partner_type` field
+- **Database Migration**: Successfully migrated PostgreSQL database to use unified approach with proper foreign key constraints
+- **Sales Order Integration**: Updated SalesOrder model to reference suppliers table instead of customers table
+- **Unified Form System**: Enhanced SupplierForm to handle all partner types with comprehensive fields and partner type selection
+- **Redirect Strategy**: Sales customer routes now intelligently redirect to unified business partner management
+- **Template Updates**: Updated sales dashboard and templates to use unified approach while maintaining user-friendly "customer" terminology
+- **Smart Partner Type Handling**: Business partner form automatically pre-fills partner type based on URL parameters for seamless user experience
+- **Backward Compatibility**: Maintained all existing functionality while simplifying the underlying data architecture
+- **Enhanced UI/UX**: Business partner list shows color-coded badges for partner types (Supplier/Customer/Both) with comprehensive information display
+
 ### Comprehensive Supplier Management Enhancement (Latest)
 - **Enhanced Supplier Model**: Expanded supplier model with all comprehensive fields:
   - Basic Information: Name, Contact Person, Mobile Number, Email

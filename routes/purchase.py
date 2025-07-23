@@ -224,6 +224,12 @@ def list_suppliers():
 @login_required
 def add_supplier():
     form = SupplierForm()
+    
+    # Handle partner type from URL parameter (for sales integration)
+    partner_type = request.args.get('partner_type', 'supplier')
+    if not form.partner_type.data:
+        form.partner_type.data = partner_type
+    
     if form.validate_on_submit():
         supplier = Supplier(
             name=form.name.data,
