@@ -85,21 +85,13 @@
                             </div>
                         </div>
 
-                        <!-- Damage and Rejection -->
+                        <!-- Rejection -->
                         <div class="row mb-4">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    {{ form.damaged_quantity.label(class="form-label") }}
-                                    {{ form.damaged_quantity(class="form-control", step="0.01", id="damagedQty") }}
-                                    {% for error in form.damaged_quantity.errors %}
-                                        <div class="text-danger">{{ error }}</div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
+                            <div class="col-md-12">
                                 <div class="mb-3">
                                     {{ form.rejected_quantity.label(class="form-label") }}
                                     {{ form.rejected_quantity(class="form-control", step="0.01", id="rejectedQty") }}
+                                    <div class="form-text">Any materials that failed inspection (damaged, defective, or don't meet quality standards)</div>
                                     {% for error in form.rejected_quantity.errors %}
                                         <div class="text-danger">{{ error }}</div>
                                     {% endfor %}
@@ -113,16 +105,13 @@
                                 <div class="alert alert-secondary">
                                     <h6><i class="fas fa-calculator me-2"></i>Inspection Summary:</h6>
                                     <div class="row">
-                                        <div class="col-md-3">
+                                        <div class="col-md-4">
                                             <strong>Acceptance Rate:</strong> <span id="acceptanceRate">0.0%</span>
                                         </div>
-                                        <div class="col-md-3">
-                                            <strong>Damage Rate:</strong> <span id="damageRate">0.0%</span>
-                                        </div>
-                                        <div class="col-md-3">
+                                        <div class="col-md-4">
                                             <strong>Rejection Rate:</strong> <span id="rejectionRate">0.0%</span>
                                         </div>
-                                        <div class="col-md-3">
+                                        <div class="col-md-4">
                                             <strong>Total Accounted:</strong> <span id="totalAccounted">0.0</span>
                                         </div>
                                     </div>
@@ -130,21 +119,13 @@
                             </div>
                         </div>
 
-                        <!-- Details -->
+                        <!-- Rejection Details -->
                         <div class="row mb-4">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    {{ form.damage_types.label(class="form-label") }}
-                                    {{ form.damage_types(class="form-control", rows="3") }}
-                                    {% for error in form.damage_types.errors %}
-                                        <div class="text-danger">{{ error }}</div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
+                            <div class="col-md-12">
                                 <div class="mb-3">
                                     {{ form.rejection_reasons.label(class="form-label") }}
                                     {{ form.rejection_reasons(class="form-control", rows="3") }}
+                                    <div class="form-text">Describe reasons for rejecting materials (scratches, dents, corrosion, quality issues, etc.)</div>
                                     {% for error in form.rejection_reasons.errors %}
                                         <div class="text-danger">{{ error }}</div>
                                     {% endfor %}

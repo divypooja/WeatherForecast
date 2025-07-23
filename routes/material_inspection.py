@@ -125,10 +125,10 @@ def log_inspection():
             received_quantity=form.received_quantity.data,
             inspected_quantity=form.inspected_quantity.data,
             passed_quantity=form.passed_quantity.data,
-            damaged_quantity=form.damaged_quantity.data,
+            damaged_quantity=0.0,  # Not used anymore, only rejected_quantity matters
             rejected_quantity=form.rejected_quantity.data,
             acceptance_rate=acceptance_rate,
-            damage_types=form.damage_types.data,
+            damage_types='',  # Not used anymore
             rejection_reasons=form.rejection_reasons.data,
             inspection_notes=form.inspection_notes.data,
             inspector_id=current_user.id
