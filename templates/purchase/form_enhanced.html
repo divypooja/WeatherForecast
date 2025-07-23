@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-shopping-cart"></i> {{ title }}</h1>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('purchase.list_purchase_orders') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Purchase Orders
+            </a>
+        </div>
+    </div>
+
+    <form method="POST" id="purchaseOrderForm">
+        {{ form.hidden_tag() }}
+        
+        <!-- PO Header Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Purchase Order Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        {{ form.po_number.label(class="form-label") }}
+                        {{ form.po_number(class="form-control", readonly=True) }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.order_date.label(class="form-label") }}
+                        {{ form.order_date(class="form-control") }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.expected_delivery.label(class="form-label") }}
+                        {{ form.expected_delivery(class="form-control") }}
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        {{ form.supplier_id.label(class="form-label") }}
+                        {{ form.supplier_id(class="form-control") }}
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        {{ form.payment_terms.label(class="form-label") }}
+                        {{ form.payment_terms(class="form-control") }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.freight_terms.label(class="form-label") }}
+                        {{ form.freight_terms(class="form-control") }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.validity_months.label(class="form-label") }}
+                        {{ form.validity_months(class="form-control") }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Purchase Order Items -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Purchase Order Items</h5>
+                <button type="button" class="btn btn-sm btn-primary" onclick="addPOItem()">
+                    <i class="fas fa-plus"></i> Add Item
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="poItemsTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 5%">No.</th>
+                                <th style="width: 10%">RM Code</th>
+                                <th style="width: 25%">Item + Description</th>
+                                <th style="width: 15%">Drawing / Spec Sheet No.</th>
+                                <th style="width: 10%">HSN Code</th>
+                                <th style="width: 8%">GST Rate</th>
+                                <th style="width: 7%">UOM</th>
+                                <th style="width: 8%">Qty</th>
+                                <th style="width: 10%">Rate</th>
+                                <th style="width: 12%">Amount</th>
+                                <th style="width: 5%">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="poItemsBody">
+                            {% if po_items %}
+                                {% for item in po_items %}
+                                <tr data-item-id="{{ item.id }}">
+                                    <td>{{ loop.index }}</td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm" name="rm_code_{{ item.id }}" 
+                                               value="{{ item.rm_code or item.item.code }}" placeholder="RM Code">
+                                    </td>
+                                    <td>
+                                        <select class="form-control form-control-sm" name="item_id_{{ item.id }}" onchange="populateItemDetails(this)">
+                                            <option value="">Select Item</option>
+                                            {% for available_item in items %}
+                                            <option value="{{ available_item.id }}" 
+                                                    {% if available_item.id == item.item_id %}selected{% endif %}
+                                                    data-code="{{ available_item.code }}"
+                                                    data-name="{{ available_item.name }}"
+                                                    data-description="{{ available_item.description or '' }}"
+                                                    data-hsn="{{ available_item.hsn_code or '' }}"
+                                                    data-gst="{{ available_item.gst_rate or 18.0 }}"
+                                                    data-uom="{{ available_item.unit_of_measure }}"
+                                                    data-price="{{ available_item.unit_price }}">
+                                                {{ available_item.code }} - {{ available_item.name }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                        <textarea class="form-control form-control-sm mt-1" name="description_{{ item.id }}" 
+                                                  rows="2" placeholder="Item description">{{ item.item_description or item.item.description }}</textarea>
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm" name="drawing_spec_{{ item.id }}" 
+                                               value="{{ item.drawing_spec_no or '' }}" placeholder="Drawing/Spec No.">
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm" name="hsn_code_{{ item.id }}" 
+                                               value="{{ item.hsn_code or item.item.hsn_code }}" placeholder="HSN Code">
+                                    </td>
+                                    <td>
+                                        <input type="number" class="form-control form-control-sm" name="gst_rate_{{ item.id }}" 
+                                               value="{{ item.gst_rate or 18.0 }}" step="0.01" min="0" max="100" placeholder="18.0">
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm" name="uom_{{ item.id }}" 
+                                               value="{{ item.uom or item.item.unit_of_measure }}" placeholder="UOM">
+                                    </td>
+                                    <td>
+                                        <input type="number" class="form-control form-control-sm" name="qty_{{ item.id }}" 
+                                               value="{{ item.qty or item.quantity_ordered }}" step="0.01" min="0" 
+                                               onchange="calculateAmount(this)" placeholder="0">
+                                    </td>
+                                    <td>
+                                        <input type="number" class="form-control form-control-sm" name="rate_{{ item.id }}" 
+                                               value="{{ item.rate or item.unit_price }}" step="0.01" min="0" 
+                                               onchange="calculateAmount(this)" placeholder="0.00">
+                                    </td>
+                                    <td>
+                                        <input type="number" class="form-control form-control-sm" name="amount_{{ item.id }}" 
+                                               value="{{ item.amount or item.total_price }}" readonly placeholder="0.00">
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% endif %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-secondary">
+                                <td colspan="9" class="text-end"><strong>Sub Total:</strong></td>
+                                <td><input type="number" class="form-control form-control-sm" id="subTotal" readonly placeholder="0.00"></td>
+                                <td></td>
+                            </tr>
+                            <tr class="table-secondary">
+                                <td colspan="9" class="text-end"><strong>IGST 18%:</strong></td>
+                                <td><input type="number" class="form-control form-control-sm" id="igstAmount" readonly placeholder="0.00"></td>
+                                <td></td>
+                            </tr>
+                            <tr class="table-dark">
+                                <td colspan="9" class="text-end"><strong>Grand Total:</strong></td>
+                                <td><input type="number" class="form-control form-control-sm" id="grandTotal" readonly placeholder="0.00"></td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Additional Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        {{ form.prepared_by.label(class="form-label") }}
+                        {{ form.prepared_by(class="form-control") }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.verified_by.label(class="form-label") }}
+                        {{ form.verified_by(class="form-control") }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.approved_by.label(class="form-label") }}
+                        {{ form.approved_by(class="form-control") }}
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        {{ form.delivery_notes.label(class="form-label") }}
+                        {{ form.delivery_notes(class="form-control", rows="3") }}
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        {{ form.notes.label(class="form-label") }}
+                        {{ form.notes(class="form-control", rows="3") }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="card">
+            <div class="card-body">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Save Purchase Order
+                </button>
+                <a href="{{ url_for('purchase.list_purchase_orders') }}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+                {% if po %}
+                <a href="{{ url_for('purchase.print_purchase_order', id=po.id) }}" class="btn btn-info" target="_blank">
+                    <i class="fas fa-print"></i> Print
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+let itemCounter = 0;
+
+function addPOItem() {
+    itemCounter++;
+    const tbody = document.getElementById('poItemsBody');
+    const rowCount = tbody.rows.length + 1;
+    
+    const row = tbody.insertRow();
+    row.innerHTML = `
+        <td>${rowCount}</td>
+        <td>
+            <input type="text" class="form-control form-control-sm" name="rm_code_new_${itemCounter}" placeholder="RM Code">
+        </td>
+        <td>
+            <select class="form-control form-control-sm" name="item_id_new_${itemCounter}" onchange="populateItemDetails(this)">
+                <option value="">Select Item</option>
+                {% for item in items %}
+                <option value="{{ item.id }}" 
+                        data-code="{{ item.code }}"
+                        data-name="{{ item.name }}"
+                        data-description="{{ item.description or '' }}"
+                        data-hsn="{{ item.hsn_code or '' }}"
+                        data-gst="{{ item.gst_rate or 18.0 }}"
+                        data-uom="{{ item.unit_of_measure }}"
+                        data-price="{{ item.unit_price }}">
+                    {{ item.code }} - {{ item.name }}
+                </option>
+                {% endfor %}
+            </select>
+            <textarea class="form-control form-control-sm mt-1" name="description_new_${itemCounter}" 
+                      rows="2" placeholder="Item description"></textarea>
+        </td>
+        <td>
+            <input type="text" class="form-control form-control-sm" name="drawing_spec_new_${itemCounter}" placeholder="Drawing/Spec No.">
+        </td>
+        <td>
+            <input type="text" class="form-control form-control-sm" name="hsn_code_new_${itemCounter}" placeholder="HSN Code">
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm" name="gst_rate_new_${itemCounter}" 
+                   value="18.0" step="0.01" min="0" max="100" placeholder="18.0">
+        </td>
+        <td>
+            <input type="text" class="form-control form-control-sm" name="uom_new_${itemCounter}" placeholder="UOM">
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm" name="qty_new_${itemCounter}" 
+                   step="0.01" min="0" onchange="calculateAmount(this)" placeholder="0">
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm" name="rate_new_${itemCounter}" 
+                   step="0.01" min="0" onchange="calculateAmount(this)" placeholder="0.00">
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm" name="amount_new_${itemCounter}" 
+                   readonly placeholder="0.00">
+        </td>
+        <td>
+            <button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+}
+
+function populateItemDetails(selectElement) {
+    const selectedOption = selectElement.options[selectElement.selectedIndex];
+    if (selectedOption.value) {
+        const row = selectElement.closest('tr');
+        const rowIndex = selectElement.name.split('_')[2];
+        
+        // Populate fields with item data
+        const rmCodeInput = row.querySelector(`input[name*="rm_code"]`);
+        const descriptionTextarea = row.querySelector(`textarea[name*="description"]`);
+        const hsnInput = row.querySelector(`input[name*="hsn_code"]`);
+        const gstInput = row.querySelector(`input[name*="gst_rate"]`);
+        const uomInput = row.querySelector(`input[name*="uom"]`);
+        const rateInput = row.querySelector(`input[name*="rate"]`);
+        
+        if (rmCodeInput) rmCodeInput.value = selectedOption.dataset.code || '';
+        if (descriptionTextarea) descriptionTextarea.value = selectedOption.dataset.description || '';
+        if (hsnInput) hsnInput.value = selectedOption.dataset.hsn || '';
+        if (gstInput) gstInput.value = selectedOption.dataset.gst || '18.0';
+        if (uomInput) uomInput.value = selectedOption.dataset.uom || '';
+        if (rateInput) rateInput.value = selectedOption.dataset.price || '0.00';
+        
+        calculateAmount(rateInput);
+    }
+}
+
+function calculateAmount(element) {
+    const row = element.closest('tr');
+    const qtyInput = row.querySelector(`input[name*="qty"]`);
+    const rateInput = row.querySelector(`input[name*="rate"]`);
+    const amountInput = row.querySelector(`input[name*="amount"]`);
+    
+    if (qtyInput && rateInput && amountInput) {
+        const qty = parseFloat(qtyInput.value) || 0;
+        const rate = parseFloat(rateInput.value) || 0;
+        const amount = qty * rate;
+        amountInput.value = amount.toFixed(2);
+    }
+    
+    calculateTotals();
+}
+
+function calculateTotals() {
+    let subTotal = 0;
+    const amountInputs = document.querySelectorAll('input[name*="amount"]');
+    
+    amountInputs.forEach(input => {
+        const amount = parseFloat(input.value) || 0;
+        subTotal += amount;
+    });
+    
+    const igstRate = 18; // 18% GST
+    const igstAmount = (subTotal * igstRate) / 100;
+    const grandTotal = subTotal + igstAmount;
+    
+    document.getElementById('subTotal').value = subTotal.toFixed(2);
+    document.getElementById('igstAmount').value = igstAmount.toFixed(2);
+    document.getElementById('grandTotal').value = grandTotal.toFixed(2);
+}
+
+function removeRow(button) {
+    const row = button.closest('tr');
+    row.remove();
+    
+    // Renumber rows
+    const rows = document.querySelectorAll('#poItemsBody tr');
+    rows.forEach((row, index) => {
+        row.cells[0].textContent = index + 1;
+    });
+    
+    calculateTotals();
+}
+
+// Calculate totals on page load
+document.addEventListener('DOMContentLoaded', function() {
+    calculateTotals();
+});
+</script>
+{% endblock %}

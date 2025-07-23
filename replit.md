@@ -6,6 +6,14 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 23, 2025)
 
+- **Enhanced Purchase Order System**: Completed industrial-standard Purchase Order forms with comprehensive fields:
+  - No., RM Code, Item + Description, Drawing/Spec Sheet No., HSN Code, GST Rate, UOM, Qty, Rate, Amount
+  - Professional print templates with company letterhead and tax calculations
+  - Enhanced PurchaseOrderItem model with all required industrial fields
+- **Company Settings Module**: Implemented complete company configuration system:
+  - Company name, address (2 lines), city/state/PIN, phone, GST number, ARN number
+  - Settings dashboard with navigation link in sidebar
+  - Company information integration in Purchase Order documents
 - **Auto-Generation System**: Implemented comprehensive auto-generation for all unique codes and numbers to prevent duplicates:
   - Purchase Order Numbers: PO-YYYY-0001 format with year-based sequencing
   - Sales Order Numbers: SO-YYYY-0001 format with year-based sequencing  

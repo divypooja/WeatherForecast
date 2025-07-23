@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from forms import PurchaseOrderForm, SupplierForm
-from models import PurchaseOrder, PurchaseOrderItem, Supplier, Item, DeliverySchedule
+from models import PurchaseOrder, PurchaseOrderItem, Supplier, Item, DeliverySchedule, CompanySettings
 from app import db
 from sqlalchemy import func
 from datetime import datetime
@@ -233,8 +233,9 @@ def print_purchase_order(id):
             return number_to_words(num // 10000000) + " crore" + (" " + number_to_words(num % 10000000) if num % 10000000 != 0 else "")
     
     amount_words = number_to_words(int(po.total_amount))
+    company = CompanySettings.get_settings()
     
-    return render_template('purchase/po_print.html', po=po, amount_words=amount_words)
+    return render_template('purchase/po_print_enhanced.html', po=po, amount_words=amount_words, company=company)
 
 @purchase_bp.route('/delete/<int:id>', methods=['POST', 'GET'])
 @login_required

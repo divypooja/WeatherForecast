@@ -195,3 +195,23 @@ class NotificationRecipientForm(FlaskForm):
             return False
         
         return True
+
+class NotificationTestForm(FlaskForm):
+    recipient_type = SelectField('Recipient Type', 
+                               choices=[('sms', 'SMS'), ('email', 'Email'), ('whatsapp', 'WhatsApp')],
+                               validators=[DataRequired()])
+    recipient = StringField('Recipient', validators=[DataRequired()])
+    message = TextAreaField('Test Message', validators=[DataRequired()])
+
+class CompanySettingsForm(FlaskForm):
+    company_name = StringField('Company Name', validators=[DataRequired(), Length(max=200)])
+    address_line1 = StringField('Address Line 1', validators=[DataRequired(), Length(max=200)])
+    address_line2 = StringField('Address Line 2', validators=[Optional(), Length(max=200)])
+    city = StringField('City', validators=[DataRequired(), Length(max=100)])
+    state = StringField('State', validators=[DataRequired(), Length(max=100)])
+    pin_code = StringField('PIN Code', validators=[DataRequired(), Length(max=10)])
+    phone = StringField('Phone', validators=[DataRequired(), Length(max=20)])
+    email = StringField('Email', validators=[Optional(), Email(), Length(max=120)])
+    gst_number = StringField('GST Number', validators=[DataRequired(), Length(max=50)])
+    arn_number = StringField('ARN Number', validators=[Optional(), Length(max=50)])
+    website = StringField('Website', validators=[Optional(), Length(max=200)])
