@@ -4,6 +4,34 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db
 
+class CompanySettings(db.Model):
+    __tablename__ = 'company_settings'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    company_name = db.Column(db.String(200), nullable=False, default='Your Company Name')
+    address_line1 = db.Column(db.String(200), default='Your Company Address Line 1')
+    address_line2 = db.Column(db.String(200), default='Your Company Address Line 2')
+    city = db.Column(db.String(100), default='City')
+    state = db.Column(db.String(100), default='State')
+    pin_code = db.Column(db.String(10), default='PIN Code')
+    phone = db.Column(db.String(20), default='+91-XXX-XXXXXXX')
+    email = db.Column(db.String(120))
+    gst_number = db.Column(db.String(50), default='XXAABCRXXXXMXZC')
+    arn_number = db.Column(db.String(50), default='AAXXXXXXXGX')
+    website = db.Column(db.String(200))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    @classmethod
+    def get_settings(cls):
+        """Get company settings, create default if none exist"""
+        settings = cls.query.first()
+        if not settings:
+            settings = cls()
+            db.session.add(settings)
+            db.session.commit()
+        return settings
+
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     
@@ -108,13 +136,22 @@ class PurchaseOrderItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     purchase_order_id = db.Column(db.Integer, db.ForeignKey('purchase_orders.id'), nullable=False)
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
-    drawing_spec_no = db.Column(db.String(100))  # Drawing/Spec Sheet No.
-    hsn_code = db.Column(db.String(20))  # HSN Code for GST
-    gst_rate = db.Column(db.Float, default=18.0)  # GST Rate percentage
+    sr_no = db.Column(db.Integer)  # Serial Number (No.)
+    rm_code = db.Column(db.String(50))  # RM Code (Raw Material Code)
+    item_description = db.Column(db.Text)  # Item + Description
+    drawing_spec_no = db.Column(db.String(100))  # Drawing / Spec Sheet No.
+    hsn_code = db.Column(db.String(20))  # HSN Code
+    gst_rate = db.Column(db.Float, default=18.0)  # GST Rate %
+    uom = db.Column(db.String(20))  # UOM (Unit of Measure)
+    qty = db.Column(db.Float, nullable=False)  # Qty (Quantity)
+    rate = db.Column(db.Float, nullable=False)  # Rate (per unit)
+    amount = db.Column(db.Float, nullable=False)  # Amount (qty × rate)
+    # Legacy fields for compatibility
     quantity_ordered = db.Column(db.Float, nullable=False)
     quantity_received = db.Column(db.Float, default=0.0)
     unit_price = db.Column(db.Float, nullable=False)
     total_price = db.Column(db.Float, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class SalesOrder(db.Model):
     __tablename__ = 'sales_orders'
