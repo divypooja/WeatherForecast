@@ -323,23 +323,16 @@ function addPOItem() {
 
 function populateItemDetails(selectElement) {
     const selectedOption = selectElement.options[selectElement.selectedIndex];
+    
+    console.log('=== Auto-population Debug ===');
+    console.log('Selected option:', selectedOption);
+    console.log('Selected value:', selectedOption.value);
+    console.log('Dataset:', selectedOption.dataset);
+    
     if (selectedOption.value) {
         const row = selectElement.closest('tr');
-        const rowIndex = selectElement.name.split('_')[2];
         
-        // Debug: Log the data being retrieved
-        console.log('Selected item data:', {
-            gst: selectedOption.dataset.gst,
-            price: selectedOption.dataset.price,
-            code: selectedOption.dataset.code,
-            uom: selectedOption.dataset.uom
-        });
-        
-        // Additional logging to check actual values
-        console.log('GST field target:', gstInput);
-        console.log('Rate field target:', rateInput);
-        
-        // Populate fields with item data
+        // Find all input fields in this row
         const rmCodeInput = row.querySelector(`input[name*="rm_code"]`);
         const descriptionTextarea = row.querySelector(`textarea[name*="description"]`);
         const hsnInput = row.querySelector(`input[name*="hsn_code"]`);
@@ -347,26 +340,46 @@ function populateItemDetails(selectElement) {
         const uomInput = row.querySelector(`input[name*="uom"]`);
         const rateInput = row.querySelector(`input[name*="rate"]`);
         
+        console.log('Found fields:', {
+            rmCodeInput: rmCodeInput ? rmCodeInput.name : 'NOT FOUND',
+            descriptionTextarea: descriptionTextarea ? descriptionTextarea.name : 'NOT FOUND',
+            hsnInput: hsnInput ? hsnInput.name : 'NOT FOUND',
+            gstInput: gstInput ? gstInput.name : 'NOT FOUND',
+            uomInput: uomInput ? uomInput.name : 'NOT FOUND',
+            rateInput: rateInput ? rateInput.name : 'NOT FOUND'
+        });
+        
+        // Set values with detailed logging
         if (rmCodeInput) {
             rmCodeInput.value = selectedOption.dataset.code || '';
+            console.log('Set RM Code:', rmCodeInput.value);
         }
         if (descriptionTextarea) {
             descriptionTextarea.value = selectedOption.dataset.description || '';
+            console.log('Set Description:', descriptionTextarea.value);
         }
         if (hsnInput) {
             hsnInput.value = selectedOption.dataset.hsn || '';
+            console.log('Set HSN:', hsnInput.value);
         }
         if (gstInput) {
             gstInput.value = selectedOption.dataset.gst || '0.0';
+            console.log('Set GST Rate:', gstInput.value);
         }
         if (uomInput) {
             uomInput.value = selectedOption.dataset.uom || '';
+            console.log('Set UOM:', uomInput.value);
         }
         if (rateInput) {
             rateInput.value = selectedOption.dataset.price || '0.00';
+            console.log('Set Rate:', rateInput.value);
         }
         
-        calculateAmount(rateInput);
+        console.log('=== Auto-population Complete ===');
+        
+        if (rateInput) {
+            calculateAmount(rateInput);
+        }
     }
 }
 
