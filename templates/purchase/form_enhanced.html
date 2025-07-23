@@ -249,7 +249,8 @@ const itemsData = [
         hsn_code: "{{ item.hsn_code or '' }}",
         gst_rate: {{ item.gst_rate or 0.0 }},
         unit_of_measure: "{{ item.unit_of_measure }}",
-        unit_price: {{ item.unit_price or 0.0 }}
+        unit_price: {{ item.unit_price or 0.0 }},
+        bom_rate: {{ item.bom_rate or item.unit_price or 0.0 }}
     }{% if not loop.last %},{% endif %}
     {% endfor %}
 ];
@@ -318,11 +319,13 @@ function addPOItem() {
         option.dataset.hsn = item.hsn_code;
         option.dataset.gst = item.gst_rate;
         option.dataset.uom = item.unit_of_measure;
-        option.dataset.price = item.unit_price;
+        option.dataset.price = item.bom_rate;
         
         console.log('Setting option data for', item.code, ':', {
             gst: item.gst_rate,
-            price: item.unit_price,
+            unit_price: item.unit_price,
+            bom_rate: item.bom_rate,
+            final_price: item.bom_rate,
             uom: item.unit_of_measure,
             hsn: item.hsn_code,
             description: item.description
