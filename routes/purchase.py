@@ -169,6 +169,41 @@ def add_supplier():
     
     return render_template('purchase/supplier_form.html', form=form, title='Add Supplier')
 
+@purchase_bp.route('/suppliers/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_supplier(id):
+    supplier = Supplier.query.get_or_404(id)
+    form = SupplierForm(obj=supplier)
+    
+    if form.validate_on_submit():
+        supplier.name = form.name.data
+        supplier.contact_person = form.contact_person.data
+        supplier.phone = form.phone.data
+        supplier.email = form.email.data
+        supplier.address = form.address.data
+        supplier.gst_number = form.gst_number.data
+        
+        db.session.commit()
+        flash('Supplier updated successfully', 'success')
+        return redirect(url_for('purchase.list_suppliers'))
+    
+    return render_template('purchase/supplier_form.html', form=form, title='Edit Supplier', supplier=supplier)
+
+@purchase_bp.route('/suppliers/delete/<int:id>', methods=['POST', 'GET'])
+@login_required
+def delete_supplier(id):
+    supplier = Supplier.query.get_or_404(id)
+    
+    # Check if supplier has any purchase orders
+    if supplier.purchase_orders:
+        flash('Cannot delete supplier with existing purchase orders', 'danger')
+        return redirect(url_for('purchase.list_suppliers'))
+    
+    db.session.delete(supplier)
+    db.session.commit()
+    flash('Supplier deleted successfully', 'success')
+    return redirect(url_for('purchase.list_suppliers'))
+
 @purchase_bp.route('/print/<int:id>')
 @login_required  
 def print_purchase_order(id):
@@ -200,3 +235,22 @@ def print_purchase_order(id):
     amount_words = number_to_words(int(po.total_amount))
     
     return render_template('purchase/po_print.html', po=po, amount_words=amount_words)
+
+@purchase_bp.route('/delete/<int:id>', methods=['POST', 'GET'])
+@login_required
+def delete_purchase_order(id):
+    po = PurchaseOrder.query.get_or_404(id)
+    
+    # Check if user has permission (only admin or creator can delete)
+    if not current_user.is_admin() and po.created_by != current_user.id:
+        flash('You do not have permission to delete this purchase order', 'danger')
+        return redirect(url_for('purchase.list_purchase_orders'))
+    
+    # Delete related items first
+    PurchaseOrderItem.query.filter_by(purchase_order_id=id).delete()
+    DeliverySchedule.query.filter_by(purchase_order_id=id).delete()
+    
+    db.session.delete(po)
+    db.session.commit()
+    flash('Purchase Order deleted successfully', 'success')
+    return redirect(url_for('purchase.list_purchase_orders'))
