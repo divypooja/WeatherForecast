@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
-from forms import JobWorkForm
+from forms import JobWorkForm, JobWorkQuantityUpdateForm
 from models import JobWork, Supplier
 from app import db
 from sqlalchemy import func
@@ -129,3 +129,35 @@ def update_status(id, status):
         flash('Invalid status', 'danger')
     
     return redirect(url_for('jobwork.list_job_works'))
+
+@jobwork_bp.route('/update_quantity/<int:id>', methods=['GET', 'POST'])
+@login_required
+def update_quantity(id):
+    job = JobWork.query.get_or_404(id)
+    form = JobWorkQuantityUpdateForm(job=job)
+    
+    if form.validate_on_submit():
+        # Update quantity received
+        additional_received = form.quantity_received.data
+        job.quantity_received += additional_received
+        job.received_date = form.received_date.data
+        
+        # Update notes
+        if form.notes.data:
+            if job.notes:
+                job.notes += f"\n\n[{form.received_date.data.strftime('%m/%d/%Y')}] {form.notes.data}"
+            else:
+                job.notes = f"[{form.received_date.data.strftime('%m/%d/%Y')}] {form.notes.data}"
+        
+        # Update status based on quantity received
+        if job.quantity_received >= job.quantity_sent:
+            job.status = 'completed'
+            job.quantity_received = job.quantity_sent  # Ensure we don't exceed sent quantity
+        elif job.quantity_received > 0:
+            job.status = 'partial_received'
+        
+        db.session.commit()
+        flash(f'Quantity updated successfully. Received: {additional_received} {job.item.unit_of_measure}', 'success')
+        return redirect(url_for('jobwork.list_job_works'))
+    
+    return render_template('jobwork/update_quantity.html', form=form, job=job, title='Update Quantity')
