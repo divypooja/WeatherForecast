@@ -65,7 +65,8 @@ def add_purchase_order():
         existing_po = PurchaseOrder.query.filter_by(po_number=form.po_number.data).first()
         if existing_po:
             flash('PO number already exists', 'danger')
-            return render_template('purchase/form.html', form=form, title='Add Purchase Order')
+            items = Item.query.all()
+            return render_template('purchase/form_enhanced.html', form=form, title='Add Purchase Order', items=items)
         
         po = PurchaseOrder(
             po_number=form.po_number.data,
@@ -83,11 +84,17 @@ def add_purchase_order():
             created_by=current_user.id
         )
         db.session.add(po)
+        db.session.flush()  # Get the PO ID
+        
+        # Process enhanced PO items from form
+        process_po_items(po, request.form)
+        
         db.session.commit()
         flash('Purchase Order created successfully', 'success')
         return redirect(url_for('purchase.edit_purchase_order', id=po.id))
     
-    return render_template('purchase/form.html', form=form, title='Add Purchase Order')
+    items = Item.query.all()
+    return render_template('purchase/form_enhanced.html', form=form, title='Add Purchase Order', items=items)
 
 @purchase_bp.route('/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -104,7 +111,9 @@ def edit_purchase_order(id):
         ).first()
         if existing_po:
             flash('PO number already exists', 'danger')
-            return render_template('purchase/form.html', form=form, title='Edit Purchase Order', po=po)
+            po_items = PurchaseOrderItem.query.filter_by(purchase_order_id=id).all()
+            items = Item.query.all()
+            return render_template('purchase/form_enhanced.html', form=form, title='Edit Purchase Order', po=po, po_items=po_items, items=items)
         
         po.po_number = form.po_number.data
         po.supplier_id = form.supplier_id.data
@@ -119,6 +128,9 @@ def edit_purchase_order(id):
         po.approved_by = form.approved_by.data
         po.notes = form.notes.data
         
+        # Process enhanced PO items from form
+        process_po_items(po, request.form)
+        
         db.session.commit()
         flash('Purchase Order updated successfully', 'success')
         return redirect(url_for('purchase.list_purchase_orders'))
@@ -127,7 +139,7 @@ def edit_purchase_order(id):
     po_items = PurchaseOrderItem.query.filter_by(purchase_order_id=id).all()
     items = Item.query.all()
     
-    return render_template('purchase/form.html', 
+    return render_template('purchase/form_enhanced.html', 
                          form=form, 
                          title='Edit Purchase Order', 
                          po=po, 
@@ -255,3 +267,64 @@ def delete_purchase_order(id):
     db.session.commit()
     flash('Purchase Order deleted successfully', 'success')
     return redirect(url_for('purchase.list_purchase_orders'))
+
+def process_po_items(po, form_data):
+    """Process enhanced PO items with industrial-standard fields"""
+    # Clear existing items
+    PurchaseOrderItem.query.filter_by(purchase_order_id=po.id).delete()
+    
+    total_amount = 0
+    item_counter = 1
+    
+    # Process items from form
+    for key, value in form_data.items():
+        if key.startswith('item_id_') and value and value != '':
+            try:
+                item_id = int(value)
+                
+                # Extract item suffix to get related fields
+                if '_new_' in key:
+                    item_suffix = key.split('_new_')[1]
+                    prefix = f'new_{item_suffix}'
+                else:
+                    item_suffix = key.split('_')[2] if len(key.split('_')) > 2 else key.split('_')[1]
+                    prefix = item_suffix
+                
+                # Get other fields for this item
+                rm_code = form_data.get(f'rm_code_{prefix}', '')
+                description = form_data.get(f'description_{prefix}', '')
+                drawing_spec = form_data.get(f'drawing_spec_{prefix}', '')
+                hsn_code = form_data.get(f'hsn_code_{prefix}', '')
+                gst_rate = float(form_data.get(f'gst_rate_{prefix}', 18.0) or 18.0)
+                uom = form_data.get(f'uom_{prefix}', '')
+                qty = float(form_data.get(f'qty_{prefix}', 0) or 0)
+                rate = float(form_data.get(f'rate_{prefix}', 0) or 0)
+                amount = float(form_data.get(f'amount_{prefix}', 0) or 0)
+                
+                if qty > 0 and rate > 0:
+                    po_item = PurchaseOrderItem(
+                        purchase_order_id=po.id,
+                        item_id=item_id,
+                        sr_no=item_counter,
+                        rm_code=rm_code,
+                        item_description=description,
+                        drawing_spec_no=drawing_spec,
+                        hsn_code=hsn_code,
+                        gst_rate=gst_rate,
+                        uom=uom,
+                        qty=qty,
+                        rate=rate,
+                        amount=amount,
+                        # Legacy fields for compatibility
+                        quantity_ordered=qty,
+                        unit_price=rate,
+                        total_price=amount
+                    )
+                    db.session.add(po_item)
+                    total_amount += amount
+                    item_counter += 1
+            except (ValueError, TypeError):
+                continue  # Skip invalid entries
+    
+    # Update PO total amount
+    po.total_amount = total_amount
