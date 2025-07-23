@@ -76,6 +76,10 @@ def add_purchase_order():
             payment_terms=form.payment_terms.data,
             freight_terms=form.freight_terms.data,
             validity_months=form.validity_months.data,
+            prepared_by=form.prepared_by.data,
+            verified_by=form.verified_by.data,
+            approved_by=form.approved_by.data,
+            delivery_notes=form.delivery_notes.data,
             status=form.status.data,
             notes=form.notes.data,
             created_by=current_user.id
@@ -116,6 +120,10 @@ def edit_purchase_order(id):
         form.payment_terms.data = po.payment_terms
         form.freight_terms.data = po.freight_terms
         form.validity_months.data = po.validity_months
+        form.prepared_by.data = po.prepared_by
+        form.verified_by.data = po.verified_by
+        form.approved_by.data = po.approved_by
+        form.delivery_notes.data = po.delivery_notes
         form.status.data = po.status
         form.notes.data = po.notes
     
@@ -143,6 +151,10 @@ def edit_purchase_order(id):
         po.payment_terms = form.payment_terms.data
         po.freight_terms = form.freight_terms.data
         po.validity_months = form.validity_months.data
+        po.prepared_by = form.prepared_by.data
+        po.verified_by = form.verified_by.data
+        po.approved_by = form.approved_by.data
+        po.delivery_notes = form.delivery_notes.data
         po.status = form.status.data
         po.notes = form.notes.data
         
