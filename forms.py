@@ -110,7 +110,9 @@ class SalesOrderForm(FlaskForm):
     
     def __init__(self, *args, **kwargs):
         super(SalesOrderForm, self).__init__(*args, **kwargs)
-        self.customer_id.choices = [(0, 'Select Customer')] + [(c.id, c.name) for c in Customer.query.all()]
+        # Get suppliers who are customers (partner_type is 'customer' or 'both')
+        customers = Supplier.query.filter(Supplier.partner_type.in_(['customer', 'both'])).all()
+        self.customer_id.choices = [(0, 'Select Customer')] + [(c.id, c.name) for c in customers]
 
 class SalesOrderItemForm(FlaskForm):
     item_id = SelectField('Item', validators=[DataRequired()], coerce=int)
