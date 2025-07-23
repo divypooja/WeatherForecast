@@ -73,7 +73,7 @@ def add_production():
             production_number=form.production_number.data,
             item_id=form.item_id.data,
             quantity_planned=form.quantity_planned.data,
-            production_date=form.production_date.data,
+            production_date=form.start_date.data,
             notes=form.notes.data,
             created_by=current_user.id
         )
@@ -104,7 +104,7 @@ def edit_production(id):
         production.production_number = form.production_number.data
         production.item_id = form.item_id.data
         production.quantity_planned = form.quantity_planned.data
-        production.production_date = form.production_date.data
+        production.production_date = form.start_date.data
         production.notes = form.notes.data
         
         db.session.commit()
