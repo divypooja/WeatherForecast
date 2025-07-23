@@ -6,7 +6,16 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 23, 2025)
 
-### Smart Production Form Workflow (Latest)
+### BOM Material Availability Checking System (Latest)
+- **Complete BOM Integration**: Created comprehensive BOM for Castor Wheel with 6 component materials (Metal Bracket, Wheel PU/PP, Axle/Pin, Nut/Bolt, Washer, Grease/Oil)
+- **Real-time Material Validation**: Production form now checks BOM requirements against current inventory before allowing production creation
+- **Visual Shortage Indicators**: Production form displays material requirements table with green/red status badges showing availability vs shortages
+- **Production Prevention**: System prevents production order creation when materials are insufficient, showing detailed shortage information
+- **Dynamic Calculations**: Material requirements automatically calculated based on planned production quantity
+- **Enhanced User Experience**: Clear messaging shows exactly which materials are short and by how much
+- **Job Work Auto-fill Removal**: Removed BOM rate auto-filling from Job Work forms - users now manually enter rates as requested
+
+### Smart Production Form Workflow
 - **Logical Field Display**: Production form now intelligently shows/hides fields based on production status
 - **Planning Phase**: When creating new production orders (status = 'planned'), only shows essential planning fields:
   - Production Number, Item to Produce, Planned Quantity, Production Date, Status, Notes

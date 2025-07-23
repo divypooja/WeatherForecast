@@ -294,29 +294,4 @@ Expected Return: {job.expected_return or 'Not specified'}
     
     return render_template('jobwork/send.html', job=job, title=f'Send Job Work {job.job_number}')
 
-@jobwork_bp.route('/api/get_item_bom_rate/<int:item_id>')
-@login_required
-def get_item_bom_rate(item_id):
-    """API endpoint to get BOM rate or unit price for an item"""
-    try:
-        item = Item.query.get(item_id)
-        if not item:
-            return jsonify({'success': False, 'message': 'Item not found'})
-        
-        # Try to get BOM rate first, fall back to unit price
-        bom_rate = None
-        # Look for this item in BOM entries where it's used as a material
-        bom_item = BOMItem.query.filter_by(item_id=item.id).first()
-        if bom_item and bom_item.unit_cost:
-            bom_rate = bom_item.unit_cost
-        
-        return jsonify({
-            'success': True,
-            'item_id': item.id,
-            'item_name': item.name,
-            'bom_rate': bom_rate,
-            'unit_price': item.unit_price,
-            'unit_of_measure': item.unit_of_measure
-        })
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
+# BOM rate auto-filling API removed as requested - users will manually enter rates
