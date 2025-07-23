@@ -322,18 +322,17 @@ function addPOItem() {
         option.dataset.name = item.name;
         option.dataset.description = item.description;
         option.dataset.hsn = item.hsn_code;
-        option.dataset.gst = item.gst_rate;
+        option.dataset.gst = item.gst_rate;  // This should be GST percentage like 18%
         option.dataset.uom = item.unit_of_measure;
-        option.dataset.price = item.bom_rate;
+        option.dataset.price = item.bom_rate;  // This should be the BOM unit cost like 42.94
         
-        console.log('Setting option data for', item.code, ':', {
-            gst: item.gst_rate,
-            unit_price: item.unit_price,
-            bom_rate: item.bom_rate,
-            final_price: item.bom_rate,
-            uom: item.unit_of_measure,
-            hsn: item.hsn_code,
-            description: item.description
+        console.log(`Setting dataset for ${item.code}:`, {
+            'gst_rate (for GST field)': item.gst_rate,
+            'bom_rate (for Rate field)': item.bom_rate,
+            'unit_price (fallback)': item.unit_price,
+            'uom': item.unit_of_measure,
+            'dataset.gst': option.dataset.gst,
+            'dataset.price': option.dataset.price
         });
         selectElement.appendChild(option);
     });
@@ -390,8 +389,15 @@ function populateItemDetails(selectElement) {
             console.log('Set HSN:', hsnInput.value);
         }
         if (gstInput) {
-            gstInput.value = selectedOption.dataset.gst || '0.0';
-            console.log('Set GST Rate:', gstInput.value, 'from dataset.gst:', selectedOption.dataset.gst);
+            const gstValue = selectedOption.dataset.gst || '0.0';
+            gstInput.value = gstValue;
+            console.log('=== GST FIELD DEBUG ===');
+            console.log('GST field found:', gstInput);
+            console.log('GST field name:', gstInput.name);
+            console.log('Dataset.gst value:', selectedOption.dataset.gst);
+            console.log('Final GST value set:', gstValue);
+            console.log('GST input value after setting:', gstInput.value);
+            console.log('======================');
         }
         if (uomInput) {
             uomInput.value = selectedOption.dataset.uom || '';
@@ -400,13 +406,13 @@ function populateItemDetails(selectElement) {
         if (rateInput) {
             const rateValue = selectedOption.dataset.price || '0.00';
             rateInput.value = rateValue;
-            console.log('=== RATE DEBUG ===');
+            console.log('=== RATE FIELD DEBUG ===');
             console.log('Rate field found:', rateInput);
             console.log('Rate field name:', rateInput.name);
-            console.log('Dataset price value:', selectedOption.dataset.price);
+            console.log('Dataset.price value:', selectedOption.dataset.price);
             console.log('Final rate value set:', rateValue);
             console.log('Rate input value after setting:', rateInput.value);
-            console.log('==================');
+            console.log('========================');
         } else {
             console.log('ERROR: Rate input field not found in row');
         }
