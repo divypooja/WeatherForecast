@@ -152,3 +152,55 @@ def add_customer():
         return redirect(url_for('sales.list_customers'))
     
     return render_template('sales/customer_form.html', form=form, title='Add Customer')
+
+@sales_bp.route('/customers/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_customer(id):
+    customer = Customer.query.get_or_404(id)
+    form = CustomerForm(obj=customer)
+    
+    if form.validate_on_submit():
+        customer.name = form.name.data
+        customer.contact_person = form.contact_person.data
+        customer.phone = form.phone.data
+        customer.email = form.email.data
+        customer.address = form.address.data
+        
+        db.session.commit()
+        flash('Customer updated successfully', 'success')
+        return redirect(url_for('sales.list_customers'))
+    
+    return render_template('sales/customer_form.html', form=form, title='Edit Customer', customer=customer)
+
+@sales_bp.route('/customers/delete/<int:id>', methods=['POST', 'GET'])
+@login_required
+def delete_customer(id):
+    customer = Customer.query.get_or_404(id)
+    
+    # Check if customer has any sales orders
+    if customer.sales_orders:
+        flash('Cannot delete customer with existing sales orders', 'danger')
+        return redirect(url_for('sales.list_customers'))
+    
+    db.session.delete(customer)
+    db.session.commit()
+    flash('Customer deleted successfully', 'success')
+    return redirect(url_for('sales.list_customers'))
+
+@sales_bp.route('/delete/<int:id>', methods=['POST', 'GET'])
+@login_required
+def delete_sales_order(id):
+    so = SalesOrder.query.get_or_404(id)
+    
+    # Check if user has permission (only admin or creator can delete)
+    if not current_user.is_admin() and so.created_by != current_user.id:
+        flash('You do not have permission to delete this sales order', 'danger')
+        return redirect(url_for('sales.list_sales_orders'))
+    
+    # Delete related items first
+    SalesOrderItem.query.filter_by(sales_order_id=id).delete()
+    
+    db.session.delete(so)
+    db.session.commit()
+    flash('Sales Order deleted successfully', 'success')
+    return redirect(url_for('sales.list_sales_orders'))
