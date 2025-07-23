@@ -274,6 +274,31 @@ class NotificationRecipientForm(FlaskForm):
         
         return True
 
+class NotificationSettingsForm(FlaskForm):
+    # Email settings
+    email_enabled = BooleanField('Enable Email Notifications', default=True)
+    sendgrid_api_key = StringField('SendGrid API Key', validators=[Optional(), Length(max=255)])
+    sender_email = StringField('Sender Email', validators=[Optional(), Email(), Length(max=120)], default='noreply@akfactory.com')
+    sender_name = StringField('Sender Name', validators=[Optional(), Length(max=100)], default='AK Innovations Factory')
+    
+    # SMS/WhatsApp settings
+    sms_enabled = BooleanField('Enable SMS Notifications', default=True)
+    whatsapp_enabled = BooleanField('Enable WhatsApp Notifications', default=True)
+    twilio_account_sid = StringField('Twilio Account SID', validators=[Optional(), Length(max=255)])
+    twilio_auth_token = StringField('Twilio Auth Token', validators=[Optional(), Length(max=255)])
+    twilio_phone_number = StringField('Twilio Phone Number', validators=[Optional(), Length(max=20)])
+    
+    # Notification preferences
+    low_stock_notifications = BooleanField('Low Stock Alerts', default=True)
+    order_status_notifications = BooleanField('Order Status Updates', default=True)
+    production_notifications = BooleanField('Production Notifications', default=True)
+    
+    # Admin recipients
+    admin_email = StringField('Admin Email', validators=[Optional(), Email(), Length(max=120)])
+    admin_phone = StringField('Admin Phone', validators=[Optional(), Length(max=20)])
+    
+    submit = SubmitField('Save Settings')
+
 class NotificationTestForm(FlaskForm):
     recipient_type = SelectField('Recipient Type', 
                                choices=[('sms', 'SMS'), ('email', 'Email'), ('whatsapp', 'WhatsApp')],
