@@ -110,7 +110,7 @@
                                                     data-hsn="{{ available_item.hsn_code or '' }}"
                                                     data-gst="{{ available_item.gst_rate or 18.0 }}"
                                                     data-uom="{{ available_item.unit_of_measure }}"
-                                                    data-price="{{ available_item.unit_price }}">
+                                                    data-price="{{ available_item.unit_price or 0.0 }}">
                                                 {{ available_item.code }} - {{ available_item.name }}
                                             </option>
                                             {% endfor %}
@@ -260,7 +260,7 @@ function addPOItem() {
                         data-hsn="{{ item.hsn_code or '' }}"
                         data-gst="{{ item.gst_rate or 18.0 }}"
                         data-uom="{{ item.unit_of_measure }}"
-                        data-price="{{ item.unit_price }}">
+                        data-price="{{ item.unit_price or 0.0 }}">
                     {{ item.code }} - {{ item.name }}
                 </option>
                 {% endfor %}
@@ -307,6 +307,14 @@ function populateItemDetails(selectElement) {
         const row = selectElement.closest('tr');
         const rowIndex = selectElement.name.split('_')[2];
         
+        // Debug: Log the data being retrieved
+        console.log('Selected item data:', {
+            gst: selectedOption.dataset.gst,
+            price: selectedOption.dataset.price,
+            code: selectedOption.dataset.code,
+            uom: selectedOption.dataset.uom
+        });
+        
         // Populate fields with item data
         const rmCodeInput = row.querySelector(`input[name*="rm_code"]`);
         const descriptionTextarea = row.querySelector(`textarea[name*="description"]`);
@@ -318,9 +326,9 @@ function populateItemDetails(selectElement) {
         if (rmCodeInput) rmCodeInput.value = selectedOption.dataset.code || '';
         if (descriptionTextarea) descriptionTextarea.value = selectedOption.dataset.description || '';
         if (hsnInput) hsnInput.value = selectedOption.dataset.hsn || '';
-        if (gstInput) gstInput.value = selectedOption.dataset.gst || '18.0';  // GST percentage, not price
+        if (gstInput) gstInput.value = selectedOption.dataset.gst || '18.0';  // This should be GST percentage (18)
         if (uomInput) uomInput.value = selectedOption.dataset.uom || '';
-        if (rateInput) rateInput.value = selectedOption.dataset.price || '0.00';  // Unit price for Rate column
+        if (rateInput) rateInput.value = selectedOption.dataset.price || '0.00';  // This should be unit price (37.94)
         
         calculateAmount(rateInput);
     }
