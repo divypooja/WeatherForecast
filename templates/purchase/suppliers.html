@@ -35,22 +35,63 @@
                     <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th>Name</th>
-                                <th>Contact Person</th>
-                                <th>Phone</th>
-                                <th>Email</th>
-                                <th>Address</th>
+                                <th>Supplier Details</th>
+                                <th>Contact Information</th>
+                                <th>Location</th>
+                                <th>Compliance</th>
+                                <th>Status</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for supplier in suppliers.items %}
                             <tr>
-                                <td><strong>{{ supplier.name }}</strong></td>
-                                <td>{{ supplier.contact_person or '-' }}</td>
-                                <td>{{ supplier.phone or '-' }}</td>
-                                <td>{{ supplier.email or '-' }}</td>
-                                <td>{{ supplier.address or '-' }}</td>
+                                <td>
+                                    <strong>{{ supplier.name }}</strong><br>
+                                    <small class="text-muted">{{ supplier.contact_person or 'No contact person' }}</small>
+                                </td>
+                                <td>
+                                    {% if supplier.phone %}
+                                        <div><i class="fas fa-phone text-primary"></i> {{ supplier.phone }}</div>
+                                    {% endif %}
+                                    {% if supplier.email %}
+                                        <div><i class="fas fa-envelope text-info"></i> {{ supplier.email }}</div>
+                                    {% endif %}
+                                    {% if not supplier.phone and not supplier.email %}
+                                        <span class="text-muted">No contact info</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if supplier.city or supplier.state %}
+                                        <div><i class="fas fa-map-marker-alt text-warning"></i> 
+                                            {{ supplier.city or '' }}{% if supplier.city and supplier.state %}, {% endif %}{{ supplier.state or '' }}
+                                        </div>
+                                    {% endif %}
+                                    {% if supplier.pin_code %}
+                                        <small class="text-muted">PIN: {{ supplier.pin_code }}</small>
+                                    {% endif %}
+                                    {% if not supplier.city and not supplier.state and not supplier.pin_code %}
+                                        <span class="text-muted">No location info</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if supplier.gst_number %}
+                                        <div class="badge bg-success mb-1">GST: {{ supplier.gst_number[:6] }}...{{ supplier.gst_number[-3:] if supplier.gst_number|length > 9 else supplier.gst_number }}</div>
+                                    {% endif %}
+                                    {% if supplier.pan_number %}
+                                        <div class="badge bg-info">PAN: {{ supplier.pan_number }}</div>
+                                    {% endif %}
+                                    {% if not supplier.gst_number and not supplier.pan_number %}
+                                        <span class="text-muted">No compliance info</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if supplier.is_active %}
+                                        <span class="badge bg-success"><i class="fas fa-check"></i> Active</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary"><i class="fas fa-times"></i> Inactive</span>
+                                    {% endif %}
+                                </td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
                                         <a href="{{ url_for('purchase.edit_supplier', id=supplier.id) }}" class="btn btn-outline-primary btn-sm" title="Edit">

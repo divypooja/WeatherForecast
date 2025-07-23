@@ -56,13 +56,33 @@ class Supplier(db.Model):
     __tablename__ = 'suppliers'
     
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    contact_person = db.Column(db.String(100))
-    phone = db.Column(db.String(20))
-    email = db.Column(db.String(120))
-    address = db.Column(db.Text)
-    gst_number = db.Column(db.String(50))  # GST registration number
+    
+    # Basic Information
+    name = db.Column(db.String(200), nullable=False)  # Full legal name
+    contact_person = db.Column(db.String(100))  # Person to contact
+    phone = db.Column(db.String(20))  # Mobile number
+    email = db.Column(db.String(120))  # Email for orders/inquiries
+    
+    # Compliance Information
+    gst_number = db.Column(db.String(50))  # GSTIN (mandatory for GST)
+    pan_number = db.Column(db.String(20))  # PAN (optional, for compliance)
+    
+    # Address Information
+    address = db.Column(db.Text)  # Full postal address
+    city = db.Column(db.String(100))
+    state = db.Column(db.String(100))
+    pin_code = db.Column(db.String(10))
+    
+    # Banking Information (optional, for payments)
+    account_number = db.Column(db.String(50))
+    bank_name = db.Column(db.String(200))
+    ifsc_code = db.Column(db.String(20))
+    
+    # Additional Information
+    remarks = db.Column(db.Text)  # Any notes
+    is_active = db.Column(db.Boolean, default=True)  # Supplier status
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
     purchase_orders = db.relationship('PurchaseOrder', backref='supplier', lazy=True)
