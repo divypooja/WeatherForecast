@@ -90,10 +90,11 @@
                         </div>
                         
                         <div class="row">
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-{% if so %}4{% else %}6{% endif %} mb-3">
                                 {{ form.validity_months.label(class="form-label") }}
                                 {{ form.validity_months(class="form-control") }}
                             </div>
+                            {% if so %}
                             <div class="col-md-4 mb-3">
                                 {{ form.status.label(class="form-label") }}
                                 {{ form.status(class="form-control") }}
@@ -109,7 +110,8 @@
                                     <strong>Note:</strong> Changing status to "Confirmed" will automatically deduct inventory quantities.
                                 </div>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            {% endif %}
+                            <div class="col-md-{% if so %}4{% else %}6{% endif %} mb-3">
                                 {{ form.delivery_notes.label(class="form-label") }}
                                 {{ form.delivery_notes(class="form-control", rows="2") }}
                             </div>
