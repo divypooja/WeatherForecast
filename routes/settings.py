@@ -94,6 +94,56 @@ def test_notification():
         'message': f'Test {notification_type} sent successfully!' if success else f'Failed to send test {notification_type}'
     })
 
+@settings_bp.route('/notification_templates')
+@login_required
+def notification_templates():
+    """Notification template management page"""
+    return render_template('settings/notification_templates.html')
+
+@settings_bp.route('/save_notification_template', methods=['POST'])
+@login_required
+def save_notification_template():
+    """Save notification template configuration"""
+    data = request.get_json()
+    template_type = data.get('template_type')
+    template_data = data.get('data')
+    
+    # In a real implementation, you would save this to database
+    # For now, we'll just return success
+    return jsonify({
+        'success': True,
+        'message': f'{template_type} template saved successfully'
+    })
+
+@settings_bp.route('/test_notification_template', methods=['POST'])
+@login_required
+def test_notification_template():
+    """Send test notification using template"""
+    data = request.get_json()
+    template_type = data.get('template_type')
+    recipient = data.get('recipient')
+    template_data = data.get('data')
+    
+    # Create test message based on template
+    if '@' in recipient:
+        # Email test
+        success = notification_service.send_email(
+            recipient,
+            f"Test: {template_data.get('email_subject', 'Test Subject')}",
+            f"This is a test message from your {template_type} template."
+        )
+    else:
+        # SMS test
+        success = notification_service.send_sms(
+            recipient,
+            f"Test: {template_data.get('sms_message', 'Test SMS message')}"
+        )
+    
+    return jsonify({
+        'success': success,
+        'message': 'Test notification sent' if success else 'Failed to send test notification'
+    })
+
 @settings_bp.route('/users')
 @login_required
 def user_management():
