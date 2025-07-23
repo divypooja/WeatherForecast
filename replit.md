@@ -6,7 +6,19 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 23, 2025)
 
-### Complete Factory Expenses Management System (Latest)
+### Complete Employee Salary and Advance Management System (Latest)
+- **Comprehensive Payroll Models**: Created SalaryRecord and EmployeeAdvance models with auto-generated numbers (SAL-YYYY-0001, ADV-YYYY-0001)
+- **Salary Processing**: Complete salary calculation with basic amount, overtime, bonuses, deductions, and automatic advance adjustments
+- **Advance Management**: Employee advance requests with configurable repayment periods, monthly deduction calculations, and remaining balance tracking
+- **Professional Forms**: Multi-section forms for salary records and advance requests with employee selection and payment method options
+- **Approval Workflow**: Complete admin approval system for both salaries and advances with pending → approved → paid/active lifecycle
+- **Employee Integration**: Enhanced employee detail pages with salary and advance history, total advances, and remaining balances
+- **Dashboard Analytics**: Added pending salaries, pending advances, and total active advances to HR dashboard statistics
+- **Navigation Enhancement**: Updated HR dashboard with dedicated salary and advance quick action buttons and comprehensive statistics
+- **Financial Tracking**: Complete payroll management with gross/net calculations, tax deductions, and advance integration
+- **Permission System**: Role-based access with staff able to request advances, admins able to approve and manage all records
+
+### Complete Factory Expenses Management System
 - **Comprehensive Expense Model**: Created complete FactoryExpense model with auto-generated expense numbers (EXP-YYYY-0001 format)
 - **Expense Categories**: Seven main categories including Utilities, Maintenance, Salaries, Materials, Overhead, Transport, and Others
 - **Professional Form System**: Multi-section expense form with Basic Information, Financial Details, Vendor Information, and Recurring Support
