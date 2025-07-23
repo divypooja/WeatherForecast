@@ -362,7 +362,7 @@ Total Amount: ₹{po.total_amount or 0:.2f}
 Items:
 """
         for item in po.items:
-            po_summary += f"- {item.item.name}: {item.quantity} {item.item.unit_of_measure} @ ₹{item.unit_price:.2f}\n"
+            po_summary += f"- {item.item.name}: {item.quantity_ordered} {item.item.unit_of_measure} @ ₹{item.unit_price:.2f}\n"
         
         po_summary += f"\n{message}"
         
