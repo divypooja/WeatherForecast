@@ -393,12 +393,9 @@ function populateItemDetails(selectElement) {
         console.log('==================================');
 
         // Clear all fields first to prevent conflicts
-        if (rmCodeInput) rmCodeInput.value = '';
-        if (descriptionTextarea) descriptionTextarea.value = '';
-        if (hsnInput) hsnInput.value = '';
-        if (gstInput) gstInput.value = '';
-        if (uomInput) uomInput.value = '';
-        if (rateInput) rateInput.value = '';
+        [rmCodeInput, descriptionTextarea, hsnInput, gstInput, uomInput, rateInput].forEach(field => {
+            if (field) field.value = '';
+        });
 
         // Set values with explicit mapping
         if (rmCodeInput) {
@@ -414,30 +411,58 @@ function populateItemDetails(selectElement) {
             console.log('✓ HSN Code set to:', hsnInput.value);
         }
         if (gstInput) {
-            // Leave GST Rate empty for manual entry
+            // Leave GST Rate empty for manual entry - force clear
             gstInput.value = '';
-            console.log('✓ GST Rate left empty for manual entry');
+            gstInput.setAttribute('value', '');
+            console.log('✓ GST Rate field cleared for manual entry');
         }
         if (uomInput) {
             uomInput.value = selectedOption.dataset.uom || '';
             console.log('✓ UOM set to:', uomInput.value, '(should be "nos" for castor)');
         }
         if (rateInput) {
-            rateInput.value = selectedOption.dataset.price || '0.00';
-            console.log('✓ Rate set to:', rateInput.value, '(BOM unit cost for', selectedOption.dataset.code + ')');
+            const bomRate = selectedOption.dataset.price || '0.00';
+            rateInput.value = bomRate;
+            rateInput.setAttribute('value', bomRate);
+            console.log('✓ Rate set to:', bomRate, '(BOM unit cost for', selectedOption.dataset.code + ')');
+            console.log('✓ Rate input value confirmed:', rateInput.value);
         } else {
             console.error('❌ Rate input field not found!');
         }
         
         console.log('=== Auto-population Complete ===');
         
-        // Add a small delay to check if values stick
+        // Force values with delay to override any interference
         setTimeout(() => {
-            console.log('=== VALUES AFTER 100ms ===');
-            if (gstInput) console.log('GST field value after delay:', gstInput.value);
-            if (rateInput) console.log('Rate field value after delay:', rateInput.value);
-            console.log('==========================');
+            console.log('=== FORCING VALUES AFTER 100ms ===');
+            if (gstInput) {
+                gstInput.value = '';
+                gstInput.setAttribute('value', '');
+                console.log('GST field forcibly cleared:', gstInput.value);
+            }
+            if (rateInput) {
+                const bomRate = selectedOption.dataset.price || '0.00';
+                rateInput.value = bomRate;
+                rateInput.setAttribute('value', bomRate);
+                console.log('Rate field forcibly set to:', rateInput.value);
+            }
+            console.log('==================================');
         }, 100);
+        
+        // Also force again after 500ms to be sure
+        setTimeout(() => {
+            console.log('=== FINAL FORCE AFTER 500ms ===');
+            if (gstInput) {
+                gstInput.value = '';
+                console.log('GST final value:', gstInput.value);
+            }
+            if (rateInput) {
+                const bomRate = selectedOption.dataset.price || '0.00';
+                rateInput.value = bomRate;
+                console.log('Rate final value:', rateInput.value);
+            }
+            console.log('===============================');
+        }, 500);
         
         if (rateInput) {
             calculateAmount(rateInput);
