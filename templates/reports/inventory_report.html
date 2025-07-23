@@ -163,7 +163,7 @@
                         </thead>
                         <tbody>
                             {% for item in items %}
-                            <tr class="{{ 'table-danger' if item.current_stock == 0 else 'table-warning' if item.current_stock <= item.minimum_stock else '' }}">
+                            <tr class="{{ 'table-danger' if (item.current_stock or 0) == 0 else 'table-warning' if (item.current_stock or 0) <= (item.minimum_stock or 0) else '' }}">
                                 <td><strong>{{ item.code }}</strong></td>
                                 <td>{{ item.name }}</td>
                                 <td>
@@ -171,15 +171,15 @@
                                         {{ item.item_type.title() }}
                                     </span>
                                 </td>
-                                <td>{{ "%.2f"|format(item.current_stock) }}</td>
-                                <td>{{ item.unit_of_measure }}</td>
-                                <td>{{ "%.2f"|format(item.minimum_stock) }}</td>
-                                <td>₹{{ "%.2f"|format(item.unit_price) }}</td>
-                                <td>₹{{ "%.2f"|format(item.current_stock * item.unit_price) }}</td>
+                                <td>{{ "%.2f"|format(item.current_stock or 0) }}</td>
+                                <td>{{ item.unit_of_measure or 'N/A' }}</td>
+                                <td>{{ "%.2f"|format(item.minimum_stock or 0) }}</td>
+                                <td>₹{{ "%.2f"|format(item.unit_price or 0) }}</td>
+                                <td>₹{{ "%.2f"|format((item.current_stock or 0) * (item.unit_price or 0)) }}</td>
                                 <td>
-                                    {% if item.current_stock == 0 %}
+                                    {% if (item.current_stock or 0) == 0 %}
                                         <span class="badge bg-danger">Out of Stock</span>
-                                    {% elif item.current_stock <= item.minimum_stock %}
+                                    {% elif (item.current_stock or 0) <= (item.minimum_stock or 0) %}
                                         <span class="badge bg-warning">Low Stock</span>
                                     {% else %}
                                         <span class="badge bg-success">In Stock</span>

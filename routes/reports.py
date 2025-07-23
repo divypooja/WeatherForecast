@@ -37,14 +37,14 @@ def inventory_report():
         query = query.filter_by(item_type=item_type_filter)
     
     if low_stock_only:
-        query = query.filter(Item.current_stock <= Item.minimum_stock)
+        query = query.filter(db.func.coalesce(Item.current_stock, 0) <= db.func.coalesce(Item.minimum_stock, 0))
     
     items = query.order_by(Item.name).all()
     
     # Calculate totals
     total_items = len(items)
-    total_stock_value = sum(item.current_stock * item.unit_price for item in items)
-    low_stock_count = len([item for item in items if item.current_stock <= item.minimum_stock])
+    total_stock_value = sum((item.current_stock or 0) * (item.unit_price or 0) for item in items)
+    low_stock_count = len([item for item in items if (item.current_stock or 0) <= (item.minimum_stock or 0)])
     
     # Add pagination support
     page = request.args.get('page', 1, type=int)
@@ -52,8 +52,8 @@ def inventory_report():
     
     # Calculate additional stats
     all_items = Item.query.all()
-    total_value = sum(item.current_stock * item.unit_price for item in all_items)
-    out_of_stock_count = len([item for item in all_items if item.current_stock == 0])
+    total_value = sum((item.current_stock or 0) * (item.unit_price or 0) for item in all_items)
+    out_of_stock_count = len([item for item in all_items if (item.current_stock or 0) == 0])
     
     return render_template('reports/inventory_report.html', 
                          items=items_paginated,
@@ -77,7 +77,7 @@ def export_inventory():
         query = query.filter_by(item_type=item_type_filter)
     
     if low_stock_only:
-        query = query.filter(Item.current_stock <= Item.minimum_stock)
+        query = query.filter(db.func.coalesce(Item.current_stock, 0) <= db.func.coalesce(Item.minimum_stock, 0))
     
     items = query.order_by(Item.name).all()
     
@@ -91,7 +91,7 @@ def export_inventory():
     
     # Write data
     for item in items:
-        stock_value = item.current_stock * item.unit_price
+        stock_value = (item.current_stock or 0) * (item.unit_price or 0)
         writer.writerow([item.code, item.name, item.description or '', item.unit_of_measure,
                         item.current_stock, item.minimum_stock, item.unit_price, 
                         stock_value, item.item_type])
