@@ -186,7 +186,7 @@
                                     <th style="width: 8%">Qty</th>
                                     <th style="width: 10%">Rate</th>
                                     <th style="width: 12%">Amount</th>
-                                    <th style="width: 5%">Action</th>
+                                    <th style="width: 10%; text-align: center;">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="soItemsBody">
@@ -203,7 +203,7 @@
                                         <td>{{ item.quantity_ordered }}</td>
                                         <td>₹{{ item.unit_price }}</td>
                                         <td>₹{{ item.total_price }}</td>
-                                        <td>
+                                        <td class="text-center">
                                             <button type="button" class="btn btn-danger btn-sm" onclick="removeSOItem({{ item.id }})">
                                                 <i class="fas fa-trash"></i>
                                             </button>
@@ -216,7 +216,7 @@
                                 <tr class="table-secondary">
                                     <td colspan="9" class="text-end"><strong>Sub Total:</strong></td>
                                     <td><span id="subTotal">₹0.00</span></td>
-                                    <td></td>
+                                    <td class="text-center"></td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -297,7 +297,7 @@ function addSOItem() {
             <input type="number" class="form-control form-control-sm" name="amount_new_${itemCounter}" 
                    readonly placeholder="0.00">
         </td>
-        <td>
+        <td class="text-center">
             <button type="button" class="btn btn-success btn-sm me-1" onclick="saveSOItem(this.closest('tr'))" title="Save Item">
                 <i class="fas fa-save"></i>
             </button>
