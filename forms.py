@@ -83,7 +83,7 @@ class EmployeeForm(FlaskForm):
 
 class JobWorkForm(FlaskForm):
     job_number = StringField('Job Number', validators=[DataRequired(), Length(max=50)])
-    customer_name = StringField('Customer Name', validators=[DataRequired(), Length(max=100)])
+    customer_name = SelectField('Customer Name', validators=[DataRequired()], coerce=str)
     item_id = SelectField('Item', validators=[DataRequired()], coerce=int)
     quantity_sent = FloatField('Quantity Sent', validators=[DataRequired(), NumberRange(min=0)])
     rate_per_unit = FloatField('Rate per Unit', validators=[DataRequired(), NumberRange(min=0)])
@@ -94,6 +94,7 @@ class JobWorkForm(FlaskForm):
     def __init__(self, *args, **kwargs):
         super(JobWorkForm, self).__init__(*args, **kwargs)
         self.item_id.choices = [(0, 'Select Item')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.all()]
+        self.customer_name.choices = [('', 'Select Customer')] + [(s.name, s.name) for s in Supplier.query.order_by(Supplier.name).all()]
 
 class JobWorkQuantityUpdateForm(FlaskForm):
     quantity_received = FloatField('Quantity Received', validators=[DataRequired(), NumberRange(min=0.01)])
