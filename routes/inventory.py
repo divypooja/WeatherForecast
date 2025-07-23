@@ -74,6 +74,9 @@ def add_item():
             name=form.name.data,
             description=form.description.data,
             unit_of_measure=form.unit_of_measure.data,
+            hsn_code=form.hsn_code.data,
+            gst_rate=form.gst_rate.data,
+            current_stock=form.current_stock.data,
             minimum_stock=form.minimum_stock.data,
             unit_price=form.unit_price.data,
             item_type=form.item_type.data
@@ -102,6 +105,9 @@ def edit_item(id):
         item.name = form.name.data
         item.description = form.description.data
         item.unit_of_measure = form.unit_of_measure.data
+        item.hsn_code = form.hsn_code.data
+        item.gst_rate = form.gst_rate.data
+        item.current_stock = form.current_stock.data
         item.minimum_stock = form.minimum_stock.data
         item.unit_price = form.unit_price.data
         item.item_type = form.item_type.data

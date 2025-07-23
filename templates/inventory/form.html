@@ -101,6 +101,38 @@
                             </div>
                         </div>
                         
+                        <!-- HSN Code and GST Rate Section -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.hsn_code.label(class="form-label") }}
+                                {{ form.hsn_code(class="form-control", placeholder="e.g., 8716, 7318, 3926") }}
+                                <div class="form-text">HSN Code for GST calculation (optional)</div>
+                                {% if form.hsn_code.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.hsn_code.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.gst_rate.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.gst_rate(class="form-control") }}
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <div class="form-text">GST Rate (0%, 5%, 12%, 18%, 28%)</div>
+                                {% if form.gst_rate.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.gst_rate.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 {{ form.minimum_stock.label(class="form-label") }}
@@ -109,6 +141,19 @@
                                 {% if form.minimum_stock.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.minimum_stock.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.current_stock.label(class="form-label") }}
+                                {{ form.current_stock(class="form-control") }}
+                                <div class="form-text">Current inventory level</div>
+                                {% if form.current_stock.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.current_stock.errors %}
                                             <div>{{ error }}</div>
                                         {% endfor %}
                                     </div>
