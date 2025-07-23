@@ -417,7 +417,8 @@ function populateItemDetails(selectElement) {
             // Leave GST Rate empty for manual entry - force clear
             gstInput.value = '';
             gstInput.setAttribute('value', '');
-            console.log('✓ GST Rate field cleared for manual entry');
+            gstInput.setAttribute('placeholder', '18'); // Suggest common GST rate
+            console.log('✓ GST Rate field cleared for manual entry (placeholder: 18%)');
         }
         if (uomInput) {
             uomInput.value = selectedOption.dataset.uom || '';
@@ -508,6 +509,11 @@ function calculateTotals() {
     rows.forEach((row, index) => {
         const amountInput = row.querySelector('input[name*="amount"]');
         const gstInput = row.querySelector('input.gst-field[name*="gst_rate"]');
+        
+        console.log(`Row ${index + 1} fields:`, {
+            amountInput: amountInput ? `Found (${amountInput.value})` : 'NOT FOUND',
+            gstInput: gstInput ? `Found (${gstInput.value})` : 'NOT FOUND'
+        });
         
         if (amountInput && gstInput) {
             const amount = parseFloat(amountInput.value) || 0;
