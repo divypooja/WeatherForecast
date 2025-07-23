@@ -6,7 +6,16 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 23, 2025)
 
-### Complete Employee Salary and Advance Management System (Latest)
+### Purchase Order Table UI/UX Enhancement (Latest)
+- **Column Width Optimization**: Redesigned Purchase Order table with proper minimum widths for all columns
+- **Enhanced Field Sizing**: Increased GST Rate, UOM, Qty, Rate, and Amount column widths for better usability
+- **Responsive Table Design**: Added horizontal scrolling with 1200px minimum table width for comprehensive data display
+- **Input Field Improvements**: Applied consistent minimum width styling (80-130px) to all input fields for comfortable data entry
+- **Professional Layout**: Optimized column distribution with absolute pixel-based minimum widths instead of percentage-only approach
+- **Better User Experience**: Enhanced Purchase Order form readability and data entry efficiency with larger, more accessible input fields
+- **CSS Styling Enhancements**: Added table-specific styles for better field visibility and consistent layout across different screen sizes
+
+### Complete Employee Salary and Advance Management System
 - **Comprehensive Payroll Models**: Created SalaryRecord and EmployeeAdvance models with auto-generated numbers (SAL-YYYY-0001, ADV-YYYY-0001)
 - **Salary Processing**: Complete salary calculation with basic amount, overtime, bonuses, deductions, and automatic advance adjustments
 - **Advance Management**: Employee advance requests with configurable repayment periods, monthly deduction calculations, and remaining balance tracking
