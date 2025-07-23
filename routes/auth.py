@@ -14,10 +14,14 @@ def login():
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
         if user and user.check_password(form.password.data) and user.is_active:
-            login_user(user)
+            login_user(user, remember=True)
             next_page = request.args.get('next')
+            flash(f'Welcome back, {user.username}!', 'success')
             return redirect(next_page) if next_page else redirect(url_for('main.dashboard'))
-        flash('Invalid username or password', 'danger')
+        else:
+            flash('Invalid username or password', 'danger')
+    elif request.method == 'POST':
+        flash('Please check your form entries', 'warning')
     
     return render_template('auth/login.html', form=form)
 
