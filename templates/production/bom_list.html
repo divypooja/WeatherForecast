@@ -42,7 +42,7 @@
                                         {{ 'Active' if bom.is_active else 'Inactive' }}
                                     </span>
                                 </td>
-                                <td>{{ bom.created_at.strftime('%m/%d/%Y') }}</td>
+                                <td>{{ bom.created_at.strftime('%m/%d/%Y') if bom.created_at else 'N/A' }}</td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
                                         <a href="{{ url_for('production.edit_bom', id=bom.id) }}" class="btn btn-outline-primary btn-sm">
