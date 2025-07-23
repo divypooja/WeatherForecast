@@ -429,6 +429,30 @@ def delete_purchase_order(id):
     flash('Purchase Order deleted successfully', 'success')
     return redirect(url_for('purchase.list_purchase_orders'))
 
+@purchase_bp.route('/change_status/<int:po_id>', methods=['POST'])
+@login_required
+def change_po_status(po_id):
+    # Only admins can change status
+    if current_user.role != 'admin':
+        return jsonify({'success': False, 'message': 'Only admins can change purchase order status'})
+    
+    po = PurchaseOrder.query.get_or_404(po_id)
+    new_status = request.form.get('status')
+    
+    # Validate status
+    valid_statuses = ['draft', 'open', 'partial', 'closed', 'cancelled']
+    if new_status not in valid_statuses:
+        return jsonify({'success': False, 'message': 'Invalid status'})
+    
+    old_status = po.status
+    po.status = new_status
+    db.session.commit()
+    
+    return jsonify({
+        'success': True, 
+        'message': f'Purchase Order {po.po_number} status changed from {old_status.title()} to {new_status.title()}'
+    })
+
 def process_po_items(po, form_data):
     """Process enhanced PO items with industrial-standard fields"""
     # Clear existing items
