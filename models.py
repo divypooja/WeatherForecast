@@ -99,19 +99,7 @@ class Supplier(db.Model):
     def is_customer(self):
         return self.partner_type in ['customer', 'both']
 
-class Customer(db.Model):
-    __tablename__ = 'customers'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    contact_person = db.Column(db.String(100))
-    phone = db.Column(db.String(20))
-    email = db.Column(db.String(120))
-    address = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # Relationships
-    sales_orders = db.relationship('SalesOrder', backref='customer', lazy=True)
+# Customer model removed - now using unified Supplier table for all business partners
 
 class Item(db.Model):
     __tablename__ = 'items'

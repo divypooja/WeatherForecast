@@ -2,7 +2,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SelectField, TextAreaField, FloatField, IntegerField, DateField, BooleanField, SelectMultipleField, ValidationError, DateTimeField
 from wtforms.validators import DataRequired, Length, Email, NumberRange, Optional
 from wtforms.widgets import CheckboxInput, ListWidget
-from models import User, Item, Supplier, Customer, QualityIssue, Production, PurchaseOrder, JobWork
+from models import User, Item, Supplier, QualityIssue, Production, PurchaseOrder, JobWork
 from datetime import datetime
 
 class LoginForm(FlaskForm):
@@ -71,14 +71,6 @@ class SupplierForm(FlaskForm):
 
 # Create alias for backward compatibility
 BusinessPartnerForm = SupplierForm
-CustomerForm = SupplierForm
-
-class CustomerForm(FlaskForm):
-    name = StringField('Customer Name', validators=[DataRequired(), Length(max=100)])
-    contact_person = StringField('Contact Person', validators=[Length(max=100)])
-    phone = StringField('Phone', validators=[Length(max=20)])
-    email = StringField('Email', validators=[Optional(), Email(), Length(max=120)])
-    address = TextAreaField('Address')
 
 class PurchaseOrderForm(FlaskForm):
     po_number = StringField('PO Number', validators=[DataRequired(), Length(max=50)])
