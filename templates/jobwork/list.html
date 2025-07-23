@@ -38,8 +38,8 @@
                         <thead>
                             <tr>
                                 <th>Job Number</th>
-                                <th>Vendor</th>
-                                <th>Job Date</th>
+                                <th>Customer</th>
+                                <th>Sent Date</th>
                                 <th>Expected Return</th>
                                 <th>Status</th>
                                 <th>Created By</th>
@@ -50,9 +50,9 @@
                             {% for job in jobs.items %}
                             <tr>
                                 <td><strong>{{ job.job_number }}</strong></td>
-                                <td>{{ job.job_supplier.name }}</td>
-                                <td>{{ job.job_date.strftime('%m/%d/%Y') }}</td>
-                                <td>{{ job.expected_return_date.strftime('%m/%d/%Y') if job.expected_return_date else '-' }}</td>
+                                <td>{{ job.customer_name }}</td>
+                                <td>{{ job.sent_date.strftime('%m/%d/%Y') if job.sent_date else '-' }}</td>
+                                <td>{{ job.expected_return.strftime('%m/%d/%Y') if job.expected_return else '-' }}</td>
                                 <td>
                                     <span class="badge bg-{{ 'success' if job.status == 'completed' else 'warning' if job.status == 'partial_received' else 'primary' }}">
                                         {{ job.status.replace('_', ' ').title() }}
