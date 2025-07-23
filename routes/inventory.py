@@ -14,14 +14,20 @@ def dashboard():
     # Inventory statistics
     stats = {
         'total_items': Item.query.count(),
-        'low_stock_items': Item.query.filter(Item.current_stock <= Item.minimum_stock).count(),
-        'total_stock_value': db.session.query(func.sum(Item.current_stock * Item.unit_price)).scalar() or 0,
-        'out_of_stock': Item.query.filter(Item.current_stock <= 0).count()
+        'low_stock_items': Item.query.filter(
+            func.coalesce(Item.current_stock, 0) <= func.coalesce(Item.minimum_stock, 0)
+        ).count(),
+        'total_stock_value': db.session.query(func.sum(
+            func.coalesce(Item.current_stock, 0) * func.coalesce(Item.unit_price, 0)
+        )).scalar() or 0,
+        'out_of_stock': Item.query.filter(func.coalesce(Item.current_stock, 0) == 0).count()
     }
     
     # Recent items and low stock alerts
     recent_items = Item.query.order_by(Item.created_at.desc()).limit(5).all()
-    low_stock_items = Item.query.filter(Item.current_stock <= Item.minimum_stock).limit(10).all()
+    low_stock_items = Item.query.filter(
+        func.coalesce(Item.current_stock, 0) <= func.coalesce(Item.minimum_stock, 0)
+    ).limit(10).all()
     
     # UOM summary
     uom_stats = db.session.query(Item.unit_of_measure, func.count(Item.id)).group_by(Item.unit_of_measure).all()
