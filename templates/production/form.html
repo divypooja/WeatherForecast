@@ -65,11 +65,11 @@
                             </div>
                             
                             <div class="col-md-4 mb-3">
-                                {{ form.start_date.label(class="form-label") }}
-                                {{ form.start_date(class="form-control") }}
-                                {% if form.start_date.errors %}
+                                {{ form.production_date.label(class="form-label") }}
+                                {{ form.production_date(class="form-control") }}
+                                {% if form.production_date.errors %}
                                     <div class="text-danger small">
-                                        {% for error in form.start_date.errors %}
+                                        {% for error in form.production_date.errors %}
                                             <div>{{ error }}</div>
                                         {% endfor %}
                                     </div>
@@ -77,11 +77,49 @@
                             </div>
                             
                             <div class="col-md-4 mb-3">
-                                {{ form.target_completion.label(class="form-label") }}
-                                {{ form.target_completion(class="form-control") }}
-                                {% if form.target_completion.errors %}
+                                {{ form.status.label(class="form-label") }}
+                                {{ form.status(class="form-select") }}
+                                {% if form.status.errors %}
                                     <div class="text-danger small">
-                                        {% for error in form.target_completion.errors %}
+                                        {% for error in form.status.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                {{ form.quantity_produced.label(class="form-label") }}
+                                {{ form.quantity_produced(class="form-control") }}
+                                {% if form.quantity_produced.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.quantity_produced.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                {{ form.quantity_good.label(class="form-label") }}
+                                {{ form.quantity_good(class="form-control") }}
+                                {% if form.quantity_good.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.quantity_good.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                {{ form.quantity_damaged.label(class="form-label") }}
+                                {{ form.quantity_damaged(class="form-control") }}
+                                {% if form.quantity_damaged.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.quantity_damaged.errors %}
                                             <div>{{ error }}</div>
                                         {% endfor %}
                                     </div>
