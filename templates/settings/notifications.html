@@ -207,6 +207,19 @@
         </div>
         
         <div class="col-md-4">
+            <!-- Message Templates Card -->
+            <div class="card mb-4 border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="fas fa-edit"></i> Message Templates</h6>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Customize the content and triggers for notification messages.</p>
+                    <a href="{{ url_for('settings.notification_templates') }}" class="btn btn-primary">
+                        <i class="fas fa-edit"></i> Manage Message Templates
+                    </a>
+                </div>
+            </div>
+            
             <div class="card mb-4">
                 <div class="card-header">
                     <h6><i class="fas fa-info-circle"></i> Setup Instructions</h6>
