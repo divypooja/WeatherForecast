@@ -6,14 +6,15 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 23, 2025)
 
-### Purchase Order Table UI/UX Enhancement (Latest)
-- **Column Width Optimization**: Redesigned Purchase Order table with proper minimum widths for all columns
-- **Enhanced Field Sizing**: Increased GST Rate, UOM, Qty, Rate, and Amount column widths for better usability
-- **Responsive Table Design**: Added horizontal scrolling with 1200px minimum table width for comprehensive data display
+### Purchase Order & Sales Order Table UI/UX Enhancement (Latest)
+- **Unified Column Width Optimization**: Redesigned both Purchase Order and Sales Order tables with proper minimum widths for all columns
+- **Enhanced Field Sizing**: Increased GST Rate (120px), UOM (80px), Qty (100px), Rate (130px), and Amount (130px) column widths for better usability
+- **Responsive Table Design**: Added horizontal scrolling with 1200px minimum table width for comprehensive data display across both forms
 - **Input Field Improvements**: Applied consistent minimum width styling (80-130px) to all input fields for comfortable data entry
 - **Professional Layout**: Optimized column distribution with absolute pixel-based minimum widths instead of percentage-only approach
-- **Better User Experience**: Enhanced Purchase Order form readability and data entry efficiency with larger, more accessible input fields
+- **Better User Experience**: Enhanced both Purchase Order and Sales Order form readability and data entry efficiency with larger, more accessible input fields
 - **CSS Styling Enhancements**: Added table-specific styles for better field visibility and consistent layout across different screen sizes
+- **Consistent Design Language**: Applied same design principles and field sizing to maintain consistency across Purchase and Sales modules
 
 ### Complete Employee Salary and Advance Management System
 - **Comprehensive Payroll Models**: Created SalaryRecord and EmployeeAdvance models with auto-generated numbers (SAL-YYYY-0001, ADV-YYYY-0001)
