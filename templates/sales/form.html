@@ -23,7 +23,8 @@
     }
     #soItemsTable .input-group {
         margin-bottom: 0;
-        min-width: 80px;
+        min-width: 100px;
+        width: 100%;
     }
     #soItemsTable .form-control-sm {
         font-size: 0.875rem;
@@ -36,6 +37,12 @@
     }
     #soItemsTable .input-group .form-control {
         border-right: none;
+        min-width: 60px;
+        text-align: center;
+    }
+    #soItemsTable .form-control {
+        font-size: 0.9rem;
+        padding: 0.375rem 0.5rem;
     }
     #soItemsTable th {
         background-color: var(--bs-gray-100);
@@ -223,10 +230,10 @@
                                 <tr>
                                     <th style="width: 5%">No.</th>
                                     <th style="width: 10%">Item Code</th>
-                                    <th style="width: 22%">Item + Description</th>
+                                    <th style="width: 20%">Item + Description</th>
                                     <th style="width: 12%">Specification</th>
-                                    <th style="width: 10%">HSN Code</th>
-                                    <th style="width: 12%">GST Rate</th>
+                                    <th style="width: 9%">HSN Code</th>
+                                    <th style="width: 15%">GST Rate</th>
                                     <th style="width: 7%">UOM</th>
                                     <th style="width: 8%">Qty</th>
                                     <th style="width: 10%">Rate</th>
@@ -243,7 +250,7 @@
                                         <td class="align-middle">{{ item.item.name }}<br><small class="text-muted">{{ item.item.description }}</small></td>
                                         <td class="align-middle">{{ item.item.specification or '-' }}</td>
                                         <td class="align-middle">{{ item.item.hsn_code or '-' }}</td>
-                                        <td class="align-middle">{{ item.item.gst_rate or 18.0 }}%</td>
+                                        <td class="align-middle text-center"><strong>{{ item.item.gst_rate or 18.0 }}%</strong></td>
                                         <td class="align-middle">{{ item.item.unit_of_measure }}</td>
                                         <td class="align-middle">{{ item.quantity_ordered }}</td>
                                         <td class="align-middle">₹{{ item.unit_price }}</td>
