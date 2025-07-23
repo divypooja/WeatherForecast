@@ -4,6 +4,7 @@ from forms import JobWorkForm
 from models import JobWork, Supplier
 from app import db
 from sqlalchemy import func
+from utils import generate_job_number
 
 jobwork_bp = Blueprint('jobwork', __name__)
 
@@ -55,6 +56,10 @@ def list_job_works():
 @login_required
 def add_job_work():
     form = JobWorkForm()
+    
+    # Auto-generate job number if not provided
+    if not form.job_number.data:
+        form.job_number.data = generate_job_number()
     
     if form.validate_on_submit():
         # Check if job number already exists

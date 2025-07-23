@@ -6,6 +6,15 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 23, 2025)
 
+- **Auto-Generation System**: Implemented comprehensive auto-generation for all unique codes and numbers to prevent duplicates:
+  - Purchase Order Numbers: PO-YYYY-0001 format with year-based sequencing
+  - Sales Order Numbers: SO-YYYY-0001 format with year-based sequencing  
+  - Item Codes: ITEM-0001 format with customizable prefixes
+  - Employee Codes: EMP-0001 format with sequential numbering
+  - Job Work Numbers: JOB-YYYY-0001 format with year-based sequencing
+  - Production Numbers: PROD-YYYY-0001 format with year-based sequencing
+- **Duplicate Prevention**: Built-in validation to ensure no duplicate codes are generated across the system
+- **Smart Form Pre-filling**: All forms automatically populate with next available code when creating new records
 - **SMS/Email/WhatsApp Notifications Integration**: Implemented comprehensive notification system using Twilio (SMS/WhatsApp) and SendGrid (Email)
 - **Settings Interface**: Added complete settings dashboard in navigation sidebar for managing notification API credentials and configurations
 - **Notification Management**: Created recipient management system with configurable notification types and event preferences
