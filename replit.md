@@ -6,6 +6,21 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 23, 2025)
 
+### Complete Factory Expenses Management System (Latest)
+- **Comprehensive Expense Model**: Created complete FactoryExpense model with auto-generated expense numbers (EXP-YYYY-0001 format)
+- **Expense Categories**: Seven main categories including Utilities, Maintenance, Salaries, Materials, Overhead, Transport, and Others
+- **Professional Form System**: Multi-section expense form with Basic Information, Financial Details, Vendor Information, and Recurring Support
+- **Approval Workflow**: Complete admin approval system with pending/approved/rejected/paid status tracking
+- **Financial Tracking**: Automatic total calculation with base amount + tax amount, payment method selection
+- **Vendor Integration**: Optional vendor information capture with invoice tracking and contact details
+- **Recurring Expenses**: Support for monthly/quarterly/yearly recurring expenses with automated scheduling
+- **Admin Dashboard**: Real-time expense analytics with monthly trends, category breakdowns, and pending approval alerts
+- **Navigation Integration**: Added Factory Expenses to main sidebar and dashboard module grid
+- **Professional Templates**: Complete template system including dashboard, list view, detailed view, and expense form
+- **Permission System**: Role-based access with staff able to create/edit own expenses, admins can approve and manage all
+- **Chart Integration**: Monthly expense trend visualization using Chart.js for data insights
+- **Status Management**: Complete lifecycle management from creation → approval → payment with timeline tracking
+
 ### Complete Unified Business Partner System (Latest)
 - **Eliminated Customer Model**: Completely removed separate Customer model and table from the codebase
 - **Single Table Architecture**: All business partners (suppliers, customers, and hybrid partners) now use unified `suppliers` table with `partner_type` field

@@ -330,3 +330,59 @@ class MaterialInspectionForm(FlaskForm):
         self.purchase_order_id.choices = [(0, 'Select Purchase Order')] + [(po.id, f"{po.po_number} - {po.supplier.name}") for po in PurchaseOrder.query.filter_by(inspection_status='pending').all()]
         self.job_work_id.choices = [(0, 'Select Job Work')] + [(jw.id, f"{jw.job_number} - {jw.customer_name}") for jw in JobWork.query.filter_by(inspection_status='pending').all()]
         self.item_id.choices = [(0, 'Select Item')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.all()]
+
+class FactoryExpenseForm(FlaskForm):
+    # Basic Details
+    expense_date = DateField('Expense Date', validators=[DataRequired()], default=datetime.today)
+    category = SelectField('Category', validators=[DataRequired()], 
+                          choices=[
+                              ('utilities', 'Utilities & Infrastructure'),
+                              ('maintenance', 'Maintenance & Repairs'),
+                              ('salary', 'Salaries & Benefits'),
+                              ('materials', 'Raw Materials & Supplies'),
+                              ('overhead', 'Factory Overhead'),
+                              ('transport', 'Transportation & Logistics'),
+                              ('others', 'Other Expenses')
+                          ])
+    subcategory = StringField('Subcategory', validators=[Optional(), Length(max=100)], 
+                             render_kw={"placeholder": "e.g., Electricity, Water, Equipment Repair"})
+    description = TextAreaField('Description', validators=[DataRequired(), Length(max=500)], 
+                               render_kw={"placeholder": "Detailed description of the expense"})
+    
+    # Financial Details
+    amount = FloatField('Amount (₹)', validators=[DataRequired(), NumberRange(min=0.01)], 
+                       render_kw={"placeholder": "0.00"})
+    tax_amount = FloatField('Tax Amount (₹)', validators=[Optional(), NumberRange(min=0)], default=0.0,
+                           render_kw={"placeholder": "0.00"})
+    payment_method = SelectField('Payment Method', validators=[Optional()],
+                                choices=[
+                                    ('', 'Select Payment Method'),
+                                    ('cash', 'Cash'),
+                                    ('bank_transfer', 'Bank Transfer'),
+                                    ('cheque', 'Cheque'),
+                                    ('upi', 'UPI'),
+                                    ('card', 'Card Payment')
+                                ])
+    
+    # Vendor Details (Optional)
+    vendor_name = StringField('Vendor/Supplier Name', validators=[Optional(), Length(max=200)], 
+                             render_kw={"placeholder": "Vendor or supplier name"})
+    vendor_contact = StringField('Vendor Contact', validators=[Optional(), Length(max=100)], 
+                                render_kw={"placeholder": "Phone/Email of vendor"})
+    invoice_number = StringField('Invoice Number', validators=[Optional(), Length(max=100)], 
+                                render_kw={"placeholder": "Invoice/Bill number"})
+    invoice_date = DateField('Invoice Date', validators=[Optional()])
+    
+    # Recurring Support
+    is_recurring = BooleanField('Recurring Expense', default=False)
+    recurring_frequency = SelectField('Frequency', validators=[Optional()],
+                                     choices=[
+                                         ('', 'Select Frequency'),
+                                         ('monthly', 'Monthly'),
+                                         ('quarterly', 'Quarterly'),
+                                         ('yearly', 'Yearly')
+                                     ])
+    
+    # Additional Information
+    notes = TextAreaField('Notes', validators=[Optional()], 
+                         render_kw={"placeholder": "Additional notes or comments"})
