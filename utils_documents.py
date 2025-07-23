@@ -70,6 +70,45 @@ def get_documents_for_transaction(transaction_type, transaction_id):
         is_active=True
     ).order_by(Document.uploaded_at.desc()).all()
 
+def save_uploaded_file_expense(file, expense_id, document_category, description=None):
+    """Save uploaded file for Factory Expense and create Document record"""
+    if file and allowed_file(file.filename):
+        # Generate unique filename
+        file_ext = file.filename.rsplit('.', 1)[1].lower()
+        unique_filename = f"{uuid.uuid4().hex}.{file_ext}"
+        
+        # Create upload directory structure
+        upload_dir = os.path.join('uploads', 'factory_expense', str(expense_id))
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        # Save file
+        file_path = os.path.join(upload_dir, unique_filename)
+        file.save(file_path)
+        
+        # Get file info
+        file_size = os.path.getsize(file_path)
+        
+        # Create database record
+        document = Document(
+            filename=unique_filename,
+            original_filename=secure_filename(file.filename),
+            file_size=file_size,
+            file_type=file_ext,
+            upload_path=os.path.join('factory_expense', str(expense_id), unique_filename),
+            transaction_type='factory_expense',
+            transaction_id=expense_id,
+            document_category=document_category,
+            description=description,
+            uploaded_by=current_user.id
+        )
+        
+        db.session.add(document)
+        db.session.commit()
+        
+        return document
+    
+    return None
+
 def delete_document(document_id):
     """Soft delete a document"""
     document = Document.query.get(document_id)

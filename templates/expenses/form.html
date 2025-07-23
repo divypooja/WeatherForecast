@@ -19,7 +19,7 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-body">
-                    <form method="POST" novalidate>
+                    <form method="POST" enctype="multipart/form-data" novalidate id="expenseForm">
                         {{ form.hidden_tag() }}
                         
                         <!-- Basic Information Section -->
@@ -228,6 +228,31 @@
                             </div>
                         </div>
 
+                        <!-- Document Upload Section -->
+                        <div class="mb-4">
+                            <h5 class="card-title text-success border-bottom pb-2">
+                                <i class="fas fa-file-upload me-2"></i>Supporting Documents <small class="text-muted">(Optional)</small>
+                            </h5>
+                            <div class="mb-3">
+                                <label class="form-label">Upload Documents</label>
+                                <input type="file" class="form-control" id="documentFiles" multiple 
+                                       accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" 
+                                       onchange="handleDocumentUpload(event)">
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Supported formats: PDF, Images (JPG, PNG), Word, Excel. Max 10MB per file.
+                                </div>
+                            </div>
+                            
+                            <!-- Document Preview Area -->
+                            <div id="documentPreview" class="mb-3" style="display: none;">
+                                <div class="border rounded p-3 bg-light">
+                                    <h6 class="mb-2"><i class="fas fa-paperclip me-1"></i>Selected Documents:</h6>
+                                    <div id="documentList"></div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Submit Buttons -->
                         <div class="d-flex justify-content-between">
                             <a href="{{ url_for('expenses.expense_list') }}" class="btn btn-outline-secondary">
@@ -281,6 +306,55 @@ function calculateTotal() {
     const taxAmount = parseFloat(document.getElementById('tax_amount').value) || 0;
     const total = amount + taxAmount;
     document.getElementById('total_amount').value = total.toFixed(2);
+}
+
+let selectedFiles = [];
+
+function handleDocumentUpload(event) {
+    const files = Array.from(event.target.files);
+    const documentPreview = document.getElementById('documentPreview');
+    const documentList = document.getElementById('documentList');
+    
+    if (files.length > 0) {
+        selectedFiles = files;
+        documentPreview.style.display = 'block';
+        documentList.innerHTML = '';
+        
+        files.forEach((file, index) => {
+            const fileSize = (file.size / 1024 / 1024).toFixed(2);
+            const fileItem = document.createElement('div');
+            fileItem.className = 'mb-2 p-2 border rounded bg-white d-flex justify-content-between align-items-center';
+            fileItem.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-file me-2 text-primary"></i>
+                    <div>
+                        <div class="fw-bold">${file.name}</div>
+                        <small class="text-muted">${fileSize} MB</small>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeFile(${index})">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            documentList.appendChild(fileItem);
+        });
+    } else {
+        documentPreview.style.display = 'none';
+        selectedFiles = [];
+    }
+}
+
+function removeFile(index) {
+    selectedFiles.splice(index, 1);
+    
+    // Create new FileList and update input
+    const dt = new DataTransfer();
+    selectedFiles.forEach(file => dt.items.add(file));
+    document.getElementById('documentFiles').files = dt.files;
+    
+    // Update preview
+    const event = { target: { files: selectedFiles } };
+    handleDocumentUpload(event);
 }
 
 // Add event listeners
