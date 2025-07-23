@@ -2,6 +2,65 @@
 
 {% block title %}{{ title }} - Factory Management System{% endblock %}
 
+{% block extra_css %}
+<style>
+    .table td.text-center, .table td.align-middle {
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+    .btn-group .btn {
+        border-radius: 0.25rem !important;
+        margin-right: 2px;
+    }
+    .btn-group .btn:last-child {
+        margin-right: 0;
+    }
+    #poItemsTable .text-center {
+        min-width: 80px;
+    }
+    #poItemsTable td {
+        padding: 8px 6px;
+    }
+    #poItemsTable .input-group {
+        margin-bottom: 0;
+        min-width: 100px;
+        width: 100%;
+    }
+    #poItemsTable .form-control-sm {
+        font-size: 0.875rem;
+    }
+    #poItemsTable .input-group-text {
+        font-size: 0.875rem;
+        padding: 0.25rem 0.5rem;
+        background-color: var(--bs-light);
+        border-color: var(--bs-border-color);
+    }
+    #poItemsTable .input-group .form-control {
+        border-right: none;
+        min-width: 60px;
+        text-align: center;
+    }
+    #poItemsTable .form-control {
+        font-size: 0.9rem;
+        padding: 0.375rem 0.5rem;
+    }
+    #poItemsTable .fw-bold {
+        font-weight: 600 !important;
+        color: var(--bs-dark);
+    }
+    #poItemsTable td.text-center {
+        font-weight: 600;
+    }
+    #poItemsTable th {
+        background-color: var(--bs-gray-100);
+        font-weight: 600;
+        text-align: center;
+        vertical-align: middle;
+        border-bottom: 2px solid var(--bs-gray-300);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
     <div class="row mb-4">
@@ -80,8 +139,8 @@
                                 <th style="width: 10%">RM Code</th>
                                 <th style="width: 25%">Item + Description</th>
                                 <th style="width: 15%">Drawing / Spec Sheet No.</th>
-                                <th style="width: 10%">HSN Code</th>
-                                <th style="width: 8%">GST Rate</th>
+                                <th style="width: 9%">HSN Code</th>
+                                <th style="width: 15%">GST Rate</th>
                                 <th style="width: 7%">UOM</th>
                                 <th style="width: 8%">Qty</th>
                                 <th style="width: 10%">Rate</th>
@@ -93,12 +152,12 @@
                             {% if po_items %}
                                 {% for item in po_items %}
                                 <tr data-item-id="{{ item.id }}">
-                                    <td>{{ loop.index }}</td>
-                                    <td>
-                                        <input type="text" class="form-control form-control-sm" name="rm_code_{{ item.id }}" 
+                                    <td class="align-middle text-center">{{ loop.index }}</td>
+                                    <td class="align-middle">
+                                        <input type="text" class="form-control form-control-sm text-center fw-bold" name="rm_code_{{ item.id }}" 
                                                value="{{ item.rm_code or item.item.code }}" placeholder="RM Code">
                                     </td>
-                                    <td>
+                                    <td class="align-middle">
                                         <select class="form-control form-control-sm" name="item_id_{{ item.id }}" onchange="populateItemDetails(this)">
                                             <option value="">Select Item</option>
                                             {% for available_item in items %}
@@ -118,37 +177,40 @@
                                         <textarea class="form-control form-control-sm mt-1" name="description_{{ item.id }}" 
                                                   rows="2" placeholder="Item description">{{ item.item_description or item.item.description }}</textarea>
                                     </td>
-                                    <td>
+                                    <td class="align-middle">
                                         <input type="text" class="form-control form-control-sm" name="drawing_spec_{{ item.id }}" 
                                                value="{{ item.drawing_spec_no or '' }}" placeholder="Drawing/Spec No.">
                                     </td>
-                                    <td>
-                                        <input type="text" class="form-control form-control-sm" name="hsn_code_{{ item.id }}" 
+                                    <td class="align-middle">
+                                        <input type="text" class="form-control form-control-sm text-center fw-bold" name="hsn_code_{{ item.id }}" 
                                                value="{{ item.hsn_code or item.item.hsn_code }}" placeholder="HSN Code">
                                     </td>
-                                    <td>
-                                        <input type="number" class="form-control form-control-sm" name="gst_rate_{{ item.id }}" 
-                                               value="{{ item.gst_rate or item.item.gst_rate or 0.0 }}" step="0.01" min="0" max="100" placeholder="GST %">
+                                    <td class="align-middle">
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" class="form-control" name="gst_rate_{{ item.id }}" 
+                                                   value="{{ item.gst_rate or item.item.gst_rate or 0.0 }}" step="0.01" min="0" max="100" placeholder="18">
+                                            <span class="input-group-text">%</span>
+                                        </div>
                                     </td>
-                                    <td>
-                                        <input type="text" class="form-control form-control-sm" name="uom_{{ item.id }}" 
+                                    <td class="align-middle">
+                                        <input type="text" class="form-control form-control-sm text-center fw-bold" name="uom_{{ item.id }}" 
                                                value="{{ item.uom or item.item.unit_of_measure }}" placeholder="UOM">
                                     </td>
-                                    <td>
+                                    <td class="align-middle">
                                         <input type="number" class="form-control form-control-sm" name="qty_{{ item.id }}" 
                                                value="{{ item.qty or item.quantity_ordered }}" step="0.01" min="0" 
                                                onchange="calculateAmount(this)" placeholder="0">
                                     </td>
-                                    <td>
+                                    <td class="align-middle">
                                         <input type="number" class="form-control form-control-sm" name="rate_{{ item.id }}" 
                                                value="{{ item.rate or item.unit_price or item.item.unit_price }}" step="0.01" min="0" 
                                                onchange="calculateAmount(this)" placeholder="0.00">
                                     </td>
-                                    <td>
+                                    <td class="align-middle">
                                         <input type="number" class="form-control form-control-sm" name="amount_{{ item.id }}" 
                                                value="{{ item.amount or item.total_price }}" readonly placeholder="0.00">
                                     </td>
-                                    <td>
+                                    <td class="align-middle text-center">
                                         <button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">
                                             <i class="fas fa-trash"></i>
                                         </button>
@@ -272,46 +334,46 @@ function addPOItem() {
     
     const row = tbody.insertRow();
     row.innerHTML = `
-        <td>${rowCount}</td>
-        <td>
-            <input type="text" class="form-control form-control-sm" name="rm_code_new_${itemCounter}" placeholder="RM Code">
+        <td class="align-middle text-center">${rowCount}</td>
+        <td class="align-middle">
+            <input type="text" class="form-control form-control-sm text-center fw-bold" name="rm_code_new_${itemCounter}" placeholder="RM Code">
         </td>
-        <td>
+        <td class="align-middle">
             <select class="form-control form-control-sm" name="item_id_new_${itemCounter}" onchange="populateItemDetails(this)">
                 <option value="">Select Item</option>
             </select>
             <textarea class="form-control form-control-sm mt-1" name="description_new_${itemCounter}" 
                       rows="2" placeholder="Item description"></textarea>
         </td>
-        <td>
+        <td class="align-middle">
             <input type="text" class="form-control form-control-sm" name="drawing_spec_new_${itemCounter}" placeholder="Drawing/Spec No.">
         </td>
-        <td>
-            <input type="text" class="form-control form-control-sm" name="hsn_code_new_${itemCounter}" placeholder="HSN Code">
+        <td class="align-middle">
+            <input type="text" class="form-control form-control-sm text-center fw-bold" name="hsn_code_new_${itemCounter}" placeholder="HSN Code">
         </td>
-        <td>
-            <div class="input-group">
-                <input type="number" class="form-control form-control-sm gst-field" name="gst_rate_new_${itemCounter}" 
+        <td class="align-middle">
+            <div class="input-group input-group-sm">
+                <input type="number" class="form-control gst-field" name="gst_rate_new_${itemCounter}" 
                        step="0.01" min="0" max="100" placeholder="18" onchange="calculateAmount(this)">
                 <span class="input-group-text">%</span>
             </div>
         </td>
-        <td>
-            <input type="text" class="form-control form-control-sm" name="uom_new_${itemCounter}" placeholder="UOM">
+        <td class="align-middle">
+            <input type="text" class="form-control form-control-sm text-center fw-bold" name="uom_new_${itemCounter}" placeholder="UOM">
         </td>
-        <td>
+        <td class="align-middle">
             <input type="number" class="form-control form-control-sm" name="qty_new_${itemCounter}" 
                    step="0.01" min="0" onchange="calculateAmount(this)" placeholder="0">
         </td>
-        <td>
+        <td class="align-middle">
             <input type="number" class="form-control form-control-sm rate-field" name="rate_new_${itemCounter}" 
                    step="0.01" min="0" onchange="calculateAmount(this)" placeholder="0.00">
         </td>
-        <td>
+        <td class="align-middle">
             <input type="number" class="form-control form-control-sm" name="amount_new_${itemCounter}" 
                    readonly placeholder="0.00">
         </td>
-        <td>
+        <td class="align-middle text-center">
             <button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">
                 <i class="fas fa-trash"></i>
             </button>
