@@ -238,6 +238,22 @@
 <script>
 let itemCounter = 0;
 
+// Define items data for JavaScript use
+const itemsData = [
+    {% for item in items %}
+    {
+        id: {{ item.id }},
+        code: "{{ item.code }}",
+        name: "{{ item.name }}",
+        description: "{{ item.description or '' }}",
+        hsn_code: "{{ item.hsn_code or '' }}",
+        gst_rate: {{ item.gst_rate or 18.0 }},
+        unit_of_measure: "{{ item.unit_of_measure }}",
+        unit_price: {{ item.unit_price or 0.0 }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+
 function addPOItem() {
     itemCounter++;
     const tbody = document.getElementById('poItemsBody');
@@ -252,18 +268,6 @@ function addPOItem() {
         <td>
             <select class="form-control form-control-sm" name="item_id_new_${itemCounter}" onchange="populateItemDetails(this)">
                 <option value="">Select Item</option>
-                {% for item in items %}
-                <option value="{{ item.id }}" 
-                        data-code="{{ item.code }}"
-                        data-name="{{ item.name }}"
-                        data-description="{{ item.description or '' }}"
-                        data-hsn="{{ item.hsn_code or '' }}"
-                        data-gst="{{ item.gst_rate or 18.0 }}"
-                        data-uom="{{ item.unit_of_measure }}"
-                        data-price="{{ item.unit_price or 0.0 }}">
-                    {{ item.code }} - {{ item.name }}
-                </option>
-                {% endfor %}
             </select>
             <textarea class="form-control form-control-sm mt-1" name="description_new_${itemCounter}" 
                       rows="2" placeholder="Item description"></textarea>
@@ -299,6 +303,22 @@ function addPOItem() {
             </button>
         </td>
     `;
+    
+    // Populate the item dropdown
+    const selectElement = row.querySelector('select[name*="item_id"]');
+    itemsData.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.id;
+        option.textContent = `${item.code} - ${item.name}`;
+        option.dataset.code = item.code;
+        option.dataset.name = item.name;
+        option.dataset.description = item.description;
+        option.dataset.hsn = item.hsn_code;
+        option.dataset.gst = item.gst_rate;
+        option.dataset.uom = item.unit_of_measure;
+        option.dataset.price = item.unit_price;
+        selectElement.appendChild(option);
+    });
 }
 
 function populateItemDetails(selectElement) {
@@ -329,27 +349,21 @@ function populateItemDetails(selectElement) {
         
         if (rmCodeInput) {
             rmCodeInput.value = selectedOption.dataset.code || '';
-            console.log('Set RM Code:', rmCodeInput.value);
         }
         if (descriptionTextarea) {
             descriptionTextarea.value = selectedOption.dataset.description || '';
-            console.log('Set Description:', descriptionTextarea.value);
         }
         if (hsnInput) {
             hsnInput.value = selectedOption.dataset.hsn || '';
-            console.log('Set HSN:', hsnInput.value);
         }
         if (gstInput) {
-            gstInput.value = selectedOption.dataset.gst || '18.0';  // This should be GST percentage (18)
-            console.log('Set GST Rate:', gstInput.value, 'from dataset.gst:', selectedOption.dataset.gst);
+            gstInput.value = selectedOption.dataset.gst || '18.0';
         }
         if (uomInput) {
             uomInput.value = selectedOption.dataset.uom || '';
-            console.log('Set UOM:', uomInput.value);
         }
         if (rateInput) {
-            rateInput.value = selectedOption.dataset.price || '0.00';  // This should be unit price (37.94)
-            console.log('Set Rate:', rateInput.value, 'from dataset.price:', selectedOption.dataset.price);
+            rateInput.value = selectedOption.dataset.price || '0.00';
         }
         
         calculateAmount(rateInput);
