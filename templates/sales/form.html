@@ -81,7 +81,7 @@
                     <h5>Sales Order Details</h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST">
+                    <form method="POST" id="sales-order-form">
                         {{ form.hidden_tag() }}
                         
                         <div class="row">
@@ -218,41 +218,11 @@
                             {% endif %}
                         </div>
                         
-                        <div class="d-flex justify-content-between">
-                            <a href="{{ url_for('sales.list_sales_orders') }}" class="btn btn-secondary">
-                                <i class="fas fa-times"></i> Cancel
-                            </a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> {{ 'Update' if so else 'Save' }} Sales Order
-                            </button>
-                        </div>
                     </form>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Document Management Section - Only show for existing sales orders -->
-    {% if so and so.id %}
-    <div class="row mt-4">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <h5><i class="fas fa-paperclip me-2"></i>Supporting Documents</h5>
-                </div>
-                <div class="card-body">
-                    <a href="{{ url_for('documents.upload_document', transaction_type='sales_order', transaction_id=so.id) }}" 
-                       class="btn btn-outline-primary">
-                        <i class="fas fa-upload me-1"></i>Upload Documents
-                    </a>
-                    <p class="text-muted mt-2 mb-0">
-                        <small>Upload invoices, contracts, and supporting documents for this sales order.</small>
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
 
     <!-- Sales Order Items Section -->
     <div class="row mt-4">
@@ -689,5 +659,46 @@ document.addEventListener('DOMContentLoaded', function() {
     updateSOSubTotal();
 });
 </script>
+
+    <!-- Form Actions - Save/Cancel Buttons -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('sales.list_sales_orders') }}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                        <button type="submit" form="sales-order-form" class="btn btn-primary">
+                            <i class="fas fa-save"></i> {{ 'Update' if so else 'Save' }} Sales Order
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Document Management Section - Only show for existing sales orders -->
+    {% if so and so.id %}
+    <div class="row mt-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-paperclip me-2"></i>Supporting Documents</h5>
+                </div>
+                <div class="card-body">
+                    <a href="{{ url_for('documents.upload_document', transaction_type='sales_order', transaction_id=so.id) }}" 
+                       class="btn btn-outline-primary">
+                        <i class="fas fa-upload me-1"></i>Upload Documents
+                    </a>
+                    <p class="text-muted mt-2 mb-0">
+                        <small>Upload invoices, contracts, and supporting documents for this sales order.</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
 
 {% endblock %}
