@@ -82,7 +82,7 @@
                             <div class="col-md-6 mb-3">
                                 {{ form.rate_per_unit.label(class="form-label") }}
                                 {{ form.rate_per_unit(class="form-control", step="0.01", id="rate_per_unit") }}
-                                <small class="text-muted">Rate will be auto-filled from BOM when item is selected</small>
+                                <small class="text-muted">Enter the rate per unit for this job work</small>
                                 {% if form.rate_per_unit.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.rate_per_unit.errors %}
@@ -148,45 +148,9 @@
 </div>
 
 <script>
+// Auto-filling removed as requested - users will manually enter rate per unit
 document.addEventListener('DOMContentLoaded', function() {
-    const itemSelect = document.getElementById('item_id');
-    const rateInput = document.getElementById('rate_per_unit');
-    
-    if (itemSelect && rateInput) {
-        itemSelect.addEventListener('change', function() {
-            const itemId = this.value;
-            if (itemId) {
-                // Fetch BOM rate for selected item
-                console.log('Fetching rate for item ID:', itemId);
-                fetch(`/jobwork/api/get_item_bom_rate/${itemId}`)
-                    .then(response => {
-                        console.log('Response status:', response.status);
-                        return response.json();
-                    })
-                    .then(data => {
-                        console.log('API response:', data);
-                        if (data.success) {
-                            const rate = data.bom_rate || data.unit_price || '';
-                            rateInput.value = rate;
-                            console.log('Rate set to:', rate);
-                            // Show which rate was used
-                            if (data.bom_rate) {
-                                console.log('BOM rate loaded:', data.bom_rate);
-                            } else if (data.unit_price) {
-                                console.log('Unit price loaded as fallback:', data.unit_price);
-                            }
-                        } else {
-                            console.error('Error fetching item rate:', data.message);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error fetching item rate:', error);
-                    });
-            } else {
-                rateInput.value = '';
-            }
-        });
-    }
+    console.log('Job Work form loaded - manual rate entry mode');
 });
 </script>
 {% endblock %}
