@@ -96,11 +96,13 @@ def upload_document(transaction_type, transaction_id):
             
             # Redirect back to transaction detail page
             if transaction_type == 'purchase_order':
-                return redirect(url_for('purchase.po_detail', id=transaction_id))
+                return redirect(url_for('purchase.list_purchase_orders'))
             elif transaction_type == 'sales_order':
-                return redirect(url_for('sales.so_detail', id=transaction_id))
+                return redirect(url_for('sales.list_sales_orders'))
             elif transaction_type == 'job_work':
-                return redirect(url_for('jobwork.job_detail', id=transaction_id))
+                return redirect(url_for('jobwork.list_job_works'))
+            elif transaction_type == 'factory_expense':
+                return redirect(url_for('expenses.expense_detail', id=transaction_id))
         else:
             flash('Failed to upload document. Please try again.', 'error')
     
@@ -171,11 +173,13 @@ def edit_document(document_id):
         
         # Redirect back to transaction detail page
         if document.transaction_type == 'purchase_order':
-            return redirect(url_for('purchase.po_detail', id=document.transaction_id))
+            return redirect(url_for('purchase.list_purchase_orders'))
         elif document.transaction_type == 'sales_order':
-            return redirect(url_for('sales.so_detail', id=document.transaction_id))
+            return redirect(url_for('sales.list_sales_orders'))
         elif document.transaction_type == 'job_work':
-            return redirect(url_for('jobwork.job_detail', id=document.transaction_id))
+            return redirect(url_for('jobwork.list_job_works'))
+        elif document.transaction_type == 'factory_expense':
+            return redirect(url_for('expenses.expense_detail', id=document.transaction_id))
     
     return render_template('documents/edit.html', form=form, document=document)
 
@@ -201,11 +205,13 @@ def delete_document_route(document_id):
     
     # Redirect back to transaction detail page
     if document.transaction_type == 'purchase_order':
-        return redirect(url_for('purchase.po_detail', id=document.transaction_id))
+        return redirect(url_for('purchase.list_purchase_orders'))
     elif document.transaction_type == 'sales_order':
-        return redirect(url_for('sales.so_detail', id=document.transaction_id))
+        return redirect(url_for('sales.list_sales_orders'))
     elif document.transaction_type == 'job_work':
-        return redirect(url_for('jobwork.job_detail', id=document.transaction_id))
+        return redirect(url_for('jobwork.list_job_works'))
+    elif document.transaction_type == 'factory_expense':
+        return redirect(url_for('expenses.expense_detail', id=document.transaction_id))
     
     return redirect(url_for('main.dashboard'))
 
