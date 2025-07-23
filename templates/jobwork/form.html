@@ -54,7 +54,7 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 {{ form.item_id.label(class="form-label") }}
-                                {{ form.item_id(class="form-select") }}
+                                {{ form.item_id(class="form-select", id="item_id") }}
                                 {% if form.item_id.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.item_id.errors %}
@@ -67,6 +67,7 @@
                             <div class="col-md-6 mb-3">
                                 {{ form.quantity_sent.label(class="form-label") }}
                                 {{ form.quantity_sent(class="form-control", step="0.01") }}
+                                <small class="text-muted">Available stock will be checked before sending</small>
                                 {% if form.quantity_sent.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.quantity_sent.errors %}
@@ -80,7 +81,8 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 {{ form.rate_per_unit.label(class="form-label") }}
-                                {{ form.rate_per_unit(class="form-control", step="0.01") }}
+                                {{ form.rate_per_unit(class="form-control", step="0.01", id="rate_per_unit") }}
+                                <small class="text-muted">Rate will be auto-filled from BOM when item is selected</small>
                                 {% if form.rate_per_unit.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.rate_per_unit.errors %}
@@ -144,4 +146,40 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const itemSelect = document.getElementById('item_id');
+    const rateInput = document.getElementById('rate_per_unit');
+    
+    if (itemSelect && rateInput) {
+        itemSelect.addEventListener('change', function() {
+            const itemId = this.value;
+            if (itemId) {
+                // Fetch BOM rate for selected item
+                fetch(`/api/get_item_bom_rate/${itemId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            rateInput.value = data.bom_rate || data.unit_price || '';
+                            // Show which rate was used
+                            if (data.bom_rate) {
+                                console.log('BOM rate loaded:', data.bom_rate);
+                            } else if (data.unit_price) {
+                                console.log('Unit price loaded as fallback:', data.unit_price);
+                            }
+                        } else {
+                            console.error('Error fetching item rate:', data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching item rate:', error);
+                    });
+            } else {
+                rateInput.value = '';
+            }
+        });
+    }
+});
+</script>
 {% endblock %}
