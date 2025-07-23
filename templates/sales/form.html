@@ -429,7 +429,7 @@ function populateSOItemDetails(selectElement) {
         const hsnInput = row.querySelector(`input[name*="hsn_code"]`);
         const gstInput = row.querySelector(`input[name*="gst_rate"]`);
         const uomInput = row.querySelector(`input[name*="uom"]`);
-        const rateInput = row.querySelector(`input[name*="rate"]`);
+        const rateInput = row.querySelector(`input[name*="rate"]:not([name*="gst"])`);
         
         // Debug logging for field mapping
         console.log('=== SALES ORDER FIELD MAPPING DEBUG ===');
@@ -438,8 +438,12 @@ function populateSOItemDetails(selectElement) {
         console.log('- GST Rate:', selectedOption.dataset.gst);
         console.log('- Unit Price:', selectedOption.dataset.price);
         console.log('Field targets:');
-        console.log('- GST Input found:', !!gstInput);
-        console.log('- Rate Input found:', !!rateInput);
+        console.log('- GST Input found:', !!gstInput, gstInput ? gstInput.name : 'NOT FOUND');
+        console.log('- Rate Input found:', !!rateInput, rateInput ? rateInput.name : 'NOT FOUND');
+        
+        // Double-check field identification
+        const allRateInputs = row.querySelectorAll('input[name*="rate"]');
+        console.log('All rate-related inputs in row:', Array.from(allRateInputs).map(inp => inp.name));
 
         // Populate the fields
         if (itemCodeInput) itemCodeInput.value = selectedOption.dataset.code || '';
