@@ -2,7 +2,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SelectField, TextAreaField, FloatField, IntegerField, DateField, BooleanField, SelectMultipleField, ValidationError, DateTimeField
 from wtforms.validators import DataRequired, Length, Email, NumberRange, Optional
 from wtforms.widgets import CheckboxInput, ListWidget
-from models import User, Item, Supplier, Customer, QualityIssue, Production
+from models import User, Item, Supplier, Customer, QualityIssue, Production, PurchaseOrder, JobWork
 from datetime import datetime
 
 class LoginForm(FlaskForm):
@@ -264,3 +264,25 @@ class CompanySettingsForm(FlaskForm):
     gst_number = StringField('GST Number', validators=[DataRequired(), Length(max=50)])
     arn_number = StringField('ARN Number', validators=[Optional(), Length(max=50)])
     website = StringField('Website', validators=[Optional(), Length(max=200)])
+
+class MaterialInspectionForm(FlaskForm):
+    purchase_order_id = SelectField('Purchase Order', coerce=int, validators=[Optional()])
+    job_work_id = SelectField('Job Work', coerce=int, validators=[Optional()])
+    item_id = SelectField('Item', coerce=int, validators=[DataRequired()])
+    received_quantity = FloatField('Received Quantity', validators=[DataRequired(), NumberRange(min=0.01)])
+    inspected_quantity = FloatField('Inspected Quantity', validators=[DataRequired(), NumberRange(min=0.01)])
+    passed_quantity = FloatField('Passed/Good Quantity', validators=[DataRequired(), NumberRange(min=0)])
+    damaged_quantity = FloatField('Damaged Quantity', validators=[DataRequired(), NumberRange(min=0)])
+    rejected_quantity = FloatField('Rejected Quantity', validators=[DataRequired(), NumberRange(min=0)])
+    damage_types = TextAreaField('Damage Types', validators=[Optional()], 
+                               render_kw={"placeholder": "e.g., Scratches, Dents, Corrosion"})
+    rejection_reasons = TextAreaField('Rejection Reasons', validators=[Optional()],
+                                    render_kw={"placeholder": "Reasons for rejecting materials"})
+    inspection_notes = TextAreaField('Inspection Notes', validators=[Optional()],
+                                   render_kw={"placeholder": "Additional inspection observations"})
+    
+    def __init__(self, *args, **kwargs):
+        super(MaterialInspectionForm, self).__init__(*args, **kwargs)
+        self.purchase_order_id.choices = [(0, 'Select Purchase Order')] + [(po.id, f"{po.po_number} - {po.supplier.name}") for po in PurchaseOrder.query.filter_by(inspection_status='pending').all()]
+        self.job_work_id.choices = [(0, 'Select Job Work')] + [(jw.id, f"{jw.job_number} - {jw.customer_name}") for jw in JobWork.query.filter_by(inspection_status='pending').all()]
+        self.item_id.choices = [(0, 'Select Item')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.all()]

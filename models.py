@@ -125,10 +125,18 @@ class PurchaseOrder(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
+    # Inspection workflow fields
+    inspection_required = db.Column(db.Boolean, default=True)
+    inspection_status = db.Column(db.String(20), default='pending')  # pending, in_progress, completed, failed
+    inspected_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    inspected_at = db.Column(db.DateTime)
+    
     # Relationships
     items = db.relationship('PurchaseOrderItem', backref='purchase_order', lazy=True, cascade='all, delete-orphan')
     delivery_schedules = db.relationship('DeliverySchedule', backref='purchase_order', lazy=True, cascade='all, delete-orphan')
-    creator = db.relationship('User', backref='created_purchase_orders')
+    creator = db.relationship('User', foreign_keys=[created_by], backref='created_purchase_orders')
+    inspector = db.relationship('User', foreign_keys=[inspected_by], backref='inspected_purchase_orders')
+    material_inspections = db.relationship('MaterialInspection', backref='purchase_order', lazy=True, cascade='all, delete-orphan')
 
 class PurchaseOrderItem(db.Model):
     __tablename__ = 'purchase_order_items'
@@ -216,9 +224,16 @@ class JobWork(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
+    # Inspection workflow fields
+    inspection_required = db.Column(db.Boolean, default=True)
+    inspection_status = db.Column(db.String(20), default='pending')  # pending, in_progress, completed, failed
+    inspected_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    inspected_at = db.Column(db.DateTime)
+    
     # Relationships
     item = db.relationship('Item', backref='job_works')
-    creator = db.relationship('User', backref='created_job_works')
+    creator = db.relationship('User', foreign_keys=[created_by], backref='created_job_works')
+    inspector = db.relationship('User', foreign_keys=[inspected_by], backref='inspected_job_works')
 
 class Production(db.Model):
     __tablename__ = 'productions'
@@ -378,3 +393,30 @@ class DeliverySchedule(db.Model):
     
     # Relationships
     item = db.relationship('Item', backref='delivery_schedules')
+
+class MaterialInspection(db.Model):
+    __tablename__ = 'material_inspections'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    inspection_number = db.Column(db.String(50), unique=True, nullable=False)
+    purchase_order_id = db.Column(db.Integer, db.ForeignKey('purchase_orders.id'), nullable=True)
+    job_work_id = db.Column(db.Integer, db.ForeignKey('job_works.id'), nullable=True)
+    item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
+    received_quantity = db.Column(db.Float, nullable=False)
+    inspected_quantity = db.Column(db.Float, nullable=False)
+    passed_quantity = db.Column(db.Float, nullable=False)
+    damaged_quantity = db.Column(db.Float, nullable=False)
+    rejected_quantity = db.Column(db.Float, nullable=False)
+    acceptance_rate = db.Column(db.Float, nullable=False)  # Percentage of accepted quantity
+    damage_types = db.Column(db.Text)  # JSON or comma-separated damage types
+    rejection_reasons = db.Column(db.Text)  # Reasons for rejection
+    inspection_notes = db.Column(db.Text)
+    inspector_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    inspection_date = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(20), default='completed')  # pending, in_progress, completed
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    item = db.relationship('Item', backref='material_inspections')
+    inspector = db.relationship('User', backref='material_inspections')
+    job_work = db.relationship('JobWork', backref='material_inspections')
