@@ -24,17 +24,17 @@ def dashboard():
     # Pending returns (jobs sent but not completed)
     pending_jobs = JobWork.query.filter(JobWork.status.in_(['sent', 'partial_received'])).all()
     
-    # Top job work vendors
-    top_vendors = db.session.query(
-        Supplier.name, 
+    # Top job work customers
+    top_customers = db.session.query(
+        JobWork.customer_name, 
         func.count(JobWork.id).label('job_count')
-    ).join(JobWork).group_by(Supplier.id).order_by(func.count(JobWork.id).desc()).limit(5).all()
+    ).group_by(JobWork.customer_name).order_by(func.count(JobWork.id).desc()).limit(5).all()
     
     return render_template('jobwork/dashboard.html', 
                          stats=stats, 
                          recent_jobs=recent_jobs,
                          pending_jobs=pending_jobs,
-                         top_vendors=top_vendors)
+                         top_customers=top_customers)
 
 @jobwork_bp.route('/list')
 @login_required
@@ -55,7 +55,6 @@ def list_job_works():
 @login_required
 def add_job_work():
     form = JobWorkForm()
-    form.supplier_id.choices = [(s.id, s.name) for s in Supplier.query.all()]
     
     if form.validate_on_submit():
         # Check if job number already exists
@@ -66,9 +65,12 @@ def add_job_work():
         
         job = JobWork(
             job_number=form.job_number.data,
-            supplier_id=form.supplier_id.data,
-            job_date=form.job_date.data,
-            expected_return_date=form.expected_return_date.data,
+            customer_name=form.customer_name.data,
+            item_id=form.item_id.data,
+            quantity_sent=form.quantity_sent.data,
+            rate_per_unit=form.rate_per_unit.data,
+            sent_date=form.sent_date.data,
+            expected_return=form.expected_return.data,
             notes=form.notes.data,
             created_by=current_user.id
         )
@@ -84,7 +86,6 @@ def add_job_work():
 def edit_job_work(id):
     job = JobWork.query.get_or_404(id)
     form = JobWorkForm(obj=job)
-    form.supplier_id.choices = [(s.id, s.name) for s in Supplier.query.all()]
     
     if form.validate_on_submit():
         # Check if job number already exists (excluding current job)
@@ -97,9 +98,12 @@ def edit_job_work(id):
             return render_template('jobwork/form.html', form=form, title='Edit Job Work', job=job)
         
         job.job_number = form.job_number.data
-        job.supplier_id = form.supplier_id.data
-        job.job_date = form.job_date.data
-        job.expected_return_date = form.expected_return_date.data
+        job.customer_name = form.customer_name.data
+        job.item_id = form.item_id.data
+        job.quantity_sent = form.quantity_sent.data
+        job.rate_per_unit = form.rate_per_unit.data
+        job.sent_date = form.sent_date.data
+        job.expected_return = form.expected_return.data
         job.notes = form.notes.data
         
         db.session.commit()

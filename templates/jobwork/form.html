@@ -39,11 +39,11 @@
                             </div>
                             
                             <div class="col-md-6 mb-3">
-                                {{ form.supplier_id.label(class="form-label") }}
-                                {{ form.supplier_id(class="form-select") }}
-                                {% if form.supplier_id.errors %}
+                                {{ form.customer_name.label(class="form-label") }}
+                                {{ form.customer_name(class="form-control") }}
+                                {% if form.customer_name.errors %}
                                     <div class="text-danger small">
-                                        {% for error in form.supplier_id.errors %}
+                                        {% for error in form.customer_name.errors %}
                                             <div>{{ error }}</div>
                                         {% endfor %}
                                     </div>
@@ -53,11 +53,11 @@
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                {{ form.job_date.label(class="form-label") }}
-                                {{ form.job_date(class="form-control") }}
-                                {% if form.job_date.errors %}
+                                {{ form.item_id.label(class="form-label") }}
+                                {{ form.item_id(class="form-select") }}
+                                {% if form.item_id.errors %}
                                     <div class="text-danger small">
-                                        {% for error in form.job_date.errors %}
+                                        {% for error in form.item_id.errors %}
                                             <div>{{ error }}</div>
                                         {% endfor %}
                                     </div>
@@ -65,11 +65,51 @@
                             </div>
                             
                             <div class="col-md-6 mb-3">
-                                {{ form.expected_return_date.label(class="form-label") }}
-                                {{ form.expected_return_date(class="form-control") }}
-                                {% if form.expected_return_date.errors %}
+                                {{ form.quantity_sent.label(class="form-label") }}
+                                {{ form.quantity_sent(class="form-control", step="0.01") }}
+                                {% if form.quantity_sent.errors %}
                                     <div class="text-danger small">
-                                        {% for error in form.expected_return_date.errors %}
+                                        {% for error in form.quantity_sent.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.rate_per_unit.label(class="form-label") }}
+                                {{ form.rate_per_unit(class="form-control", step="0.01") }}
+                                {% if form.rate_per_unit.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.rate_per_unit.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.sent_date.label(class="form-label") }}
+                                {{ form.sent_date(class="form-control") }}
+                                {% if form.sent_date.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.sent_date.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.expected_return.label(class="form-label") }}
+                                {{ form.expected_return(class="form-control") }}
+                                {% if form.expected_return.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.expected_return.errors %}
                                             <div>{{ error }}</div>
                                         {% endfor %}
                                     </div>
