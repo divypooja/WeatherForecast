@@ -117,7 +117,7 @@
                 <i class="fas fa-users"></i>
                 Employees
             </a>
-            <a class="nav-link" href="#settings">
+            <a class="nav-link {{ 'active' if 'settings' in request.endpoint }}" href="{{ url_for('settings.dashboard') }}">
                 <i class="fas fa-cog"></i>
                 Settings
             </a>
