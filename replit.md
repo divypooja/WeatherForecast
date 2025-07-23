@@ -15,6 +15,8 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **Better User Experience**: Enhanced both Purchase Order and Sales Order form readability and data entry efficiency with larger, more accessible input fields
 - **CSS Styling Enhancements**: Added table-specific styles for better field visibility and consistent layout across different screen sizes
 - **Consistent Design Language**: Applied same design principles and field sizing to maintain consistency across Purchase and Sales modules
+- **Unified Terminology**: Standardized column headers ("Item Code", "Specification") across both PO and SO forms for consistent user experience
+- **Professional Visual Hierarchy**: Achieved clean, spacious layout with proper field accessibility and intuitive navigation across both modules
 
 ### Complete Employee Salary and Advance Management System
 - **Comprehensive Payroll Models**: Created SalaryRecord and EmployeeAdvance models with auto-generated numbers (SAL-YYYY-0001, ADV-YYYY-0001)
