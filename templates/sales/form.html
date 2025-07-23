@@ -23,9 +23,19 @@
     }
     #soItemsTable .input-group {
         margin-bottom: 0;
+        min-width: 80px;
     }
     #soItemsTable .form-control-sm {
         font-size: 0.875rem;
+    }
+    #soItemsTable .input-group-text {
+        font-size: 0.875rem;
+        padding: 0.25rem 0.5rem;
+        background-color: var(--bs-light);
+        border-color: var(--bs-border-color);
+    }
+    #soItemsTable .input-group .form-control {
+        border-right: none;
     }
     #soItemsTable th {
         background-color: var(--bs-gray-100);
@@ -213,10 +223,10 @@
                                 <tr>
                                     <th style="width: 5%">No.</th>
                                     <th style="width: 10%">Item Code</th>
-                                    <th style="width: 25%">Item + Description</th>
-                                    <th style="width: 15%">Specification</th>
+                                    <th style="width: 22%">Item + Description</th>
+                                    <th style="width: 12%">Specification</th>
                                     <th style="width: 10%">HSN Code</th>
-                                    <th style="width: 8%">GST Rate</th>
+                                    <th style="width: 12%">GST Rate</th>
                                     <th style="width: 7%">UOM</th>
                                     <th style="width: 8%">Qty</th>
                                     <th style="width: 10%">Rate</th>
