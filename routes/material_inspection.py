@@ -142,10 +142,9 @@ def log_inspection():
             po.inspection_status = 'completed'
             po.inspected_at = datetime.utcnow()
             
-            # Update inventory only with passed quantity
-            for item_data in po.items:
-                item = Item.query.get(item_data.item_id)
-                item.current_stock += form.passed_quantity.data
+            # Update inventory only with passed quantity for the specific item
+            item = Item.query.get(form.item_id.data)
+            item.current_stock += form.passed_quantity.data
                 
         elif form.job_work_id.data:
             job_work = JobWork.query.get(form.job_work_id.data)
