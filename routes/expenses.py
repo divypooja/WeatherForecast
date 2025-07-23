@@ -1,11 +1,13 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from app import db
-from models import FactoryExpense, User
+from models import FactoryExpense, User, Document
 from forms import FactoryExpenseForm
 from datetime import datetime, date
 from sqlalchemy import func, desc, extract
+from utils_documents import save_uploaded_file_expense
 import calendar
+import os
 
 expenses_bp = Blueprint('expenses', __name__)
 
@@ -168,6 +170,25 @@ def add_expense():
             )
             
             db.session.add(expense)
+            db.session.flush()  # Get the expense ID before commit
+            
+            # Handle document uploads
+            uploaded_files = request.files.getlist('documentFiles')
+            if uploaded_files and any(file.filename for file in uploaded_files):
+                for file in uploaded_files:
+                    if file and file.filename:
+                        try:
+                            document = save_uploaded_file_expense(
+                                file, 
+                                expense.id, 
+                                'Supporting Document', 
+                                f'Document for expense {expense.expense_number}'
+                            )
+                            if document:
+                                print(f"Document saved: {document.original_filename}")
+                        except Exception as e:
+                            print(f"Error saving document: {str(e)}")
+            
             db.session.commit()
             
             flash(f'Expense {expense.expense_number} created successfully!', 'success')
@@ -219,6 +240,23 @@ def edit_expense(id):
             expense.notes = form.notes.data
             expense.updated_at = datetime.utcnow()
             
+            # Handle document uploads
+            uploaded_files = request.files.getlist('documentFiles')
+            if uploaded_files and any(file.filename for file in uploaded_files):
+                for file in uploaded_files:
+                    if file and file.filename:
+                        try:
+                            document = save_uploaded_file_expense(
+                                file, 
+                                expense.id, 
+                                'Supporting Document', 
+                                f'Document for expense {expense.expense_number}'
+                            )
+                            if document:
+                                print(f"Document saved: {document.original_filename}")
+                        except Exception as e:
+                            print(f"Error saving document: {str(e)}")
+            
             db.session.commit()
             
             flash(f'Expense {expense.expense_number} updated successfully!', 'success')
@@ -235,7 +273,15 @@ def edit_expense(id):
 def expense_detail(id):
     """View expense details"""
     expense = FactoryExpense.query.get_or_404(id)
-    return render_template('expenses/detail.html', expense=expense)
+    
+    # Get documents for this expense
+    documents = Document.query.filter_by(
+        transaction_type='factory_expense',
+        transaction_id=expense.id,
+        is_active=True
+    ).order_by(Document.uploaded_at.desc()).all()
+    
+    return render_template('expenses/detail.html', expense=expense, documents=documents)
 
 @expenses_bp.route('/approve/<int:id>', methods=['POST'])
 @login_required
