@@ -131,20 +131,26 @@
                 </button>
             </div>
             <div class="card-body">
-                <div class="table-responsive">
+                <div class="table-responsive" style="overflow-x: auto;">
+                    <style>
+                        #poItemsTable .rate-column { min-width: 130px !important; }
+                        #poItemsTable .amount-column { min-width: 130px !important; }
+                        #poItemsTable th:nth-child(9), #poItemsTable td:nth-child(9) { min-width: 130px !important; }
+                        #poItemsTable th:nth-child(10), #poItemsTable td:nth-child(10) { min-width: 130px !important; }
+                    </style>
                     <table class="table table-bordered" id="poItemsTable">
                         <thead class="table-light">
                             <tr>
                                 <th style="width: 4%">No.</th>
                                 <th style="width: 8%">RM Code</th>
-                                <th style="width: 22%">Item + Description</th>
+                                <th style="width: 18%">Item + Description</th>
                                 <th style="width: 12%">Drawing / Spec Sheet No.</th>
                                 <th style="width: 8%">HSN Code</th>
                                 <th style="width: 12%">GST Rate</th>
                                 <th style="width: 6%">UOM</th>
                                 <th style="width: 8%">Qty</th>
-                                <th style="width: 14%">Rate</th>
-                                <th style="width: 14%">Amount</th>
+                                <th style="width: 18%; min-width: 120px;">Rate</th>
+                                <th style="width: 16%; min-width: 120px;">Amount</th>
                                 <th style="width: 6%">Action</th>
                             </tr>
                         </thead>
@@ -204,11 +210,11 @@
                                     <td class="align-middle">
                                         <input type="number" class="form-control form-control-sm" name="rate_{{ item.id }}" 
                                                value="{{ item.rate or item.unit_price or item.item.unit_price }}" step="0.01" min="0" 
-                                               onchange="calculateAmount(this)" placeholder="0.00" style="min-width: 100px;">
+                                               onchange="calculateAmount(this)" placeholder="0.00" style="min-width: 120px; width: 100%;">
                                     </td>
                                     <td class="align-middle">
                                         <input type="number" class="form-control form-control-sm" name="amount_{{ item.id }}" 
-                                               value="{{ item.amount or item.total_price }}" readonly placeholder="0.00" style="min-width: 100px;">
+                                               value="{{ item.amount or item.total_price }}" readonly placeholder="0.00" style="min-width: 120px; width: 100%;">
                                     </td>
                                     <td class="align-middle text-center">
                                         <button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">
