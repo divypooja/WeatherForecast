@@ -304,6 +304,30 @@ def delete_sales_order(id):
     flash('Sales Order deleted successfully', 'success')
     return redirect(url_for('sales.list_sales_orders'))
 
+@sales_bp.route('/change_status/<int:so_id>', methods=['POST'])
+@login_required
+def change_so_status(so_id):
+    # Only admins can change status
+    if current_user.role != 'admin':
+        return jsonify({'success': False, 'message': 'Only admins can change sales order status'})
+    
+    so = SalesOrder.query.get_or_404(so_id)
+    new_status = request.form.get('status')
+    
+    # Validate status
+    valid_statuses = ['draft', 'pending', 'confirmed', 'shipped', 'delivered', 'cancelled']
+    if new_status not in valid_statuses:
+        return jsonify({'success': False, 'message': 'Invalid status'})
+    
+    old_status = so.status
+    so.status = new_status
+    db.session.commit()
+    
+    return jsonify({
+        'success': True, 
+        'message': f'Sales Order {so.so_number} status changed from {old_status.title()} to {new_status.title()}'
+    })
+
 @sales_bp.route('/add_item/<int:so_id>', methods=['POST'])
 @login_required
 def add_sales_order_item(so_id):
