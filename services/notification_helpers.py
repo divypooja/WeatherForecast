@@ -290,3 +290,26 @@ def send_sms_notification(to_phone: str, message: str):
     except Exception as e:
         logger.error(f"Failed to send SMS notification: {e}")
         return False
+
+def send_email_with_attachment(to_email: str, subject: str, message: str, pdf_bytes: bytes, filename: str):
+    """Send email notification with PDF attachment"""
+    try:
+        from models import NotificationSettings
+        import base64
+        
+        settings = NotificationSettings.query.first()
+        if not settings or not settings.email_enabled:
+            return False
+        
+        # Encode PDF as base64 for attachment
+        attachment = {
+            'content': base64.b64encode(pdf_bytes).decode(),
+            'type': 'application/pdf',
+            'filename': filename,
+            'disposition': 'attachment'
+        }
+        
+        return notification_service.send_email_with_attachment(to_email, subject, message, attachment)
+    except Exception as e:
+        logger.error(f"Failed to send email with attachment: {e}")
+        return False
