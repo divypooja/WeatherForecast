@@ -66,29 +66,18 @@ def add_purchase_order():
         if existing_po:
             flash('PO number already exists', 'danger')
             items = Item.query.all()
-            return render_template('purchase/form_enhanced.html', form=form, title='Add Purchase Order', items=items)
+            return render_template('purchase/form_simple.html', form=form, title='Add Purchase Order', items=items)
         
         po = PurchaseOrder(
             po_number=form.po_number.data,
             supplier_id=form.supplier_id.data,
-            order_date=form.order_date.data,
-            expected_date=form.expected_delivery.data,
-            payment_terms=form.payment_terms.data,
-            freight_terms=form.freight_terms.data,
-            delivery_notes=form.delivery_notes.data,
-            validity_months=form.validity_months.data,
-            prepared_by=form.prepared_by.data,
-            verified_by=form.verified_by.data,
-            approved_by=form.approved_by.data,
+            order_date=form.po_date.data,
+            expected_date=form.delivery_date.data,
+            status=form.status.data,
             notes=form.notes.data,
             created_by=current_user.id
         )
         db.session.add(po)
-        db.session.flush()  # Get the PO ID
-        
-        # Process enhanced PO items from form
-        process_po_items(po, request.form)
-        
         db.session.commit()
         flash('Purchase Order created successfully', 'success')
         return redirect(url_for('purchase.edit_purchase_order', id=po.id))
@@ -125,19 +114,13 @@ def edit_purchase_order(id):
             for item, bom_rate in items_data:
                 item.bom_rate = bom_rate if bom_rate is not None else item.unit_price
                 items.append(item)
-            return render_template('purchase/form_enhanced.html', form=form, title='Edit Purchase Order', po=po, po_items=po_items, items=items)
+            return render_template('purchase/form_simple.html', form=form, title='Edit Purchase Order', po=po, po_items=po_items, items=items)
         
         po.po_number = form.po_number.data
         po.supplier_id = form.supplier_id.data
-        po.order_date = form.order_date.data
-        po.expected_date = form.expected_delivery.data
-        po.payment_terms = form.payment_terms.data
-        po.freight_terms = form.freight_terms.data
-        po.delivery_notes = form.delivery_notes.data
-        po.validity_months = form.validity_months.data
-        po.prepared_by = form.prepared_by.data
-        po.verified_by = form.verified_by.data
-        po.approved_by = form.approved_by.data
+        po.order_date = form.po_date.data
+        po.expected_date = form.delivery_date.data
+        po.status = form.status.data
         po.notes = form.notes.data
         
         # Process enhanced PO items from form
