@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
-from forms import SalesOrderForm, CustomerForm
-from models import SalesOrder, SalesOrderItem, Customer, Item
+from forms import SalesOrderForm, SupplierForm
+from models import SalesOrder, SalesOrderItem, Supplier, Item
 from app import db
 from sqlalchemy import func
 from utils import generate_so_number
@@ -17,7 +17,7 @@ def dashboard():
         'pending_sos': SalesOrder.query.filter_by(status='pending').count(),
         'partial_sos': SalesOrder.query.filter_by(status='partial').count(),
         'completed_sos': SalesOrder.query.filter_by(status='completed').count(),
-        'total_customers': Customer.query.count()
+        'total_customers': Supplier.query.filter(Supplier.partner_type.in_(['customer', 'both'])).count()
     }
     
     # Recent sales orders
@@ -25,9 +25,9 @@ def dashboard():
     
     # Top customers by order count
     top_customers = db.session.query(
-        Customer.name, 
+        Supplier.name, 
         func.count(SalesOrder.id).label('order_count')
-    ).join(SalesOrder).group_by(Customer.id).order_by(func.count(SalesOrder.id).desc()).limit(5).all()
+    ).join(SalesOrder).filter(Supplier.partner_type.in_(['customer', 'both'])).group_by(Supplier.id).order_by(func.count(SalesOrder.id).desc()).limit(5).all()
     
     return render_template('sales/dashboard.html', 
                          stats=stats, 
@@ -53,7 +53,7 @@ def list_sales_orders():
 @login_required
 def add_sales_order():
     form = SalesOrderForm()
-    form.customer_id.choices = [(c.id, c.name) for c in Customer.query.all()]
+    form.customer_id.choices = [(c.id, c.name) for c in Supplier.query.filter(Supplier.partner_type.in_(['customer', 'both']), Supplier.is_active == True).all()]
     
     # Auto-generate SO number if not provided
     if not form.so_number.data:
@@ -86,7 +86,7 @@ def add_sales_order():
 def edit_sales_order(id):
     so = SalesOrder.query.get_or_404(id)
     form = SalesOrderForm(obj=so)
-    form.customer_id.choices = [(c.id, c.name) for c in Customer.query.all()]
+    form.customer_id.choices = [(c.id, c.name) for c in Supplier.query.filter(Supplier.partner_type.in_(['customer', 'both']), Supplier.is_active == True).all()]
     
     if form.validate_on_submit():
         # Check if SO number already exists (excluding current SO)
@@ -125,11 +125,11 @@ def list_customers():
     page = request.args.get('page', 1, type=int)
     search = request.args.get('search', '', type=str)
     
-    query = Customer.query
+    query = Supplier.query.filter(Supplier.partner_type.in_(['customer', 'both']))
     if search:
-        query = query.filter(Customer.name.contains(search))
+        query = query.filter(Supplier.name.contains(search))
     
-    customers = query.order_by(Customer.name).paginate(
+    customers = query.order_by(Supplier.name).paginate(
         page=page, per_page=20, error_out=False)
     
     return render_template('sales/customers.html', customers=customers, search=search)
@@ -137,27 +137,39 @@ def list_customers():
 @sales_bp.route('/customers/add', methods=['GET', 'POST'])
 @login_required
 def add_customer():
-    form = CustomerForm()
+    form = SupplierForm()
     if form.validate_on_submit():
-        customer = Customer(
+        customer = Supplier(
             name=form.name.data,
             contact_person=form.contact_person.data,
             phone=form.phone.data,
             email=form.email.data,
-            address=form.address.data
+            address=form.address.data,
+            gst_number=form.gst_number.data,
+            pan_number=form.pan_number.data,
+            city=form.city.data,
+            state=form.state.data,
+            pin_code=form.pin_code.data,
+            account_number=form.account_number.data,
+            bank_name=form.bank_name.data,
+            ifsc_code=form.ifsc_code.data,
+            partner_type=form.partner_type.data or 'customer',
+            remarks=form.remarks.data
         )
         db.session.add(customer)
         db.session.commit()
         flash('Customer added successfully', 'success')
         return redirect(url_for('sales.list_customers'))
     
+    # Set default partner type to customer
+    form.partner_type.data = 'customer'
     return render_template('sales/customer_form.html', form=form, title='Add Customer')
 
 @sales_bp.route('/customers/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
 def edit_customer(id):
-    customer = Customer.query.get_or_404(id)
-    form = CustomerForm(obj=customer)
+    customer = Supplier.query.get_or_404(id)
+    form = SupplierForm(obj=customer)
     
     if form.validate_on_submit():
         customer.name = form.name.data
@@ -165,6 +177,16 @@ def edit_customer(id):
         customer.phone = form.phone.data
         customer.email = form.email.data
         customer.address = form.address.data
+        customer.gst_number = form.gst_number.data
+        customer.pan_number = form.pan_number.data
+        customer.city = form.city.data
+        customer.state = form.state.data
+        customer.pin_code = form.pin_code.data
+        customer.account_number = form.account_number.data
+        customer.bank_name = form.bank_name.data
+        customer.ifsc_code = form.ifsc_code.data
+        customer.partner_type = form.partner_type.data
+        customer.remarks = form.remarks.data
         
         db.session.commit()
         flash('Customer updated successfully', 'success')
@@ -175,7 +197,7 @@ def edit_customer(id):
 @sales_bp.route('/customers/delete/<int:id>', methods=['POST', 'GET'])
 @login_required
 def delete_customer(id):
-    customer = Customer.query.get_or_404(id)
+    customer = Supplier.query.get_or_404(id)
     
     # Check if customer has any sales orders
     if customer.sales_orders:
