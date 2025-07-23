@@ -71,6 +71,13 @@ def add_sales_order():
             customer_id=form.customer_id.data,
             order_date=form.order_date.data,
             delivery_date=form.delivery_date.data,
+            payment_terms=form.payment_terms.data,
+            freight_terms=form.freight_terms.data,
+            validity_months=form.validity_months.data,
+            prepared_by=form.prepared_by.data,
+            verified_by=form.verified_by.data,
+            approved_by=form.approved_by.data,
+            delivery_notes=form.delivery_notes.data,
             notes=form.notes.data,
             created_by=current_user.id
         )
@@ -102,6 +109,13 @@ def edit_sales_order(id):
         so.customer_id = form.customer_id.data
         so.order_date = form.order_date.data
         so.delivery_date = form.delivery_date.data
+        so.payment_terms = form.payment_terms.data
+        so.freight_terms = form.freight_terms.data
+        so.validity_months = form.validity_months.data
+        so.prepared_by = form.prepared_by.data
+        so.verified_by = form.verified_by.data
+        so.approved_by = form.approved_by.data
+        so.delivery_notes = form.delivery_notes.data
         so.notes = form.notes.data
         
         db.session.commit()

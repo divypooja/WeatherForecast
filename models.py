@@ -189,7 +189,14 @@ class SalesOrder(db.Model):
     customer_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=False)
     order_date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date())
     delivery_date = db.Column(db.Date)
-    status = db.Column(db.String(20), default='pending')  # pending, partial, completed, cancelled
+    payment_terms = db.Column(db.String(100))
+    freight_terms = db.Column(db.String(100))
+    validity_months = db.Column(db.Integer)
+    prepared_by = db.Column(db.String(100))
+    verified_by = db.Column(db.String(100))
+    approved_by = db.Column(db.String(100))
+    delivery_notes = db.Column(db.Text)
+    status = db.Column(db.String(20), default='draft')  # draft, confirmed, delivered, cancelled
     total_amount = db.Column(db.Float, default=0.0)
     notes = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)

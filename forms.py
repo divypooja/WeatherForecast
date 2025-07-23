@@ -103,8 +103,15 @@ class PurchaseOrderItemForm(FlaskForm):
 class SalesOrderForm(FlaskForm):
     so_number = StringField('SO Number', validators=[DataRequired(), Length(max=50)])
     customer_id = SelectField('Customer', validators=[DataRequired()], coerce=int)
-    so_date = DateField('SO Date', validators=[DataRequired()])
+    order_date = DateField('Order Date', validators=[DataRequired()])
     delivery_date = DateField('Expected Delivery Date')
+    payment_terms = StringField('Payment Terms', validators=[Length(max=100)])
+    freight_terms = StringField('Freight Terms', validators=[Length(max=100)])
+    validity_months = IntegerField('Validity (Months)', validators=[Optional(), NumberRange(min=1, max=12)])
+    prepared_by = StringField('Prepared By', validators=[Length(max=100)])
+    verified_by = StringField('Verified By', validators=[Length(max=100)])
+    approved_by = StringField('Approved By', validators=[Length(max=100)])
+    delivery_notes = TextAreaField('Delivery Notes')
     status = SelectField('Status', choices=[('draft', 'Draft'), ('confirmed', 'Confirmed'), ('delivered', 'Delivered'), ('cancelled', 'Cancelled')], default='draft')
     notes = TextAreaField('Notes')
     
