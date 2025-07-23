@@ -49,6 +49,10 @@ class PurchaseOrderForm(FlaskForm):
     payment_terms = StringField('Payment Terms', validators=[Length(max=100)])
     freight_terms = StringField('Freight Terms', validators=[Length(max=100)])
     validity_months = IntegerField('Validity (Months)', validators=[Optional(), NumberRange(min=1, max=12)])
+    prepared_by = StringField('Prepared By', validators=[Length(max=100)])
+    verified_by = StringField('Verified By', validators=[Length(max=100)])
+    approved_by = StringField('Approved By', validators=[Length(max=100)])
+    delivery_notes = TextAreaField('Delivery Notes')
     status = SelectField('Status', choices=[('draft', 'Draft'), ('sent', 'Sent'), ('received', 'Received'), ('cancelled', 'Cancelled')], default='draft')
     notes = TextAreaField('Notes')
     
