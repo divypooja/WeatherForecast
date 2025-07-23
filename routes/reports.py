@@ -222,16 +222,16 @@ def jobwork_report():
     
     if start_date:
         start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
-        query = query.filter(JobWork.job_date >= start_date_obj)
+        query = query.filter(JobWork.sent_date >= start_date_obj)
     
     if end_date:
         end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date()
-        query = query.filter(JobWork.job_date <= end_date_obj)
+        query = query.filter(JobWork.sent_date <= end_date_obj)
     
     if status_filter:
         query = query.filter_by(status=status_filter)
     
-    job_works = query.order_by(JobWork.job_date.desc()).all()
+    job_works = query.order_by(JobWork.sent_date.desc()).all()
     
     return render_template('reports/jobwork_report.html',
                          job_works=job_works,
