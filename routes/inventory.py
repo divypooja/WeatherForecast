@@ -4,6 +4,7 @@ from forms import ItemForm
 from models import Item
 from app import db
 from sqlalchemy import func
+from utils import generate_item_code
 
 inventory_bp = Blueprint('inventory', __name__)
 
@@ -50,6 +51,11 @@ def list_items():
 @login_required
 def add_item():
     form = ItemForm()
+    
+    # Auto-generate item code if not provided
+    if not form.code.data:
+        form.code.data = generate_item_code()
+    
     if form.validate_on_submit():
         # Check if item code already exists
         existing_item = Item.query.filter_by(code=form.code.data).first()

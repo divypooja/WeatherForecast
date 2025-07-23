@@ -4,6 +4,7 @@ from forms import SalesOrderForm, CustomerForm
 from models import SalesOrder, SalesOrderItem, Customer, Item
 from app import db
 from sqlalchemy import func
+from utils import generate_so_number
 
 sales_bp = Blueprint('sales', __name__)
 
@@ -53,6 +54,10 @@ def list_sales_orders():
 def add_sales_order():
     form = SalesOrderForm()
     form.customer_id.choices = [(c.id, c.name) for c in Customer.query.all()]
+    
+    # Auto-generate SO number if not provided
+    if not form.so_number.data:
+        form.so_number.data = generate_so_number()
     
     if form.validate_on_submit():
         # Check if SO number already exists

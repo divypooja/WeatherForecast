@@ -4,6 +4,7 @@ from forms import ProductionForm, BOMForm, BOMItemForm
 from models import Production, Item, BOM, BOMItem
 from app import db
 from sqlalchemy import func
+from utils import generate_production_number
 
 production_bp = Blueprint('production', __name__)
 
@@ -56,6 +57,10 @@ def add_production():
     form = ProductionForm()
     # Only show items that have BOM or are products
     form.item_id.choices = [(i.id, f"{i.code} - {i.name}") for i in Item.query.filter(Item.item_type == 'product').all()]
+    
+    # Auto-generate production number if not provided
+    if not form.production_number.data:
+        form.production_number.data = generate_production_number()
     
     if form.validate_on_submit():
         # Check if production number already exists

@@ -5,6 +5,7 @@ from models import PurchaseOrder, PurchaseOrderItem, Supplier, Item, DeliverySch
 from app import db
 from sqlalchemy import func
 from datetime import datetime
+from utils import generate_po_number
 
 purchase_bp = Blueprint('purchase', __name__)
 
@@ -54,6 +55,10 @@ def list_purchase_orders():
 def add_purchase_order():
     form = PurchaseOrderForm()
     form.supplier_id.choices = [(s.id, s.name) for s in Supplier.query.all()]
+    
+    # Auto-generate PO number if not provided
+    if not form.po_number.data:
+        form.po_number.data = generate_po_number()
     
     if form.validate_on_submit():
         # Check if PO number already exists

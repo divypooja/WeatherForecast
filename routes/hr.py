@@ -4,6 +4,7 @@ from forms import EmployeeForm
 from models import Employee
 from app import db
 from sqlalchemy import func
+from utils import generate_employee_code
 
 hr_bp = Blueprint('hr', __name__)
 
@@ -79,6 +80,11 @@ def list_employees():
 @login_required
 def add_employee():
     form = EmployeeForm()
+    
+    # Auto-generate employee code if not provided
+    if not form.employee_code.data:
+        form.employee_code.data = generate_employee_code()
+    
     if form.validate_on_submit():
         # Check if employee code already exists
         existing_employee = Employee.query.filter_by(employee_code=form.employee_code.data).first()
