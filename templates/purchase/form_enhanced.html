@@ -323,7 +323,9 @@ function addPOItem() {
         console.log('Setting option data for', item.code, ':', {
             gst: item.gst_rate,
             price: item.unit_price,
-            uom: item.unit_of_measure
+            uom: item.unit_of_measure,
+            hsn: item.hsn_code,
+            description: item.description
         });
         selectElement.appendChild(option);
     });
@@ -335,7 +337,16 @@ function populateItemDetails(selectElement) {
     console.log('=== Auto-population Debug ===');
     console.log('Selected option:', selectedOption);
     console.log('Selected value:', selectedOption.value);
-    console.log('Dataset:', selectedOption.dataset);
+    console.log('Selected text:', selectedOption.textContent);
+    console.log('Full dataset object:', selectedOption.dataset);
+    console.log('Individual dataset values:', {
+        code: selectedOption.dataset.code,
+        gst: selectedOption.dataset.gst,
+        price: selectedOption.dataset.price,
+        uom: selectedOption.dataset.uom,
+        hsn: selectedOption.dataset.hsn,
+        description: selectedOption.dataset.description
+    });
     
     if (selectedOption.value) {
         const row = selectElement.closest('tr');
@@ -371,16 +382,16 @@ function populateItemDetails(selectElement) {
             console.log('Set HSN:', hsnInput.value);
         }
         if (gstInput) {
-            gstInput.value = selectedOption.dataset.price || '0.00';
-            console.log('Set GST Rate:', gstInput.value);
+            gstInput.value = selectedOption.dataset.gst || '0.0';
+            console.log('Set GST Rate:', gstInput.value, 'from dataset.gst:', selectedOption.dataset.gst);
         }
         if (uomInput) {
             uomInput.value = selectedOption.dataset.uom || '';
-            console.log('Set UOM:', uomInput.value);
+            console.log('Set UOM:', uomInput.value, 'from dataset.uom:', selectedOption.dataset.uom);
         }
         if (rateInput) {
-            rateInput.value = selectedOption.dataset.gst || '0.0';
-            console.log('Set Rate:', rateInput.value);
+            rateInput.value = selectedOption.dataset.price || '0.00';
+            console.log('Set Rate:', rateInput.value, 'from dataset.price:', selectedOption.dataset.price);
         }
         
         console.log('=== Auto-population Complete ===');
