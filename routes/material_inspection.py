@@ -142,6 +142,18 @@ def log_inspection():
             po.inspection_status = 'completed'
             po.inspected_at = datetime.utcnow()
             
+            # Automatically update PO status based on completion
+            if po.status in ['draft', 'open']:
+                # Check if all materials are inspected and received
+                total_ordered = sum(item.qty for item in po.items)
+                total_received = sum(inspection.passed_quantity for inspection in po.material_inspections) + form.passed_quantity.data
+                
+                if total_received >= total_ordered:
+                    po.status = 'closed'  # All materials received
+                elif total_received > 0:
+                    po.status = 'partial'  # Some materials received
+                # else status remains 'open' if nothing received yet
+            
             # Update inventory only with passed quantity for the specific item
             item = Item.query.get(form.item_id.data)
             item.current_stock += form.passed_quantity.data
