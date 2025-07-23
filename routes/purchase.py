@@ -6,6 +6,7 @@ from app import db
 from sqlalchemy import func
 from datetime import datetime
 from utils import generate_po_number
+from services.notification_helpers import send_email_notification, send_whatsapp_notification
 
 purchase_bp = Blueprint('purchase', __name__)
 
@@ -283,6 +284,54 @@ def print_purchase_order(id):
     company = CompanySettings.get_settings()
     
     return render_template('purchase/po_print_enhanced.html', po=po, amount_words=amount_words, company=company)
+
+@purchase_bp.route('/send/<int:po_id>', methods=['GET', 'POST'])
+@login_required
+def send_purchase_order(po_id):
+    po = PurchaseOrder.query.get_or_404(po_id)
+    
+    if request.method == 'POST':
+        send_type = request.form.get('send_type')
+        recipient = request.form.get('recipient')
+        message = request.form.get('message', '')
+        
+        # Get company info for email
+        company = CompanySettings.query.first()
+        
+        # Create PO summary for message
+        po_summary = f"""
+Purchase Order: {po.po_number}
+Supplier: {po.supplier.name}
+Date: {po.order_date}
+Expected Delivery: {po.expected_date}
+Total Amount: ₹{po.total_amount or 0:.2f}
+
+Items:
+"""
+        for item in po.items:
+            po_summary += f"- {item.item.name}: {item.quantity} {item.item.unit_of_measure} @ ₹{item.unit_price:.2f}\n"
+        
+        po_summary += f"\n{message}"
+        
+        success = False
+        if send_type == 'email':
+            subject = f"Purchase Order {po.po_number} - {company.company_name if company else 'AK Innovations'}"
+            success = send_email_notification(recipient, subject, po_summary)
+        elif send_type == 'whatsapp':
+            success = send_whatsapp_notification(recipient, po_summary)
+        
+        if success:
+            flash(f'Purchase Order sent successfully via {send_type.title()}!', 'success')
+            # Update PO status to sent if it's still draft
+            if po.status == 'draft':
+                po.status = 'sent'
+                db.session.commit()
+        else:
+            flash(f'Failed to send Purchase Order via {send_type.title()}. Please check your notification settings.', 'danger')
+        
+        return redirect(url_for('purchase.view_purchase_order', po_id=po.id))
+    
+    return render_template('purchase/send.html', po=po, title=f'Send Purchase Order {po.po_number}')
 
 @purchase_bp.route('/delete/<int:id>', methods=['POST', 'GET'])
 @login_required

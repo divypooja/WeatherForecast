@@ -1,10 +1,11 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from forms import JobWorkForm, JobWorkQuantityUpdateForm
-from models import JobWork, Supplier, Item, BOM, BOMItem
+from models import JobWork, Supplier, Item, BOM, BOMItem, CompanySettings
 from app import db
 from sqlalchemy import func
 from utils import generate_job_number
+from services.notification_helpers import send_email_notification, send_whatsapp_notification
 
 jobwork_bp = Blueprint('jobwork', __name__)
 
@@ -200,6 +201,49 @@ def update_quantity(id):
         return redirect(url_for('jobwork.list_job_works'))
     
     return render_template('jobwork/update_quantity.html', form=form, job=job, title='Update Quantity')
+
+@jobwork_bp.route('/send/<int:job_id>', methods=['GET', 'POST'])
+@login_required
+def send_job_work(job_id):
+    job = JobWork.query.get_or_404(job_id)
+    
+    if request.method == 'POST':
+        send_type = request.form.get('send_type')
+        recipient = request.form.get('recipient')
+        message = request.form.get('message', '')
+        
+        # Get company info for email
+        company = CompanySettings.query.first()
+        
+        # Create Job Work summary for message
+        job_summary = f"""
+Job Work Order: {job.job_number}
+Customer: {job.customer_name}
+Item: {job.item.name}
+Quantity Sent: {job.quantity_sent} {job.item.unit_of_measure}
+Rate per Unit: ₹{job.rate_per_unit:.2f}
+Total Value: ₹{job.quantity_sent * job.rate_per_unit:.2f}
+Sent Date: {job.sent_date}
+Expected Return: {job.expected_return or 'Not specified'}
+
+{message}
+"""
+        
+        success = False
+        if send_type == 'email':
+            subject = f"Job Work Order {job.job_number} - {company.company_name if company else 'AK Innovations'}"
+            success = send_email_notification(recipient, subject, job_summary)
+        elif send_type == 'whatsapp':
+            success = send_whatsapp_notification(recipient, job_summary)
+        
+        if success:
+            flash(f'Job Work order sent successfully via {send_type.title()}!', 'success')
+        else:
+            flash(f'Failed to send Job Work order via {send_type.title()}. Please check your notification settings.', 'danger')
+        
+        return redirect(url_for('jobwork.view_job_work', job_id=job.id))
+    
+    return render_template('jobwork/send.html', job=job, title=f'Send Job Work {job.job_number}')
 
 @jobwork_bp.route('/api/get_item_bom_rate/<int:item_id>')
 @login_required

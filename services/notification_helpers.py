@@ -248,3 +248,45 @@ def send_system_alert(subject: str, message: str, alert_type: str = 'system_aler
     except Exception as e:
         logger.error(f"Failed to send system alert: {e}")
         return False
+
+def send_email_notification(to_email: str, subject: str, message: str, html_content: str = None):
+    """Send email notification"""
+    try:
+        from models import NotificationSettings
+        
+        settings = NotificationSettings.query.first()
+        if not settings or not settings.email_enabled:
+            return False
+        
+        return notification_service.send_email(to_email, subject, message, html_content)
+    except Exception as e:
+        logger.error(f"Failed to send email notification: {e}")
+        return False
+
+def send_whatsapp_notification(to_phone: str, message: str):
+    """Send WhatsApp notification"""
+    try:
+        from models import NotificationSettings
+        
+        settings = NotificationSettings.query.first()
+        if not settings or not settings.whatsapp_enabled:
+            return False
+        
+        return notification_service.send_whatsapp(to_phone, message)
+    except Exception as e:
+        logger.error(f"Failed to send WhatsApp notification: {e}")
+        return False
+
+def send_sms_notification(to_phone: str, message: str):
+    """Send SMS notification"""
+    try:
+        from models import NotificationSettings
+        
+        settings = NotificationSettings.query.first()
+        if not settings or not settings.sms_enabled:
+            return False
+        
+        return notification_service.send_sms(to_phone, message)
+    except Exception as e:
+        logger.error(f"Failed to send SMS notification: {e}")
+        return False

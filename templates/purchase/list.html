@@ -70,6 +70,9 @@
                                         <a href="{{ url_for('purchase.print_purchase_order', id=po.id) }}" class="btn btn-outline-info btn-sm" title="Print" target="_blank">
                                             <i class="fas fa-print"></i>
                                         </a>
+                                        <a href="{{ url_for('purchase.send_purchase_order', po_id=po.id) }}" class="btn btn-outline-success btn-sm" title="Send via Email/WhatsApp">
+                                            <i class="fas fa-paper-plane"></i>
+                                        </a>
                                         <a href="{{ url_for('purchase.delete_purchase_order', id=po.id) }}" class="btn btn-outline-danger btn-sm" 
                                            onclick="return confirm('Are you sure you want to delete this purchase order?')" title="Delete">
                                             <i class="fas fa-trash"></i>

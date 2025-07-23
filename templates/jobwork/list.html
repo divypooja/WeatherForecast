@@ -74,6 +74,9 @@
                                         <a href="{{ url_for('jobwork.edit_job_work', id=job.id) }}" class="btn btn-outline-primary btn-sm">
                                             <i class="fas fa-edit"></i>
                                         </a>
+                                        <a href="{{ url_for('jobwork.send_job_work', job_id=job.id) }}" class="btn btn-outline-success btn-sm" title="Send via Email/WhatsApp">
+                                            <i class="fas fa-paper-plane"></i>
+                                        </a>
                                         {% if job.status != 'completed' %}
                                         <a href="{{ url_for('jobwork.update_quantity', id=job.id) }}" class="btn btn-outline-success btn-sm" title="Update Quantity">
                                             <i class="fas fa-plus-circle"></i>
