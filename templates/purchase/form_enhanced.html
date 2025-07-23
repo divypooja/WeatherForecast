@@ -124,7 +124,7 @@
 
         <!-- Purchase Order Items -->
         <div class="card mb-4">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0">Purchase Order Items</h5>
                 <button type="button" class="btn btn-sm btn-primary" onclick="addPOItem()">
                     <i class="fas fa-plus"></i> Add Item
@@ -148,9 +148,9 @@
                         <thead class="table-light">
                             <tr>
                                 <th style="min-width: 50px;">No.</th>
-                                <th style="min-width: 100px;">RM Code</th>
+                                <th style="min-width: 100px;">Item Code</th>
                                 <th style="min-width: 200px;">Item + Description</th>
-                                <th style="min-width: 120px;">Drawing / Spec Sheet No.</th>
+                                <th style="min-width: 120px;">Specification</th>
                                 <th style="min-width: 100px;">HSN Code</th>
                                 <th style="min-width: 120px;">GST Rate</th>
                                 <th style="min-width: 80px;">UOM</th>
@@ -167,7 +167,7 @@
                                     <td class="align-middle text-center">{{ loop.index }}</td>
                                     <td class="align-middle">
                                         <input type="text" class="form-control form-control-sm text-center fw-bold" name="rm_code_{{ item.id }}" 
-                                               value="{{ item.rm_code or item.item.code }}" placeholder="RM Code">
+                                               value="{{ item.rm_code or item.item.code }}" placeholder="Item Code">
                                     </td>
                                     <td class="align-middle">
                                         <select class="form-control form-control-sm" name="item_id_{{ item.id }}" onchange="populateItemDetails(this)">
@@ -191,7 +191,7 @@
                                     </td>
                                     <td class="align-middle">
                                         <input type="text" class="form-control form-control-sm" name="drawing_spec_{{ item.id }}" 
-                                               value="{{ item.drawing_spec_no or '' }}" placeholder="Drawing/Spec No.">
+                                               value="{{ item.drawing_spec_no or '' }}" placeholder="Specification">
                                     </td>
                                     <td class="align-middle">
                                         <input type="text" class="form-control form-control-sm text-center fw-bold" name="hsn_code_{{ item.id }}" 
@@ -348,7 +348,7 @@ function addPOItem() {
     row.innerHTML = `
         <td class="align-middle text-center">${rowCount}</td>
         <td class="align-middle">
-            <input type="text" class="form-control form-control-sm text-center fw-bold" name="rm_code_new_${itemCounter}" placeholder="RM Code">
+            <input type="text" class="form-control form-control-sm text-center fw-bold" name="rm_code_new_${itemCounter}" placeholder="Item Code">
         </td>
         <td class="align-middle">
             <select class="form-control form-control-sm" name="item_id_new_${itemCounter}" onchange="populateItemDetails(this)">
@@ -358,7 +358,7 @@ function addPOItem() {
                       rows="2" placeholder="Item description"></textarea>
         </td>
         <td class="align-middle">
-            <input type="text" class="form-control form-control-sm" name="drawing_spec_new_${itemCounter}" placeholder="Drawing/Spec No.">
+            <input type="text" class="form-control form-control-sm" name="drawing_spec_new_${itemCounter}" placeholder="Specification">
         </td>
         <td class="align-middle">
             <input type="text" class="form-control form-control-sm text-center fw-bold" name="hsn_code_new_${itemCounter}" placeholder="HSN Code">
@@ -464,7 +464,7 @@ function populateItemDetails(selectElement) {
         
         console.log('=== FIELD MAPPING VERIFICATION ===');
         console.log('Form Fields to Data Source Mapping:');
-        console.log('RM Code Field ← item.code:', selectedOption.dataset.code);
+        console.log('Item Code Field ← item.code:', selectedOption.dataset.code);
         console.log('Description Field ← item.description:', selectedOption.dataset.description);
         console.log('HSN Code Field ← item.hsn_code:', selectedOption.dataset.hsn);
         console.log('GST Rate Field ← MANUAL ENTRY (left empty)');
@@ -480,7 +480,7 @@ function populateItemDetails(selectElement) {
         // Set values with explicit mapping
         if (rmCodeInput) {
             rmCodeInput.value = selectedOption.dataset.code || '';
-            console.log('✓ RM Code set to:', rmCodeInput.value);
+            console.log('✓ Item Code set to:', rmCodeInput.value);
         }
         if (descriptionTextarea) {
             descriptionTextarea.value = selectedOption.dataset.description || '';
