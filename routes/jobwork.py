@@ -1,7 +1,7 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from forms import JobWorkForm, JobWorkQuantityUpdateForm
-from models import JobWork, Supplier
+from models import JobWork, Supplier, Item, BOM, BOMItem
 from app import db
 from sqlalchemy import func
 from utils import generate_job_number
@@ -200,3 +200,30 @@ def update_quantity(id):
         return redirect(url_for('jobwork.list_job_works'))
     
     return render_template('jobwork/update_quantity.html', form=form, job=job, title='Update Quantity')
+
+@jobwork_bp.route('/api/get_item_bom_rate/<int:item_id>')
+@login_required
+def get_item_bom_rate(item_id):
+    """API endpoint to get BOM rate or unit price for an item"""
+    try:
+        item = Item.query.get(item_id)
+        if not item:
+            return jsonify({'success': False, 'message': 'Item not found'})
+        
+        # Try to get BOM rate first, fall back to unit price
+        bom_rate = None
+        # Look for this item in BOM entries where it's used as a material
+        bom_item = BOMItem.query.filter_by(item_id=item.id).first()
+        if bom_item and bom_item.unit_cost:
+            bom_rate = bom_item.unit_cost
+        
+        return jsonify({
+            'success': True,
+            'item_id': item.id,
+            'item_name': item.name,
+            'bom_rate': bom_rate,
+            'unit_price': item.unit_price,
+            'unit_of_measure': item.unit_of_measure
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
