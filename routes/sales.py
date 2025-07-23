@@ -8,6 +8,55 @@ from utils import generate_so_number
 
 sales_bp = Blueprint('sales', __name__)
 
+def deduct_inventory_for_sales_order(sales_order):
+    """
+    Deduct inventory when sales order is confirmed.
+    Returns dict with 'success' and 'message' keys.
+    """
+    try:
+        insufficient_items = []
+        
+        # Check all items first before deducting anything
+        for so_item in sales_order.items:
+            item = so_item.item
+            if item.current_stock < so_item.quantity_ordered:
+                insufficient_items.append({
+                    'item_name': item.name,
+                    'required': so_item.quantity_ordered,
+                    'available': item.current_stock
+                })
+        
+        # If any items have insufficient stock, return error
+        if insufficient_items:
+            message = "Insufficient stock for the following items: "
+            for insufficient in insufficient_items:
+                message += f"{insufficient['item_name']} (Required: {insufficient['required']}, Available: {insufficient['available']}), "
+            return {'success': False, 'message': message.rstrip(', ')}
+        
+        # All items have sufficient stock, proceed with deduction
+        for so_item in sales_order.items:
+            item = so_item.item
+            item.current_stock -= so_item.quantity_ordered
+            
+        return {'success': True, 'message': f'Inventory deducted for Sales Order {sales_order.so_number}'}
+        
+    except Exception as e:
+        return {'success': False, 'message': f'Error deducting inventory: {str(e)}'}
+
+def restore_inventory_for_sales_order(sales_order):
+    """
+    Restore inventory when sales order is cancelled or status changed from confirmed.
+    """
+    try:
+        for so_item in sales_order.items:
+            item = so_item.item
+            item.current_stock += so_item.quantity_ordered
+            
+        flash(f'Inventory restored for Sales Order {sales_order.so_number}', 'info')
+        
+    except Exception as e:
+        flash(f'Error restoring inventory: {str(e)}', 'danger')
+
 @sales_bp.route('/dashboard')
 @login_required
 def dashboard():
@@ -106,7 +155,9 @@ def edit_sales_order(id):
         ).first()
         if existing_so:
             flash('SO number already exists', 'danger')
-            return render_template('sales/form.html', form=form, title='Edit Sales Order', so=so)
+            so_items = SalesOrderItem.query.filter_by(sales_order_id=id).all()
+            items = Item.query.all()
+            return render_template('sales/form.html', form=form, title='Edit Sales Order', so=so, so_items=so_items, items=items)
         
         so.so_number = form.so_number.data
         so.customer_id = form.customer_id.data
@@ -120,6 +171,23 @@ def edit_sales_order(id):
         so.approved_by = form.approved_by.data
         so.delivery_notes = form.delivery_notes.data
         so.notes = form.notes.data
+        
+        # Check if status changed to 'confirmed' to trigger inventory deduction
+        old_status = so.status
+        so.status = form.status.data
+        
+        # If status changed from any status to 'confirmed', deduct inventory
+        if old_status != 'confirmed' and so.status == 'confirmed':
+            inventory_deduction_result = deduct_inventory_for_sales_order(so)
+            if not inventory_deduction_result['success']:
+                flash(f'Cannot confirm sales order: {inventory_deduction_result["message"]}', 'danger')
+                so_items = SalesOrderItem.query.filter_by(sales_order_id=id).all()
+                items = Item.query.all()
+                return render_template('sales/form.html', form=form, title='Edit Sales Order', so=so, so_items=so_items, items=items)
+        
+        # If status changed from 'confirmed' to another status, restore inventory
+        elif old_status == 'confirmed' and so.status != 'confirmed':
+            restore_inventory_for_sales_order(so)
         
         db.session.commit()
         flash('Sales Order updated successfully', 'success')
@@ -186,3 +254,76 @@ def delete_sales_order(id):
     db.session.commit()
     flash('Sales Order deleted successfully', 'success')
     return redirect(url_for('sales.list_sales_orders'))
+
+@sales_bp.route('/add_item/<int:so_id>', methods=['POST'])
+@login_required
+def add_sales_order_item(so_id):
+    """Add an item to a sales order"""
+    from flask import jsonify
+    
+    so = SalesOrder.query.get_or_404(so_id)
+    
+    try:
+        item_id = int(request.form.get('item_id'))
+        quantity = float(request.form.get('quantity'))
+        unit_price = float(request.form.get('unit_price'))
+        
+        item = Item.query.get_or_404(item_id)
+        total_price = quantity * unit_price
+        
+        # Check if item already exists in this SO
+        existing_item = SalesOrderItem.query.filter_by(
+            sales_order_id=so_id, 
+            item_id=item_id
+        ).first()
+        
+        if existing_item:
+            # Update existing item
+            existing_item.quantity_ordered += quantity
+            existing_item.total_price = existing_item.quantity_ordered * existing_item.unit_price
+        else:
+            # Create new item
+            so_item = SalesOrderItem(
+                sales_order_id=so_id,
+                item_id=item_id,
+                quantity_ordered=quantity,
+                unit_price=unit_price,
+                total_price=total_price
+            )
+            db.session.add(so_item)
+        
+        # Update SO total
+        so.total_amount = sum(item.total_price for item in so.items)
+        
+        db.session.commit()
+        flash('Item added to sales order', 'success')
+        
+        return jsonify({'success': True, 'message': 'Item added successfully'})
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+@sales_bp.route('/remove_item/<int:item_id>', methods=['POST'])
+@login_required
+def remove_sales_order_item(item_id):
+    """Remove an item from a sales order"""
+    from flask import jsonify
+    
+    try:
+        so_item = SalesOrderItem.query.get_or_404(item_id)
+        so = so_item.sales_order
+        
+        db.session.delete(so_item)
+        
+        # Update SO total
+        so.total_amount = sum(item.total_price for item in so.items)
+        
+        db.session.commit()
+        flash('Item removed from sales order', 'success')
+        
+        return jsonify({'success': True, 'message': 'Item removed successfully'})
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
