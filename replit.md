@@ -6,7 +6,19 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 23, 2025)
 
-### Complete UOM (Unit of Measure) Conversion System (Latest)
+### Complete BOM-UOM Integration System (Latest - January 23, 2025)
+- **Enhanced BOM Models**: Added production_unit_id, description, created_by fields to BOM model for comprehensive manufacturing planning
+- **BOMItem Model Enhancement**: Added bom_unit_id, notes fields to BOMItem model for material-specific unit specifications
+- **UOM-Aware BOM Methods**: Implemented automatic conversion calculations between BOM units and inventory units
+- **Cross-Unit Material Planning**: Materials can be bought in one unit (Kg) but specified in BOM using different units (pieces)
+- **Advanced BOM Form**: Created comprehensive BOM form with UOM selection, real-time conversions, and professional guidance
+- **Material Availability with UOM**: Enhanced material checking to handle cross-unit calculations (steel rod bought in meters, used as mm in BOM)
+- **Database Schema Updates**: Added new fields to boms and bom_items tables with proper foreign key constraints
+- **Professional BOM Interface**: Complete UOM-integrated BOM management with unit selection, conversion guidance, and material cost calculations
+- **Production Unit Planning**: BOM production can be planned in different units (pieces, Kg) while materials use their own specific units
+- **Automatic Unit Conversions**: System handles complex conversions like L→ml for grease, M→mm for steel rods in manufacturing processes
+
+### Complete UOM (Unit of Measure) Conversion System
 - **Comprehensive UOM Models**: Created complete database models (UnitOfMeasure, UOMConversion, ItemUOMConversion, UOMConversionLog) for handling multi-unit operations
 - **Pre-loaded Unit System**: Initialized with 15 common units (Kg, g, Pcs, L, M, cm, etc.) across Weight, Count, Length, Volume, and Area categories
 - **Standard Conversions**: 18 pre-configured conversions (1 Kg = 1000g, 1 L = 1000ml, 1 M = 100cm, etc.) for manufacturing scenarios

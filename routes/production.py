@@ -218,7 +218,7 @@ def add_bom():
         existing_bom = BOM.query.filter_by(product_id=form.product_id.data, is_active=True).first()
         if existing_bom:
             flash('An active BOM already exists for this product. Please deactivate the existing BOM first.', 'warning')
-            units = UnitOfMeasure.query.filter_by(is_active=True).all()
+            units = UnitOfMeasure.query.all()
             materials = Item.query.filter(Item.item_type.in_(['material', 'consumable'])).all()
             return render_template('production/bom_form_uom.html', form=form, title='Add BOM', units=units, materials=materials)
         
@@ -236,7 +236,7 @@ def add_bom():
         return redirect(url_for('production.edit_bom', id=bom.id))
     
     # Get available units for UOM selection
-    units = UnitOfMeasure.query.filter_by(is_active=True).all()
+    units = UnitOfMeasure.query.all()
     materials = Item.query.filter(Item.item_type.in_(['material', 'consumable'])).all()
     
     return render_template('production/bom_form_uom.html', 
@@ -261,7 +261,7 @@ def edit_bom(id):
         ).first()
         if existing_bom:
             flash('An active BOM already exists for this product. Please deactivate the existing BOM first.', 'warning')
-            units = UnitOfMeasure.query.filter_by(is_active=True).all()
+            units = UnitOfMeasure.query.all()
             materials = Item.query.filter(Item.item_type.in_(['material', 'consumable'])).all()
             return render_template('production/bom_form_uom.html', form=form, title='Edit BOM', bom=bom, units=units, materials=materials)
         
@@ -282,7 +282,7 @@ def edit_bom(id):
     materials = Item.query.filter(Item.item_type.in_(['material', 'consumable'])).all()
     
     # Get available units for UOM selection
-    units = UnitOfMeasure.query.filter_by(is_active=True).all()
+    units = UnitOfMeasure.query.all()
     
     return render_template('production/bom_form_uom.html', 
                          form=form, 
