@@ -150,16 +150,19 @@ class JobWork(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     job_number = db.Column(db.String(50), unique=True, nullable=False)
-    supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=False)
-    job_date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date())
-    expected_return_date = db.Column(db.Date)
+    customer_name = db.Column(db.String(100), nullable=False)
+    item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
+    quantity_sent = db.Column(db.Float, nullable=False)
+    rate_per_unit = db.Column(db.Float, nullable=False)
+    sent_date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date())
+    expected_return = db.Column(db.Date)
     status = db.Column(db.String(20), default='sent')  # sent, partial_received, completed
     notes = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
-    job_supplier = db.relationship('Supplier', backref='job_works')
+    item = db.relationship('Item', backref='job_works')
     creator = db.relationship('User', backref='created_job_works')
 
 class Production(db.Model):
