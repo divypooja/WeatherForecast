@@ -392,10 +392,13 @@ Items:
         
         if success:
             flash(f'Purchase Order sent successfully via {send_type.title()}!', 'success')
-            # Update PO status to sent if it's still draft
+            # Update PO status when sent
             if po.status == 'draft':
-                po.status = 'sent'
+                po.status = 'open'  # Draft -> Open when sent
                 db.session.commit()
+            elif po.status == 'open':
+                # Status remains open when sent
+                pass
         else:
             flash(f'Failed to send Purchase Order via {send_type.title()}. Please check your notification settings.', 'danger')
         

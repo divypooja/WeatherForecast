@@ -84,7 +84,7 @@ class PurchaseOrderForm(FlaskForm):
     verified_by = StringField('Verified By', validators=[Length(max=100)])
     approved_by = StringField('Approved By', validators=[Length(max=100)])
     delivery_notes = TextAreaField('Delivery Notes')
-    status = SelectField('Status', choices=[('draft', 'Draft'), ('sent', 'Sent'), ('received', 'Received'), ('cancelled', 'Cancelled')], default='draft')
+    status = SelectField('Status', choices=[('draft', 'Draft'), ('open', 'Open'), ('partial', 'Partially Received'), ('closed', 'Closed'), ('cancelled', 'Cancelled')], default='open')
     notes = TextAreaField('Notes')
     
     def __init__(self, *args, **kwargs):
