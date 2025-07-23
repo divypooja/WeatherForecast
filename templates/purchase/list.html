@@ -15,18 +15,49 @@
         </div>
     </div>
 
+    <!-- Status Workflow Info -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <h6><i class="fas fa-info-circle"></i> PO Status Workflow:</h6>
+                <div class="row">
+                    <div class="col-md-8">
+                        <span class="badge bg-secondary">Draft</span> → 
+                        <span class="badge bg-primary">Open</span> → 
+                        <span class="badge bg-warning">Partial</span> → 
+                        <span class="badge bg-success">Closed</span>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <small>
+                            <strong>Draft</strong>: PO created but not sent<br>
+                            <strong>Open</strong>: PO sent, waiting for materials<br>
+                            <strong>Partial</strong>: Some materials received<br>
+                            <strong>Closed</strong>: All materials received
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Filters -->
     <div class="row mb-3">
         <div class="col-md-4">
             <form method="GET" class="d-flex">
                 <select name="status" class="form-select me-2" onchange="this.form.submit()">
                     <option value="">All Status</option>
+                    <option value="draft" {{ 'selected' if status_filter == 'draft' }}>Draft</option>
                     <option value="open" {{ 'selected' if status_filter == 'open' }}>Open</option>
                     <option value="partial" {{ 'selected' if status_filter == 'partial' }}>Partial</option>
                     <option value="closed" {{ 'selected' if status_filter == 'closed' }}>Closed</option>
                     <option value="cancelled" {{ 'selected' if status_filter == 'cancelled' }}>Cancelled</option>
                 </select>
             </form>
+        </div>
+        <div class="col-md-8">
+            <div class="text-muted small">
+                To update received quantities: Use <strong>Material Inspection</strong> when materials arrive
+            </div>
         </div>
     </div>
 
@@ -56,7 +87,7 @@
                                 <td>{{ po.order_date.strftime('%m/%d/%Y') }}</td>
                                 <td>{{ po.expected_date.strftime('%m/%d/%Y') if po.expected_date else '-' }}</td>
                                 <td>
-                                    <span class="badge bg-{{ 'success' if po.status == 'closed' else 'warning' if po.status == 'partial' else 'danger' if po.status == 'cancelled' else 'primary' }}">
+                                    <span class="badge bg-{{ 'success' if po.status == 'closed' else 'warning' if po.status == 'partial' else 'danger' if po.status == 'cancelled' else 'secondary' if po.status == 'draft' else 'primary' }}">
                                         {{ po.status.title() }}
                                     </span>
                                 </td>
