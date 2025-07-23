@@ -387,7 +387,7 @@ function populateItemDetails(selectElement) {
         console.log('RM Code Field ← item.code:', selectedOption.dataset.code);
         console.log('Description Field ← item.description:', selectedOption.dataset.description);
         console.log('HSN Code Field ← item.hsn_code:', selectedOption.dataset.hsn);
-        console.log('GST Rate Field ← item.gst_rate:', selectedOption.dataset.gst);
+        console.log('GST Rate Field ← MANUAL ENTRY (left empty)');
         console.log('UOM Field ← item.unit_of_measure:', selectedOption.dataset.uom);
         console.log('Rate Field ← item.bom_rate:', selectedOption.dataset.price);
         console.log('==================================');
@@ -414,8 +414,9 @@ function populateItemDetails(selectElement) {
             console.log('✓ HSN Code set to:', hsnInput.value);
         }
         if (gstInput) {
-            gstInput.value = selectedOption.dataset.gst || '0';
-            console.log('✓ GST Rate set to:', gstInput.value, '(should be 18 for castor)');
+            // Leave GST Rate empty for manual entry
+            gstInput.value = '';
+            console.log('✓ GST Rate left empty for manual entry');
         }
         if (uomInput) {
             uomInput.value = selectedOption.dataset.uom || '';
@@ -423,7 +424,7 @@ function populateItemDetails(selectElement) {
         }
         if (rateInput) {
             rateInput.value = selectedOption.dataset.price || '0.00';
-            console.log('✓ Rate set to:', rateInput.value, '(should be 42.94 for castor)');
+            console.log('✓ Rate set to:', rateInput.value, '(BOM unit cost for', selectedOption.dataset.code + ')');
         } else {
             console.error('❌ Rate input field not found!');
         }
