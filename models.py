@@ -487,6 +487,7 @@ class FactoryExpense(db.Model):
     tax_amount = db.Column(db.Numeric(15, 2), default=0.0)
     total_amount = db.Column(db.Numeric(15, 2), nullable=False)
     payment_method = db.Column(db.String(50))  # cash, bank_transfer, cheque, upi, card
+    paid_by = db.Column(db.String(100))  # person/entity who made the payment
     
     # Vendor/Supplier Details (optional)
     vendor_name = db.Column(db.String(200))

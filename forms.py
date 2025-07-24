@@ -388,6 +388,8 @@ class FactoryExpenseForm(FlaskForm):
                                     ('upi', 'UPI'),
                                     ('card', 'Card Payment')
                                 ])
+    paid_by = StringField('Paid By', validators=[Optional(), Length(max=100)], 
+                         render_kw={"placeholder": "Person/Entity who made the payment"})
     
     # Vendor Details (Optional)
     vendor_name = StringField('Vendor/Supplier Name', validators=[Optional(), Length(max=200)], 

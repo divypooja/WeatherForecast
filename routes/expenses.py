@@ -158,6 +158,7 @@ def add_expense():
                 tax_amount=tax_amt,
                 total_amount=total_amount,
                 payment_method=form.payment_method.data,
+                paid_by=form.paid_by.data,
                 vendor_name=form.vendor_name.data,
                 vendor_contact=form.vendor_contact.data,
                 invoice_number=form.invoice_number.data,
@@ -231,6 +232,7 @@ def edit_expense(id):
             expense.tax_amount = tax_amt
             expense.total_amount = total_amount
             expense.payment_method = form.payment_method.data
+            expense.paid_by = form.paid_by.data
             expense.vendor_name = form.vendor_name.data
             expense.vendor_contact = form.vendor_contact.data
             expense.invoice_number = form.invoice_number.data
