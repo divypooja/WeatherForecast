@@ -170,6 +170,30 @@ class Item(db.Model):
             available_for_sale = self.get_available_for_sale()
             return f"{self.current_stock} {self.unit_of_measure} ({available_for_sale} {self.sale_unit})"
         return f"{self.current_stock} {self.unit_of_measure}"
+    
+    @property
+    def total_weight_kg(self):
+        """Calculate total weight in kilograms"""
+        if self.unit_weight and self.current_stock:
+            if self.unit_of_measure == 'kg':
+                return self.current_stock
+            elif self.unit_of_measure == 'pcs' and self.unit_weight:
+                return self.current_stock * self.unit_weight
+            elif self.unit_of_measure == 'g':
+                return self.current_stock / 1000
+        return 0.0
+    
+    @property
+    def weight_info_display(self):
+        """Display weight information for inventory management"""
+        if self.unit_weight:
+            total_weight = self.total_weight_kg
+            if self.unit_of_measure == 'pcs':
+                return f"{self.unit_weight}kg/pc | Total: {total_weight:.2f}kg"
+            elif self.unit_of_measure == 'kg':
+                pieces = int(self.current_stock / self.unit_weight) if self.unit_weight > 0 else 0
+                return f"≈{pieces} pieces ({self.unit_weight}kg/pc)"
+        return "N/A"
 
 class PurchaseOrder(db.Model):
     __tablename__ = 'purchase_orders'
