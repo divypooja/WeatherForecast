@@ -6,6 +6,7 @@ from forms import FactoryExpenseForm
 from datetime import datetime, date
 from sqlalchemy import func, desc, extract
 from utils_documents import save_uploaded_file_expense
+from utils_export import export_factory_expenses
 import calendar
 import os
 
@@ -135,6 +136,43 @@ def expense_list():
                          status=status,
                          date_from=date_from,
                          date_to=date_to)
+
+@expenses_bp.route('/export')
+@login_required
+def export_expenses():
+    """Export expenses to Excel"""
+    # Get filter parameters
+    category = request.args.get('category', '')
+    status = request.args.get('status', '')
+    date_from = request.args.get('date_from', '')
+    date_to = request.args.get('date_to', '')
+    
+    # Build query with same filters as list view
+    query = FactoryExpense.query
+    
+    if category:
+        query = query.filter(FactoryExpense.category == category)
+    
+    if status:
+        query = query.filter(FactoryExpense.status == status)
+    
+    if date_from:
+        try:
+            from_date = datetime.strptime(date_from, '%Y-%m-%d').date()
+            query = query.filter(FactoryExpense.expense_date >= from_date)
+        except ValueError:
+            pass
+    
+    if date_to:
+        try:
+            to_date = datetime.strptime(date_to, '%Y-%m-%d').date()
+            query = query.filter(FactoryExpense.expense_date <= to_date)
+        except ValueError:
+            pass
+    
+    expenses = query.order_by(desc(FactoryExpense.expense_date)).all()
+    
+    return export_factory_expenses(expenses)
 
 @expenses_bp.route('/add', methods=['GET', 'POST'])
 @login_required

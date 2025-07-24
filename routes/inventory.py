@@ -5,6 +5,7 @@ from models import Item
 from app import db
 from sqlalchemy import func
 from utils import generate_item_code
+from utils_export import export_inventory_items
 
 inventory_bp = Blueprint('inventory', __name__)
 
@@ -89,6 +90,51 @@ def list_items():
                          stock_status_filter=stock_status_filter,
                          min_price=min_price,
                          max_price=max_price)
+
+@inventory_bp.route('/export')
+@login_required
+def export_items():
+    """Export inventory items to Excel"""
+    # Get same filter parameters as list_items
+    search = request.args.get('search', '')
+    item_type_filter = request.args.get('item_type', '')
+    stock_status_filter = request.args.get('stock_status', '')
+    min_price = request.args.get('min_price', '')
+    max_price = request.args.get('max_price', '')
+    
+    query = Item.query
+    
+    # Apply filters
+    if search:
+        query = query.filter(Item.name.ilike(f'%{search}%') | Item.code.ilike(f'%{search}%'))
+    
+    if item_type_filter:
+        query = query.filter_by(item_type=item_type_filter)
+    
+    if stock_status_filter == 'low_stock':
+        query = query.filter(func.coalesce(Item.current_stock, 0) <= func.coalesce(Item.minimum_stock, 0))
+    elif stock_status_filter == 'out_of_stock':
+        query = query.filter(func.coalesce(Item.current_stock, 0) == 0)
+    elif stock_status_filter == 'in_stock':
+        query = query.filter(func.coalesce(Item.current_stock, 0) > 0)
+    
+    if min_price:
+        try:
+            min_price_val = float(min_price)
+            query = query.filter(Item.unit_price >= min_price_val)
+        except ValueError:
+            pass
+    
+    if max_price:
+        try:
+            max_price_val = float(max_price)
+            query = query.filter(Item.unit_price <= max_price_val)
+        except ValueError:
+            pass
+    
+    items = query.order_by(Item.name).all()
+    
+    return export_inventory_items(items)
 
 @inventory_bp.route('/add', methods=['GET', 'POST'])
 @login_required
