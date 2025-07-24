@@ -160,53 +160,68 @@ def user_management():
 @settings_bp.route('/reset_database', methods=['POST'])
 @login_required
 def reset_database():
-    """Reset database - clear all data except users and company settings (Admin only)"""
+    """Selective database reset based on user choices (Admin only)"""
     if not current_user.is_admin():
         flash('Access denied. Admin privileges required.', 'danger')
         return redirect(url_for('settings.dashboard'))
     
     try:
-        # Clear all transactional data but keep users and settings
+        # Get user selections
+        reset_purchase_sales = request.form.get('reset_purchase_sales') == 'true'
+        reset_inventory = request.form.get('reset_inventory') == 'true'
+        reset_production = request.form.get('reset_production') == 'true'
+        reset_inspections = request.form.get('reset_inspections') == 'true'
+        reset_expenses = request.form.get('reset_expenses') == 'true'
+        reset_employees = request.form.get('reset_employees') == 'true'
+        reset_documents = request.form.get('reset_documents') == 'true'
+        
+        deleted_items = []
+        
         # Delete in order to respect foreign key constraints
+        if reset_inspections:
+            MaterialInspection.query.delete()
+            QualityIssue.query.delete()
+            deleted_items.append('Material Inspections & Quality Issues')
         
-        # Material Inspections
-        MaterialInspection.query.delete()
+        if reset_production:
+            Production.query.delete()
+            JobWork.query.delete()
+            deleted_items.append('Production Orders & Job Work')
         
-        # Quality Issues
-        QualityIssue.query.delete()
+        if reset_expenses:
+            FactoryExpense.query.delete()
+            deleted_items.append('Factory Expenses')
         
-        # Production Orders
-        Production.query.delete()
+        if reset_employees:
+            SalaryRecord.query.delete()
+            EmployeeAdvance.query.delete()
+            Employee.query.delete()
+            deleted_items.append('Employee Records & Payroll')
         
-        # Job Work
-        JobWork.query.delete()
+        if reset_purchase_sales:
+            SalesOrder.query.delete()
+            PurchaseOrder.query.delete()
+            deleted_items.append('Purchase Orders & Sales Orders')
         
-        # Factory Expenses  
-        FactoryExpense.query.delete()
+        if reset_inventory:
+            Item.query.delete()
+            deleted_items.append('Inventory Items')
         
-        # Salary Records and Advances
-        SalaryRecord.query.delete()
-        EmployeeAdvance.query.delete()
-        
-        # Sales and Purchase Orders (items will be deleted automatically due to cascade)
-        SalesOrder.query.delete()
-        PurchaseOrder.query.delete()
-        
-        # Employees (except current user relationships)
-        Employee.query.delete()
-        
-        # Inventory Items
-        Item.query.delete()
-        
-        # Clear uploads directory (optional - documents)
-        uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads')
-        if os.path.exists(uploads_dir):
-            import shutil
-            shutil.rmtree(uploads_dir)
-            os.makedirs(uploads_dir, exist_ok=True)
+        if reset_documents:
+            # Clear uploads directory
+            uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads')
+            if os.path.exists(uploads_dir):
+                import shutil
+                shutil.rmtree(uploads_dir)
+                os.makedirs(uploads_dir, exist_ok=True)
+            deleted_items.append('Uploaded Documents')
         
         db.session.commit()
-        flash('Database reset successfully! All transactional data has been cleared.', 'success')
+        
+        if deleted_items:
+            flash(f'Database reset successful! Cleared: {", ".join(deleted_items)}', 'success')
+        else:
+            flash('No items were selected for reset.', 'info')
         
     except Exception as e:
         db.session.rollback()

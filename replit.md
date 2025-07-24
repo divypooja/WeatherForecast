@@ -31,6 +31,16 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **Professional Styling**: Enhanced table appearance with proper borders, spacing, and Bootstrap integration
 - **Cross-Module Consistency**: Unified table experience across all modules maintaining existing functionality while adding scrolling capabilities
 
+### Flexible Database Reset System (Latest)
+- **Selective Reset Interface**: Enhanced Settings dashboard with checkbox-based reset options allowing users to choose exactly what data to preserve or delete
+- **Granular Control**: Individual toggles for Purchase Orders/Sales Orders, Inventory Items, Production/Job Work, Material Inspections/Quality Issues, Factory Expenses, Employee Records/Payroll, and Uploaded Documents
+- **Smart Preservation**: Always preserves user accounts, company settings, and notification configurations regardless of selection
+- **Interactive UI**: "Select All" and "Clear All" buttons for quick selection, with real-time confirmation showing exactly what will be deleted
+- **Custom Confirmation**: Dynamic confirmation dialog lists only selected items to be deleted, preventing accidental data loss
+- **Backend Logic**: Server-side validation respects user choices and deletes only selected data types while maintaining foreign key integrity
+- **Success Feedback**: Clear messaging shows exactly what was deleted after reset completion
+- **Admin Security**: Reset functionality restricted to admin users only with proper authentication checks
+
 ### Complete Document Management System
 - **Comprehensive Document Upload**: Added document upload functionality to Factory Expenses with file preview and validation
 - **Central Document Management**: Created dedicated document management page accessible at `/documents/list` 
