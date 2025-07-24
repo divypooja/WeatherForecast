@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block title %}Material Availability Check - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-check-circle"></i> Material Availability Check</h1>
+            <p class="text-muted">Production Order: <strong>{{ production.production_number }}</strong></p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('production.list_productions') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Production Orders
+            </a>
+        </div>
+    </div>
+
+    <!-- Production Summary -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i> Production Details</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless table-sm">
+                        <tr>
+                            <td><strong>Product:</strong></td>
+                            <td>{{ production.produced_item.name }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Planned Quantity:</strong></td>
+                            <td>{{ production.quantity_planned }} {{ production.produced_item.unit_of_measure }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Production Date:</strong></td>
+                            <td>{{ production.production_date.strftime('%m/%d/%Y') }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Status:</strong></td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if production.status == 'completed' else 'warning' if production.status == 'in_progress' else 'primary' }}">
+                                    {{ production.status.replace('_', ' ').title() }}
+                                </span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-sitemap"></i> BOM Information</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless table-sm">
+                        <tr>
+                            <td><strong>BOM Version:</strong></td>
+                            <td>{{ bom.version }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Description:</strong></td>
+                            <td>{{ bom.description or 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Total Materials:</strong></td>
+                            <td>{{ material_requirements|length }} items</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Availability Status:</strong></td>
+                            <td>
+                                {% if has_shortages %}
+                                    <span class="badge bg-danger">Materials Shortage</span>
+                                {% else %}
+                                    <span class="badge bg-success">All Materials Available</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Material Requirements -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5><i class="fas fa-list"></i> Material Requirements</h5>
+            {% if has_shortages %}
+                <span class="badge bg-danger">⚠️ Shortages Detected</span>
+            {% else %}
+                <span class="badge bg-success">✅ All Available</span>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            <div class="table-responsive" style="max-height: 60vh; overflow-y: auto;">
+                <table class="table table-hover table-sm">
+                    <thead class="table-dark sticky-top">
+                        <tr>
+                            <th style="min-width: 100px;">Material Code</th>
+                            <th style="min-width: 150px;">Material Name</th>
+                            <th style="min-width: 90px;">Per Unit Required</th>
+                            <th style="min-width: 100px;">Total Required</th>
+                            <th style="min-width: 100px;">Available Stock</th>
+                            <th style="min-width: 90px;">Status</th>
+                            <th style="min-width: 90px;">Shortage</th>
+                            <th style="min-width: 150px;">Unit Conversion</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in material_requirements %}
+                        <tr class="{{ 'table-danger' if not req.is_sufficient else 'table-success' }}">
+                            <td>
+                                <code>{{ req.item.code }}</code>
+                            </td>
+                            <td>
+                                <strong>{{ req.item.name }}</strong>
+                                {% if req.item.description %}
+                                    <br><small class="text-muted">{{ req.item.description }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">
+                                    {{ req.quantity_per_unit }} {{ req.bom_unit }}
+                                </span>
+                            </td>
+                            <td>
+                                <strong>{{ req.total_required }} {{ req.bom_unit }}</strong>
+                                {% if req.conversion_info %}
+                                    <br><small class="text-muted">{{ req.conversion_info }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-info">
+                                    {{ req.available_qty }} {{ req.storage_unit }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if req.is_sufficient %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check"></i> Available
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-exclamation-triangle"></i> Shortage
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if req.shortage_qty > 0 %}
+                                    <span class="text-danger">
+                                        <strong>{{ req.shortage_qty }} {{ req.bom_unit }}</strong>
+                                    </span>
+                                {% else %}
+                                    <span class="text-success">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if req.bom_unit != req.storage_unit %}
+                                    <small class="text-muted">
+                                        BOM: {{ req.bom_unit }}<br>
+                                        Storage: {{ req.storage_unit }}
+                                    </small>
+                                {% else %}
+                                    <small class="text-muted">Same unit</small>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="row mt-4">
+        <div class="col">
+            <div class="d-flex gap-2">
+                {% if has_shortages %}
+                    <div class="alert alert-warning w-100">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Warning:</strong> This production order cannot proceed due to material shortages. 
+                        Please purchase the required materials or adjust the production quantity.
+                    </div>
+                {% else %}
+                    <div class="alert alert-success w-100">
+                        <i class="fas fa-check-circle"></i>
+                        <strong>Ready for Production:</strong> All required materials are available. 
+                        You can proceed with this production order.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h6><i class="fas fa-lightning-bolt"></i> Quick Actions</h6>
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('production.edit_production', id=production.id) }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-edit"></i> Edit Production Order
+                        </a>
+                        {% if has_shortages %}
+                            <a href="{{ url_for('purchases.add_purchase_order') }}" class="btn btn-outline-warning btn-sm">
+                                <i class="fas fa-shopping-cart"></i> Create Purchase Order
+                            </a>
+                        {% endif %}
+                        <a href="{{ url_for('inventory.list_items') }}" class="btn btn-outline-info btn-sm">
+                            <i class="fas fa-boxes"></i> View Inventory
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h6><i class="fas fa-info-circle"></i> Understanding Units</h6>
+                    <small class="text-muted">
+                        <strong>BOM Unit:</strong> Unit specified in the Bill of Materials<br>
+                        <strong>Storage Unit:</strong> Unit used for inventory tracking<br>
+                        <strong>Conversion:</strong> System automatically converts between units when possible
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
