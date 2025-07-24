@@ -112,8 +112,6 @@ def inspect_job_work(job_id):
 @login_required
 def log_inspection():
     """Log material inspection results"""
-    form = MaterialInspectionForm()
-    
     # Check if po_id or job_id is provided for pre-population
     po_id = request.args.get('po_id', type=int)
     job_id = request.args.get('job_id', type=int)
@@ -121,14 +119,39 @@ def log_inspection():
     # Debug logging
     print(f"DEBUG: po_id = {po_id}, job_id = {job_id}, method = {request.method}")
     
+    # Create form instance
+    form = MaterialInspectionForm()
+    
     # Pre-populate form if po_id or job_id provided
     if request.method == 'GET':
         if po_id:
             print(f"DEBUG: Setting PO ID to {po_id}")
+            # Get the specific PO to verify its status
+            target_po = PurchaseOrder.query.get(po_id)
+            if target_po:
+                print(f"DEBUG: Target PO found: {target_po.po_number}, status: {target_po.status}, inspection_status: {target_po.inspection_status}")
+                # Add the specific PO to choices if it's not already there
+                if po_id not in [choice[0] for choice in form.purchase_order_id.choices]:
+                    form.purchase_order_id.choices.append((target_po.id, f"{target_po.po_number} - {target_po.supplier.name}"))
+                    print(f"DEBUG: Added PO to choices")
+            
+            # Verify the PO exists in the choices
+            po_choices = form.purchase_order_id.choices
+            print(f"DEBUG: Available PO choices: {po_choices}")
             form.purchase_order_id.data = po_id
             form.job_work_id.data = 0  # Clear job work selection
+            print(f"DEBUG: Form PO data set to: {form.purchase_order_id.data}")
         elif job_id:
             print(f"DEBUG: Setting Job ID to {job_id}")
+            # Get the specific Job Work to verify its status
+            target_job = JobWork.query.get(job_id)
+            if target_job:
+                print(f"DEBUG: Target Job found: {target_job.job_number}, inspection_status: {target_job.inspection_status}")
+                # Add the specific Job Work to choices if it's not already there
+                if job_id not in [choice[0] for choice in form.job_work_id.choices]:
+                    form.job_work_id.choices.append((target_job.id, f"{target_job.job_number} - {target_job.customer_name}"))
+                    print(f"DEBUG: Added Job Work to choices")
+            
             form.job_work_id.data = job_id
             form.purchase_order_id.data = 0  # Clear purchase order selection
     
