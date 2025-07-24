@@ -79,7 +79,11 @@ def add_item():
             current_stock=form.current_stock.data,
             minimum_stock=form.minimum_stock.data,
             unit_price=form.unit_price.data,
-            item_type=form.item_type.data
+            item_type=form.item_type.data,
+            business_type=form.business_type.data,
+            purchase_unit=form.purchase_unit.data if form.purchase_unit.data else form.unit_of_measure.data,
+            sale_unit=form.sale_unit.data if form.sale_unit.data else form.unit_of_measure.data,
+            unit_weight=form.unit_weight.data
         )
         db.session.add(item)
         db.session.commit()
@@ -111,6 +115,10 @@ def edit_item(id):
         item.minimum_stock = form.minimum_stock.data
         item.unit_price = form.unit_price.data
         item.item_type = form.item_type.data
+        item.business_type = form.business_type.data
+        item.purchase_unit = form.purchase_unit.data if form.purchase_unit.data else form.unit_of_measure.data
+        item.sale_unit = form.sale_unit.data if form.sale_unit.data else form.unit_of_measure.data
+        item.unit_weight = form.unit_weight.data
         
         db.session.commit()
         flash('Item updated successfully', 'success')

@@ -111,19 +111,65 @@ class Item(db.Model):
     code = db.Column(db.String(50), unique=True, nullable=False)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
-    unit_of_measure = db.Column(db.String(20), nullable=False)  # kg, pcs, meter, etc.
+    unit_of_measure = db.Column(db.String(20), nullable=False)  # Primary storage unit: kg, pcs, meter, etc.
     hsn_code = db.Column(db.String(20))  # HSN Code for GST
     gst_rate = db.Column(db.Float, default=0.0)  # GST rate (can be 0%, 5%, 12%, 18%, 28% etc.)
     current_stock = db.Column(db.Float, default=0.0)
     minimum_stock = db.Column(db.Float, default=0.0)
     unit_price = db.Column(db.Float, default=0.0)
     item_type = db.Column(db.String(20), default='material')  # material, product, consumable
+    
+    # UOM Conversion Fields for Direct Trading (Buy KG, Sell PCS)
+    purchase_unit = db.Column(db.String(20))  # Unit we buy in (kg, meter, liter)
+    sale_unit = db.Column(db.String(20))     # Unit we sell in (pcs, meter, etc.)
+    unit_weight = db.Column(db.Float)        # Weight per piece (kg/pc) for conversion
+    
+    # Business Type - determines workflow
+    business_type = db.Column(db.String(20), default='trading')  # trading, manufacturing
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
     purchase_order_items = db.relationship('PurchaseOrderItem', backref='item', lazy=True)
     sales_order_items = db.relationship('SalesOrderItem', backref='item', lazy=True)
     bom_items = db.relationship('BOMItem', backref='item', lazy=True)
+    
+    def convert_purchase_to_inventory(self, purchase_quantity):
+        """Convert purchase quantity to inventory quantity"""
+        if self.business_type == 'trading' and self.purchase_unit != self.unit_of_measure:
+            # For trading: convert from purchase unit to storage unit
+            if self.purchase_unit == 'kg' and self.unit_of_measure == 'pcs' and self.unit_weight:
+                return purchase_quantity / self.unit_weight  # kg to pieces
+            elif self.purchase_unit == 'pcs' and self.unit_of_measure == 'kg' and self.unit_weight:
+                return purchase_quantity * self.unit_weight  # pieces to kg
+        return purchase_quantity  # No conversion needed
+    
+    def convert_sale_to_inventory(self, sale_quantity):
+        """Convert sale quantity to inventory deduction quantity"""
+        if self.business_type == 'trading' and self.sale_unit != self.unit_of_measure:
+            # For trading: convert from sale unit to storage unit
+            if self.sale_unit == 'pcs' and self.unit_of_measure == 'kg' and self.unit_weight:
+                return sale_quantity * self.unit_weight  # pieces to kg
+            elif self.sale_unit == 'kg' and self.unit_of_measure == 'pcs' and self.unit_weight:
+                return sale_quantity / self.unit_weight  # kg to pieces
+        return sale_quantity  # No conversion needed
+    
+    def get_available_for_sale(self):
+        """Get available quantity in sale units"""
+        if self.business_type == 'trading' and self.sale_unit != self.unit_of_measure:
+            if self.unit_of_measure == 'kg' and self.sale_unit == 'pcs' and self.unit_weight:
+                return int(self.current_stock / self.unit_weight)  # kg to pieces
+            elif self.unit_of_measure == 'pcs' and self.sale_unit == 'kg' and self.unit_weight:
+                return self.current_stock * self.unit_weight  # pieces to kg
+        return self.current_stock  # No conversion needed
+    
+    @property
+    def display_stock_info(self):
+        """Display stock information with both units for trading items"""
+        if self.business_type == 'trading' and self.unit_weight and self.sale_unit != self.unit_of_measure:
+            available_for_sale = self.get_available_for_sale()
+            return f"{self.current_stock} {self.unit_of_measure} ({available_for_sale} {self.sale_unit})"
+        return f"{self.current_stock} {self.unit_of_measure}"
 
 class PurchaseOrder(db.Model):
     __tablename__ = 'purchase_orders'
