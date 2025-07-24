@@ -483,41 +483,53 @@ def reset_database():
         if reset_inspections:
             count_mi = MaterialInspection.query.count()
             count_qi = QualityIssue.query.count()
-            MaterialInspection.query.delete()
-            QualityIssue.query.delete()
+            print(f"Deleting {count_mi} material inspections and {count_qi} quality issues")
+            db.session.execute(db.text("DELETE FROM material_inspections"))
+            db.session.execute(db.text("DELETE FROM quality_issues"))
             deleted_items.append(f'Material Inspections ({count_mi}) & Quality Issues ({count_qi})')
         
         if reset_production:
             count_prod = Production.query.count()
             count_job = JobWork.query.count()
-            Production.query.delete()
-            JobWork.query.delete()
+            print(f"Deleting {count_prod} productions and {count_job} job works")
+            db.session.execute(db.text("DELETE FROM productions"))
+            db.session.execute(db.text("DELETE FROM job_works"))
             deleted_items.append(f'Production Orders ({count_prod}) & Job Work ({count_job})')
         
         if reset_expenses:
             count_exp = FactoryExpense.query.count()
-            FactoryExpense.query.delete()
+            print(f"Deleting {count_exp} factory expenses")
+            db.session.execute(db.text("DELETE FROM factory_expenses"))
             deleted_items.append(f'Factory Expenses ({count_exp})')
         
         if reset_employees:
             count_sal = SalaryRecord.query.count()
             count_adv = EmployeeAdvance.query.count()
             count_emp = Employee.query.count()
-            SalaryRecord.query.delete()
-            EmployeeAdvance.query.delete()
-            Employee.query.delete()
+            print(f"Deleting {count_emp} employees, {count_sal} salary records, {count_adv} advances")
+            db.session.execute(db.text("DELETE FROM salary_records"))
+            db.session.execute(db.text("DELETE FROM employee_advances"))
+            db.session.execute(db.text("DELETE FROM employees"))
             deleted_items.append(f'Employee Records ({count_emp}) & Payroll ({count_sal + count_adv})')
         
         if reset_purchase_sales:
             count_so = SalesOrder.query.count()
             count_po = PurchaseOrder.query.count()
-            SalesOrder.query.delete()
-            PurchaseOrder.query.delete()
+            print(f"Deleting {count_po} purchase orders and {count_so} sales orders")
+            # Delete related items first
+            db.session.execute(db.text("DELETE FROM sales_order_items"))
+            db.session.execute(db.text("DELETE FROM purchase_order_items"))
+            db.session.execute(db.text("DELETE FROM sales_orders"))
+            db.session.execute(db.text("DELETE FROM purchase_orders"))
             deleted_items.append(f'Purchase Orders ({count_po}) & Sales Orders ({count_so})')
         
         if reset_inventory:
             count_items = Item.query.count()
-            Item.query.delete()
+            print(f"Deleting {count_items} inventory items")
+            # Delete related data first
+            db.session.execute(db.text("DELETE FROM bom_items"))
+            db.session.execute(db.text("DELETE FROM item_uom_conversions"))
+            db.session.execute(db.text("DELETE FROM items"))
             deleted_items.append(f'Inventory Items ({count_items})')
         
         if reset_documents:
@@ -529,7 +541,9 @@ def reset_database():
                 os.makedirs(uploads_dir, exist_ok=True)
             deleted_items.append('Uploaded Documents')
         
+        print("Committing database changes...")
         db.session.commit()
+        print("Database changes committed successfully")
         
         if deleted_items:
             flash(f'Database reset successful! Cleared: {", ".join(deleted_items)}', 'success')
