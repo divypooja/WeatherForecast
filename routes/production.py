@@ -276,18 +276,25 @@ def add_bom():
             materials = Item.query.filter(Item.item_type.in_(['material', 'consumable'])).all()
             return render_template('production/bom_form_uom.html', form=form, title='Add BOM', units=units, materials=materials)
         
-        bom = BOM()
-        bom.product_id = form.product_id.data
-        bom.version = form.version.data
-        bom.description = form.description.data
-        bom.production_unit_id = form.production_unit_id.data if form.production_unit_id.data != 0 else None
-        bom.is_active = form.is_active.data
-        bom.created_by = current_user.id
+        bom = BOM(
+            product_id=form.product_id.data,
+            version=form.version.data,
+            description=form.description.data,
+            production_unit_id=form.production_unit_id.data if form.production_unit_id.data != 0 else None,
+            is_active=form.is_active.data,
+            created_by=current_user.id
+        )
         
         db.session.add(bom)
         db.session.commit()
         flash('BOM created successfully', 'success')
         return redirect(url_for('production.list_bom'))
+    
+    # If form doesn't validate, show errors
+    elif request.method == 'POST':
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f'{getattr(form, field).label.text}: {error}', 'danger')
     
     # Get available units for UOM selection
     units = UnitOfMeasure.query.all()
