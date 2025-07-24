@@ -137,7 +137,7 @@
     </div>
 
     <!-- BOM Items Section -->
-    {% if bom %}
+    {% if bom or title == 'Add BOM' %}
     <div class="row mt-4">
         <div class="col-12">
             <!-- Add BOM Item Form -->
@@ -146,7 +146,11 @@
                     <h5><i class="fas fa-plus-circle"></i> Add Material/Component</h5>
                 </div>
                 <div class="card-body">
+                    {% if bom %}
                     <form action="{{ url_for('production.add_bom_item', bom_id=bom.id) }}" method="POST">
+                    {% else %}
+                    <form id="add-material-form" onsubmit="addMaterialToList(event)">
+                    {% endif %}
                         <div class="row">
                             <div class="col-md-3">
                                 <label class="form-label">Material/Component</label>
@@ -184,9 +188,15 @@
                             </div>
                             <div class="col-md-1">
                                 <label class="form-label">&nbsp;</label>
+                                {% if bom %}
                                 <button type="submit" class="btn btn-success w-100">
                                     <i class="fas fa-plus"></i>
                                 </button>
+                                {% else %}
+                                <button type="submit" class="btn btn-success w-100">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                                {% endif %}
                             </div>
                         </div>
                     </form>
@@ -195,6 +205,7 @@
 
             <!-- BOM Items List -->
             {% if bom_items %}
+            <!-- For existing BOM (edit mode) -->
             <div class="card mt-3">
                 <div class="card-header">
                     <h5><i class="fas fa-list"></i> BOM Components ({{ bom_items|length }} items)</h5>
@@ -279,12 +290,55 @@
                 </div>
             </div>
             {% endif %}
+            {% else %}
+            <!-- For new BOM (add mode) - Temporary materials list -->
+            <div class="card mt-3" id="temp-materials-card" style="display: none;">
+                <div class="card-header">
+                    <h5><i class="fas fa-list"></i> Materials to Add <span id="materials-count" class="badge bg-primary">0</span></h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="temp-materials-table">
+                            <thead>
+                                <tr>
+                                    <th>Item Code</th>
+                                    <th>Item Name</th>
+                                    <th>Required Qty</th>
+                                    <th>BOM Unit</th>
+                                    <th>Unit Cost</th>
+                                    <th>Total Cost</th>
+                                    <th>Notes</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="temp-materials-tbody">
+                                <!-- Materials will be added here dynamically -->
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-dark">
+                                    <th colspan="4">Total BOM Cost</th>
+                                    <th id="total-cost">₹0.00</th>
+                                    <th colspan="3"></th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Note:</strong> These materials will be added to the BOM when you click "Save BOM".
+                    </div>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
     {% endif %}
 </div>
 
 <script>
+let tempMaterials = [];
+let materialIdCounter = 1;
+
 function updateItemInfo() {
     const itemSelect = document.querySelector('select[name="item_id"]');
     const selectedOption = itemSelect.options[itemSelect.selectedIndex];
@@ -297,5 +351,123 @@ function updateItemInfo() {
         }
     }
 }
+
+function addMaterialToList(event) {
+    event.preventDefault();
+    
+    const form = document.getElementById('add-material-form');
+    const formData = new FormData(form);
+    
+    const itemSelect = form.querySelector('select[name="item_id"]');
+    const selectedOption = itemSelect.options[itemSelect.selectedIndex];
+    
+    if (!selectedOption.value) {
+        alert('Please select a material/component');
+        return;
+    }
+    
+    const unitSelect = form.querySelector('select[name="bom_unit_id"]');
+    const unitOption = unitSelect.options[unitSelect.selectedIndex];
+    
+    const material = {
+        id: materialIdCounter++,
+        item_id: selectedOption.value,
+        item_code: selectedOption.text.split(' - ')[0],
+        item_name: selectedOption.text.split(' - ')[1],
+        quantity_required: parseFloat(formData.get('quantity_required')),
+        bom_unit_id: formData.get('bom_unit_id'),
+        bom_unit_name: unitOption.text,
+        unit_cost: parseFloat(formData.get('unit_cost') || 0),
+        notes: formData.get('notes') || ''
+    };
+    
+    // Check if item already exists
+    if (tempMaterials.find(m => m.item_id === material.item_id)) {
+        alert('This material is already added to the BOM');
+        return;
+    }
+    
+    tempMaterials.push(material);
+    updateTempMaterialsDisplay();
+    form.reset();
+}
+
+function removeTempMaterial(id) {
+    tempMaterials = tempMaterials.filter(m => m.id !== id);
+    updateTempMaterialsDisplay();
+}
+
+function updateTempMaterialsDisplay() {
+    const card = document.getElementById('temp-materials-card');
+    const tbody = document.getElementById('temp-materials-tbody');
+    const countBadge = document.getElementById('materials-count');
+    const totalCostElement = document.getElementById('total-cost');
+    
+    if (tempMaterials.length === 0) {
+        card.style.display = 'none';
+        return;
+    }
+    
+    card.style.display = 'block';
+    countBadge.textContent = tempMaterials.length;
+    
+    let totalCost = 0;
+    let html = '';
+    
+    tempMaterials.forEach(material => {
+        const itemTotal = material.quantity_required * material.unit_cost;
+        totalCost += itemTotal;
+        
+        html += `
+            <tr>
+                <td><strong>${material.item_code}</strong></td>
+                <td>${material.item_name}</td>
+                <td><span class="badge bg-primary">${material.quantity_required}</span></td>
+                <td><span class="badge bg-info">${material.bom_unit_name}</span></td>
+                <td>₹${material.unit_cost.toFixed(2)}</td>
+                <td>₹${itemTotal.toFixed(2)}</td>
+                <td><small class="text-muted">${material.notes || '-'}</small></td>
+                <td>
+                    <button type="button" class="btn btn-outline-danger btn-sm" 
+                            onclick="removeTempMaterial(${material.id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
+    totalCostElement.textContent = `₹${totalCost.toFixed(2)}`;
+}
+
+// Update the main BOM form submission to include temp materials
+document.addEventListener('DOMContentLoaded', function() {
+    const bomForm = document.querySelector('form[method="POST"]:not(#add-material-form)');
+    if (bomForm) {
+        bomForm.addEventListener('submit', function(e) {
+            if (tempMaterials.length > 0) {
+                // Add hidden fields for temp materials
+                tempMaterials.forEach((material, index) => {
+                    const hiddenFields = [
+                        { name: `materials[${index}][item_id]`, value: material.item_id },
+                        { name: `materials[${index}][quantity_required]`, value: material.quantity_required },
+                        { name: `materials[${index}][bom_unit_id]`, value: material.bom_unit_id },
+                        { name: `materials[${index}][unit_cost]`, value: material.unit_cost },
+                        { name: `materials[${index}][notes]`, value: material.notes }
+                    ];
+                    
+                    hiddenFields.forEach(field => {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = field.name;
+                        input.value = field.value;
+                        bomForm.appendChild(input);
+                    });
+                });
+            }
+        });
+    }
+});
 </script>
 {% endblock %}
