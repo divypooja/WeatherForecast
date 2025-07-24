@@ -286,8 +286,39 @@ def add_bom():
         )
         
         db.session.add(bom)
+        db.session.flush()  # Get the BOM ID without committing
+        
+        # Process materials from the form
+        materials_added = 0
+        for key in request.form.keys():
+            if key.startswith('materials[') and key.endswith('][item_id]'):
+                # Extract index from materials[0][item_id]
+                index = key.split('[')[1].split(']')[0]
+                
+                item_id = request.form.get(f'materials[{index}][item_id]')
+                quantity_required = request.form.get(f'materials[{index}][quantity_required]')
+                bom_unit_id = request.form.get(f'materials[{index}][bom_unit_id]')
+                unit_cost = request.form.get(f'materials[{index}][unit_cost]')
+                notes = request.form.get(f'materials[{index}][notes]')
+                
+                if item_id and quantity_required:
+                    bom_item = BOMItem(
+                        bom_id=bom.id,
+                        item_id=int(item_id),
+                        quantity_required=float(quantity_required),
+                        bom_unit_id=int(bom_unit_id) if bom_unit_id and bom_unit_id != '0' else None,
+                        unit_cost=float(unit_cost) if unit_cost else 0.0,
+                        notes=notes or None
+                    )
+                    db.session.add(bom_item)
+                    materials_added += 1
+        
         db.session.commit()
-        flash('BOM created successfully', 'success')
+        
+        if materials_added > 0:
+            flash(f'BOM created successfully with {materials_added} materials!', 'success')
+        else:
+            flash('BOM created successfully! You can add materials later.', 'success')
         return redirect(url_for('production.list_bom'))
     
     # If form doesn't validate, show errors
