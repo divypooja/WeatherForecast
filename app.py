@@ -81,6 +81,8 @@ def create_app():
     app.register_blueprint(documents_bp, url_prefix='/documents')
     app.register_blueprint(uom_bp, url_prefix='/uom')
     app.register_blueprint(tally_bp, url_prefix='/tally')
+    from routes.backup import backup_bp
+    app.register_blueprint(backup_bp, url_prefix='/backup')
     
     # Template context processors
     @app.context_processor

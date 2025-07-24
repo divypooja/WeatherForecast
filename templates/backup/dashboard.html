@@ -1,0 +1,498 @@
+{% extends "base.html" %}
+
+{% block title %}Data Backup & Export - AK Innovations Factory Management{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-cloud-download-alt text-primary"></i> Data Backup & Export</h2>
+                    <p class="text-muted">Export your factory data to Excel, JSON, or schedule automatic backups</p>
+                </div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                        <li class="breadcrumb-item active">Data Backup</li>
+                    </ol>
+                </nav>
+            </div>
+
+            {% if error %}
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle"></i> {{ error }}
+            </div>
+            {% endif %}
+
+            <!-- Data Statistics -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-chart-bar"></i> Database Statistics
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3 col-sm-6 mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="stat-icon bg-primary">
+                                            <i class="fas fa-boxes"></i>
+                                        </div>
+                                        <div class="ms-3">
+                                            <h6 class="mb-0">{{ stats.get('items', 0) }}</h6>
+                                            <small class="text-muted">Inventory Items</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-sm-6 mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="stat-icon bg-success">
+                                            <i class="fas fa-handshake"></i>
+                                        </div>
+                                        <div class="ms-3">
+                                            <h6 class="mb-0">{{ stats.get('suppliers', 0) }}</h6>
+                                            <small class="text-muted">Business Partners</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-sm-6 mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="stat-icon bg-info">
+                                            <i class="fas fa-shopping-cart"></i>
+                                        </div>
+                                        <div class="ms-3">
+                                            <h6 class="mb-0">{{ stats.get('purchase_orders', 0) }}</h6>
+                                            <small class="text-muted">Purchase Orders</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-sm-6 mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="stat-icon bg-warning">
+                                            <i class="fas fa-receipt"></i>
+                                        </div>
+                                        <div class="ms-3">
+                                            <h6 class="mb-0">{{ stats.get('sales_orders', 0) }}</h6>
+                                            <small class="text-muted">Sales Orders</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-sm-6 mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="stat-icon bg-secondary">
+                                            <i class="fas fa-users"></i>
+                                        </div>
+                                        <div class="ms-3">
+                                            <h6 class="mb-0">{{ stats.get('employees', 0) }}</h6>
+                                            <small class="text-muted">Employees</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-sm-6 mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="stat-icon bg-dark">
+                                            <i class="fas fa-tools"></i>
+                                        </div>
+                                        <div class="ms-3">
+                                            <h6 class="mb-0">{{ stats.get('job_works', 0) }}</h6>
+                                            <small class="text-muted">Job Works</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-sm-6 mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="stat-icon bg-danger">
+                                            <i class="fas fa-industry"></i>
+                                        </div>
+                                        <div class="ms-3">
+                                            <h6 class="mb-0">{{ stats.get('productions', 0) }}</h6>
+                                            <small class="text-muted">Productions</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-sm-6 mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="stat-icon bg-purple">
+                                            <i class="fas fa-dollar-sign"></i>
+                                        </div>
+                                        <div class="ms-3">
+                                            <h6 class="mb-0">{{ stats.get('factory_expenses', 0) }}</h6>
+                                            <small class="text-muted">Factory Expenses</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Backup Options -->
+            <div class="row">
+                <!-- Excel Export -->
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-file-excel"></i> Excel Export
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">Export all factory data to Excel format with separate sheets for each data type. Perfect for analysis and external reporting.</p>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success"></i> Multiple sheets for organized data</li>
+                                <li><i class="fas fa-check text-success"></i> Formatted for easy analysis</li>
+                                <li><i class="fas fa-check text-success"></i> Compatible with Excel/Google Sheets</li>
+                                <li><i class="fas fa-check text-success"></i> Human-readable format</li>
+                            </ul>
+                        </div>
+                        <div class="card-footer">
+                            <button class="btn btn-success btn-lg w-100" onclick="exportToExcel()">
+                                <i class="fas fa-download"></i> Download Excel Backup
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- JSON Export -->
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-file-code"></i> JSON Export
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">Export data in JSON format for technical backups, system migrations, or integration with other applications.</p>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success"></i> Complete data structure preserved</li>
+                                <li><i class="fas fa-check text-success"></i> Perfect for system restoration</li>
+                                <li><i class="fas fa-check text-success"></i> API-friendly format</li>
+                                <li><i class="fas fa-check text-success"></i> Compact file size</li>
+                            </ul>
+                        </div>
+                        <div class="card-footer">
+                            <button class="btn btn-info btn-lg w-100" onclick="exportToJSON()">
+                                <i class="fas fa-download"></i> Download JSON Backup
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cloud Backup Section -->
+            <div class="row">
+                <div class="col-12 mb-4">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-cloud"></i> Cloud Backup Options
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <div class="cloud-option">
+                                        <div class="text-center mb-3">
+                                            <i class="fab fa-google-drive fa-3x text-warning"></i>
+                                            <h6 class="mt-2">Google Drive</h6>
+                                        </div>
+                                        <button class="btn btn-outline-warning w-100" onclick="cloudBackup('google_drive')">
+                                            <i class="fas fa-cloud-upload-alt"></i> Backup to Drive
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="cloud-option">
+                                        <div class="text-center mb-3">
+                                            <i class="fab fa-dropbox fa-3x text-primary"></i>
+                                            <h6 class="mt-2">Dropbox</h6>
+                                        </div>
+                                        <button class="btn btn-outline-primary w-100" onclick="cloudBackup('dropbox')">
+                                            <i class="fas fa-cloud-upload-alt"></i> Backup to Dropbox
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="cloud-option">
+                                        <div class="text-center mb-3">
+                                            <i class="fab fa-microsoft fa-3x text-info"></i>
+                                            <h6 class="mt-2">OneDrive</h6>
+                                        </div>
+                                        <button class="btn btn-outline-info w-100" onclick="cloudBackup('onedrive')">
+                                            <i class="fas fa-cloud-upload-alt"></i> Backup to OneDrive
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="alert alert-info mt-3">
+                                <i class="fas fa-info-circle"></i> Cloud backup requires authentication with the respective service. Your data will be securely uploaded to your personal cloud storage.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Automated Backup Schedule -->
+            {% if current_user.role == 'admin' %}
+            <div class="row">
+                <div class="col-12 mb-4">
+                    <div class="card">
+                        <div class="card-header bg-dark text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-clock"></i> Automated Backup Schedule
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p>Set up automatic backups to ensure your data is regularly saved without manual intervention.</p>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label for="backup-frequency" class="form-label">Frequency</label>
+                                    <select class="form-select" id="backup-frequency">
+                                        <option value="daily">Daily</option>
+                                        <option value="weekly" selected>Weekly</option>
+                                        <option value="monthly">Monthly</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="backup-type" class="form-label">Format</label>
+                                    <select class="form-select" id="backup-type">
+                                        <option value="excel" selected>Excel</option>
+                                        <option value="json">JSON</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button class="btn btn-dark w-100" onclick="scheduleBackup()">
+                                        <i class="fas fa-calendar-plus"></i> Schedule Backup
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Import Section (Admin Only) -->
+            {% if current_user.role == 'admin' %}
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-upload"></i> Data Import (Admin Only)
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle"></i> <strong>Warning:</strong> Data import will overwrite existing data. Please ensure you have a current backup before proceeding.
+                            </div>
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <input type="file" class="form-control" id="import-file" accept=".json">
+                                    <small class="form-text text-muted">Select a JSON backup file to import</small>
+                                </div>
+                                <div class="col-md-4">
+                                    <button class="btn btn-warning w-100" onclick="importData()">
+                                        <i class="fas fa-upload"></i> Import Data
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h5 id="loading-message">Processing backup...</h5>
+                <p class="text-muted">Please wait while we prepare your data</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+}
+
+.cloud-option {
+    padding: 20px;
+    text-align: center;
+    border: 2px dashed #e9ecef;
+    border-radius: 8px;
+    height: 100%;
+    transition: all 0.3s ease;
+}
+
+.cloud-option:hover {
+    border-color: #007bff;
+    background-color: #f8f9fa;
+}
+
+.bg-purple {
+    background-color: #6f42c1 !important;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.btn-lg {
+    padding: 0.75rem 1.25rem;
+    font-size: 1.1rem;
+}
+
+.alert {
+    border: none;
+    border-radius: 8px;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Global functions for backup operations
+window.exportToExcel = function() {
+    const modal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    document.getElementById('loading-message').textContent = 'Generating Excel backup...';
+    modal.show();
+    
+    window.location.href = '{{ url_for("backup.export_excel") }}';
+    
+    // Hide modal after download starts
+    setTimeout(() => {
+        modal.hide();
+    }, 3000);
+};
+
+window.exportToJSON = function() {
+    const modal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    document.getElementById('loading-message').textContent = 'Generating JSON backup...';
+    modal.show();
+    
+    window.location.href = '{{ url_for("backup.export_json") }}';
+    
+    // Hide modal after download starts
+    setTimeout(() => {
+        modal.hide();
+    }, 3000);
+};
+
+window.cloudBackup = function(provider) {
+    alert(`Cloud backup integration with ${provider} is under development. This feature will allow direct upload to your ${provider} account.`);
+};
+
+window.scheduleBackup = function() {
+    const frequency = document.getElementById('backup-frequency').value;
+    const type = document.getElementById('backup-type').value;
+    
+    fetch('{{ url_for("backup.schedule_backup") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            frequency: frequency,
+            type: type
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', data.message);
+        } else {
+            showAlert('danger', data.message);
+        }
+    })
+    .catch(error => {
+        showAlert('danger', 'Error scheduling backup: ' + error.message);
+    });
+};
+
+window.importData = function() {
+    const fileInput = document.getElementById('import-file');
+    if (!fileInput.files.length) {
+        showAlert('warning', 'Please select a file to import');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    
+    const modal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    document.getElementById('loading-message').textContent = 'Importing data...';
+    modal.show();
+    
+    fetch('{{ url_for("backup.import_json") }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        modal.hide();
+        if (data.success) {
+            showAlert('success', data.message);
+        } else {
+            showAlert('danger', data.message);
+        }
+    })
+    .catch(error => {
+        modal.hide();
+        showAlert('danger', 'Error importing data: ' + error.message);
+    });
+};
+
+function showAlert(type, message) {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // Remove existing alerts
+    document.querySelectorAll('.alert').forEach(alert => alert.remove());
+    
+    // Add new alert at the top
+    document.querySelector('.container').insertAdjacentHTML('afterbegin', alertHtml);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        const currentAlert = document.querySelector('.alert');
+        if (currentAlert) {
+            currentAlert.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

@@ -6,20 +6,32 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 24, 2025)
 
-### Fully Customizable Dashboard System (Latest)
+### Comprehensive Data Backup System (Latest)
+- **Excel Export Functionality**: Complete data export to Excel with separate sheets for all major data types (Items, Business Partners, Purchase Orders, Sales Orders, Employees, Job Works, Productions, Factory Expenses, Quality Issues)
+- **JSON Backup System**: Technical backup format preserving complete data structure for system restoration and migrations
+- **Professional Backup Dashboard**: Dedicated backup interface showing database statistics and export options with real-time data counts
+- **Cloud Backup Integration**: Framework for Google Drive, Dropbox, and OneDrive backup (integration placeholders for future development)
+- **Automated Backup Scheduling**: Admin-only feature for scheduling daily/weekly/monthly automatic backups
+- **Data Import Capability**: JSON import functionality for data restoration (admin-only with proper validation)
+- **Navigation Integration**: Added "Data Backup" link to sidebar navigation with cloud download icon
+- **Dashboard Module Addition**: Added Data Backup as 10th default dashboard module for easy access
+- **Loading States**: Professional loading modals and progress indicators during backup operations
+- **File Download Management**: Proper file handling with timestamped filenames and appropriate MIME types
+
+### Fully Customizable Dashboard System  
 - **Dynamic Dashboard Architecture**: Completely redesigned main dashboard with user-specific customization capabilities
 - **Dashboard Preference Database**: Added DashboardModule and UserDashboardPreference models for storing user dashboard layouts
-- **Module Management System**: Created comprehensive module system with 9 default modules (Inventory, Production, Job Work, Sales Orders, Purchase Orders, Employees, Factory Expenses, Quality Control, Reports)
-- **Drag-and-Drop Interface**: Implemented jQuery UI sortable interface allowing users to reorder dashboard modules by dragging
+- **Module Management System**: Created comprehensive module system with 10 default modules including new Data Backup module
+- **Drag-and-Drop Interface**: Implemented sortable interface allowing users to reorder dashboard modules by dragging
 - **Module Visibility Controls**: Users can show/hide any dashboard module using checkboxes with instant visual feedback
-- **Responsive Module Sizing**: Three size options (Small, Medium, Large) with corresponding responsive layouts (col-md-3, col-md-4, col-md-6)
+- **Responsive Module Sizing**: Three size options (Small, Medium, Large) with corresponding responsive layouts
 - **Professional Customization UI**: Dedicated dashboard customization page with sortable modules, size controls, and batch operations
 - **Persistent User Preferences**: All dashboard changes are saved per-user and automatically loaded on dashboard visits
 - **Reset Functionality**: Users can reset dashboard to default layout while preserving other system settings
 - **Navigation Integration**: Added "Customize Dashboard" links in main dashboard header and sidebar navigation
 - **BOM Cost Calculation Fix**: Fixed Total BOM Cost calculation by moving from problematic Jinja2 template logic to reliable Python backend calculation
 - **Auto-initialization**: New users automatically receive default dashboard layout with all modules visible in standard order
-- **AJAX Save System**: Dashboard preferences saved via AJAX with real-time success/error feedback and automatic redirection
+- **JavaScript Issue Resolution**: Fixed Save Preferences button functionality with proper global function declarations and modern fetch API
 
 ### Complete UI/UX Enhancement & Flickering Resolution (Latest)
 - **Universal Date Filtering**: Implemented comprehensive date filtering across all major modules including Purchase Orders, Sales Orders, and Inventory
