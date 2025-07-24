@@ -17,6 +17,10 @@
             padding: 20px 0;
             border-right: 1px solid #dee2e6;
             overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 1000;
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
         }
         .main-content {
             margin-left: 250px;
@@ -35,10 +39,12 @@
             text-decoration: none;
             border-radius: 8px;
             margin: 0 15px;
+            transition: all 0.15s ease;
         }
         .nav-link:hover, .nav-link.active {
             background-color: #e9ecef;
             color: #0d6efd;
+            transform: none;
         }
         .nav-link i {
             width: 20px;
