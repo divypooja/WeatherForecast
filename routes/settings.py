@@ -1,9 +1,10 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from forms import CompanySettingsForm, NotificationSettingsForm
-from models import CompanySettings, NotificationSettings
+from models import CompanySettings, NotificationSettings, PurchaseOrder, SalesOrder, Item, JobWork, Production, MaterialInspection, QualityIssue, FactoryExpense, Employee, SalaryRecord, EmployeeAdvance
 from app import db
 from services.notifications import notification_service
+import os
 
 settings_bp = Blueprint('settings', __name__)
 
@@ -153,3 +154,60 @@ def user_management():
         return redirect(url_for('main.dashboard'))
     
     return render_template('settings/users.html')
+
+@settings_bp.route('/reset_database', methods=['POST'])
+@login_required
+def reset_database():
+    """Reset database - clear all data except users and company settings (Admin only)"""
+    if not current_user.is_admin():
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('settings.dashboard'))
+    
+    try:
+        # Clear all transactional data but keep users and settings
+        # Delete in order to respect foreign key constraints
+        
+        # Material Inspections
+        MaterialInspection.query.delete()
+        
+        # Quality Issues
+        QualityIssue.query.delete()
+        
+        # Production Orders
+        Production.query.delete()
+        
+        # Job Work
+        JobWork.query.delete()
+        
+        # Factory Expenses  
+        FactoryExpense.query.delete()
+        
+        # Salary Records and Advances
+        SalaryRecord.query.delete()
+        EmployeeAdvance.query.delete()
+        
+        # Sales and Purchase Orders (items will be deleted automatically due to cascade)
+        SalesOrder.query.delete()
+        PurchaseOrder.query.delete()
+        
+        # Employees (except current user relationships)
+        Employee.query.delete()
+        
+        # Inventory Items
+        Item.query.delete()
+        
+        # Clear uploads directory (optional - documents)
+        uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads')
+        if os.path.exists(uploads_dir):
+            import shutil
+            shutil.rmtree(uploads_dir)
+            os.makedirs(uploads_dir, exist_ok=True)
+        
+        db.session.commit()
+        flash('Database reset successfully! All transactional data has been cleared.', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error resetting database: {str(e)}', 'danger')
+    
+    return redirect(url_for('settings.dashboard'))
