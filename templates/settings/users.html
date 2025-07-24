@@ -16,6 +16,37 @@
         </div>
     </div>
 
+    <!-- Current User Profile -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-user-edit"></i> My Profile
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Change Username</h6>
+                    <form method="POST" action="{{ url_for('settings.change_username') }}" class="mb-4">
+                        <div class="input-group">
+                            <input type="text" class="form-control" name="new_username" 
+                                   value="{{ current_user.username }}" required>
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="fas fa-save"></i> Update Username
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="col-md-6">
+                    <h6>Change Password</h6>
+                    <button class="btn btn-outline-warning" onclick="showChangePasswordModal()">
+                        <i class="fas fa-key"></i> Change Password
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Users List -->
     <div class="card mb-4">
         <div class="card-header">
@@ -163,6 +194,42 @@
     </div>
 </div>
 
+<!-- Change Password Modal -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Change My Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('settings.change_password') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="current_password" class="form-label">Current Password</label>
+                        <input type="password" class="form-control" id="current_password" 
+                               name="current_password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label">New Password</label>
+                        <input type="password" class="form-control" id="new_password" 
+                               name="new_password" required minlength="6">
+                        <div class="form-text">Minimum 6 characters</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirm_new_password" class="form-label">Confirm New Password</label>
+                        <input type="password" class="form-control" id="confirm_new_password" 
+                               name="confirm_new_password" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">Change Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Delete User Modal -->
 <div class="modal fade" id="deleteUserModal" tabindex="-1">
     <div class="modal-dialog">
@@ -185,6 +252,10 @@
 
 <script>
 let currentUserId = null;
+
+function showChangePasswordModal() {
+    new bootstrap.Modal(document.getElementById('changePasswordModal')).show();
+}
 
 function resetPassword(userId, username) {
     currentUserId = userId;
@@ -254,6 +325,18 @@ document.getElementById('confirm_password').addEventListener('input', function()
     const confirmPassword = this.value;
     
     if (password !== confirmPassword) {
+        this.setCustomValidity('Passwords do not match');
+    } else {
+        this.setCustomValidity('');
+    }
+});
+
+// New password confirmation validation
+document.getElementById('confirm_new_password').addEventListener('input', function() {
+    const newPassword = document.getElementById('new_password').value;
+    const confirmNewPassword = this.value;
+    
+    if (newPassword !== confirmNewPassword) {
         this.setCustomValidity('Passwords do not match');
     } else {
         this.setCustomValidity('');
