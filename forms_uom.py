@@ -72,7 +72,7 @@ class ItemUOMConversionForm(FlaskForm):
         
         # Populate item choices
         items = Item.query.order_by(Item.name).all()
-        self.item.choices = [(i.id, f"{i.name} ({i.item_code})") for i in items]
+        self.item.choices = [(i.id, f"{i.name} ({i.code})") for i in items]
         
         # Populate unit choices
         units = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
@@ -96,7 +96,7 @@ class UOMCalculatorForm(FlaskForm):
         
         # Populate item choices
         items = Item.query.order_by(Item.name).all()
-        self.item.choices = [(i.id, f"{i.name} ({i.item_code})") for i in items]
+        self.item.choices = [(i.id, f"{i.name} ({i.code})") for i in items]
         
         # Populate unit choices
         units = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
