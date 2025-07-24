@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}Simple Unit Conversion - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-balance-scale"></i> Simple Unit Conversion Setup</h1>
+            <p class="text-muted">Easy way to set up how you buy, store, and sell items</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Item Unit Setup</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" novalidate>
+                        
+                        <!-- Item Selection -->
+                        <div class="mb-4">
+                            <label class="form-label"><strong>Select Item</strong></label>
+                            <select name="item_id" class="form-select" required>
+                                <option value="">Choose an item...</option>
+                                {% for item in items %}
+                                <option value="{{ item.id }}">{{ item.name }} ({{ item.code }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Simple Workflow Selection -->
+                        <div class="mb-4">
+                            <label class="form-label"><strong>How do you handle this item?</strong></label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card bg-light">
+                                        <div class="card-body text-center">
+                                            <input type="radio" name="workflow_type" value="same_unit" id="same_unit" class="form-check-input me-2" checked>
+                                            <label for="same_unit" class="form-check-label">
+                                                <h6><i class="fas fa-equals"></i> Same Unit</h6>
+                                                <small class="text-muted">Buy, store, and sell in the same unit<br>Example: Buy 10 kg → Store 10 kg → Sell 10 kg</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card bg-light">
+                                        <div class="card-body text-center">
+                                            <input type="radio" name="workflow_type" value="different_units" id="different_units" class="form-check-input me-2">
+                                            <label for="different_units" class="form-check-label">
+                                                <h6><i class="fas fa-exchange-alt"></i> Different Units</h6>
+                                                <small class="text-muted">Buy in one unit, sell in another<br>Example: Buy 1 kg → Store 1 kg → Sell 40 pieces</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Same Unit Workflow -->
+                        <div id="same_unit_section" class="workflow-section">
+                            <div class="card border-success">
+                                <div class="card-header bg-success text-white">
+                                    <h6 class="mb-0"><i class="fas fa-equals"></i> Same Unit Workflow</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">What unit do you use?</label>
+                                        <select name="same_unit_type" class="form-select">
+                                            <option value="">Select unit...</option>
+                                            <option value="kg">Kilograms (kg) - for weight-based items</option>
+                                            <option value="pcs">Pieces (pcs) - for count-based items</option>
+                                            <option value="m">Meters (m) - for length-based items</option>
+                                            <option value="l">Liters (l) - for volume-based items</option>
+                                        </select>
+                                    </div>
+                                    <div class="alert alert-info">
+                                        <small><i class="fas fa-info-circle"></i> This is the simplest setup - you buy, store, and sell in the same unit. No conversions needed!</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Different Units Workflow -->
+                        <div id="different_units_section" class="workflow-section" style="display: none;">
+                            <div class="card border-warning">
+                                <div class="card-header bg-warning text-dark">
+                                    <h6 class="mb-0"><i class="fas fa-exchange-alt"></i> Different Units Workflow</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="text-center mb-3">
+                                                <div class="badge bg-primary mb-2">STEP 1</div>
+                                                <h6>Purchase Unit</h6>
+                                                <p class="small text-muted">What unit you buy in</p>
+                                                <select name="purchase_unit" class="form-select">
+                                                    <option value="">Select...</option>
+                                                    <option value="kg">Kilograms (kg)</option>
+                                                    <option value="m">Meters (m)</option>
+                                                    <option value="l">Liters (l)</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="text-center mb-3">
+                                                <div class="badge bg-secondary mb-2">STEP 2</div>
+                                                <h6>Storage Unit</h6>
+                                                <p class="small text-muted">What unit you track in</p>
+                                                <select name="storage_unit" class="form-select">
+                                                    <option value="">Select...</option>
+                                                    <option value="kg">Kilograms (kg)</option>
+                                                    <option value="m">Meters (m)</option>
+                                                    <option value="l">Liters (l)</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="text-center mb-3">
+                                                <div class="badge bg-success mb-2">STEP 3</div>
+                                                <h6>Sale Unit</h6>
+                                                <p class="small text-muted">What unit you sell in</p>
+                                                <select name="sale_unit" class="form-select">
+                                                    <option value="">Select...</option>
+                                                    <option value="pcs">Pieces (pcs)</option>
+                                                    <option value="kg">Kilograms (kg)</option>
+                                                    <option value="m">Meters (m)</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Simple Conversion -->
+                                    <div class="mt-4">
+                                        <div class="card bg-light">
+                                            <div class="card-body">
+                                                <h6><i class="fas fa-calculator"></i> Simple Conversion</h6>
+                                                <p class="small text-muted">Tell us how to convert between units</p>
+                                                
+                                                <div class="row align-items-center">
+                                                    <div class="col-md-2">
+                                                        <label class="form-label">1</label>
+                                                        <input type="text" class="form-control" value="kg" readonly>
+                                                    </div>
+                                                    <div class="col-md-1 text-center">
+                                                        <span>=</span>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">How many?</label>
+                                                        <input type="number" name="conversion_quantity" class="form-control" placeholder="e.g., 40" step="0.001">
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <label class="form-label">&nbsp;</label>
+                                                        <input type="text" class="form-control" value="pieces" readonly>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <small class="text-muted">Example: 1 kg = 40 pieces</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Unit Setup
+                            </button>
+                            <a href="{{ url_for('uom.dashboard') }}" class="btn btn-secondary ms-2">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Section -->
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-header">
+                    <h6><i class="fas fa-question-circle"></i> Quick Help</h6>
+                </div>
+                <div class="card-body">
+                    <h6>Common Examples:</h6>
+                    
+                    <div class="mb-3">
+                        <strong>Steel Rods:</strong>
+                        <ul class="small">
+                            <li>Buy: Meters</li>
+                            <li>Store: Meters</li>
+                            <li>Sell: Pieces</li>
+                            <li>Conversion: 1 meter = 4 pieces</li>
+                        </ul>
+                    </div>
+
+                    <div class="mb-3">
+                        <strong>Nuts & Bolts:</strong>
+                        <ul class="small">
+                            <li>Buy: Kilograms</li>
+                            <li>Store: Kilograms</li>
+                            <li>Sell: Pieces</li>
+                            <li>Conversion: 1 kg = 100 pieces</li>
+                        </ul>
+                    </div>
+
+                    <div class="mb-3">
+                        <strong>Paint:</strong>
+                        <ul class="small">
+                            <li>Buy: Liters</li>
+                            <li>Store: Liters</li>
+                            <li>Sell: Liters</li>
+                            <li>Conversion: Same unit</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const sameUnitRadio = document.getElementById('same_unit');
+    const differentUnitsRadio = document.getElementById('different_units');
+    const sameUnitSection = document.getElementById('same_unit_section');
+    const differentUnitsSection = document.getElementById('different_units_section');
+
+    function toggleSections() {
+        if (sameUnitRadio.checked) {
+            sameUnitSection.style.display = 'block';
+            differentUnitsSection.style.display = 'none';
+        } else {
+            sameUnitSection.style.display = 'none';
+            differentUnitsSection.style.display = 'block';
+        }
+    }
+
+    sameUnitRadio.addEventListener('change', toggleSections);
+    differentUnitsRadio.addEventListener('change', toggleSections);
+    
+    // Initial state
+    toggleSections();
+});
+</script>
+{% endblock %}
