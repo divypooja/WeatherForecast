@@ -6,6 +6,21 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 24, 2025)
 
+### Fully Customizable Dashboard System (Latest)
+- **Dynamic Dashboard Architecture**: Completely redesigned main dashboard with user-specific customization capabilities
+- **Dashboard Preference Database**: Added DashboardModule and UserDashboardPreference models for storing user dashboard layouts
+- **Module Management System**: Created comprehensive module system with 9 default modules (Inventory, Production, Job Work, Sales Orders, Purchase Orders, Employees, Factory Expenses, Quality Control, Reports)
+- **Drag-and-Drop Interface**: Implemented jQuery UI sortable interface allowing users to reorder dashboard modules by dragging
+- **Module Visibility Controls**: Users can show/hide any dashboard module using checkboxes with instant visual feedback
+- **Responsive Module Sizing**: Three size options (Small, Medium, Large) with corresponding responsive layouts (col-md-3, col-md-4, col-md-6)
+- **Professional Customization UI**: Dedicated dashboard customization page with sortable modules, size controls, and batch operations
+- **Persistent User Preferences**: All dashboard changes are saved per-user and automatically loaded on dashboard visits
+- **Reset Functionality**: Users can reset dashboard to default layout while preserving other system settings
+- **Navigation Integration**: Added "Customize Dashboard" links in main dashboard header and sidebar navigation
+- **BOM Cost Calculation Fix**: Fixed Total BOM Cost calculation by moving from problematic Jinja2 template logic to reliable Python backend calculation
+- **Auto-initialization**: New users automatically receive default dashboard layout with all modules visible in standard order
+- **AJAX Save System**: Dashboard preferences saved via AJAX with real-time success/error feedback and automatic redirection
+
 ### Complete UI/UX Enhancement & Flickering Resolution (Latest)
 - **Universal Date Filtering**: Implemented comprehensive date filtering across all major modules including Purchase Orders, Sales Orders, and Inventory
 - **Advanced Filter Interface**: Professional card-based filter sections with date ranges, dropdown filters, search functionality, and clear/reset options
