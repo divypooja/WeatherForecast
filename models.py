@@ -205,6 +205,9 @@ class SalesOrder(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
+    # Tally integration
+    tally_synced = db.Column(db.Boolean, default=False)
+    
     # Relationships
     items = db.relationship('SalesOrderItem', backref='sales_order', lazy=True, cascade='all, delete-orphan')
     creator = db.relationship('User', backref='created_sales_orders')
@@ -514,6 +517,9 @@ class FactoryExpense(db.Model):
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Tally integration
+    tally_synced = db.Column(db.Boolean, default=False)
     
     # Relationships
     requested_by = db.relationship('User', foreign_keys=[requested_by_id], backref='requested_expenses')

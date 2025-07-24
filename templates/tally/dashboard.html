@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block title %}Tally Integration - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-exchange-alt me-2"></i>Tally Integration Dashboard</h2>
+            <p class="text-muted">Sync your factory data with Tally ERP for seamless accounting</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('tally.settings') }}" class="btn btn-outline-primary me-2">
+                <i class="fas fa-cog me-1"></i>Settings
+            </a>
+            <a href="{{ url_for('tally.sync_status_report') }}" class="btn btn-info">
+                <i class="fas fa-chart-bar me-1"></i>Sync Status
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total Ledgers</h6>
+                            <h3>{{ stats.total_ledgers }}</h3>
+                            <small>Suppliers & Customers</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-address-book fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Stock Items</h6>
+                            <h3>{{ stats.total_items }}</h3>
+                            <small>Inventory Items</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-boxes fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Pending Sync</h6>
+                            <h3>{{ stats.pending_vouchers }}</h3>
+                            <small>Vouchers to Sync</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Synced</h6>
+                            <h3>{{ stats.synced_vouchers }}</h3>
+                            <small>Already Synced</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Options -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-download me-2"></i>Export to Tally</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-address-book fa-3x text-primary mb-3"></i>
+                                    <h6>Chart of Accounts</h6>
+                                    <p class="text-muted small">Export suppliers and customers as ledgers</p>
+                                    <a href="{{ url_for('tally.export_ledgers') }}" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-download me-1"></i>Export Ledgers
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-boxes fa-3x text-success mb-3"></i>
+                                    <h6>Stock Items</h6>
+                                    <p class="text-muted small">Export inventory items with opening stock</p>
+                                    <a href="{{ url_for('tally.export_items') }}" class="btn btn-success btn-sm">
+                                        <i class="fas fa-download me-1"></i>Export Items
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-receipt fa-3x text-warning mb-3"></i>
+                                    <h6>Vouchers</h6>
+                                    <p class="text-muted small">Export transactions as vouchers</p>
+                                    <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#voucherExportModal">
+                                        <i class="fas fa-download me-1"></i>Export Vouchers
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activities -->
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-shopping-cart me-2"></i>Recent Purchases</h6>
+                </div>
+                <div class="card-body">
+                    {% if recent_purchases %}
+                        {% for po in recent_purchases %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <small class="fw-bold">{{ po.po_number }}</small><br>
+                                <small class="text-muted">{{ po.supplier.name }}</small>
+                            </div>
+                            <div class="text-end">
+                                <small>₹{{ "%.2f"|format(po.total_amount or 0) }}</small><br>
+                                {% if po.tally_synced %}
+                                    <span class="badge bg-success">Synced</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if not loop.last %}<hr class="my-2">{% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center">No recent purchases</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-chart-line me-2"></i>Recent Sales</h6>
+                </div>
+                <div class="card-body">
+                    {% if recent_sales %}
+                        {% for so in recent_sales %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <small class="fw-bold">{{ so.so_number }}</small><br>
+                                <small class="text-muted">{{ so.customer.name }}</small>
+                            </div>
+                            <div class="text-end">
+                                <small>₹{{ "%.2f"|format(so.total_amount or 0) }}</small><br>
+                                {% if so.tally_synced %}
+                                    <span class="badge bg-success">Synced</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if not loop.last %}<hr class="my-2">{% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center">No recent sales</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-receipt me-2"></i>Recent Expenses</h6>
+                </div>
+                <div class="card-body">
+                    {% if recent_expenses %}
+                        {% for expense in recent_expenses %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <small class="fw-bold">{{ expense.expense_number }}</small><br>
+                                <small class="text-muted">{{ expense.category.replace('_', ' ').title() }}</small>
+                            </div>
+                            <div class="text-end">
+                                <small>₹{{ "%.2f"|format(expense.total_amount or 0) }}</small><br>
+                                {% if expense.tally_synced %}
+                                    <span class="badge bg-success">Synced</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if not loop.last %}<hr class="my-2">{% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center">No recent expenses</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Voucher Export Modal -->
+<div class="modal fade" id="voucherExportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Export Vouchers</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="voucherExportForm">
+                    <div class="mb-3">
+                        <label class="form-label">Voucher Type</label>
+                        <select name="type" class="form-select">
+                            <option value="all">All Vouchers</option>
+                            <option value="purchase">Purchase Orders</option>
+                            <option value="sales">Sales Orders</option>
+                            <option value="expense">Factory Expenses</option>
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">From Date</label>
+                                <input type="date" name="date_from" class="form-control">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">To Date</label>
+                                <input type="date" name="date_to" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" onclick="exportVouchers()">
+                    <i class="fas fa-download me-1"></i>Export
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function exportVouchers() {
+    const form = document.getElementById('voucherExportForm');
+    const formData = new FormData(form);
+    const params = new URLSearchParams(formData);
+    
+    const url = `{{ url_for('tally.export_vouchers') }}?${params}`;
+    window.open(url, '_blank');
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('voucherExportModal'));
+    modal.hide();
+}
+</script>
+{% endblock %}
