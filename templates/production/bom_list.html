@@ -51,11 +51,6 @@
                                         <a href="{{ url_for('production.edit_bom', id=bom.id) }}" class="btn btn-outline-secondary btn-sm">
                                             <i class="fas fa-edit"></i> Edit
                                         </a>
-                                        <a href="{{ url_for('production.delete_bom', id=bom.id) }}" 
-                                           class="btn btn-outline-danger btn-sm"
-                                           onclick="return confirm('Are you sure you want to deactivate this BOM? This action will make it inactive but not permanently delete it.')">
-                                            <i class="fas fa-trash"></i> Delete
-                                        </a>
                                     </div>
                                 </td>
                             </tr>

@@ -50,35 +50,17 @@ def inventory_report():
     page = request.args.get('page', 1, type=int)
     items_paginated = query.paginate(page=page, per_page=50, error_out=False)
     
-    # Calculate comprehensive stats including weight analysis
+    # Calculate additional stats
     all_items = Item.query.all()
     total_value = sum((item.current_stock or 0) * (item.unit_price or 0) for item in all_items)
     out_of_stock_count = len([item for item in all_items if (item.current_stock or 0) == 0])
     
-    # Business type analysis
-    trading_items = len([item for item in all_items if item.business_type == 'trading'])
-    manufacturing_items = len([item for item in all_items if item.business_type == 'manufacturing'])
-    
-    # Weight analysis
-    weighted_items = len([item for item in all_items if item.unit_weight])
-    total_weight_kg = sum(item.total_weight_kg for item in all_items)
-    avg_weight_per_item = total_weight_kg / weighted_items if weighted_items > 0 else 0
-    
-    stats = {
-        'total_items': len(all_items),
-        'total_value': total_value,
-        'low_stock_items': low_stock_count,
-        'out_of_stock_items': out_of_stock_count,
-        'trading_items': trading_items,
-        'manufacturing_items': manufacturing_items,
-        'weighted_items': weighted_items,
-        'total_weight_kg': total_weight_kg,
-        'avg_weight_per_item': avg_weight_per_item
-    }
-    
     return render_template('reports/inventory_report.html', 
-                         items=all_items,
-                         stats=stats,
+                         items=items_paginated,
+                         total_items=total_items,
+                         total_value=total_value,
+                         low_stock_count=low_stock_count,
+                         out_of_stock_count=out_of_stock_count,
                          item_type_filter=item_type_filter,
                          low_stock_only=low_stock_only)
 
