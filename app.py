@@ -90,7 +90,15 @@ def create_app():
     
     # Create database tables
     with app.app_context():
+        # Import all models to ensure tables are created
+        import models  # Main models (already imported)
+        import models_dashboard  # Dashboard preference models
+        
         db.create_all()
+        
+        # Initialize default dashboard modules
+        from models_dashboard import init_default_modules
+        init_default_modules()
     
     # Register CLI commands
     from cli import init_db_command, create_admin_command

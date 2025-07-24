@@ -73,6 +73,24 @@
             box-shadow: 0 8px 25px rgba(0,0,0,0.1);
             transform: translateY(-2px);
         }
+        
+        .module-card.module-small {
+            height: 150px;
+            padding: 20px;
+        }
+        
+        .module-card.module-large {
+            height: 250px;
+            padding: 40px;
+        }
+        
+        .module-description {
+            font-size: 0.875rem;
+            color: #6c757d;
+            text-align: center;
+            margin: 8px 0;
+            line-height: 1.4;
+        }
         .module-icon {
             font-size: 3rem;
             color: #6c757d;
@@ -246,110 +264,43 @@
         <div class="header-subtitle">
             <i class="fas fa-info-circle"></i>
             Import or export your data, or set up real-time alerts for your system.
+            <a href="{{ url_for('main.customize_dashboard') }}" class="btn btn-outline-primary btn-sm ms-3">
+                <i class="fas fa-cog"></i> Customize Dashboard
+            </a>
         </div>
 
-        <!-- Module Grid -->
+        <!-- Dynamic Module Grid -->
         <div class="row g-4">
-            <div class="col-md-4">
-                <div class="module-card">
-                    <div class="module-icon">
-                        <i class="fas fa-boxes"></i>
-                    </div>
-                    <div class="module-title">Inventory</div>
-                    <a href="{{ url_for('inventory.dashboard') }}" class="view-btn">View</a>
-                </div>
-            </div>
+            {% for user_module in user_modules %}
+            {% set module = user_module['module'] %}
+            {% set preference = user_module['preference'] %}
+            {% set size_class = 'col-md-6' if preference and preference.size == 'large' else ('col-md-3' if preference and preference.size == 'small' else 'col-md-4') %}
             
-            <div class="col-md-4">
-                <div class="module-card">
+            <div class="{{ size_class }}">
+                <div class="module-card {{ 'module-large' if preference and preference.size == 'large' else ('module-small' if preference and preference.size == 'small' else '') }}">
                     <div class="module-icon">
-                        <i class="fas fa-cogs"></i>
+                        <i class="{{ module.icon }}"></i>
                     </div>
-                    <div class="module-title">Production</div>
-                    <a href="{{ url_for('production.dashboard') }}" class="view-btn">View</a>
+                    <div class="module-title">{{ module.title }}</div>
+                    {% if module.description %}
+                    <div class="module-description">{{ module.description }}</div>
+                    {% endif %}
+                    <a href="{{ url_for(module.url_endpoint) }}" class="view-btn">View</a>
                 </div>
             </div>
-            
-            <div class="col-md-4">
-                <div class="module-card">
-                    <div class="module-icon">
-                        <i class="fas fa-tools"></i>
-                    </div>
-                    <div class="module-title">Job Work</div>
-                    <a href="{{ url_for('jobwork.dashboard') }}" class="view-btn">View</a>
-                </div>
-            </div>
-            
-            <div class="col-md-4">
-                <div class="module-card">
-                    <div class="module-icon">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <div class="module-title">Sales Orders</div>
-                    <a href="{{ url_for('sales.dashboard') }}" class="view-btn">View</a>
-                </div>
-            </div>
-            
-            <div class="col-md-4">
-                <div class="module-card">
-                    <div class="module-icon">
-                        <i class="fas fa-file-invoice"></i>
-                    </div>
-                    <div class="module-title">Purchase Orders</div>
-                    <a href="{{ url_for('purchase.dashboard') }}" class="view-btn">View</a>
-                </div>
-            </div>
-            
-            <div class="col-md-4">
-                <div class="module-card">
-                    <div class="module-icon">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <div class="module-title">Employees</div>
-                    <a href="{{ url_for('hr.dashboard') }}" class="view-btn">View</a>
-                </div>
-            </div>
-            
-            <div class="col-md-4">
-                <div class="module-card">
-                    <div class="module-icon">
-                        <i class="fas fa-receipt"></i>
-                    </div>
-                    <div class="module-title">Factory Expenses</div>
-                    <a href="{{ url_for('expenses.dashboard') }}" class="view-btn">View</a>
-                </div>
-            </div>
-            
-            <div class="col-md-4">
-                <div class="module-card">
-                    <div class="module-icon">
-                        <i class="fas fa-exchange-alt"></i>
-                    </div>
-                    <div class="module-title">Tally Integration</div>
-                    <a href="{{ url_for('tally.dashboard') }}" class="view-btn">View</a>
-                </div>
-            </div>
-            
-            <div class="col-md-4">
-                <div class="module-card">
-                    <div class="module-icon">
-                        <i class="fas fa-cog"></i>
-                    </div>
-                    <div class="module-title">Settings</div>
-                    <a href="#settings" class="view-btn">View</a>
-                </div>
-            </div>
-            
-            <div class="col-md-4">
-                <div class="module-card">
-                    <div class="module-icon">
-                        <i class="fas fa-chart-bar"></i>
-                    </div>
-                    <div class="module-title">Reports</div>
-                    <a href="{{ url_for('reports.dashboard') }}" class="view-btn">View</a>
-                </div>
-            </div>
+            {% endfor %}
         </div>
+        
+        {% if not user_modules %}
+        <div class="text-center py-5">
+            <i class="fas fa-th-large fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No Modules Selected</h5>
+            <p class="text-muted">Customize your dashboard to add modules.</p>
+            <a href="{{ url_for('main.customize_dashboard') }}" class="btn btn-primary">
+                <i class="fas fa-cog"></i> Customize Dashboard
+            </a>
+        </div>
+        {% endif %}
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
