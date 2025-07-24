@@ -300,6 +300,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initial calculation
     updateSummary();
+    
+    // Auto-load items if PO or Job Work is pre-selected
+    const initialPOSelection = poSelect.value;
+    const initialJobSelection = jobSelect.value;
+    
+    if (initialPOSelection && initialPOSelection !== '0') {
+        loadPOItems(initialPOSelection);
+    } else if (initialJobSelection && initialJobSelection !== '0') {
+        loadJobWorkItems(initialJobSelection);
+    }
 });
 </script>
 {% endblock %}
