@@ -127,12 +127,31 @@
         }
         
         /* Prevent transitions during page load */
-        .preload * {
+        .preload *,
+        .preload *:before,
+        .preload *:after {
             transition: none !important;
+            animation: none !important;
+            -webkit-transition: none !important;
+            -moz-transition: none !important;
+            -ms-transition: none !important;
+            -o-transition: none !important;
         }
         
         .nav-link.clicked {
             pointer-events: none;
+        }
+        
+        /* Ensure sidebar is stable during load */
+        .sidebar {
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+        
+        /* Prevent content jumps during load */
+        .main-content {
+            opacity: 1 !important;
+            visibility: visible !important;
         }
     </style>
 </head>
@@ -327,8 +346,11 @@
     <script>
         // Prevent sidebar flickering on page load
         document.addEventListener('DOMContentLoaded', function() {
-            // Remove preload class after DOM is loaded to enable transitions
-            document.body.classList.remove('preload');
+            // Small delay to ensure everything is rendered
+            setTimeout(function() {
+                // Remove preload class after DOM is loaded to enable transitions
+                document.body.classList.remove('preload');
+            }, 100);
             
             // Add click handler to nav links to prevent multiple clicks
             const navLinks = document.querySelectorAll('.nav-link');
@@ -347,6 +369,14 @@
                     }, 1000);
                 });
             });
+        });
+        
+        // Additional load event handler for complete stability
+        window.addEventListener('load', function() {
+            // Ensure preload is removed after all resources load
+            setTimeout(function() {
+                document.body.classList.remove('preload');
+            }, 50);
         });
     </script>
 </body>
