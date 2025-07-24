@@ -148,6 +148,9 @@ class PurchaseOrder(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
+    # Tally integration
+    tally_synced = db.Column(db.Boolean, default=False)
+    
     # Inspection workflow fields
     inspection_required = db.Column(db.Boolean, default=True)
     inspection_status = db.Column(db.String(20), default='pending')  # pending, in_progress, completed, failed
