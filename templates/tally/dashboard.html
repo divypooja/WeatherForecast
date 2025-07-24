@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+
+{% block title %}Tally Integration - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-sync-alt"></i> Tally ERP Integration</h1>
+            <p class="text-muted">Synchronize your Factory Management data with Tally accounting system</p>
+        </div>
+        <div class="col-auto">
+            <button id="testConnection" class="btn btn-outline-info">
+                <i class="fas fa-plug"></i> Test Connection
+            </button>
+            <a href="{{ url_for('tally.settings') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-cog"></i> Settings
+            </a>
+        </div>
+    </div>
+
+    <!-- Connection Status -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div id="connectionStatus" class="alert alert-info" style="display: none;">
+                <i class="fas fa-spinner fa-spin"></i> Testing connection to Tally...
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.total_suppliers }}</h4>
+                            <p class="mb-0">Suppliers</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-truck fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.total_items }}</h4>
+                            <p class="mb-0">Items</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-boxes fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.total_purchase_orders }}</h4>
+                            <p class="mb-0">Purchase Orders</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-shopping-cart fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.total_sales_orders }}</h4>
+                            <p class="mb-0">Sales Orders</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-chart-line fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.total_expenses }}</h4>
+                            <p class="mb-0">Expenses</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-money-bill fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-secondary text-white">
+                <div class="card-body text-center">
+                    <form method="POST" action="{{ url_for('tally.sync_all') }}" style="margin: 0;">
+                        <button type="submit" class="btn btn-light btn-sm" onclick="return confirm('This will sync all data to Tally. Continue?')">
+                            <i class="fas fa-sync-alt"></i><br>
+                            <small>Sync All</small>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sync Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-download"></i> Data Synchronization</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-primary">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-truck fa-3x text-primary mb-3"></i>
+                                    <h6>Suppliers</h6>
+                                    <p class="text-muted small">Sync suppliers as Ledgers in Tally</p>
+                                    <form method="POST" action="{{ url_for('tally.sync_suppliers') }}">
+                                        <button type="submit" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-sync"></i> Sync Suppliers
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-success">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-boxes fa-3x text-success mb-3"></i>
+                                    <h6>Inventory Items</h6>
+                                    <p class="text-muted small">Sync items as Stock Items in Tally</p>
+                                    <form method="POST" action="{{ url_for('tally.sync_items') }}">
+                                        <button type="submit" class="btn btn-success btn-sm">
+                                            <i class="fas fa-sync"></i> Sync Items
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-warning">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-shopping-cart fa-3x text-warning mb-3"></i>
+                                    <h6>Purchase Orders</h6>
+                                    <p class="text-muted small">Sync POs as Purchase Vouchers</p>
+                                    <form method="POST" action="{{ url_for('tally.sync_purchase_orders') }}">
+                                        <button type="submit" class="btn btn-warning btn-sm">
+                                            <i class="fas fa-sync"></i> Sync Purchase Orders
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-info">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-chart-line fa-3x text-info mb-3"></i>
+                                    <h6>Sales Orders</h6>
+                                    <p class="text-muted small">Sync SOs as Sales Vouchers</p>
+                                    <form method="POST" action="{{ url_for('tally.sync_sales_orders') }}">
+                                        <button type="submit" class="btn btn-info btn-sm">
+                                            <i class="fas fa-sync"></i> Sync Sales Orders
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-danger">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-money-bill fa-3x text-danger mb-3"></i>
+                                    <h6>Factory Expenses</h6>
+                                    <p class="text-muted small">Sync expenses as Journal Vouchers</p>
+                                    <form method="POST" action="{{ url_for('tally.sync_expenses') }}">
+                                        <button type="submit" class="btn btn-danger btn-sm">
+                                            <i class="fas fa-sync"></i> Sync Expenses
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-dark">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-database fa-3x text-dark mb-3"></i>
+                                    <h6>Complete Sync</h6>
+                                    <p class="text-muted small">Sync all data in proper sequence</p>
+                                    <form method="POST" action="{{ url_for('tally.sync_all') }}">
+                                        <button type="submit" class="btn btn-dark btn-sm" onclick="return confirm('This will sync all data to Tally. Continue?')">
+                                            <i class="fas fa-sync-alt"></i> Full Sync
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Sync History -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-history"></i> Recent Sync Activity</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_syncs %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date/Time</th>
+                                        <th>Type</th>
+                                        <th>Records</th>
+                                        <th>Status</th>
+                                        <th>User</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for sync in recent_syncs %}
+                                    <tr>
+                                        <td>{{ sync.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                                        <td><span class="badge bg-info">{{ sync.type }}</span></td>
+                                        <td>{{ sync.record_count }}</td>
+                                        <td>
+                                            {% if sync.status == 'success' %}
+                                                <span class="badge bg-success">Success</span>
+                                            {% elif sync.status == 'partial' %}
+                                                <span class="badge bg-warning">Partial</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Failed</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ sync.user }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-clock fa-3x mb-3"></i>
+                            <p>No sync activity yet. Start by testing the connection above.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('testConnection').addEventListener('click', function() {
+    const statusDiv = document.getElementById('connectionStatus');
+    const button = this;
+    
+    // Show loading state
+    statusDiv.style.display = 'block';
+    statusDiv.className = 'alert alert-info';
+    statusDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing connection to Tally...';
+    button.disabled = true;
+    
+    // Test connection
+    fetch('/tally/test-connection')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                statusDiv.className = 'alert alert-success';
+                statusDiv.innerHTML = '<i class="fas fa-check-circle"></i> ' + data.message;
+            } else {
+                statusDiv.className = 'alert alert-danger';
+                statusDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + data.message;
+            }
+            button.disabled = false;
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        })
+        .catch(error => {
+            statusDiv.className = 'alert alert-danger';
+            statusDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> Connection test failed: ' + error.message;
+            button.disabled = false;
+        });
+});
+</script>
+{% endblock %}

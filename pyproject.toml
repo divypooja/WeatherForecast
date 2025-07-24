@@ -22,4 +22,6 @@ dependencies = [
     "sendgrid>=6.12.4",
     "schedule>=1.2.2",
     "weasyprint>=65.1",
+    "lxml>=6.0.0",
+    "requests>=2.32.4",
 ]
