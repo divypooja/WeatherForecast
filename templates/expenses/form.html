@@ -75,6 +75,20 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.paid_by.label(class="form-label") }}
+                                        {{ form.paid_by(class="form-control") }}
+                                        {% if form.paid_by.errors %}
+                                            {% for error in form.paid_by.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                        <small class="text-muted">Optional: Name of person/entity who made the payment</small>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="mb-3">
                                 {{ form.description.label(class="form-label") }}
                                 {{ form.description(class="form-control", rows="3") }}
