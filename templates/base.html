@@ -143,14 +143,6 @@
                     <i class="fas fa-shield-alt"></i>
                     Quality Control
                 </a>
-                <a class="nav-link {{ 'active' if 'uom' in request.endpoint }}" href="{{ url_for('uom.dashboard') }}">
-                    <i class="fas fa-balance-scale"></i>
-                    UOM Management
-                </a>
-                <a class="nav-link {{ 'active' if 'tally' in request.endpoint }}" href="{{ url_for('tally.dashboard') }}">
-                    <i class="fas fa-sync-alt"></i>
-                    Tally Integration
-                </a>
                 <a class="nav-link {{ 'active' if 'material_inspection' in request.endpoint }}" href="{{ url_for('material_inspection.dashboard') }}">
                     <i class="fas fa-search"></i>
                     Material Inspection

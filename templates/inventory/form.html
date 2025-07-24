@@ -64,7 +64,6 @@
                             <div class="col-md-4 mb-3">
                                 {{ form.unit_of_measure.label(class="form-label") }}
                                 {{ form.unit_of_measure(class="form-select") }}
-                                <div class="form-text">Unit for inventory tracking</div>
                                 {% if form.unit_of_measure.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.unit_of_measure.errors %}
@@ -102,98 +101,6 @@
                             </div>
                         </div>
                         
-                        <!-- Business Type Selection -->
-                        <div class="row">
-                            <div class="col-12 mb-3">
-                                <div class="card border-info">
-                                    <div class="card-header bg-info text-white">
-                                        <h6 class="mb-0"><i class="fas fa-cogs"></i> Business Workflow</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        {{ form.business_type.label(class="form-label") }}
-                                        {{ form.business_type(class="form-select", id="business_type_select") }}
-                                        <div class="form-text">
-                                            <strong>Trading:</strong> Buy materials, sell directly (with unit conversion)<br>
-                                            <strong>Manufacturing:</strong> Buy raw materials, produce finished goods via BOM
-                                        </div>
-                                        {% if form.business_type.errors %}
-                                            <div class="text-danger small">
-                                                {% for error in form.business_type.errors %}
-                                                    <div>{{ error }}</div>
-                                                {% endfor %}
-                                            </div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Trading UOM Conversion Fields (shown when business_type = trading) -->
-                        <div id="trading_conversion_section" class="row" style="display: none;">
-                            <div class="col-12 mb-3">
-                                <div class="card border-warning">
-                                    <div class="card-header bg-warning text-dark">
-                                        <h6 class="mb-0"><i class="fas fa-exchange-alt"></i> Unit Conversion Setup</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="row">
-                                            <div class="col-md-4 mb-3">
-                                                {{ form.purchase_unit.label(class="form-label") }}
-                                                {{ form.purchase_unit(class="form-select") }}
-                                                <div class="form-text">Unit you buy materials in</div>
-                                            </div>
-                                            <div class="col-md-4 mb-3">
-                                                {{ form.sale_unit.label(class="form-label") }}
-                                                {{ form.sale_unit(class="form-select") }}
-                                                <div class="form-text">Unit you sell materials in</div>
-                                            </div>
-                                            <div class="col-md-4 mb-3">
-                                                {{ form.unit_weight.label(class="form-label") }}
-                                                {{ form.unit_weight(class="form-control") }}
-                                                <div class="form-text">For converting pieces to weight</div>
-                                            </div>
-                                        </div>
-                                        <div class="alert alert-info small">
-                                            <strong>Example:</strong> Buy PU Wheels in KG, Sell in Pieces<br>
-                                            Purchase Unit: Kilograms → Sale Unit: Pieces → Unit Weight: 0.12 kg/piece
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- HSN Code and GST Rate Section -->
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                {{ form.hsn_code.label(class="form-label") }}
-                                {{ form.hsn_code(class="form-control", placeholder="e.g., 8716, 7318, 3926") }}
-                                <div class="form-text">HSN Code for GST calculation (optional)</div>
-                                {% if form.hsn_code.errors %}
-                                    <div class="text-danger small">
-                                        {% for error in form.hsn_code.errors %}
-                                            <div>{{ error }}</div>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="col-md-6 mb-3">
-                                {{ form.gst_rate.label(class="form-label") }}
-                                <div class="input-group">
-                                    {{ form.gst_rate(class="form-control") }}
-                                    <span class="input-group-text">%</span>
-                                </div>
-                                <div class="form-text">GST Rate (0%, 5%, 12%, 18%, 28%)</div>
-                                {% if form.gst_rate.errors %}
-                                    <div class="text-danger small">
-                                        {% for error in form.gst_rate.errors %}
-                                            <div>{{ error }}</div>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 {{ form.minimum_stock.label(class="form-label") }}
@@ -202,19 +109,6 @@
                                 {% if form.minimum_stock.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.minimum_stock.errors %}
-                                            <div>{{ error }}</div>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="col-md-6 mb-3">
-                                {{ form.current_stock.label(class="form-label") }}
-                                {{ form.current_stock(class="form-control") }}
-                                <div class="form-text">Current inventory level</div>
-                                {% if form.current_stock.errors %}
-                                    <div class="text-danger small">
-                                        {% for error in form.current_stock.errors %}
                                             <div>{{ error }}</div>
                                         {% endfor %}
                                     </div>
@@ -236,25 +130,4 @@
         </div>
     </div>
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const businessTypeSelect = document.getElementById('business_type_select');
-    const tradingSection = document.getElementById('trading_conversion_section');
-    
-    function toggleTradingSection() {
-        if (businessTypeSelect.value === 'trading') {
-            tradingSection.style.display = 'block';
-        } else {
-            tradingSection.style.display = 'none';
-        }
-    }
-    
-    // Initial check
-    toggleTradingSection();
-    
-    // Listen for changes
-    businessTypeSelect.addEventListener('change', toggleTradingSection);
-});
-</script>
 {% endblock %}

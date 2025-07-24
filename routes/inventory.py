@@ -58,16 +58,6 @@ def list_items():
 def add_item():
     form = ItemForm()
     
-    # Populate UOM choices from database
-    from models_uom import UnitOfMeasure
-    units = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
-    unit_choices = [('', 'Same as Storage')] + [(unit.symbol, f"{unit.name} ({unit.symbol})") for unit in units]
-    primary_unit_choices = [(unit.symbol, f"{unit.name} ({unit.symbol})") for unit in units]
-    
-    form.unit_of_measure.choices = primary_unit_choices
-    form.purchase_unit.choices = unit_choices
-    form.sale_unit.choices = unit_choices
-    
     # Auto-generate item code if not provided
     if not form.code.data:
         form.code.data = generate_item_code()
@@ -84,16 +74,9 @@ def add_item():
             name=form.name.data,
             description=form.description.data,
             unit_of_measure=form.unit_of_measure.data,
-            hsn_code=form.hsn_code.data,
-            gst_rate=form.gst_rate.data,
-            current_stock=form.current_stock.data,
             minimum_stock=form.minimum_stock.data,
             unit_price=form.unit_price.data,
-            item_type=form.item_type.data,
-            business_type=form.business_type.data,
-            purchase_unit=form.purchase_unit.data if form.purchase_unit.data else form.unit_of_measure.data,
-            sale_unit=form.sale_unit.data if form.sale_unit.data else form.unit_of_measure.data,
-            unit_weight=form.unit_weight.data
+            item_type=form.item_type.data
         )
         db.session.add(item)
         db.session.commit()
@@ -108,16 +91,6 @@ def edit_item(id):
     item = Item.query.get_or_404(id)
     form = ItemForm(obj=item)
     
-    # Populate UOM choices from database
-    from models_uom import UnitOfMeasure
-    units = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
-    unit_choices = [('', 'Same as Storage')] + [(unit.symbol, f"{unit.name} ({unit.symbol})") for unit in units]
-    primary_unit_choices = [(unit.symbol, f"{unit.name} ({unit.symbol})") for unit in units]
-    
-    form.unit_of_measure.choices = primary_unit_choices
-    form.purchase_unit.choices = unit_choices
-    form.sale_unit.choices = unit_choices
-    
     if form.validate_on_submit():
         # Check if item code already exists (excluding current item)
         existing_item = Item.query.filter(Item.code == form.code.data, Item.id != id).first()
@@ -129,16 +102,9 @@ def edit_item(id):
         item.name = form.name.data
         item.description = form.description.data
         item.unit_of_measure = form.unit_of_measure.data
-        item.hsn_code = form.hsn_code.data
-        item.gst_rate = form.gst_rate.data
-        item.current_stock = form.current_stock.data
         item.minimum_stock = form.minimum_stock.data
         item.unit_price = form.unit_price.data
         item.item_type = form.item_type.data
-        item.business_type = form.business_type.data
-        item.purchase_unit = form.purchase_unit.data if form.purchase_unit.data else form.unit_of_measure.data
-        item.sale_unit = form.sale_unit.data if form.sale_unit.data else form.unit_of_measure.data
-        item.unit_weight = form.unit_weight.data
         
         db.session.commit()
         flash('Item updated successfully', 'success')

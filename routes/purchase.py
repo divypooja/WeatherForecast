@@ -9,7 +9,6 @@ from datetime import datetime
 from utils import generate_po_number
 from services.notification_helpers import send_email_notification, send_whatsapp_notification, send_email_with_attachment
 from utils_documents import get_documents_for_transaction
-from services.excel_export import ExcelExportService
 
 purchase_bp = Blueprint('purchase', __name__)
 
@@ -338,18 +337,6 @@ def print_purchase_order(id):
     company = CompanySettings.get_settings()
     
     return render_template('purchase/po_print_enhanced.html', po=po, amount_words=amount_words, company=company)
-
-@purchase_bp.route('/export/excel')
-@login_required
-def export_purchase_orders_excel():
-    """Export Purchase Orders to Excel"""
-    try:
-        wb = ExcelExportService.export_purchase_orders()
-        filename = f"purchase_orders_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
-        return ExcelExportService.create_response(wb, filename)
-    except Exception as e:
-        flash(f'Error exporting Purchase Orders: {str(e)}', 'danger')
-        return redirect(url_for('purchase.list_purchase_orders'))
 
 @purchase_bp.route('/send/<int:po_id>', methods=['GET', 'POST'])
 @login_required

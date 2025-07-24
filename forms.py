@@ -13,8 +13,9 @@ class ItemForm(FlaskForm):
     code = StringField('Item Code', validators=[DataRequired(), Length(max=50)])
     name = StringField('Item Name', validators=[DataRequired(), Length(max=100)])
     description = TextAreaField('Description')
-    unit_of_measure = SelectField('Primary Storage Unit', 
-                                choices=[],  # Will be populated dynamically
+    unit_of_measure = SelectField('Unit of Measure', 
+                                choices=[('pcs', 'Pieces'), ('kg', 'Kilograms'), ('meter', 'Meters'), 
+                                       ('liter', 'Liters'), ('box', 'Boxes'), ('set', 'Sets'), ('nos', 'Numbers')],
                                 validators=[DataRequired()])
     hsn_code = StringField('HSN Code', validators=[Length(max=20)])
     gst_rate = FloatField('GST Rate (%)', validators=[NumberRange(min=0, max=100)], default=18.0)
@@ -22,42 +23,8 @@ class ItemForm(FlaskForm):
     minimum_stock = FloatField('Minimum Stock', validators=[NumberRange(min=0)], default=0.0)
     unit_price = FloatField('Unit Price', validators=[NumberRange(min=0)], default=0.0)
     item_type = SelectField('Item Type', 
-                          choices=[('material', 'Raw Material'), ('product', 'Finished Product'), ('consumable', 'Consumable')],
+                          choices=[('material', 'Material'), ('product', 'Product'), ('consumable', 'Consumable')],
                           validators=[DataRequired()])
-    
-    # Business workflow selection
-    business_type = SelectField('Business Type', 
-                              choices=[('trading', 'Direct Trading (Buy→Sell)'), ('manufacturing', 'Manufacturing (Raw Material→Production)')],
-                              validators=[DataRequired()], default='trading')
-    
-    # UOM Conversion fields for Trading workflow
-    purchase_unit = SelectField('Purchase Unit', 
-                              choices=[],  # Will be populated dynamically
-                              validators=[Optional()])
-    sale_unit = SelectField('Sale Unit', 
-                          choices=[],  # Will be populated dynamically
-                          validators=[Optional()])
-    unit_weight = FloatField('Unit Weight (kg/piece)', validators=[Optional(), NumberRange(min=0)],
-                           render_kw={"placeholder": "e.g., 0.12 kg per piece"})
-
-class TallySettingsForm(FlaskForm):
-    """Tally Integration Settings Form"""
-    tally_host = StringField('Tally Host', validators=[DataRequired()], default='localhost',
-                            render_kw={"placeholder": "localhost or IP address"})
-    tally_port = IntegerField('Tally Port', validators=[DataRequired(), NumberRange(min=1, max=65535)], default=9000,
-                             render_kw={"placeholder": "Default: 9000"})
-    company_name = StringField('Company Name in Tally', validators=[Optional()],
-                              render_kw={"placeholder": "Leave blank for default company"})
-    auto_sync = BooleanField('Enable Auto Sync', default=False)
-    sync_interval = SelectField('Sync Interval', 
-                               choices=[('manual', 'Manual Only'), ('hourly', 'Every Hour'), 
-                                       ('daily', 'Daily'), ('weekly', 'Weekly')],
-                               default='manual')
-    enable_suppliers = BooleanField('Sync Suppliers', default=True)
-    enable_items = BooleanField('Sync Items', default=True)
-    enable_purchase_orders = BooleanField('Sync Purchase Orders', default=True)
-    enable_sales_orders = BooleanField('Sync Sales Orders', default=True)
-    enable_expenses = BooleanField('Sync Factory Expenses', default=True)
 
 class SupplierForm(FlaskForm):
     # Basic Information
@@ -342,30 +309,20 @@ class NotificationTestForm(FlaskForm):
 class BOMForm(FlaskForm):
     product_id = SelectField('Product', validators=[DataRequired()], coerce=int)
     version = StringField('Version', validators=[DataRequired(), Length(max=20)], default='1.0')
-    description = TextAreaField('Description/Notes', validators=[Optional(), Length(max=500)])
-    production_unit_id = SelectField('Production Unit', validators=[Optional()], coerce=int)
     is_active = BooleanField('Active', default=True)
-    submit = SubmitField('Save BOM')
     
     def __init__(self, *args, **kwargs):
         super(BOMForm, self).__init__(*args, **kwargs)
-        from models_uom import UnitOfMeasure
         self.product_id.choices = [(0, 'Select Product')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.filter_by(item_type='product').all()]
-        self.production_unit_id.choices = [(0, 'Same as Product Unit')] + [(u.id, f"{u.name} ({u.symbol})") for u in UnitOfMeasure.query.all()]
 
 class BOMItemForm(FlaskForm):
     item_id = SelectField('Material/Component', validators=[DataRequired()], coerce=int)
     quantity_required = FloatField('Quantity Required', validators=[DataRequired(), NumberRange(min=0)])
-    bom_unit_id = SelectField('BOM Unit', validators=[Optional()], coerce=int)
     unit_cost = FloatField('Unit Cost', validators=[NumberRange(min=0)], default=0.0)
-    notes = TextAreaField('Notes', validators=[Optional(), Length(max=200)])
-    submit = SubmitField('Add to BOM')
     
     def __init__(self, *args, **kwargs):
         super(BOMItemForm, self).__init__(*args, **kwargs)
-        from models_uom import UnitOfMeasure
         self.item_id.choices = [(0, 'Select Item')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.filter(Item.item_type.in_(['material', 'consumable'])).all()]
-        self.bom_unit_id.choices = [(0, 'Use Inventory Unit')] + [(u.id, f"{u.name} ({u.symbol})") for u in UnitOfMeasure.query.all()]
 
 class CompanySettingsForm(FlaskForm):
     company_name = StringField('Company Name', validators=[DataRequired(), Length(max=200)])

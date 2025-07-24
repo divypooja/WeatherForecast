@@ -9,11 +9,6 @@
             <h1><i class="fas fa-boxes"></i> Items List</h1>
         </div>
         <div class="col-auto">
-            <div class="btn-group me-2">
-                <a href="{{ url_for('exports.export_inventory_excel') }}" class="btn btn-success">
-                    <i class="fas fa-file-excel"></i> Export Excel
-                </a>
-            </div>
             <a href="{{ url_for('inventory.add_item') }}" class="btn btn-primary">
                 <i class="fas fa-plus"></i> Add New Item
             </a>
@@ -36,21 +31,19 @@
     <div class="card">
         <div class="card-body">
             {% if items.items %}
-                <div class="table-responsive" style="max-height: 70vh; overflow-x: auto; overflow-y: auto;">
-                    <table class="table table-hover table-sm" style="min-width: 1200px;">
-                        <thead class="table-dark sticky-top">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
                             <tr>
-                                <th style="min-width: 90px;">Code</th>
-                                <th style="min-width: 150px;">Name</th>
-                                <th style="min-width: 80px;">Type</th>
-                                <th style="min-width: 110px;">Business</th>
-                                <th style="min-width: 100px;">Current Stock</th>
-                                <th style="min-width: 90px;">Weight Info</th>
-                                <th style="min-width: 80px;">Min Stock</th>
-                                <th style="min-width: 70px;">UOM</th>
-                                <th style="min-width: 90px;">Unit Price</th>
-                                <th style="min-width: 90px;">Stock Value</th>
-                                <th style="min-width: 100px;">Actions</th>
+                                <th>Code</th>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Current Stock</th>
+                                <th>Min Stock</th>
+                                <th>UOM</th>
+                                <th>Unit Price</th>
+                                <th>Stock Value</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -67,26 +60,10 @@
                                     <span class="badge bg-secondary">{{ item.item_type.title() }}</span>
                                 </td>
                                 <td>
-                                    {% if item.business_type == 'trading' %}
-                                        <span class="badge bg-success">Trading</span>
-                                        {% if item.unit_weight %}
-                                            <br><small class="text-muted">{{ item.unit_weight }}kg/pc</small>
-                                        {% endif %}
-                                    {% else %}
-                                        <span class="badge bg-primary">Manufacturing</span>
-                                    {% endif %}
-                                </td>
-                                <td>
                                     {% if (item.current_stock or 0) <= (item.minimum_stock or 0) and (item.minimum_stock or 0) > 0 %}
-                                        <span class="text-danger">{{ item.display_stock_info or (item.current_stock or 0) }}</span>
+                                        <span class="text-danger">{{ item.current_stock or 0 }}</span>
                                     {% else %}
-                                        {{ item.display_stock_info or (item.current_stock or 0) }}
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <small class="text-muted">{{ item.weight_info_display }}</small>
-                                    {% if item.total_weight_kg > 0 %}
-                                        <br><span class="badge bg-info">{{ "%.2f"|format(item.total_weight_kg) }}kg total</span>
+                                        {{ item.current_stock or 0 }}
                                     {% endif %}
                                 </td>
                                 <td>{{ item.minimum_stock or 0 }}</td>

@@ -2,8 +2,6 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from forms import ProductionForm, BOMForm, BOMItemForm
 from models import Production, Item, BOM, BOMItem
-from models_uom import UnitOfMeasure, UOMConversion, ItemUOMConversion
-from services.smart_conversion import SmartConversionService
 from app import db
 from sqlalchemy import func
 from utils import generate_production_number
@@ -52,59 +50,6 @@ def list_productions():
         page=page, per_page=20, error_out=False)
     
     return render_template('production/list.html', productions=productions, status_filter=status_filter)
-
-@production_bp.route('/check-smart-requirements', methods=['POST'])
-@login_required
-def check_smart_requirements():
-    """API endpoint for smart BOM material requirements checking"""
-    data = request.get_json()
-    bom_id = data.get('bom_id')
-    production_quantity = data.get('production_quantity', 0)
-    
-    if not bom_id or not production_quantity:
-        return jsonify({'error': 'Missing BOM ID or production quantity'}), 400
-    
-    bom = BOM.query.get(bom_id)
-    if not bom:
-        return jsonify({'error': 'BOM not found'}), 404
-    
-    try:
-        # Use smart conversion service for requirements calculation
-        requirements = SmartConversionService.calculate_bom_requirements(bom, production_quantity)
-        
-        # Convert to JSON-serializable format
-        requirements_data = []
-        for req in requirements:
-            requirements_data.append({
-                'material': {
-                    'id': req['material'].id,
-                    'name': req['material'].name,
-                    'code': req['material'].code
-                },
-                'bom_unit': req['bom_unit'],
-                'required_qty_bom_unit': req['required_qty_bom_unit'],
-                'required_qty_inventory_unit': req['required_qty_inventory_unit'],
-                'available_stock': req['available_stock'],
-                'inventory_unit': req['inventory_unit'],
-                'is_sufficient': req['is_sufficient'],
-                'shortage': req['shortage'],
-                'shortage_in_bom_unit': req['shortage_in_bom_unit'],
-                'unit_cost': req['unit_cost'],
-                'total_cost': req['total_cost'],
-                'conversion_info': req['conversion_info'],
-                'notes': req['notes']
-            })
-        
-        return jsonify({
-            'success': True,
-            'requirements': requirements_data,
-            'total_items': len(requirements_data),
-            'sufficient_items': len([r for r in requirements_data if r['is_sufficient']]),
-            'shortage_items': len([r for r in requirements_data if not r['is_sufficient']])
-        })
-        
-    except Exception as e:
-        return jsonify({'error': f'Error calculating requirements: {str(e)}'}), 500
 
 @production_bp.route('/add', methods=['GET', 'POST'])
 @login_required
@@ -272,70 +217,19 @@ def add_bom():
         existing_bom = BOM.query.filter_by(product_id=form.product_id.data, is_active=True).first()
         if existing_bom:
             flash('An active BOM already exists for this product. Please deactivate the existing BOM first.', 'warning')
-            units = UnitOfMeasure.query.all()
-            materials = Item.query.filter(Item.item_type.in_(['material', 'consumable'])).all()
-            return render_template('production/bom_form_uom.html', form=form, title='Add BOM', units=units, materials=materials)
+            return render_template('production/bom_form.html', form=form, title='Add BOM')
         
         bom = BOM(
             product_id=form.product_id.data,
             version=form.version.data,
-            description=form.description.data,
-            production_unit_id=form.production_unit_id.data if form.production_unit_id.data != 0 else None,
-            is_active=form.is_active.data,
-            created_by=current_user.id
+            is_active=True
         )
-        
         db.session.add(bom)
-        db.session.flush()  # Get the BOM ID without committing
-        
-        # Process materials from the form
-        materials_added = 0
-        for key in request.form.keys():
-            if key.startswith('materials[') and key.endswith('][item_id]'):
-                # Extract index from materials[0][item_id]
-                index = key.split('[')[1].split(']')[0]
-                
-                item_id = request.form.get(f'materials[{index}][item_id]')
-                quantity_required = request.form.get(f'materials[{index}][quantity_required]')
-                bom_unit_id = request.form.get(f'materials[{index}][bom_unit_id]')
-                unit_cost = request.form.get(f'materials[{index}][unit_cost]')
-                notes = request.form.get(f'materials[{index}][notes]')
-                
-                if item_id and quantity_required:
-                    bom_item = BOMItem(
-                        bom_id=bom.id,
-                        item_id=int(item_id),
-                        quantity_required=float(quantity_required),
-                        bom_unit_id=int(bom_unit_id) if bom_unit_id and bom_unit_id != '0' else None,
-                        unit_cost=float(unit_cost) if unit_cost else 0.0,
-                        notes=notes or None
-                    )
-                    db.session.add(bom_item)
-                    materials_added += 1
-        
         db.session.commit()
-        
-        if materials_added > 0:
-            flash(f'BOM created successfully with {materials_added} materials!', 'success')
-        else:
-            flash('BOM created successfully! You can add materials later.', 'success')
-        return redirect(url_for('production.list_bom'))
+        flash('BOM created successfully', 'success')
+        return redirect(url_for('production.edit_bom', id=bom.id))
     
-    # If form doesn't validate, show errors
-    elif request.method == 'POST':
-        for field, errors in form.errors.items():
-            for error in errors:
-                flash(f'{getattr(form, field).label.text}: {error}', 'danger')
-    
-    # Get available units for UOM selection
-    units = UnitOfMeasure.query.all()
-    materials = Item.query.filter(Item.item_type.in_(['material', 'consumable'])).all()
-    
-    return render_template('production/bom_form_uom.html', 
-                         form=form, 
-                         title='Add BOM',
-                         units=units,
-                         materials=materials)
+    return render_template('production/bom_form.html', form=form, title='Add BOM')
 
 @production_bp.route('/bom/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -353,15 +247,10 @@ def edit_bom(id):
         ).first()
         if existing_bom:
             flash('An active BOM already exists for this product. Please deactivate the existing BOM first.', 'warning')
-            units = UnitOfMeasure.query.all()
-            materials = Item.query.filter(Item.item_type.in_(['material', 'consumable'])).all()
-            return render_template('production/bom_form_uom.html', form=form, title='Edit BOM', bom=bom, units=units, materials=materials)
+            return render_template('production/bom_form.html', form=form, title='Edit BOM', bom=bom)
         
         bom.product_id = form.product_id.data
         bom.version = form.version.data
-        bom.description = form.description.data
-        bom.production_unit_id = form.production_unit_id.data if form.production_unit_id.data != 0 else None
-        bom.is_active = form.is_active.data
         
         db.session.commit()
         flash('BOM updated successfully', 'success')
@@ -373,16 +262,12 @@ def edit_bom(id):
     # Get materials for adding new items
     materials = Item.query.filter(Item.item_type.in_(['material', 'consumable'])).all()
     
-    # Get available units for UOM selection
-    units = UnitOfMeasure.query.all()
-    
-    return render_template('production/bom_form_uom.html', 
+    return render_template('production/bom_form.html', 
                          form=form, 
                          title='Edit BOM', 
                          bom=bom,
                          bom_items=bom_items,
-                         materials=materials,
-                         units=units)
+                         materials=materials)
 
 @production_bp.route('/bom/<int:bom_id>/add_item', methods=['POST'])
 @login_required
@@ -403,16 +288,12 @@ def add_bom_item(bom_id):
         flash('This item is already in the BOM', 'warning')
         return redirect(url_for('production.edit_bom', id=bom_id))
     
-    bom_unit_id = request.form.get('bom_unit_id', type=int)
-    notes = request.form.get('notes', '')
-    
-    bom_item = BOMItem()
-    bom_item.bom_id = bom_id
-    bom_item.item_id = item_id
-    bom_item.quantity_required = quantity_required
-    bom_item.unit_cost = unit_cost
-    bom_item.bom_unit_id = bom_unit_id if bom_unit_id != 0 else None
-    bom_item.notes = notes
+    bom_item = BOMItem(
+        bom_id=bom_id,
+        item_id=item_id,
+        quantity_required=quantity_required,
+        unit_cost=unit_cost
+    )
     
     db.session.add(bom_item)
     db.session.commit()
@@ -443,75 +324,6 @@ def delete_bom(id):
     flash('BOM deactivated successfully', 'success')
     
     return redirect(url_for('production.list_bom'))
-
-@production_bp.route('/production/<int:id>/check_materials')
-@login_required
-def check_materials(id):
-    """Check material availability for a specific production order"""
-    production = Production.query.get_or_404(id)
-    
-    # Get BOM for the production item
-    active_bom = BOM.query.filter_by(product_id=production.item_id, is_active=True).first()
-    
-    if not active_bom:
-        flash('No active BOM found for this production item', 'warning')
-        return redirect(url_for('production.list_productions'))
-    
-    # Get BOM items and calculate requirements
-    bom_items = BOMItem.query.filter_by(bom_id=active_bom.id).all()
-    material_requirements = []
-    has_shortages = False
-    
-    from services.smart_conversion import SmartConversionService
-    conversion_service = SmartConversionService()
-    
-    for bom_item in bom_items:
-        # Calculate total required quantity for this production
-        total_required = bom_item.quantity_required * production.quantity_planned
-        
-        # Get current available stock
-        available_qty = bom_item.item.current_stock or 0
-        
-        # Check if sufficient
-        is_sufficient = available_qty >= total_required
-        shortage_qty = max(0, total_required - available_qty)
-        
-        if not is_sufficient:
-            has_shortages = True
-        
-        # Get unit information
-        bom_unit = bom_item.bom_unit.symbol if bom_item.bom_unit else bom_item.item.unit_of_measure
-        storage_unit = bom_item.item.unit_of_measure
-        
-        # Try to get conversion info if units are different
-        conversion_info = ""
-        if bom_unit != storage_unit:
-            try:
-                converted_qty = conversion_service.convert_quantity(
-                    total_required, bom_item.item, bom_unit, storage_unit
-                )
-                conversion_info = f"{total_required} {bom_unit} = {converted_qty:.3f} {storage_unit}"
-            except:
-                conversion_info = f"Manual conversion needed: {bom_unit} → {storage_unit}"
-        
-        material_requirements.append({
-            'bom_item': bom_item,
-            'item': bom_item.item,
-            'quantity_per_unit': bom_item.quantity_required,
-            'total_required': total_required,
-            'available_qty': available_qty,
-            'is_sufficient': is_sufficient,
-            'shortage_qty': shortage_qty,
-            'bom_unit': bom_unit,
-            'storage_unit': storage_unit,
-            'conversion_info': conversion_info
-        })
-    
-    return render_template('production/material_check.html',
-                         production=production,
-                         bom=active_bom,
-                         material_requirements=material_requirements,
-                         has_shortages=has_shortages)
 
 @production_bp.route('/check_material_availability', methods=['POST'])
 @login_required

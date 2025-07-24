@@ -4,9 +4,6 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db
 
-# Import UOM models
-from models_uom import UnitOfMeasure, UOMConversion, ItemUOMConversion, UOMConversionLog
-
 class CompanySettings(db.Model):
     __tablename__ = 'company_settings'
     
@@ -111,119 +108,19 @@ class Item(db.Model):
     code = db.Column(db.String(50), unique=True, nullable=False)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
-    unit_of_measure = db.Column(db.String(20), nullable=False)  # Primary storage unit: kg, pcs, meter, etc.
+    unit_of_measure = db.Column(db.String(20), nullable=False)  # kg, pcs, meter, etc.
     hsn_code = db.Column(db.String(20))  # HSN Code for GST
     gst_rate = db.Column(db.Float, default=0.0)  # GST rate (can be 0%, 5%, 12%, 18%, 28% etc.)
     current_stock = db.Column(db.Float, default=0.0)
     minimum_stock = db.Column(db.Float, default=0.0)
     unit_price = db.Column(db.Float, default=0.0)
     item_type = db.Column(db.String(20), default='material')  # material, product, consumable
-    
-    # UOM Conversion Fields for Direct Trading (Buy KG, Sell PCS)
-    purchase_unit = db.Column(db.String(20))  # Unit we buy in (kg, meter, liter)
-    sale_unit = db.Column(db.String(20))     # Unit we sell in (pcs, meter, etc.)
-    unit_weight = db.Column(db.Float)        # Weight per piece (kg/pc) for conversion
-    
-    # Business Type - determines workflow
-    business_type = db.Column(db.String(20), default='trading')  # trading, manufacturing
-    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
     purchase_order_items = db.relationship('PurchaseOrderItem', backref='item', lazy=True)
     sales_order_items = db.relationship('SalesOrderItem', backref='item', lazy=True)
     bom_items = db.relationship('BOMItem', backref='item', lazy=True)
-    
-    def convert_purchase_to_inventory(self, purchase_quantity):
-        """Convert purchase quantity to inventory quantity"""
-        if self.business_type == 'trading' and self.purchase_unit != self.unit_of_measure:
-            # For trading: convert from purchase unit to storage unit
-            if self.purchase_unit == 'kg' and self.unit_of_measure == 'pcs' and self.unit_weight:
-                return purchase_quantity / self.unit_weight  # kg to pieces
-            elif self.purchase_unit == 'pcs' and self.unit_of_measure == 'kg' and self.unit_weight:
-                return purchase_quantity * self.unit_weight  # pieces to kg
-        return purchase_quantity  # No conversion needed
-    
-    def convert_sale_to_inventory(self, sale_quantity):
-        """Convert sale quantity to inventory deduction quantity"""
-        if self.business_type == 'trading' and self.sale_unit != self.unit_of_measure:
-            # For trading: convert from sale unit to storage unit
-            if self.sale_unit == 'pcs' and self.unit_of_measure == 'kg' and self.unit_weight:
-                return sale_quantity * self.unit_weight  # pieces to kg
-            elif self.sale_unit == 'kg' and self.unit_of_measure == 'pcs' and self.unit_weight:
-                return sale_quantity / self.unit_weight  # kg to pieces
-        return sale_quantity  # No conversion needed
-    
-    def get_available_for_sale(self):
-        """Get available quantity in sale units"""
-        if self.business_type == 'trading' and self.sale_unit != self.unit_of_measure:
-            if self.unit_of_measure == 'kg' and self.sale_unit == 'pcs' and self.unit_weight:
-                return int(self.current_stock / self.unit_weight)  # kg to pieces
-            elif self.unit_of_measure == 'pcs' and self.sale_unit == 'kg' and self.unit_weight:
-                return self.current_stock * self.unit_weight  # pieces to kg
-        return self.current_stock  # No conversion needed
-    
-    @property
-    def display_stock_info(self):
-        """Display stock information with both units for trading items"""
-        if self.business_type == 'trading' and self.unit_weight and self.sale_unit != self.unit_of_measure:
-            available_for_sale = self.get_available_for_sale()
-            return f"{self.current_stock} {self.unit_of_measure} ({available_for_sale} {self.sale_unit})"
-        return f"{self.current_stock} {self.unit_of_measure}"
-    
-    @property
-    def total_weight_kg(self):
-        """Calculate total weight in kilograms"""
-        if self.unit_weight and self.current_stock:
-            if self.unit_of_measure == 'kg':
-                return self.current_stock
-            elif self.unit_of_measure == 'pcs' and self.unit_weight:
-                return self.current_stock * self.unit_weight
-            elif self.unit_of_measure == 'g':
-                return self.current_stock / 1000
-        return 0.0
-    
-    @property
-    def weight_info_display(self):
-        """Display weight information with intelligent unit selection"""
-        from services.smart_weight_display import SmartWeightDisplay
-        
-        if self.unit_weight and self.current_stock:
-            total_weight = self.total_weight_kg
-            
-            if self.unit_of_measure == 'pcs':
-                # Show smart weight display for pieces
-                weight_display = SmartWeightDisplay.format_weight_display(total_weight)
-                unit_weight_display = SmartWeightDisplay.format_weight_display(self.unit_weight, include_alternatives=False)
-                return f"{unit_weight_display}/pc | Total: {weight_display}"
-                
-            elif self.unit_of_measure == 'kg':
-                # Show pieces equivalent and smart weight
-                pieces = int(self.current_stock / self.unit_weight) if self.unit_weight > 0 else 0
-                weight_display = SmartWeightDisplay.format_weight_display(total_weight)
-                unit_weight_display = SmartWeightDisplay.format_weight_display(self.unit_weight, include_alternatives=False)
-                return f"≈{pieces} pieces ({unit_weight_display}/pc) | {weight_display}"
-                
-        elif self.current_stock and self.unit_of_measure in ['kg', 'g', 'ton']:
-            # Pure weight items without unit_weight
-            if self.unit_of_measure == 'kg':
-                return SmartWeightDisplay.format_weight_display(self.current_stock)
-            elif self.unit_of_measure == 'g':
-                return SmartWeightDisplay.format_weight_display(self.current_stock / 1000)
-            elif self.unit_of_measure == 'ton':
-                return SmartWeightDisplay.format_weight_display(self.current_stock * 1000)
-                
-        return "N/A"
-    
-    def convert_quantity(self, quantity, from_unit, to_unit):
-        """Smart quantity conversion using integrated conversion service"""
-        from services.smart_conversion import SmartConversionService
-        return SmartConversionService.convert_quantity(self, quantity, from_unit, to_unit)
-    
-    def check_stock_availability(self, required_qty, required_unit=None):
-        """Check stock availability using smart conversion service"""
-        from services.smart_conversion import SmartConversionService
-        return SmartConversionService.check_material_availability(self, required_qty, required_unit)
 
 class PurchaseOrder(db.Model):
     __tablename__ = 'purchase_orders'
@@ -412,57 +309,11 @@ class BOM(db.Model):
     product_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     version = db.Column(db.String(20), default='1.0')
     is_active = db.Column(db.Boolean, default=True)
-    description = db.Column(db.Text)  # BOM description/notes
-    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # UOM Integration
-    production_unit_id = db.Column(db.Integer, db.ForeignKey('units_of_measure.id'), nullable=True)  # Unit for production quantity
     
     # Relationships
     product = db.relationship('Item', backref='boms')
     items = db.relationship('BOMItem', backref='bom', lazy=True, cascade='all, delete-orphan')
-    production_unit = db.relationship('UnitOfMeasure', foreign_keys=[production_unit_id], primaryjoin="BOM.production_unit_id == UnitOfMeasure.id")
-    creator = db.relationship('User', foreign_keys=[created_by], backref='created_boms')
-    
-    def check_material_availability(self, production_quantity=1):
-        """Check if all materials are available for given production quantity"""
-        material_status = []
-        has_shortages = False
-        
-        for bom_item in self.items:
-            # Get required quantity in inventory unit
-            required_qty = bom_item.get_quantity_in_inventory_unit(production_quantity)
-            available_qty = bom_item.item.current_stock or 0
-            is_sufficient = available_qty >= required_qty
-            
-            if not is_sufficient:
-                has_shortages = True
-            
-            material_status.append({
-                'bom_item': bom_item,
-                'item': bom_item.item,
-                'required_qty': required_qty,
-                'available_qty': available_qty,
-                'is_sufficient': is_sufficient,
-                'shortage_qty': max(0, required_qty - available_qty),
-                'unit': bom_item.item.unit_of_measure
-            })
-        
-        return {
-            'materials': material_status,
-            'has_shortages': has_shortages,
-            'can_produce': not has_shortages
-        }
-    
-    def get_total_cost(self, production_quantity=1):
-        """Calculate total material cost for given production quantity"""
-        total_cost = 0
-        for bom_item in self.items:
-            required_qty = bom_item.get_quantity_in_inventory_unit(production_quantity)
-            item_cost = (bom_item.item.unit_price or 0) * required_qty
-            total_cost += item_cost
-        return total_cost
 
 class BOMItem(db.Model):
     __tablename__ = 'bom_items'
@@ -472,54 +323,6 @@ class BOMItem(db.Model):
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     quantity_required = db.Column(db.Float, nullable=False)
     unit_cost = db.Column(db.Float, default=0.0)
-    
-    # UOM Integration fields
-    bom_unit_id = db.Column(db.Integer, db.ForeignKey('units_of_measure.id'), nullable=True)  # Unit used in BOM
-    notes = db.Column(db.Text)  # Additional notes about this BOM item
-    
-    # Relationships
-    bom_unit = db.relationship('UnitOfMeasure', foreign_keys=[bom_unit_id], primaryjoin="BOMItem.bom_unit_id == UnitOfMeasure.id")
-    
-    def get_quantity_in_inventory_unit(self, production_quantity=1):
-        """Convert BOM quantity to inventory unit for the required production quantity"""
-        # Get item's UOM conversion configuration
-        item_conversion = ItemUOMConversion.query.filter_by(item_id=self.item_id).first()
-        
-        if not item_conversion:
-            # No UOM conversion configured, return as-is
-            return self.quantity_required * production_quantity
-        
-        # If BOM unit is specified and different from inventory unit
-        if self.bom_unit and self.bom_unit_id != item_conversion.inventory_unit_id:
-            # Find conversion between BOM unit and inventory unit
-            conversion = UOMConversion.query.filter(
-                ((UOMConversion.from_unit_id == self.bom_unit_id) & 
-                 (UOMConversion.to_unit_id == item_conversion.inventory_unit_id)) |
-                ((UOMConversion.from_unit_id == item_conversion.inventory_unit_id) & 
-                 (UOMConversion.to_unit_id == self.bom_unit_id))
-            ).first()
-            
-            if conversion:
-                # Apply conversion
-                if conversion.from_unit_id == self.bom_unit_id:
-                    # BOM unit -> Inventory unit
-                    converted_qty = self.quantity_required * conversion.conversion_factor
-                else:
-                    # Inventory unit -> BOM unit (reverse)
-                    converted_qty = self.quantity_required / conversion.conversion_factor
-                
-                return converted_qty * production_quantity
-        
-        # Default: return quantity as-is
-        return self.quantity_required * production_quantity
-    
-    def get_unit_display(self):
-        """Get display unit for this BOM item"""
-        if self.bom_unit:
-            return self.bom_unit.symbol
-        elif self.item:
-            return self.item.unit_of_measure
-        return "units"
 
 class QualityIssue(db.Model):
     __tablename__ = 'quality_issues'
