@@ -223,7 +223,7 @@ def simple_setup():
     
     # GET request - show form
     items = Item.query.order_by(Item.name).all()
-    return render_template('uom/simple_conversion_form.html', items=items)
+    return render_template('uom/simple_conversion_form.html', items=items, request=request)
 
 @uom_bp.route('/item-conversions/add', methods=['GET', 'POST'])
 @login_required
