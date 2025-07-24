@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}Tally Settings - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-cog"></i> Tally Integration Settings</h1>
+            <p class="text-muted">Configure connection and synchronization settings for Tally ERP</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('tally.dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-server"></i> Connection Settings</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Connection Configuration -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.tally_host.label(class="form-label") }}
+                                {{ form.tally_host(class="form-control") }}
+                                <div class="form-text">IP address or hostname where Tally is running</div>
+                                {% if form.tally_host.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.tally_host.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.tally_port.label(class="form-label") }}
+                                {{ form.tally_port(class="form-control") }}
+                                <div class="form-text">Port number for Tally HTTP server</div>
+                                {% if form.tally_port.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.tally_port.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                {{ form.company_name.label(class="form-label") }}
+                                {{ form.company_name(class="form-control") }}
+                                <div class="form-text">Specific company name in Tally (optional)</div>
+                                {% if form.company_name.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.company_name.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Sync Configuration -->
+                        <hr>
+                        <h6><i class="fas fa-sync-alt"></i> Synchronization Settings</h6>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {{ form.auto_sync(class="form-check-input") }}
+                                    {{ form.auto_sync.label(class="form-check-label") }}
+                                </div>
+                                <div class="form-text">Enable automatic data synchronization</div>
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.sync_interval.label(class="form-label") }}
+                                {{ form.sync_interval(class="form-select") }}
+                                <div class="form-text">How often to sync data automatically</div>
+                            </div>
+                        </div>
+
+                        <!-- Data Type Selection -->
+                        <hr>
+                        <h6><i class="fas fa-database"></i> Data Types to Sync</h6>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    {{ form.enable_suppliers(class="form-check-input") }}
+                                    {{ form.enable_suppliers.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    {{ form.enable_items(class="form-check-input") }}
+                                    {{ form.enable_items.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    {{ form.enable_purchase_orders(class="form-check-input") }}
+                                    {{ form.enable_purchase_orders.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    {{ form.enable_sales_orders(class="form-check-input") }}
+                                    {{ form.enable_sales_orders.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    {{ form.enable_expenses(class="form-check-input") }}
+                                    {{ form.enable_expenses.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save Settings
+                                </button>
+                                <button type="button" id="testConnectionBtn" class="btn btn-outline-info ms-2">
+                                    <i class="fas fa-plug"></i> Test Connection
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Setup Instructions -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Setup Instructions</h5>
+                </div>
+                <div class="card-body">
+                    <ol class="small">
+                        <li><strong>Enable HTTP Server in Tally:</strong>
+                            <ul>
+                                <li>Open TallyPrime</li>
+                                <li>Go to Gateway of Tally → F11 (Features) → Company Features</li>
+                                <li>Set "Enable HTTP API" to Yes</li>
+                                <li>Set port number (default: 9000)</li>
+                            </ul>
+                        </li>
+                        <li><strong>Firewall Settings:</strong>
+                            <ul>
+                                <li>Allow port {{ form.tally_port.data or 9000 }} in firewall</li>
+                                <li>For remote connections, ensure network access</li>
+                            </ul>
+                        </li>
+                        <li><strong>Company Setup:</strong>
+                            <ul>
+                                <li>Ensure company is open in Tally</li>
+                                <li>Configure GST settings if applicable</li>
+                                <li>Set up Chart of Accounts</li>
+                            </ul>
+                        </li>
+                        <li><strong>Data Mapping:</strong>
+                            <ul>
+                                <li>Suppliers → Ledgers (Sundry Creditors/Debtors)</li>
+                                <li>Items → Stock Items</li>
+                                <li>Purchase Orders → Purchase Vouchers</li>
+                                <li>Sales Orders → Sales Vouchers</li>
+                                <li>Expenses → Journal Vouchers</li>
+                            </ul>
+                        </li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Connection Status -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-signal"></i> Connection Status</h5>
+                </div>
+                <div class="card-body">
+                    <div id="connectionResult" class="text-center text-muted">
+                        <i class="fas fa-question-circle fa-2x mb-2"></i>
+                        <p>Click "Test Connection" to check Tally connectivity</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('testConnectionBtn').addEventListener('click', function() {
+    const resultDiv = document.getElementById('connectionResult');
+    const button = this;
+    
+    // Show testing state
+    resultDiv.innerHTML = '<i class="fas fa-spinner fa-spin fa-2x mb-2 text-info"></i><p>Testing connection...</p>';
+    button.disabled = true;
+    
+    // Get current form values
+    const host = document.getElementById('tally_host').value || 'localhost';
+    const port = document.getElementById('tally_port').value || '9000';
+    
+    // Test connection with current settings
+    fetch('/tally/test-connection')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                resultDiv.innerHTML = '<i class="fas fa-check-circle fa-2x mb-2 text-success"></i><p class="text-success">' + data.message + '</p>';
+            } else {
+                resultDiv.innerHTML = '<i class="fas fa-exclamation-circle fa-2x mb-2 text-danger"></i><p class="text-danger">' + data.message + '</p>';
+            }
+            button.disabled = false;
+        })
+        .catch(error => {
+            resultDiv.innerHTML = '<i class="fas fa-times-circle fa-2x mb-2 text-danger"></i><p class="text-danger">Connection test failed: ' + error.message + '</p>';
+            button.disabled = false;
+        });
+});
+</script>
+{% endblock %}

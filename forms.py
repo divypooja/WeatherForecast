@@ -41,6 +41,25 @@ class ItemForm(FlaskForm):
     unit_weight = FloatField('Unit Weight (kg/piece)', validators=[Optional(), NumberRange(min=0)],
                            render_kw={"placeholder": "e.g., 0.12 kg per piece"})
 
+class TallySettingsForm(FlaskForm):
+    """Tally Integration Settings Form"""
+    tally_host = StringField('Tally Host', validators=[DataRequired()], default='localhost',
+                            render_kw={"placeholder": "localhost or IP address"})
+    tally_port = IntegerField('Tally Port', validators=[DataRequired(), NumberRange(min=1, max=65535)], default=9000,
+                             render_kw={"placeholder": "Default: 9000"})
+    company_name = StringField('Company Name in Tally', validators=[Optional()],
+                              render_kw={"placeholder": "Leave blank for default company"})
+    auto_sync = BooleanField('Enable Auto Sync', default=False)
+    sync_interval = SelectField('Sync Interval', 
+                               choices=[('manual', 'Manual Only'), ('hourly', 'Every Hour'), 
+                                       ('daily', 'Daily'), ('weekly', 'Weekly')],
+                               default='manual')
+    enable_suppliers = BooleanField('Sync Suppliers', default=True)
+    enable_items = BooleanField('Sync Items', default=True)
+    enable_purchase_orders = BooleanField('Sync Purchase Orders', default=True)
+    enable_sales_orders = BooleanField('Sync Sales Orders', default=True)
+    enable_expenses = BooleanField('Sync Factory Expenses', default=True)
+
 class SupplierForm(FlaskForm):
     # Basic Information
     name = StringField('Business Partner Name', validators=[DataRequired(), Length(max=200)], 
