@@ -444,6 +444,75 @@ def delete_bom(id):
     
     return redirect(url_for('production.list_bom'))
 
+@production_bp.route('/production/<int:id>/check_materials')
+@login_required
+def check_materials(id):
+    """Check material availability for a specific production order"""
+    production = Production.query.get_or_404(id)
+    
+    # Get BOM for the production item
+    active_bom = BOM.query.filter_by(product_id=production.item_id, is_active=True).first()
+    
+    if not active_bom:
+        flash('No active BOM found for this production item', 'warning')
+        return redirect(url_for('production.list_productions'))
+    
+    # Get BOM items and calculate requirements
+    bom_items = BOMItem.query.filter_by(bom_id=active_bom.id).all()
+    material_requirements = []
+    has_shortages = False
+    
+    from services.smart_conversion import SmartConversionService
+    conversion_service = SmartConversionService()
+    
+    for bom_item in bom_items:
+        # Calculate total required quantity for this production
+        total_required = bom_item.quantity_required * production.quantity_planned
+        
+        # Get current available stock
+        available_qty = bom_item.item.current_stock or 0
+        
+        # Check if sufficient
+        is_sufficient = available_qty >= total_required
+        shortage_qty = max(0, total_required - available_qty)
+        
+        if not is_sufficient:
+            has_shortages = True
+        
+        # Get unit information
+        bom_unit = bom_item.bom_unit.symbol if bom_item.bom_unit else bom_item.item.unit_of_measure
+        storage_unit = bom_item.item.unit_of_measure
+        
+        # Try to get conversion info if units are different
+        conversion_info = ""
+        if bom_unit != storage_unit:
+            try:
+                converted_qty = conversion_service.convert_quantity(
+                    total_required, bom_item.item, bom_unit, storage_unit
+                )
+                conversion_info = f"{total_required} {bom_unit} = {converted_qty:.3f} {storage_unit}"
+            except:
+                conversion_info = f"Manual conversion needed: {bom_unit} → {storage_unit}"
+        
+        material_requirements.append({
+            'bom_item': bom_item,
+            'item': bom_item.item,
+            'quantity_per_unit': bom_item.quantity_required,
+            'total_required': total_required,
+            'available_qty': available_qty,
+            'is_sufficient': is_sufficient,
+            'shortage_qty': shortage_qty,
+            'bom_unit': bom_unit,
+            'storage_unit': storage_unit,
+            'conversion_info': conversion_info
+        })
+    
+    return render_template('production/material_check.html',
+                         production=production,
+                         bom=active_bom,
+                         material_requirements=material_requirements,
+                         has_shortages=has_shortages)
+
 @production_bp.route('/check_material_availability', methods=['POST'])
 @login_required
 def check_material_availability():
