@@ -21,8 +21,27 @@ def dashboard():
     # Recent items with conversions
     recent_item_conversions = ItemUOMConversion.query.join(Item).order_by(ItemUOMConversion.updated_at.desc()).limit(5).all()
     
-    # Items without conversions (potential issues)
-    items_without_conversions = Item.query.outerjoin(ItemUOMConversion).filter(ItemUOMConversion.id.is_(None)).limit(10).all()
+    # Items needing setup (without proper UOM configurations)
+    items_needing_setup = []
+    all_items = Item.query.limit(20).all()
+    
+    for item in all_items:
+        needs_setup = False
+        
+        # Check if item has unit_weight but no proper conversions
+        if hasattr(item, 'unit_weight') and item.unit_weight:
+            # Item has weight info, check if it has proper conversions
+            item_conversions = ItemUOMConversion.query.filter_by(item_id=item.id).count()
+            if item_conversions == 0:
+                needs_setup = True
+        
+        # Check if item needs cross-unit support
+        elif not ItemUOMConversion.query.filter_by(item_id=item.id).first():
+            # No conversions at all
+            needs_setup = True
+            
+        if needs_setup:
+            items_needing_setup.append(item)
     
     # Unit categories
     unit_categories = db.session.query(UnitOfMeasure.category, db.func.count(UnitOfMeasure.id)).group_by(UnitOfMeasure.category).all()
@@ -33,7 +52,7 @@ def dashboard():
                          items_with_conversions=items_with_conversions,
                          conversion_logs_count=conversion_logs_count,
                          recent_item_conversions=recent_item_conversions,
-                         items_without_conversions=items_without_conversions,
+                         items_needing_setup=items_needing_setup,
                          unit_categories=unit_categories)
 
 @uom_bp.route('/units')
@@ -211,6 +230,242 @@ def edit_item_conversion(conversion_id):
             flash(f'Error updating conversion: {str(e)}', 'error')
     
     return render_template('uom/item_conversion_form.html', form=form, title='Edit Item UOM Conversion', conversion=conversion)
+
+@uom_bp.route('/auto-setup-item/<int:item_id>', methods=['GET', 'POST'])
+@login_required
+def auto_setup_item(item_id):
+    """Automatically setup UOM conversions for an item based on intelligent defaults"""
+    item = Item.query.get_or_404(item_id)
+    
+    try:
+        # Check if item already has conversions
+        existing_conversions = ItemUOMConversion.query.filter_by(item_id=item.id).first()
+        if existing_conversions:
+            flash(f'Item "{item.name}" already has UOM conversions configured.', 'info')
+            return redirect(url_for('uom.dashboard'))
+        
+        conversions_added = 0
+        
+        # Auto-setup based on item properties
+        if hasattr(item, 'unit_weight') and item.unit_weight and item.unit_weight > 0:
+            # Item has unit weight - create kg to pieces conversion
+            kg_unit = UnitOfMeasure.query.filter_by(symbol='kg').first()
+            pcs_unit = UnitOfMeasure.query.filter_by(symbol='pcs').first()
+            
+            if kg_unit and pcs_unit:
+                # Create kg to pieces conversion (1 kg = X pieces where X = 1/unit_weight)
+                pieces_per_kg = 1.0 / item.unit_weight
+                
+                conversion1 = ItemUOMConversion(
+                    item_id=item.id,
+                    from_unit_id=kg_unit.id,
+                    to_unit_id=pcs_unit.id,
+                    conversion_factor=pieces_per_kg,
+                    notes=f"Auto-generated: 1 kg = {pieces_per_kg:.3f} pieces (based on unit weight {item.unit_weight} kg/piece)"
+                )
+                
+                # Create reverse conversion (pieces to kg)
+                conversion2 = ItemUOMConversion(
+                    item_id=item.id,
+                    from_unit_id=pcs_unit.id,
+                    to_unit_id=kg_unit.id,
+                    conversion_factor=item.unit_weight,
+                    notes=f"Auto-generated: 1 piece = {item.unit_weight} kg"
+                )
+                
+                db.session.add(conversion1)
+                db.session.add(conversion2)
+                conversions_added += 2
+        
+        # Add standard conversions based on item's current unit
+        current_unit = UnitOfMeasure.query.filter_by(symbol=item.unit_of_measure).first()
+        if current_unit:
+            # Find related standard conversions
+            related_conversions = UOMConversion.query.filter(
+                db.or_(
+                    UOMConversion.from_unit == item.unit_of_measure,
+                    UOMConversion.to_unit == item.unit_of_measure
+                )
+            ).all()
+            
+            for std_conv in related_conversions:
+                # Create item-specific conversion based on standard conversion
+                from_unit = UnitOfMeasure.query.filter_by(symbol=std_conv.from_unit).first()
+                to_unit = UnitOfMeasure.query.filter_by(symbol=std_conv.to_unit).first()
+                
+                if from_unit and to_unit:
+                    # Check if this conversion doesn't already exist
+                    existing = ItemUOMConversion.query.filter_by(
+                        item_id=item.id,
+                        from_unit_id=from_unit.id,
+                        to_unit_id=to_unit.id
+                    ).first()
+                    
+                    if not existing:
+                        item_conversion = ItemUOMConversion(
+                            item_id=item.id,
+                            from_unit_id=from_unit.id,
+                            to_unit_id=to_unit.id,
+                            conversion_factor=std_conv.factor,
+                            notes=f"Auto-generated from standard conversion: {std_conv.from_unit} to {std_conv.to_unit}"
+                        )
+                        db.session.add(item_conversion)
+                        conversions_added += 1
+        
+        if conversions_added > 0:
+            db.session.commit()
+            
+            # Log the auto-setup
+            log_entry = UOMConversionLog(
+                item_id=item.id,
+                from_unit=item.unit_of_measure,
+                to_unit="multiple",
+                from_quantity=1.0,
+                to_quantity=1.0,
+                conversion_type="auto_setup",
+                notes=f"Auto-configured {conversions_added} conversions for {item.name}",
+                created_by=current_user.id if current_user.is_authenticated else None
+            )
+            db.session.add(log_entry)
+            db.session.commit()
+            
+            flash(f'Successfully auto-configured {conversions_added} UOM conversions for "{item.name}"!', 'success')
+        else:
+            flash(f'No suitable conversions found to auto-configure for "{item.name}". Please set up manually.', 'warning')
+            
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error auto-configuring conversions for "{item.name}": {str(e)}', 'error')
+    
+    return redirect(url_for('uom.dashboard'))
+
+@uom_bp.route('/auto-setup-all', methods=['GET'])
+@login_required
+def auto_setup_all():
+    """Automatically setup UOM conversions for all items needing setup"""
+    try:
+        # Find all items needing setup
+        items_needing_setup = []
+        all_items = Item.query.all()
+        
+        for item in all_items:
+            needs_setup = False
+            
+            # Check if item has unit_weight but no proper conversions
+            if hasattr(item, 'unit_weight') and item.unit_weight:
+                item_conversions = ItemUOMConversion.query.filter_by(item_id=item.id).count()
+                if item_conversions == 0:
+                    needs_setup = True
+            
+            # Check if item needs cross-unit support
+            elif not ItemUOMConversion.query.filter_by(item_id=item.id).first():
+                needs_setup = True
+                
+            if needs_setup:
+                items_needing_setup.append(item)
+        
+        total_items = len(items_needing_setup)
+        successful_setups = 0
+        
+        for item in items_needing_setup:
+            try:
+                conversions_added = 0
+                
+                # Auto-setup based on item properties
+                if hasattr(item, 'unit_weight') and item.unit_weight and item.unit_weight > 0:
+                    # Item has unit weight - create kg to pieces conversion
+                    kg_unit = UnitOfMeasure.query.filter_by(symbol='kg').first()
+                    pcs_unit = UnitOfMeasure.query.filter_by(symbol='pcs').first()
+                    
+                    if kg_unit and pcs_unit:
+                        # Create kg to pieces conversion
+                        pieces_per_kg = 1.0 / item.unit_weight
+                        
+                        conversion1 = ItemUOMConversion(
+                            item_id=item.id,
+                            from_unit_id=kg_unit.id,
+                            to_unit_id=pcs_unit.id,
+                            conversion_factor=pieces_per_kg,
+                            notes=f"Auto-generated: 1 kg = {pieces_per_kg:.3f} pieces (based on unit weight {item.unit_weight} kg/piece)"
+                        )
+                        
+                        # Create reverse conversion (pieces to kg)
+                        conversion2 = ItemUOMConversion(
+                            item_id=item.id,
+                            from_unit_id=pcs_unit.id,
+                            to_unit_id=kg_unit.id,
+                            conversion_factor=item.unit_weight,
+                            notes=f"Auto-generated: 1 piece = {item.unit_weight} kg"
+                        )
+                        
+                        db.session.add(conversion1)
+                        db.session.add(conversion2)
+                        conversions_added += 2
+                
+                # Add standard conversions based on item's current unit
+                current_unit = UnitOfMeasure.query.filter_by(symbol=item.unit_of_measure).first()
+                if current_unit:
+                    related_conversions = UOMConversion.query.filter(
+                        db.or_(
+                            UOMConversion.from_unit == item.unit_of_measure,
+                            UOMConversion.to_unit == item.unit_of_measure
+                        )
+                    ).all()
+                    
+                    for std_conv in related_conversions:
+                        from_unit = UnitOfMeasure.query.filter_by(symbol=std_conv.from_unit).first()
+                        to_unit = UnitOfMeasure.query.filter_by(symbol=std_conv.to_unit).first()
+                        
+                        if from_unit and to_unit:
+                            existing = ItemUOMConversion.query.filter_by(
+                                item_id=item.id,
+                                from_unit_id=from_unit.id,
+                                to_unit_id=to_unit.id
+                            ).first()
+                            
+                            if not existing:
+                                item_conversion = ItemUOMConversion(
+                                    item_id=item.id,
+                                    from_unit_id=from_unit.id,
+                                    to_unit_id=to_unit.id,
+                                    conversion_factor=std_conv.factor,
+                                    notes=f"Auto-generated from standard conversion"
+                                )
+                                db.session.add(item_conversion)
+                                conversions_added += 1
+                
+                if conversions_added > 0:
+                    successful_setups += 1
+                    
+                    # Log the auto-setup
+                    log_entry = UOMConversionLog(
+                        item_id=item.id,
+                        from_unit=item.unit_of_measure,
+                        to_unit="multiple",
+                        from_quantity=1.0,
+                        to_quantity=1.0,
+                        conversion_type="bulk_auto_setup",
+                        notes=f"Bulk auto-configured {conversions_added} conversions for {item.name}",
+                        created_by=current_user.id if current_user.is_authenticated else None
+                    )
+                    db.session.add(log_entry)
+                    
+            except Exception as e:
+                # Continue with other items if one fails
+                continue
+        
+        db.session.commit()
+        
+        if successful_setups > 0:
+            flash(f'Successfully auto-configured UOM conversions for {successful_setups} out of {total_items} items!', 'success')
+        else:
+            flash('No items could be auto-configured. Please set up manually.', 'warning')
+            
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error during bulk auto-setup: {str(e)}', 'error')
+    
+    return redirect(url_for('uom.dashboard'))
 
 @uom_bp.route('/calculator', methods=['GET', 'POST'])
 @login_required
