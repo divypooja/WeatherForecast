@@ -253,21 +253,23 @@
                                                 <div class="row align-items-center">
                                                     <div class="col-md-2">
                                                         <label class="form-label">1</label>
-                                                        <input type="text" class="form-control" placeholder="Purchase unit" readonly>
+                                                        <input type="text" id="production_purchase_display" class="form-control" placeholder="Purchase unit" readonly>
                                                     </div>
                                                     <div class="col-md-1 text-center">
                                                         <span>=</span>
                                                     </div>
                                                     <div class="col-md-3">
                                                         <label class="form-label">How many?</label>
-                                                        <input type="number" name="production_conversion_factor" class="form-control" placeholder="e.g., 1000" step="0.001">
+                                                        <input type="number" name="production_conversion_factor" id="production_conversion_factor" class="form-control" placeholder="e.g., 1000" step="0.001">
                                                     </div>
                                                     <div class="col-md-2">
                                                         <label class="form-label">&nbsp;</label>
-                                                        <input type="text" class="form-control" placeholder="BOM unit" readonly>
+                                                        <input type="text" id="production_bom_display" class="form-control" placeholder="BOM unit" readonly>
                                                     </div>
                                                     <div class="col-md-4">
-                                                        <small class="text-muted">Example: 1 meter = 1000 mm</small>
+                                                        <div id="conversion_examples" class="small text-muted">
+                                                            Select units to see conversion examples
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -368,6 +370,78 @@ document.addEventListener('DOMContentLoaded', function() {
     sameUnitRadio.addEventListener('change', toggleSections);
     tradingRadio.addEventListener('change', toggleSections);
     productionRadio.addEventListener('change', toggleSections);
+    
+    // Production unit conversion helper
+    const productionPurchaseUnit = document.querySelector('select[name="production_purchase_unit"]');
+    const productionBomUnit = document.querySelector('select[name="production_bom_unit"]');
+    const productionPurchaseDisplay = document.getElementById('production_purchase_display');
+    const productionBomDisplay = document.getElementById('production_bom_display');
+    const conversionExamples = document.getElementById('conversion_examples');
+    const conversionFactor = document.getElementById('production_conversion_factor');
+
+    function updateProductionConversion() {
+        const purchaseValue = productionPurchaseUnit.value;
+        const bomValue = productionBomUnit.value;
+        
+        if (purchaseValue && bomValue) {
+            // Update display fields
+            productionPurchaseDisplay.value = purchaseValue;
+            productionBomDisplay.value = bomValue;
+            
+            // Show relevant conversion examples and suggestions
+            let examples = getConversionExamples(purchaseValue, bomValue);
+            conversionExamples.innerHTML = examples;
+            
+            // Auto-suggest conversion factor if it's a common conversion
+            let suggestedFactor = getSuggestedConversionFactor(purchaseValue, bomValue);
+            if (suggestedFactor && !conversionFactor.value) {
+                conversionFactor.value = suggestedFactor;
+            }
+        } else {
+            productionPurchaseDisplay.value = '';
+            productionBomDisplay.value = '';
+            conversionExamples.innerHTML = 'Select units to see conversion examples';
+            conversionFactor.value = '';
+        }
+    }
+
+    function getConversionExamples(purchaseUnit, bomUnit) {
+        const conversions = {
+            'M_mm': 'Example: 1 meter = 1000 mm',
+            'M_cm': 'Example: 1 meter = 100 cm',
+            'Kg_g': 'Example: 1 kg = 1000 grams',
+            'L_ml': 'Example: 1 liter = 1000 ml',
+            'sq.m_sq.cm': 'Example: 1 sq.m = 10000 sq.cm',
+            'T_Kg': 'Example: 1 ton = 1000 kg',
+            'km_M': 'Example: 1 km = 1000 meters'
+        };
+        
+        const key = purchaseUnit + '_' + bomUnit;
+        return conversions[key] || `Example: 1 ${purchaseUnit} = ? ${bomUnit}`;
+    }
+
+    function getSuggestedConversionFactor(purchaseUnit, bomUnit) {
+        const factors = {
+            'M_mm': 1000,
+            'M_cm': 100,
+            'Kg_g': 1000,
+            'L_ml': 1000,
+            'sq.m_sq.cm': 10000,
+            'T_Kg': 1000,
+            'km_M': 1000,
+            'cm_mm': 10,
+            'ft_in': 12,
+            'yd_ft': 3
+        };
+        
+        const key = purchaseUnit + '_' + bomUnit;
+        return factors[key] || null;
+    }
+
+    if (productionPurchaseUnit && productionBomUnit) {
+        productionPurchaseUnit.addEventListener('change', updateProductionConversion);
+        productionBomUnit.addEventListener('change', updateProductionConversion);
+    }
     
     // Initial state
     toggleSections();
