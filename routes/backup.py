@@ -474,26 +474,28 @@ def import_employees_from_excel(df):
     """Import employees from Excel DataFrame"""
     for _, row in df.iterrows():
         try:
-            # Check if employee exists by code
-            existing_employee = Employee.query.filter_by(code=row.get('Employee Code')).first()
+            # Check if employee exists by employee_code (correct field name)
+            existing_employee = Employee.query.filter_by(employee_code=row.get('Employee Code')).first()
             if existing_employee:
                 # Update existing employee
                 existing_employee.name = row.get('Name', existing_employee.name)
-                existing_employee.email = row.get('Email', existing_employee.email)
                 existing_employee.phone = row.get('Phone', existing_employee.phone)
                 existing_employee.department = row.get('Department', existing_employee.department)
                 existing_employee.designation = row.get('Designation', existing_employee.designation)
-                existing_employee.salary = float(row.get('Salary', existing_employee.salary or 0))
+                if row.get('Salary'):
+                    existing_employee.rate = float(row.get('Salary', existing_employee.rate or 0))
             else:
                 # Create new employee
+                from datetime import date
                 employee = Employee(
-                    code=row.get('Employee Code'),
+                    employee_code=row.get('Employee Code'),
                     name=row.get('Name'),
-                    email=row.get('Email'),
                     phone=row.get('Phone'),
                     department=row.get('Department'),
                     designation=row.get('Designation'),
-                    salary=float(row.get('Salary', 0))
+                    salary_type='monthly',  # Default to monthly
+                    rate=float(row.get('Salary', 0)),
+                    joining_date=date.today()  # Default to today
                 )
                 db.session.add(employee)
         except Exception as e:

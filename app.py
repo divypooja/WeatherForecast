@@ -84,6 +84,10 @@ def create_app():
     from routes.backup import backup_bp
     app.register_blueprint(backup_bp, url_prefix='/backup')
     
+    # Register placeholder routes for new dashboard modules
+    from routes.module_placeholders import register_placeholder_routes
+    register_placeholder_routes(app)
+    
     # Template context processors
     @app.context_processor
     def utility_processor():
