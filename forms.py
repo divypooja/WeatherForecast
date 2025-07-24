@@ -3,6 +3,7 @@ from wtforms import StringField, PasswordField, SubmitField, SelectField, TextAr
 from wtforms.validators import DataRequired, Length, Email, NumberRange, Optional
 from wtforms.widgets import CheckboxInput, ListWidget
 from models import User, Item, Supplier, QualityIssue, Production, PurchaseOrder, JobWork
+from models_uom import UnitOfMeasure
 from datetime import datetime
 
 class LoginForm(FlaskForm):
@@ -14,8 +15,7 @@ class ItemForm(FlaskForm):
     name = StringField('Item Name', validators=[DataRequired(), Length(max=100)])
     description = TextAreaField('Description')
     unit_of_measure = SelectField('Unit of Measure', 
-                                choices=[('pcs', 'Pieces'), ('kg', 'Kilograms'), ('meter', 'Meters'), 
-                                       ('liter', 'Liters'), ('box', 'Boxes'), ('set', 'Sets'), ('nos', 'Numbers')],
+                                choices=[],  # Will be populated dynamically
                                 validators=[DataRequired()])
     hsn_code = StringField('HSN Code', validators=[Length(max=20)])
     gst_rate = FloatField('GST Rate (%)', validators=[NumberRange(min=0, max=100)], default=18.0)
@@ -25,6 +25,29 @@ class ItemForm(FlaskForm):
     item_type = SelectField('Item Type', 
                           choices=[('material', 'Material'), ('product', 'Product'), ('consumable', 'Consumable')],
                           validators=[DataRequired()])
+    
+    def __init__(self, *args, **kwargs):
+        super(ItemForm, self).__init__(*args, **kwargs)
+        # Populate UOM choices from database
+        try:
+            units = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+            self.unit_of_measure.choices = [(unit.symbol.lower(), f"{unit.name} ({unit.symbol}) - {unit.category}") for unit in units]
+            # Add fallback options if no units in database
+            if not self.unit_of_measure.choices:
+                self.unit_of_measure.choices = [
+                    ('pcs', 'Pieces (Pcs) - Count'), 
+                    ('kg', 'Kilogram (Kg) - Weight'), 
+                    ('m', 'Meter (M) - Length'),
+                    ('l', 'Liter (L) - Volume')
+                ]
+        except Exception:
+            # Fallback choices if database error
+            self.unit_of_measure.choices = [
+                ('pcs', 'Pieces (Pcs) - Count'), 
+                ('kg', 'Kilogram (Kg) - Weight'), 
+                ('m', 'Meter (M) - Length'),
+                ('l', 'Liter (L) - Volume')
+            ]
 
 class SupplierForm(FlaskForm):
     # Basic Information
