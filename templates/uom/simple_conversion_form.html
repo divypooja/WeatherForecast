@@ -71,10 +71,13 @@
                                         <label class="form-label">What unit do you use?</label>
                                         <select name="same_unit_type" class="form-select">
                                             <option value="">Select unit...</option>
-                                            <option value="kg">Kilograms (kg) - for weight-based items</option>
-                                            <option value="pcs">Pieces (pcs) - for count-based items</option>
-                                            <option value="m">Meters (m) - for length-based items</option>
-                                            <option value="l">Liters (l) - for volume-based items</option>
+                                            {% for unit in units_by_category %}
+                                                <optgroup label="{{ unit.category }}">
+                                                    {% for u in unit.units %}
+                                                    <option value="{{ u.symbol }}">{{ u.name }} ({{ u.symbol }}) - {{ u.description or 'for ' + unit.category.lower() + ' items' }}</option>
+                                                    {% endfor %}
+                                                </optgroup>
+                                            {% endfor %}
                                         </select>
                                     </div>
                                     <div class="alert alert-info">
@@ -99,9 +102,13 @@
                                                 <p class="small text-muted">What unit you buy in</p>
                                                 <select name="purchase_unit" class="form-select">
                                                     <option value="">Select...</option>
-                                                    <option value="kg">Kilograms (kg)</option>
-                                                    <option value="m">Meters (m)</option>
-                                                    <option value="l">Liters (l)</option>
+                                                    {% for unit in units_by_category %}
+                                                        <optgroup label="{{ unit.category }}">
+                                                            {% for u in unit.units %}
+                                                            <option value="{{ u.symbol }}">{{ u.name }} ({{ u.symbol }})</option>
+                                                            {% endfor %}
+                                                        </optgroup>
+                                                    {% endfor %}
                                                 </select>
                                             </div>
                                         </div>
@@ -112,9 +119,13 @@
                                                 <p class="small text-muted">What unit you track in</p>
                                                 <select name="storage_unit" class="form-select">
                                                     <option value="">Select...</option>
-                                                    <option value="kg">Kilograms (kg)</option>
-                                                    <option value="m">Meters (m)</option>
-                                                    <option value="l">Liters (l)</option>
+                                                    {% for unit in units_by_category %}
+                                                        <optgroup label="{{ unit.category }}">
+                                                            {% for u in unit.units %}
+                                                            <option value="{{ u.symbol }}">{{ u.name }} ({{ u.symbol }})</option>
+                                                            {% endfor %}
+                                                        </optgroup>
+                                                    {% endfor %}
                                                 </select>
                                             </div>
                                         </div>
@@ -125,9 +136,13 @@
                                                 <p class="small text-muted">What unit you sell in</p>
                                                 <select name="sale_unit" class="form-select">
                                                     <option value="">Select...</option>
-                                                    <option value="pcs">Pieces (pcs)</option>
-                                                    <option value="kg">Kilograms (kg)</option>
-                                                    <option value="m">Meters (m)</option>
+                                                    {% for unit in units_by_category %}
+                                                        <optgroup label="{{ unit.category }}">
+                                                            {% for u in unit.units %}
+                                                            <option value="{{ u.symbol }}">{{ u.name }} ({{ u.symbol }})</option>
+                                                            {% endfor %}
+                                                        </optgroup>
+                                                    {% endfor %}
                                                 </select>
                                             </div>
                                         </div>
