@@ -182,35 +182,47 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 <script>
-$(document).ready(function() {
-    console.log('Dashboard customization page loaded');
-    console.log('jQuery version:', $.fn.jquery);
-    // Make modules sortable
-    $("#modules-container").sortable({
-        handle: ".module-drag-handle",
-        placeholder: "ui-sortable-placeholder",
-        tolerance: "pointer",
-        cursor: "grabbing"
-    });
-
-});
-
-// Separate functions to make debugging easier
-function selectAll() {
+// Global functions accessible from onclick handlers
+window.selectAll = function() {
     console.log('Select All clicked');
     document.querySelectorAll('.module-checkbox input[type="checkbox"]').forEach(function(checkbox) {
         checkbox.checked = true;
     });
-}
+};
 
-function deselectAll() {
+window.deselectAll = function() {
     console.log('Deselect All clicked');
     document.querySelectorAll('.module-checkbox input[type="checkbox"]').forEach(function(checkbox) {
         checkbox.checked = false;
     });
-}
+};
 
-function savePreferences() {
+window.showAlert = function(type, message) {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // Remove existing alerts
+    const existingAlerts = document.querySelectorAll('.alert');
+    existingAlerts.forEach(alert => alert.remove());
+    
+    // Add new alert at the top of the container
+    const container = document.querySelector('.container');
+    container.insertAdjacentHTML('afterbegin', alertHtml);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(function() {
+        const currentAlert = document.querySelector('.alert');
+        if (currentAlert) {
+            currentAlert.remove();
+        }
+    }, 5000);
+};
+
+window.savePreferences = function() {
     console.log('Save preferences function called');
     const saveBtn = document.getElementById('save-preferences');
     const originalText = saveBtn.innerHTML;
@@ -270,26 +282,19 @@ function savePreferences() {
         saveBtn.innerHTML = originalText;
         showAlert('danger', 'Error saving preferences: ' + error.message);
     });
+};
 
-    function showAlert(type, message) {
-        const alertHtml = `
-            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        `;
-        
-        // Remove existing alerts
-        $('.alert').remove();
-        
-        // Add new alert at the top of the container
-        $('.container').prepend(alertHtml);
-        
-        // Auto-dismiss after 5 seconds
-        setTimeout(function() {
-            $('.alert').alert('close');
-        }, 5000);
-    }
+$(document).ready(function() {
+    console.log('Dashboard customization page loaded');
+    console.log('jQuery version:', $.fn.jquery);
+    
+    // Make modules sortable
+    $("#modules-container").sortable({
+        handle: ".module-drag-handle",
+        placeholder: "ui-sortable-placeholder",
+        tolerance: "pointer",
+        cursor: "grabbing"
+    });
 });
 </script>
 {% endblock %}
