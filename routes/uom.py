@@ -159,6 +159,72 @@ def item_conversions_list():
     item_conversions = ItemUOMConversion.query.join(Item).order_by(Item.name).all()
     return render_template('uom/item_conversions_list.html', item_conversions=item_conversions)
 
+@uom_bp.route('/simple-setup', methods=['GET', 'POST'])
+@login_required
+def simple_setup():
+    """Simplified UOM setup interface"""
+    if request.method == 'POST':
+        item_id = request.form.get('item_id')
+        workflow_type = request.form.get('workflow_type')
+        
+        if not item_id:
+            flash('Please select an item', 'error')
+            return redirect(url_for('uom.simple_setup'))
+        
+        item = Item.query.get_or_404(item_id)
+        
+        try:
+            if workflow_type == 'same_unit':
+                # Simple case - same unit for all operations
+                unit_type = request.form.get('same_unit_type')
+                if not unit_type:
+                    flash('Please select a unit type', 'error')
+                    return redirect(url_for('uom.simple_setup'))
+                
+                # Update item to use same unit for purchase, storage, and sale
+                item.purchase_unit = unit_type
+                item.sale_unit = unit_type
+                item.unit_of_measure = unit_type
+                
+                flash(f'✅ Simple setup complete! {item.name} uses {unit_type} for all operations.', 'success')
+                
+            elif workflow_type == 'different_units':
+                # Different units case
+                purchase_unit = request.form.get('purchase_unit')
+                storage_unit = request.form.get('storage_unit')
+                sale_unit = request.form.get('sale_unit')
+                conversion_quantity = request.form.get('conversion_quantity')
+                
+                if not all([purchase_unit, storage_unit, sale_unit, conversion_quantity]):
+                    flash('Please fill all fields for different units setup', 'error')
+                    return redirect(url_for('uom.simple_setup'))
+                
+                # Update item units
+                item.purchase_unit = purchase_unit
+                item.sale_unit = sale_unit
+                item.unit_of_measure = storage_unit
+                
+                # Set unit weight if converting from weight to count
+                if storage_unit == 'kg' and sale_unit == 'pcs':
+                    try:
+                        pieces_per_kg = float(conversion_quantity)
+                        item.unit_weight = 1.0 / pieces_per_kg
+                    except:
+                        pass
+                
+                flash(f'✅ Unit conversion setup complete! {item.name}: 1 {storage_unit} = {conversion_quantity} {sale_unit}', 'success')
+            
+            db.session.commit()
+            return redirect(url_for('uom.dashboard'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error setting up units: {str(e)}', 'error')
+    
+    # GET request - show form
+    items = Item.query.order_by(Item.name).all()
+    return render_template('uom/simple_conversion_form.html', items=items)
+
 @uom_bp.route('/item-conversions/add', methods=['GET', 'POST'])
 @login_required
 def add_item_conversion():
