@@ -68,15 +68,54 @@ def dashboard():
 def list_purchase_orders():
     page = request.args.get('page', 1, type=int)
     status_filter = request.args.get('status', '', type=str)
+    supplier_filter = request.args.get('supplier', '', type=str)
+    from_date = request.args.get('from_date', '', type=str)
+    to_date = request.args.get('to_date', '', type=str)
+    search_term = request.args.get('search', '', type=str)
     
     query = PurchaseOrder.query
+    
+    # Apply filters
     if status_filter:
         query = query.filter_by(status=status_filter)
+        
+    if supplier_filter:
+        query = query.filter_by(supplier_id=supplier_filter)
+        
+    if from_date:
+        try:
+            from_date_obj = datetime.strptime(from_date, '%Y-%m-%d').date()
+            query = query.filter(PurchaseOrder.order_date >= from_date_obj)
+        except ValueError:
+            flash('Invalid from date format', 'error')
+            
+    if to_date:
+        try:
+            to_date_obj = datetime.strptime(to_date, '%Y-%m-%d').date()
+            query = query.filter(PurchaseOrder.order_date <= to_date_obj)
+        except ValueError:
+            flash('Invalid to date format', 'error')
+            
+    if search_term:
+        query = query.filter(PurchaseOrder.po_number.ilike(f'%{search_term}%'))
     
-    pos = query.order_by(PurchaseOrder.created_at.desc()).paginate(
-        page=page, per_page=20, error_out=False)
+    # Order by date descending
+    query = query.order_by(PurchaseOrder.order_date.desc())
     
-    return render_template('purchase/list.html', pos=pos, status_filter=status_filter)
+    # Paginate results
+    pos = query.paginate(page=page, per_page=20, error_out=False)
+    
+    # Get all suppliers for filter dropdown
+    suppliers = Supplier.query.filter(Supplier.partner_type.in_(['supplier', 'both'])).order_by(Supplier.name).all()
+    
+    return render_template('purchase/list.html', 
+                         pos=pos, 
+                         status_filter=status_filter,
+                         supplier_filter=supplier_filter,
+                         from_date=from_date,
+                         to_date=to_date,
+                         search_term=search_term,
+                         suppliers=suppliers)
 
 @purchase_bp.route('/add', methods=['GET', 'POST'])
 @login_required

@@ -43,15 +43,52 @@ def dashboard():
 def list_items():
     page = request.args.get('page', 1, type=int)
     search = request.args.get('search', '', type=str)
+    item_type_filter = request.args.get('item_type', '', type=str)
+    stock_status_filter = request.args.get('stock_status', '', type=str)
+    min_price = request.args.get('min_price', '', type=str)
+    max_price = request.args.get('max_price', '', type=str)
     
     query = Item.query
+    
+    # Apply filters
     if search:
         query = query.filter(Item.name.contains(search) | Item.code.contains(search))
+    
+    if item_type_filter:
+        query = query.filter_by(item_type=item_type_filter)
+    
+    if stock_status_filter:
+        if stock_status_filter == 'low_stock':
+            query = query.filter(func.coalesce(Item.current_stock, 0) <= func.coalesce(Item.minimum_stock, 0))
+        elif stock_status_filter == 'in_stock':
+            query = query.filter(func.coalesce(Item.current_stock, 0) > func.coalesce(Item.minimum_stock, 0))
+        elif stock_status_filter == 'out_of_stock':
+            query = query.filter(func.coalesce(Item.current_stock, 0) == 0)
+    
+    if min_price:
+        try:
+            min_price_val = float(min_price)
+            query = query.filter(func.coalesce(Item.unit_price, 0) >= min_price_val)
+        except ValueError:
+            flash('Invalid minimum price', 'error')
+    
+    if max_price:
+        try:
+            max_price_val = float(max_price)
+            query = query.filter(func.coalesce(Item.unit_price, 0) <= max_price_val)
+        except ValueError:
+            flash('Invalid maximum price', 'error')
     
     items = query.order_by(Item.name).paginate(
         page=page, per_page=20, error_out=False)
     
-    return render_template('inventory/list.html', items=items, search=search)
+    return render_template('inventory/list.html', 
+                         items=items, 
+                         search=search,
+                         item_type_filter=item_type_filter,
+                         stock_status_filter=stock_status_filter,
+                         min_price=min_price,
+                         max_price=max_price)
 
 @inventory_bp.route('/add', methods=['GET', 'POST'])
 @login_required
