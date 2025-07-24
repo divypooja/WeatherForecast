@@ -158,10 +158,12 @@
                 <div class="card-body">
                     {% if items_without_conversions %}
                         {% for item in items_without_conversions %}
-                        <div class="mb-2 p-2 border rounded">
-                            <strong>{{ item.name }}</strong><br>
-                            <small class="text-muted">{{ item.item_code }}</small>
-                            <a href="{{ url_for('uom.add_item_conversion') }}?item={{ item.id }}" class="btn btn-sm btn-outline-warning float-end">Setup</a>
+                        <div class="mb-2 p-2 border rounded d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ item.name }}</strong><br>
+                                <small class="text-muted">{{ item.item_code }}</small>
+                            </div>
+                            <a href="{{ url_for('uom.add_item_conversion') }}?item={{ item.id }}" class="btn btn-sm btn-outline-warning">Setup</a>
                         </div>
                         {% endfor %}
                     {% else %}
