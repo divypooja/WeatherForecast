@@ -92,12 +92,12 @@
                         <div class="col-6 text-center">
                             <h3 class="text-success">{{ stats.trading_items }}</h3>
                             <p class="text-muted">Trading Items</p>
-                            <span class="badge bg-success">{{ "%.1f"|format((stats.trading_items / stats.total_items) * 100) }}%</span>
+                            <span class="badge bg-success">{{ "%.1f"|format((stats.trading_items / stats.total_items) * 100 if stats.total_items > 0 else 0) }}%</span>
                         </div>
                         <div class="col-6 text-center">
                             <h3 class="text-primary">{{ stats.manufacturing_items }}</h3>
                             <p class="text-muted">Manufacturing Items</p>
-                            <span class="badge bg-primary">{{ "%.1f"|format((stats.manufacturing_items / stats.total_items) * 100) }}%</span>
+                            <span class="badge bg-primary">{{ "%.1f"|format((stats.manufacturing_items / stats.total_items) * 100 if stats.total_items > 0 else 0) }}%</span>
                         </div>
                     </div>
                 </div>
@@ -146,6 +146,7 @@
                         </tr>
                     </thead>
                     <tbody>
+                        {% if items %}
                         {% for item in items %}
                         <tr class="{{ 'table-warning' if (item.current_stock or 0) <= (item.minimum_stock or 0) and (item.minimum_stock or 0) > 0 else '' }}">
                             <td><code>{{ item.code }}</code></td>
@@ -198,6 +199,20 @@
                             </td>
                         </tr>
                         {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="fas fa-boxes fa-3x mb-3"></i>
+                                    <h4>No Items Found</h4>
+                                    <p>Start by adding some items to your inventory to see detailed reports here.</p>
+                                    <a href="{{ url_for('inventory.add_item') }}" class="btn btn-primary">
+                                        <i class="fas fa-plus"></i> Add Your First Item
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
