@@ -118,12 +118,17 @@ def log_inspection():
     po_id = request.args.get('po_id', type=int)
     job_id = request.args.get('job_id', type=int)
     
+    # Debug logging
+    print(f"DEBUG: po_id = {po_id}, job_id = {job_id}, method = {request.method}")
+    
     # Pre-populate form if po_id or job_id provided
     if request.method == 'GET':
         if po_id:
+            print(f"DEBUG: Setting PO ID to {po_id}")
             form.purchase_order_id.data = po_id
             form.job_work_id.data = 0  # Clear job work selection
         elif job_id:
+            print(f"DEBUG: Setting Job ID to {job_id}")
             form.job_work_id.data = job_id
             form.purchase_order_id.data = 0  # Clear purchase order selection
     
