@@ -109,6 +109,10 @@
             color: #6c757d;
             font-size: 0.9rem;
         }
+        .nav-user-section {
+            margin-top: auto;
+            padding-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -136,7 +140,7 @@
                 Job Work
             </a>
             <a class="nav-link" href="{{ url_for('sales.dashboard') }}">
-                <i class="fas fa-shopping-cart"></i>
+                <i class="fas fa-chart-line"></i>
                 Sales Orders
             </a>
             <a class="nav-link" href="{{ url_for('purchase.dashboard') }}">
@@ -151,19 +155,49 @@
                 <i class="fas fa-receipt"></i>
                 Factory Expenses
             </a>
-            <a class="nav-link" href="#settings">
+            <a class="nav-link" href="{{ url_for('settings.dashboard') }}">
                 <i class="fas fa-cog"></i>
                 Settings
+            </a>
+            <a class="nav-link" href="{{ url_for('admin.approvals_dashboard') }}">
+                <i class="fas fa-clipboard-check text-warning"></i>
+                Admin Approvals
             </a>
             <a class="nav-link" href="{{ url_for('reports.dashboard') }}">
                 <i class="fas fa-chart-bar"></i>
                 Reports
             </a>
+            <a class="nav-link" href="{{ url_for('quality.dashboard') }}">
+                <i class="fas fa-shield-alt"></i>
+                Quality Control
+            </a>
+            <a class="nav-link" href="{{ url_for('uom.dashboard') }}">
+                <i class="fas fa-balance-scale"></i>
+                UOM Management
+            </a>
+            <a class="nav-link" href="{{ url_for('material_inspection.dashboard') }}">
+                <i class="fas fa-search"></i>
+                Material Inspection
+            </a>
+            <a class="nav-link" href="{{ url_for('documents.document_list') }}">
+                <i class="fas fa-file-alt"></i>
+                Documents
+            </a>
+            
+            <hr class="my-3">
+            
+            <div class="nav-user-section">
+                <div class="nav-link d-flex align-items-center">
+                    <i class="fas fa-user"></i>
+                    <span class="flex-grow-1">{{ current_user.username }}</span>
+                    <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-secondary btn-sm ms-2" title="Logout">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                </div>
+            </div>
         </nav>
         
-        <div class="footer-text">
-            © AK Innovations 2025
-        </div>
+
     </div>
 
     <!-- Main Content -->
