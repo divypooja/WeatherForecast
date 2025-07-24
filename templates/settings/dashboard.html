@@ -49,6 +49,40 @@
             </div>
         </div>
 
+        <!-- Dashboard Customization -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-th-large"></i> Dashboard Customization
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Customize your main dashboard layout, reorder modules, and control visibility.</p>
+                    <a href="{{ url_for('main.customize_dashboard') }}" class="btn btn-primary">
+                        <i class="fas fa-edit"></i> Customize Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Backup -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-cloud-download-alt"></i> Data Backup & Export
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Export your factory data to Excel or JSON format, and manage cloud backups.</p>
+                    <a href="{{ url_for('backup.backup_dashboard') }}" class="btn btn-primary">
+                        <i class="fas fa-download"></i> Backup Data
+                    </a>
+                </div>
+            </div>
+        </div>
+
         <!-- User Management -->
         {% if current_user.is_admin() %}
         <div class="col-lg-6 mb-4">

@@ -14,14 +14,14 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **Automated Backup Scheduling**: Admin-only feature for scheduling daily/weekly/monthly automatic backups
 - **Data Import Capability**: JSON import functionality for data restoration (admin-only with proper validation)
 - **Navigation Integration**: Added "Data Backup" link to sidebar navigation with cloud download icon
-- **Dashboard Module Addition**: Added Data Backup as 10th default dashboard module for easy access
+- **Settings Integration**: Moved Data Backup and Dashboard Customization under Settings section for better organization
 - **Loading States**: Professional loading modals and progress indicators during backup operations
 - **File Download Management**: Proper file handling with timestamped filenames and appropriate MIME types
 
 ### Fully Customizable Dashboard System  
 - **Dynamic Dashboard Architecture**: Completely redesigned main dashboard with user-specific customization capabilities
 - **Dashboard Preference Database**: Added DashboardModule and UserDashboardPreference models for storing user dashboard layouts
-- **Module Management System**: Created comprehensive module system with 10 default modules including new Data Backup module
+- **Module Management System**: Created comprehensive module system with 9 core dashboard modules (removed Data Backup from main dashboard, moved to Settings)
 - **Drag-and-Drop Interface**: Implemented sortable interface allowing users to reorder dashboard modules by dragging
 - **Module Visibility Controls**: Users can show/hide any dashboard module using checkboxes with instant visual feedback
 - **Responsive Module Sizing**: Three size options (Small, Medium, Large) with corresponding responsive layouts
