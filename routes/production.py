@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from forms import ProductionForm, BOMForm, BOMItemForm
 from models import Production, Item, BOM, BOMItem
 from models_uom import UnitOfMeasure, UOMConversion, ItemUOMConversion
+from services.smart_conversion import SmartConversionService
 from app import db
 from sqlalchemy import func
 from utils import generate_production_number
@@ -51,6 +52,59 @@ def list_productions():
         page=page, per_page=20, error_out=False)
     
     return render_template('production/list.html', productions=productions, status_filter=status_filter)
+
+@production_bp.route('/check-smart-requirements', methods=['POST'])
+@login_required
+def check_smart_requirements():
+    """API endpoint for smart BOM material requirements checking"""
+    data = request.get_json()
+    bom_id = data.get('bom_id')
+    production_quantity = data.get('production_quantity', 0)
+    
+    if not bom_id or not production_quantity:
+        return jsonify({'error': 'Missing BOM ID or production quantity'}), 400
+    
+    bom = BOM.query.get(bom_id)
+    if not bom:
+        return jsonify({'error': 'BOM not found'}), 404
+    
+    try:
+        # Use smart conversion service for requirements calculation
+        requirements = SmartConversionService.calculate_bom_requirements(bom, production_quantity)
+        
+        # Convert to JSON-serializable format
+        requirements_data = []
+        for req in requirements:
+            requirements_data.append({
+                'material': {
+                    'id': req['material'].id,
+                    'name': req['material'].name,
+                    'code': req['material'].code
+                },
+                'bom_unit': req['bom_unit'],
+                'required_qty_bom_unit': req['required_qty_bom_unit'],
+                'required_qty_inventory_unit': req['required_qty_inventory_unit'],
+                'available_stock': req['available_stock'],
+                'inventory_unit': req['inventory_unit'],
+                'is_sufficient': req['is_sufficient'],
+                'shortage': req['shortage'],
+                'shortage_in_bom_unit': req['shortage_in_bom_unit'],
+                'unit_cost': req['unit_cost'],
+                'total_cost': req['total_cost'],
+                'conversion_info': req['conversion_info'],
+                'notes': req['notes']
+            })
+        
+        return jsonify({
+            'success': True,
+            'requirements': requirements_data,
+            'total_items': len(requirements_data),
+            'sufficient_items': len([r for r in requirements_data if r['is_sufficient']]),
+            'shortage_items': len([r for r in requirements_data if not r['is_sufficient']])
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Error calculating requirements: {str(e)}'}), 500
 
 @production_bp.route('/add', methods=['GET', 'POST'])
 @login_required

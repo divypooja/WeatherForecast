@@ -194,6 +194,16 @@ class Item(db.Model):
                 pieces = int(self.current_stock / self.unit_weight) if self.unit_weight > 0 else 0
                 return f"≈{pieces} pieces ({self.unit_weight}kg/pc)"
         return "N/A"
+    
+    def convert_quantity(self, quantity, from_unit, to_unit):
+        """Smart quantity conversion using integrated conversion service"""
+        from services.smart_conversion import SmartConversionService
+        return SmartConversionService.convert_quantity(self, quantity, from_unit, to_unit)
+    
+    def check_stock_availability(self, required_qty, required_unit=None):
+        """Check stock availability using smart conversion service"""
+        from services.smart_conversion import SmartConversionService
+        return SmartConversionService.check_material_availability(self, required_qty, required_unit)
 
 class PurchaseOrder(db.Model):
     __tablename__ = 'purchase_orders'
