@@ -4,9 +4,21 @@
 
 This is a comprehensive Flask-based Factory Management System designed for small to medium manufacturing companies. The application provides modular dashboards for managing various aspects of factory operations including inventory, purchase orders, sales, HR, job work, production, and reporting.
 
-## Recent Changes (January 23, 2025)
+## Recent Changes (January 24, 2025)
 
-### Complete Document Management System (Latest)
+### Universal Table Scrolling System Implementation (Latest)
+- **Comprehensive CSS Framework**: Enhanced custom.css with complete table scrolling system including horizontal and vertical scrolling for all tables
+- **Automatic Table Enhancement**: JavaScript automatically wraps all tables with `.table-responsive` containers and applies proper Bootstrap classes
+- **Sticky Header Support**: All table headers become sticky during vertical scrolling with proper z-index and background styling
+- **Semantic Column Classes**: Automatic detection and application of semantic CSS classes based on column content (col-id, col-name, col-quantity, col-price, etc.)
+- **Responsive Design**: Tables adapt to different screen sizes with configurable minimum widths and heights
+- **Enhanced UX Features**: Scroll indicators, hover effects, and professional visual hierarchy for better data navigation
+- **Universal Application**: All existing tables throughout the system (inventory, purchase orders, sales orders, quality control, etc.) automatically receive scrolling enhancements
+- **Programmatic Control**: Added `makeTableScrollable()` utility function for custom table configurations
+- **Professional Styling**: Enhanced table appearance with proper borders, spacing, and Bootstrap integration
+- **Cross-Module Consistency**: Unified table experience across all modules maintaining existing functionality while adding scrolling capabilities
+
+### Complete Document Management System
 - **Comprehensive Document Upload**: Added document upload functionality to Factory Expenses with file preview and validation
 - **Central Document Management**: Created dedicated document management page accessible at `/documents/list` 
 - **Advanced Filtering System**: Implemented filtering by transaction type, document category, file type, and filename search

@@ -94,6 +94,9 @@ function setupFormEnhancements() {
  * Setup table enhancements
  */
 function setupTableEnhancements() {
+    // Enhance all tables with scrolling capabilities
+    enhanceTablesWithScrolling();
+    
     // Sortable table headers
     const sortableHeaders = document.querySelectorAll('th[data-sort]');
     sortableHeaders.forEach(function(header) {
@@ -456,10 +459,127 @@ function exportTable(format = 'csv') {
     document.body.removeChild(link);
 }
 
+/**
+ * Function to enhance all tables automatically with scrolling
+ */
+function enhanceTablesWithScrolling() {
+    const tables = document.querySelectorAll('table');
+    
+    tables.forEach(table => {
+        // Skip if table is already in a table-responsive container
+        if (table.closest('.table-responsive') || table.closest('.table-container')) {
+            return;
+        }
+        
+        // Create wrapper for tables that don't have one
+        const wrapper = document.createElement('div');
+        wrapper.className = 'table-responsive';
+        
+        // Insert wrapper before table and move table inside
+        table.parentNode.insertBefore(wrapper, table);
+        wrapper.appendChild(table);
+        
+        // Add Bootstrap table classes if not present
+        if (!table.classList.contains('table')) {
+            table.classList.add('table', 'table-striped', 'table-hover');
+        }
+        
+        // Add semantic column classes based on content
+        addSemanticColumnClasses(table);
+    });
+}
+
+/**
+ * Function to add semantic classes to table columns
+ */
+function addSemanticColumnClasses(table) {
+    const headers = table.querySelectorAll('thead th');
+    
+    headers.forEach((header, index) => {
+        const headerText = header.textContent.toLowerCase().trim();
+        const cells = table.querySelectorAll(`tbody tr td:nth-child(${index + 1})`);
+        
+        let columnClass = '';
+        
+        // Determine column type based on header text
+        if (headerText.includes('id') || headerText === '#') {
+            columnClass = 'col-id';
+        } else if (headerText.includes('code') || headerText.includes('number')) {
+            columnClass = 'col-code';
+        } else if (headerText.includes('name') || headerText.includes('title')) {
+            columnClass = 'col-name';
+        } else if (headerText.includes('description') || headerText.includes('notes') || headerText.includes('specification')) {
+            columnClass = 'col-description';
+        } else if (headerText.includes('quantity') || headerText.includes('qty') || headerText.includes('stock')) {
+            columnClass = 'col-quantity';
+        } else if (headerText.includes('price') || headerText.includes('rate') || headerText.includes('amount') || headerText.includes('cost')) {
+            columnClass = 'col-price';
+        } else if (headerText.includes('date') || headerText.includes('time')) {
+            columnClass = 'col-date';
+        } else if (headerText.includes('status') || headerText.includes('state')) {
+            columnClass = 'col-status';
+        } else if (headerText.includes('action') || headerText.includes('operation')) {
+            columnClass = 'col-actions';
+        }
+        
+        // Apply class to header and all cells in this column
+        if (columnClass) {
+            header.classList.add(columnClass);
+            cells.forEach(cell => cell.classList.add(columnClass));
+        }
+    });
+}
+
+/**
+ * Utility function to make any table scrollable programmatically
+ */
+function makeTableScrollable(tableSelector, options = {}) {
+    const tables = document.querySelectorAll(tableSelector);
+    
+    const defaultOptions = {
+        maxHeight: '70vh',
+        minWidth: '800px',
+        stickyHeaders: true,
+        horizontalScroll: true,
+        verticalScroll: true
+    };
+    
+    const config = Object.assign(defaultOptions, options);
+    
+    tables.forEach(table => {
+        const wrapper = table.closest('.table-responsive') || (() => {
+            const div = document.createElement('div');
+            div.className = 'table-responsive';
+            table.parentNode.insertBefore(div, table);
+            div.appendChild(table);
+            return div;
+        })();
+        
+        // Apply configuration
+        wrapper.style.maxHeight = config.maxHeight;
+        wrapper.style.overflowX = config.horizontalScroll ? 'auto' : 'hidden';
+        wrapper.style.overflowY = config.verticalScroll ? 'auto' : 'hidden';
+        
+        table.style.minWidth = config.minWidth;
+        
+        if (config.stickyHeaders) {
+            const headers = table.querySelectorAll('thead th');
+            headers.forEach(header => {
+                header.style.position = 'sticky';
+                header.style.top = '0';
+                header.style.zIndex = '10';
+                header.style.backgroundColor = 'var(--bs-light)';
+            });
+        }
+    });
+}
+
 // Global functions for inline event handlers
 window.factoryApp = {
     exportTable,
     showToast,
     formatCurrency,
-    formatDate
+    formatDate,
+    makeTableScrollable,
+    enhanceTablesWithScrolling
 };
