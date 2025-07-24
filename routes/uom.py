@@ -327,11 +327,30 @@ def add_item_conversion():
 def edit_item_conversion(conversion_id):
     """Edit item-specific UOM conversion"""
     conversion = ItemUOMConversion.query.get_or_404(conversion_id)
-    form = ItemUOMConversionForm(obj=conversion)
+    form = ItemUOMConversionForm()
+    
+    # Pre-populate form fields with current values
+    form.item.data = conversion.item_id
+    form.purchase_unit.data = conversion.purchase_unit_id
+    form.inventory_unit.data = conversion.inventory_unit_id
+    form.sale_unit.data = conversion.sale_unit_id
+    form.purchase_to_inventory.data = conversion.purchase_to_inventory
+    form.inventory_to_sale.data = conversion.inventory_to_sale
+    form.weight_per_piece.data = conversion.weight_per_piece
+    form.pieces_per_kg.data = conversion.pieces_per_kg
+    form.notes.data = conversion.notes
     
     if form.validate_on_submit():
-        # Update all fields
-        form.populate_obj(conversion)
+        # Update fields manually to handle foreign keys properly
+        conversion.item_id = form.item.data
+        conversion.purchase_unit_id = form.purchase_unit.data
+        conversion.inventory_unit_id = form.inventory_unit.data
+        conversion.sale_unit_id = form.sale_unit.data
+        conversion.purchase_to_inventory = form.purchase_to_inventory.data
+        conversion.inventory_to_sale = form.inventory_to_sale.data
+        conversion.weight_per_piece = form.weight_per_piece.data
+        conversion.pieces_per_kg = form.pieces_per_kg.data
+        conversion.notes = form.notes.data
         
         # Recalculate purchase to sale conversion
         conversion.purchase_to_sale = float(conversion.purchase_to_inventory) * float(conversion.inventory_to_sale)
