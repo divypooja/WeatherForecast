@@ -77,14 +77,14 @@ def init_default_modules():
             'title': 'Reports & Analytics',
             'description': 'Business reports and data analytics',
             'icon': 'fas fa-chart-bar',
-            'url_endpoint': 'reports.dashboard'
+            'url_endpoint': 'reports_dashboard'
         },
         {
             'name': 'notifications',
             'title': 'Notifications',
             'description': 'System notifications and alerts',
             'icon': 'fas fa-bell',
-            'url_endpoint': 'notifications.dashboard'
+            'url_endpoint': 'notifications_dashboard'
         },
         {
             'name': 'quality_control',
