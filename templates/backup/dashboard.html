@@ -292,11 +292,21 @@
                                 <i class="fas fa-exclamation-triangle"></i> <strong>Warning:</strong> Data import will overwrite existing data. Please ensure you have a current backup before proceeding.
                             </div>
                             <div class="row">
-                                <div class="col-md-8">
-                                    <input type="file" class="form-control" id="import-file" accept=".json">
-                                    <small class="form-text text-muted">Select a JSON backup file to import</small>
+                                <div class="col-md-6 mb-3">
+                                    <label for="import-type" class="form-label">Import Format</label>
+                                    <select class="form-select" id="import-type" onchange="updateFileAccept()">
+                                        <option value="json">JSON Backup</option>
+                                        <option value="excel">Excel File</option>
+                                    </select>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-6 mb-3">
+                                    <label for="import-file" class="form-label">Select File</label>
+                                    <input type="file" class="form-control" id="import-file" accept=".json">
+                                </div>
+                                <div class="col-12">
+                                    <div id="import-instructions" class="alert alert-info mb-3">
+                                        <small><strong>JSON Import:</strong> Upload a complete backup file exported from this system</small>
+                                    </div>
                                     <button class="btn btn-warning w-100" onclick="importData()">
                                         <i class="fas fa-upload"></i> Import Data
                                     </button>
@@ -439,8 +449,24 @@ window.scheduleBackup = function() {
     });
 };
 
+window.updateFileAccept = function() {
+    const importType = document.getElementById('import-type').value;
+    const fileInput = document.getElementById('import-file');
+    const instructions = document.getElementById('import-instructions');
+    
+    if (importType === 'excel') {
+        fileInput.accept = '.xlsx,.xls';
+        instructions.innerHTML = '<small><strong>Excel Import:</strong> Upload an Excel file with data sheets (Items, Suppliers, etc.). The system will process multiple sheets automatically.</small>';
+    } else {
+        fileInput.accept = '.json';
+        instructions.innerHTML = '<small><strong>JSON Import:</strong> Upload a complete backup file exported from this system</small>';
+    }
+};
+
 window.importData = function() {
     const fileInput = document.getElementById('import-file');
+    const importType = document.getElementById('import-type').value;
+    
     if (!fileInput.files.length) {
         showAlert('warning', 'Please select a file to import');
         return;
@@ -448,12 +474,15 @@ window.importData = function() {
     
     const formData = new FormData();
     formData.append('file', fileInput.files[0]);
+    formData.append('import_type', importType);
     
     const modal = new bootstrap.Modal(document.getElementById('loadingModal'));
-    document.getElementById('loading-message').textContent = 'Importing data...';
+    document.getElementById('loading-message').textContent = `Importing ${importType.toUpperCase()} data...`;
     modal.show();
     
-    fetch('{{ url_for("backup.import_json") }}', {
+    const endpoint = importType === 'excel' ? '{{ url_for("backup.import_excel") }}' : '{{ url_for("backup.import_json") }}';
+    
+    fetch(endpoint, {
         method: 'POST',
         body: formData
     })
@@ -462,6 +491,10 @@ window.importData = function() {
         modal.hide();
         if (data.success) {
             showAlert('success', data.message);
+            // Reload page after successful import to show updated data
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
         } else {
             showAlert('danger', data.message);
         }
