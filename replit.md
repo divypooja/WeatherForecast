@@ -4,6 +4,21 @@
 
 This is a comprehensive Flask-based Factory Management System designed for small to medium manufacturing companies. The application provides modular dashboards for managing various aspects of factory operations including inventory, purchase orders, sales, HR, job work, production, reporting, and **Unit of Measure (UOM) conversions**.
 
+## Recent Changes (January 24, 2025)
+
+### Enhanced UOM System with Production Workflow Support (Latest - January 24, 2025)
+- **Three-Workflow UOM System**: Enhanced Simple UOM Setup to support three distinct business workflows:
+  - **Same Unit**: Simplest workflow for items bought, stored, and sold in identical units (Paint: 10L → 10L → 10L)
+  - **Trading**: For items bought in one unit but sold in another (Steel: 1kg → 1kg → 40 pieces)
+  - **Production**: For raw materials used in manufacturing (Steel rods: Buy in Meters → BOM uses mm → Produces finished goods)
+- **Production Material Support**: Added dedicated workflow for raw materials that aren't sold directly but consumed in production
+- **BOM Integration**: Production materials specify both purchase unit and BOM unit with automatic conversion handling
+- **Business Type Classification**: System automatically marks items as 'manufacturing' when set up for production use
+- **Comprehensive Unit Library**: Expanded to 30+ units across Weight, Count, Length, Volume, Area, and Time categories
+- **Dynamic Unit Loading**: Simple setup form now loads all available units from database, organized by category
+- **Enhanced Examples**: Updated help section with real-world examples for all three workflows
+- **Manufacturing Focus**: Addresses common factory scenario where raw materials are purchased, processed through BOM, and assembled into finished products
+
 ## Recent Changes (January 23, 2025)
 
 ### Enhanced Item Management for Both Trading and Manufacturing (Latest - January 23, 2025)
