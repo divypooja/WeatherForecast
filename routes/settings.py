@@ -280,6 +280,79 @@ def delete_user(user_id):
         db.session.rollback()
         return jsonify({'success': False, 'message': f'Error deleting user: {str(e)}'})
 
+@settings_bp.route('/change_username', methods=['POST'])
+@login_required
+def change_username():
+    """Change current user's username"""
+    try:
+        new_username = request.form.get('new_username')
+        
+        if not new_username:
+            flash('Username is required', 'danger')
+            return redirect(url_for('settings.user_management'))
+        
+        # Check if username already exists (excluding current user)
+        existing_user = User.query.filter(
+            User.username == new_username, 
+            User.id != current_user.id
+        ).first()
+        
+        if existing_user:
+            flash('Username already exists', 'danger')
+            return redirect(url_for('settings.user_management'))
+        
+        # Update username
+        current_user.username = new_username
+        db.session.commit()
+        
+        flash('Username updated successfully', 'success')
+        return redirect(url_for('settings.user_management'))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating username: {str(e)}', 'danger')
+        return redirect(url_for('settings.user_management'))
+
+@settings_bp.route('/change_password', methods=['POST'])
+@login_required
+def change_password():
+    """Change current user's password"""
+    try:
+        current_password = request.form.get('current_password')
+        new_password = request.form.get('new_password')
+        confirm_new_password = request.form.get('confirm_new_password')
+        
+        # Validation
+        if not all([current_password, new_password, confirm_new_password]):
+            flash('All fields are required', 'danger')
+            return redirect(url_for('settings.user_management'))
+        
+        if new_password != confirm_new_password:
+            flash('New passwords do not match', 'danger')
+            return redirect(url_for('settings.user_management'))
+        
+        if len(new_password) < 6:
+            flash('New password must be at least 6 characters', 'danger')
+            return redirect(url_for('settings.user_management'))
+        
+        # Verify current password
+        from werkzeug.security import check_password_hash, generate_password_hash
+        if not check_password_hash(current_user.password_hash, current_password):
+            flash('Current password is incorrect', 'danger')
+            return redirect(url_for('settings.user_management'))
+        
+        # Update password
+        current_user.password_hash = generate_password_hash(new_password)
+        db.session.commit()
+        
+        flash('Password updated successfully', 'success')
+        return redirect(url_for('settings.user_management'))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating password: {str(e)}', 'danger')
+        return redirect(url_for('settings.user_management'))
+
 @settings_bp.route('/reset_database', methods=['POST'])
 @login_required
 def reset_database():
