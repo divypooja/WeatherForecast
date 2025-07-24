@@ -15,15 +15,68 @@
         </div>
     </div>
 
-    <!-- Search Form -->
+    <!-- Enhanced Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-filter"></i> Search & Filters</h6>
+                </div>
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Search</label>
+                            <input type="text" name="search" class="form-control" placeholder="Item name or code..." value="{{ search }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Item Type</label>
+                            <select name="item_type" class="form-select">
+                                <option value="">All Types</option>
+                                <option value="material" {{ 'selected' if item_type_filter == 'material' }}>Raw Material</option>
+                                <option value="product" {{ 'selected' if item_type_filter == 'product' }}>Finished Product</option>
+                                <option value="consumable" {{ 'selected' if item_type_filter == 'consumable' }}>Consumable</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Stock Status</label>
+                            <select name="stock_status" class="form-select">
+                                <option value="">All Items</option>
+                                <option value="low_stock" {{ 'selected' if stock_status_filter == 'low_stock' }}>Low Stock</option>
+                                <option value="in_stock" {{ 'selected' if stock_status_filter == 'in_stock' }}>In Stock</option>
+                                <option value="out_of_stock" {{ 'selected' if stock_status_filter == 'out_of_stock' }}>Out of Stock</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Min Price</label>
+                            <input type="number" name="min_price" class="form-control" placeholder="0" step="0.01" value="{{ min_price }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Max Price</label>
+                            <input type="number" name="max_price" class="form-control" placeholder="1000" step="0.01" value="{{ max_price }}">
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-flex gap-1">
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                                <a href="{{ url_for('inventory.list_items') }}" class="btn btn-secondary btn-sm">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Info -->
     <div class="row mb-3">
-        <div class="col-md-6">
-            <form method="GET" class="d-flex">
-                <input type="text" name="search" class="form-control" placeholder="Search items..." value="{{ search }}">
-                <button type="submit" class="btn btn-outline-secondary ms-2">
-                    <i class="fas fa-search"></i>
-                </button>
-            </form>
+        <div class="col-md-12 text-end">
+            {% if items.items %}
+            <span class="badge bg-info">{{ items.total }} item(s) found</span>
+            {% endif %}
         </div>
     </div>
 

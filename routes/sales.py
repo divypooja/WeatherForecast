@@ -4,6 +4,7 @@ from forms import SalesOrderForm, SupplierForm
 from models import SalesOrder, SalesOrderItem, Supplier, Item, BOMItem
 from app import db
 from sqlalchemy import func
+from datetime import datetime
 from utils import generate_so_number
 from utils_documents import get_documents_for_transaction
 
@@ -89,15 +90,54 @@ def dashboard():
 def list_sales_orders():
     page = request.args.get('page', 1, type=int)
     status_filter = request.args.get('status', '', type=str)
+    customer_filter = request.args.get('customer', '', type=str)
+    from_date = request.args.get('from_date', '', type=str)
+    to_date = request.args.get('to_date', '', type=str)
+    search_term = request.args.get('search', '', type=str)
     
     query = SalesOrder.query
+    
+    # Apply filters
     if status_filter:
         query = query.filter_by(status=status_filter)
+        
+    if customer_filter:
+        query = query.filter_by(customer_id=customer_filter)
+        
+    if from_date:
+        try:
+            from datetime import datetime
+            from_date_obj = datetime.strptime(from_date, '%Y-%m-%d').date()
+            query = query.filter(SalesOrder.order_date >= from_date_obj)
+        except ValueError:
+            flash('Invalid from date format', 'error')
+            
+    if to_date:
+        try:
+            from datetime import datetime
+            to_date_obj = datetime.strptime(to_date, '%Y-%m-%d').date()
+            query = query.filter(SalesOrder.order_date <= to_date_obj)
+        except ValueError:
+            flash('Invalid to date format', 'error')
+            
+    if search_term:
+        query = query.filter(SalesOrder.so_number.ilike(f'%{search_term}%'))
     
-    sos = query.order_by(SalesOrder.created_at.desc()).paginate(
+    # Order by date descending and paginate
+    sos = query.order_by(SalesOrder.order_date.desc()).paginate(
         page=page, per_page=20, error_out=False)
     
-    return render_template('sales/list.html', sos=sos, status_filter=status_filter)
+    # Get all customers for filter dropdown
+    customers = Supplier.query.filter(Supplier.partner_type.in_(['customer', 'both'])).order_by(Supplier.name).all()
+    
+    return render_template('sales/list.html', 
+                         sos=sos, 
+                         status_filter=status_filter,
+                         customer_filter=customer_filter,
+                         from_date=from_date,
+                         to_date=to_date,
+                         search_term=search_term,
+                         customers=customers)
 
 @sales_bp.route('/add', methods=['GET', 'POST'])
 @login_required
