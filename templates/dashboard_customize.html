@@ -72,13 +72,13 @@
             </div>
 
             <div class="mt-4">
-                <button type="button" id="save-preferences" class="btn btn-primary">
+                <button type="button" id="save-preferences" class="btn btn-primary" onclick="savePreferences()">
                     <i class="fas fa-save"></i> Save Preferences
                 </button>
-                <button type="button" id="select-all" class="btn btn-outline-secondary">
+                <button type="button" id="select-all" class="btn btn-outline-secondary" onclick="selectAll()">
                     <i class="fas fa-check-square"></i> Select All
                 </button>
-                <button type="button" id="deselect-all" class="btn btn-outline-secondary">
+                <button type="button" id="deselect-all" class="btn btn-outline-secondary" onclick="deselectAll()">
                     <i class="fas fa-square"></i> Deselect All
                 </button>
             </div>
@@ -179,9 +179,12 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 <script>
 $(document).ready(function() {
+    console.log('Dashboard customization page loaded');
+    console.log('jQuery version:', $.fn.jquery);
     // Make modules sortable
     $("#modules-container").sortable({
         handle: ".module-drag-handle",
@@ -190,69 +193,82 @@ $(document).ready(function() {
         cursor: "grabbing"
     });
 
-    // Select All functionality
-    $("#select-all").click(function() {
-        $(".module-checkbox input[type='checkbox']").prop('checked', true);
-    });
+});
 
-    // Deselect All functionality
-    $("#deselect-all").click(function() {
-        $(".module-checkbox input[type='checkbox']").prop('checked', false);
+// Separate functions to make debugging easier
+function selectAll() {
+    console.log('Select All clicked');
+    document.querySelectorAll('.module-checkbox input[type="checkbox"]').forEach(function(checkbox) {
+        checkbox.checked = true;
     });
+}
 
-    // Save preferences
-    $("#save-preferences").click(function() {
-        const $saveBtn = $(this);
-        const originalText = $saveBtn.html();
+function deselectAll() {
+    console.log('Deselect All clicked');
+    document.querySelectorAll('.module-checkbox input[type="checkbox"]').forEach(function(checkbox) {
+        checkbox.checked = false;
+    });
+}
+
+function savePreferences() {
+    console.log('Save preferences function called');
+    const saveBtn = document.getElementById('save-preferences');
+    const originalText = saveBtn.innerHTML;
+    
+    // Show loading state
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    
+    const preferences = [];
+    const moduleItems = document.querySelectorAll('#modules-container .module-item');
+    
+    moduleItems.forEach(function(moduleItem, index) {
+        const moduleId = moduleItem.getAttribute('data-module-id');
+        const checkbox = moduleItem.querySelector('.module-checkbox input[type="checkbox"]');
+        const sizeSelect = moduleItem.querySelector('.module-size-select');
         
-        // Show loading state
-        $saveBtn.prop('disabled', true)
-                .html('<i class="fas fa-spinner fa-spin"></i> Saving...');
-        
-        const preferences = [];
-        
-        $("#modules-container .module-item").each(function(index) {
-            const moduleId = $(this).data('module-id');
-            const isVisible = $(this).find('.module-checkbox input[type="checkbox"]').is(':checked');
-            const size = $(this).find('.module-size-select').val();
+        preferences.push({
+            module_id: parseInt(moduleId),
+            is_visible: checkbox.checked,
+            position: index,
+            size: sizeSelect.value
+        });
+    });
+    
+    console.log('Preferences to save:', preferences);
+
+    fetch('{{ url_for("main.save_dashboard_preferences") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(preferences)
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Response received:', data);
+        if (data.success) {
+            // Show success state
+            saveBtn.innerHTML = '<i class="fas fa-check"></i> Saved!';
+            showAlert('success', 'Dashboard preferences saved! Redirecting...');
             
-            preferences.push({
-                module_id: moduleId,
-                is_visible: isVisible,
-                position: index,
-                size: size
-            });
-        });
-
-        $.ajax({
-            url: '{{ url_for("main.save_dashboard_preferences") }}',
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(preferences),
-            success: function(response) {
-                if (response.success) {
-                    // Show success state
-                    $saveBtn.html('<i class="fas fa-check"></i> Saved!');
-                    showAlert('success', 'Dashboard preferences saved! Redirecting...');
-                    
-                    // Redirect to dashboard
-                    setTimeout(function() {
-                        window.location.href = '{{ url_for("main.dashboard") }}';
-                    }, 800);
-                } else {
-                    // Reset button on error
-                    $saveBtn.prop('disabled', false).html(originalText);
-                    showAlert('danger', response.message);
-                }
-            },
-            error: function(xhr, status, error) {
-                // Reset button on error
-                $saveBtn.prop('disabled', false).html(originalText);
-                const response = xhr.responseJSON;
-                const message = response && response.message ? response.message : 'Error saving preferences';
-                showAlert('danger', message);
-            }
-        });
+            // Redirect to dashboard
+            setTimeout(function() {
+                window.location.href = '{{ url_for("main.dashboard") }}';
+            }, 800);
+        } else {
+            // Reset button on error
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = originalText;
+            showAlert('danger', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Reset button on error
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = originalText;
+        showAlert('danger', 'Error saving preferences: ' + error.message);
     });
 
     function showAlert(type, message) {
