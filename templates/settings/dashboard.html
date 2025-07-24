@@ -94,8 +94,11 @@
                 </div>
                 <div class="card-body">
                     <p class="card-text">Manage user accounts and permissions (Admin only).</p>
-                    <a href="{{ url_for('settings.user_management') }}" class="btn btn-primary">
+                    <a href="{{ url_for('settings.user_management') }}" class="btn btn-primary me-2">
                         <i class="fas fa-edit"></i> Manage Users
+                    </a>
+                    <a href="{{ url_for('settings.user_permissions') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-user-shield"></i> Permissions
                     </a>
                 </div>
             </div>

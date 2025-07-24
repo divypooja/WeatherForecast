@@ -93,6 +93,11 @@
                             <td>
                                 {% if user.id != current_user.id %}
                                 <div class="btn-group btn-group-sm">
+                                    {% if user.role != 'admin' %}
+                                    <a href="{{ url_for('settings.user_permissions', user_id=user.id) }}" class="btn btn-outline-primary" title="Manage Permissions">
+                                        <i class="fas fa-user-shield"></i>
+                                    </a>
+                                    {% endif %}
                                     <button class="btn btn-outline-warning" onclick="resetPassword({{ user.id }}, '{{ user.username }}')" title="Reset Password">
                                         <i class="fas fa-key"></i>
                                     </button>
