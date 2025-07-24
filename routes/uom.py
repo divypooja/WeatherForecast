@@ -223,7 +223,27 @@ def simple_setup():
     
     # GET request - show form
     items = Item.query.order_by(Item.name).all()
-    return render_template('uom/simple_conversion_form.html', items=items, request=request)
+    
+    # Get all units organized by category
+    from collections import defaultdict
+    units_data = defaultdict(list)
+    units = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+    
+    for unit in units:
+        units_data[unit.category].append(unit)
+    
+    # Convert to list format for template
+    units_by_category = []
+    for category, unit_list in units_data.items():
+        units_by_category.append({
+            'category': category,
+            'units': unit_list
+        })
+    
+    return render_template('uom/simple_conversion_form.html', 
+                         items=items, 
+                         units_by_category=units_by_category,
+                         request=request)
 
 @uom_bp.route('/item-conversions/add', methods=['GET', 'POST'])
 @login_required
