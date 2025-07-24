@@ -14,8 +14,7 @@ class ItemForm(FlaskForm):
     name = StringField('Item Name', validators=[DataRequired(), Length(max=100)])
     description = TextAreaField('Description')
     unit_of_measure = SelectField('Primary Storage Unit', 
-                                choices=[('kg', 'Kilograms'), ('pcs', 'Pieces'), ('meter', 'Meters'), 
-                                       ('liter', 'Liters'), ('box', 'Boxes'), ('set', 'Sets'), ('nos', 'Numbers')],
+                                choices=[],  # Will be populated dynamically
                                 validators=[DataRequired()])
     hsn_code = StringField('HSN Code', validators=[Length(max=20)])
     gst_rate = FloatField('GST Rate (%)', validators=[NumberRange(min=0, max=100)], default=18.0)
@@ -33,10 +32,10 @@ class ItemForm(FlaskForm):
     
     # UOM Conversion fields for Trading workflow
     purchase_unit = SelectField('Purchase Unit', 
-                              choices=[('', 'Same as Storage'), ('kg', 'Kilograms'), ('meter', 'Meters'), ('liter', 'Liters')],
+                              choices=[],  # Will be populated dynamically
                               validators=[Optional()])
     sale_unit = SelectField('Sale Unit', 
-                          choices=[('', 'Same as Storage'), ('pcs', 'Pieces'), ('meter', 'Meters'), ('kg', 'Kilograms')],
+                          choices=[],  # Will be populated dynamically
                           validators=[Optional()])
     unit_weight = FloatField('Unit Weight (kg/piece)', validators=[Optional(), NumberRange(min=0)],
                            render_kw={"placeholder": "e.g., 0.12 kg per piece"})
