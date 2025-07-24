@@ -6,7 +6,7 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 24, 2025)
 
-### Comprehensive Date Filtering & Sidebar Navigation Fix (Latest)
+### Complete UI/UX Enhancement & Flickering Resolution (Latest)
 - **Universal Date Filtering**: Implemented comprehensive date filtering across all major modules including Purchase Orders, Sales Orders, and Inventory
 - **Advanced Filter Interface**: Professional card-based filter sections with date ranges, dropdown filters, search functionality, and clear/reset options
 - **Purchase Order Filtering**: Date range (from/to), supplier selection, status filtering, PO number search with results counter
@@ -14,8 +14,10 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **Inventory Filtering**: Advanced search by name/code, item type filter, stock status filter, price range filtering with comprehensive options
 - **Sidebar Navigation Consistency**: Fixed dashboard sidebar to show all menu items consistently across main dashboard and module pages
 - **Complete Navigation Menu**: Unified sidebar now includes all modules (Quality Control, UOM Management, Material Inspection, Documents, Admin Approvals) on both dashboard and module pages
-- **Professional UI Design**: Consistent filtering experience with preserved filter states, proper validation, and responsive design
-- **Enhanced User Experience**: Easy access to all system features from any page with professional card-based filter interfaces
+- **Sidebar Flickering Resolution**: Completely eliminated sidebar flickering during page loads and navigation with preload CSS classes and hardware acceleration
+- **UOM Button Alignment Fix**: Corrected misaligned "Setup" buttons in UOM Management dashboard using proper Bootstrap flexbox layout
+- **Professional UI Design**: Consistent filtering experience with preserved filter states, proper validation, responsive design, and stable navigation
+- **Enhanced User Experience**: Smooth, professional navigation without flickering, properly aligned buttons, and easy access to all system features
 
 ### Universal Table Scrolling System Implementation
 - **Comprehensive CSS Framework**: Enhanced custom.css with complete table scrolling system including horizontal and vertical scrolling for all tables
