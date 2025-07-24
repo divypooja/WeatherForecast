@@ -259,6 +259,9 @@ def edit_bom(id):
     # Get BOM items
     bom_items = BOMItem.query.filter_by(bom_id=bom.id).all()
     
+    # Calculate total BOM cost
+    total_cost = sum(item.quantity_required * item.unit_cost for item in bom_items)
+    
     # Get materials for adding new items
     materials = Item.query.filter(Item.item_type.in_(['material', 'consumable'])).all()
     
@@ -267,7 +270,8 @@ def edit_bom(id):
                          title='Edit BOM', 
                          bom=bom,
                          bom_items=bom_items,
-                         materials=materials)
+                         materials=materials,
+                         total_cost=total_cost)
 
 @production_bp.route('/bom/<int:bom_id>/add_item', methods=['POST'])
 @login_required

@@ -126,7 +126,6 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% set total_cost = 0 %}
                                 {% for bom_item in bom_items %}
                                 <tr>
                                     <td>{{ bom_item.item.code }}</td>
@@ -148,13 +147,12 @@
                                         </a>
                                     </td>
                                 </tr>
-                                {% set total_cost = total_cost + (bom_item.quantity_required * bom_item.unit_cost) %}
                                 {% endfor %}
                             </tbody>
                             <tfoot>
                                 <tr class="table-dark">
                                     <th colspan="6">Total BOM Cost</th>
-                                    <th>₹{{ "%.2f"|format(total_cost) }}</th>
+                                    <th>₹{{ "%.2f"|format(total_cost or 0) }}</th>
                                     <th></th>
                                 </tr>
                             </tfoot>
