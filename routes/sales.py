@@ -6,6 +6,7 @@ from app import db
 from sqlalchemy import func
 from utils import generate_so_number
 from utils_documents import get_documents_for_transaction
+from services.excel_export import ExcelExportService
 
 sales_bp = Blueprint('sales', __name__)
 
@@ -303,6 +304,18 @@ def delete_sales_order(id):
     db.session.commit()
     flash('Sales Order deleted successfully', 'success')
     return redirect(url_for('sales.list_sales_orders'))
+
+@sales_bp.route('/export/excel')
+@login_required
+def export_sales_orders_excel():
+    """Export Sales Orders to Excel"""
+    try:
+        wb = ExcelExportService.export_sales_orders()
+        filename = f"sales_orders_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        return ExcelExportService.create_response(wb, filename)
+    except Exception as e:
+        flash(f'Error exporting Sales Orders: {str(e)}', 'danger')
+        return redirect(url_for('sales.list_sales_orders'))
 
 @sales_bp.route('/change_status/<int:so_id>', methods=['POST'])
 @login_required
