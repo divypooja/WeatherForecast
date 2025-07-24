@@ -287,7 +287,7 @@ def add_bom():
         db.session.add(bom)
         db.session.commit()
         flash('BOM created successfully', 'success')
-        return redirect(url_for('production.edit_bom', id=bom.id))
+        return redirect(url_for('production.list_bom'))
     
     # Get available units for UOM selection
     units = UnitOfMeasure.query.all()
