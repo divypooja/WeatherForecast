@@ -12,6 +12,9 @@
             <a href="{{ url_for('expenses.dashboard') }}" class="btn btn-outline-primary me-2">
                 <i class="fas fa-chart-bar me-1"></i>Dashboard
             </a>
+            <a href="{{ url_for('expenses.export_expenses') }}{% if category or status or date_from or date_to %}?{% endif %}{% if category %}category={{ category }}&{% endif %}{% if status %}status={{ status }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}{% endif %}" class="btn btn-outline-success me-2">
+                <i class="fas fa-file-excel me-1"></i>Export Excel
+            </a>
             <a href="{{ url_for('expenses.add_expense') }}" class="btn btn-primary">
                 <i class="fas fa-plus me-1"></i>Add Expense
             </a>
