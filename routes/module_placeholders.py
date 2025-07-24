@@ -28,6 +28,7 @@ from flask import current_app
 
 def register_placeholder_routes(app):
     """Register placeholder routes for missing modules"""
+    from flask_login import login_required
     
     # Reports placeholder
     @app.route('/reports/dashboard')
