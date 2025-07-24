@@ -371,11 +371,24 @@ def auto_setup_all():
             try:
                 conversions_added = 0
                 
-                # Auto-setup based on item properties
+                # Auto-setup based on item properties and smart weight logic
                 if hasattr(item, 'unit_weight') and item.unit_weight and item.unit_weight > 0:
-                    # Item has unit weight - create kg to pieces conversion
+                    # Get required units
                     kg_unit = UnitOfMeasure.query.filter_by(symbol='kg').first()
                     pcs_unit = UnitOfMeasure.query.filter_by(symbol='pcs').first()
+                    g_unit = UnitOfMeasure.query.filter_by(symbol='g').first()
+                    ton_unit = UnitOfMeasure.query.filter_by(symbol='ton').first()
+                    
+                    # Create missing units if they don't exist
+                    if not g_unit:
+                        g_unit = UnitOfMeasure(name='Gram', symbol='g', category='Weight', is_base_unit=False)
+                        db.session.add(g_unit)
+                        db.session.flush()
+                        
+                    if not ton_unit:
+                        ton_unit = UnitOfMeasure(name='Ton', symbol='ton', category='Weight', is_base_unit=False)
+                        db.session.add(ton_unit)
+                        db.session.flush()
                     
                     if kg_unit and pcs_unit:
                         # Create kg to pieces conversion
@@ -401,6 +414,35 @@ def auto_setup_all():
                         db.session.add(conversion1)
                         db.session.add(conversion2)
                         conversions_added += 2
+                        
+                        # Add smart weight conversions based on unit_weight
+                        # If unit weight suggests small items (< 1kg), add gram conversions
+                        if item.unit_weight < 1 and g_unit:
+                            grams_per_piece = item.unit_weight * 1000
+                            
+                            conversion3 = ItemUOMConversion(
+                                item_id=item.id,
+                                from_unit_id=pcs_unit.id,
+                                to_unit_id=g_unit.id,
+                                conversion_factor=grams_per_piece,
+                                notes=f"Auto-generated: 1 piece = {grams_per_piece:.1f} g (smart weight conversion)"
+                            )
+                            db.session.add(conversion3)
+                            conversions_added += 1
+                        
+                        # If unit weight suggests heavy items, add ton conversions  
+                        elif item.unit_weight > 100 and ton_unit:  # Items heavier than 100kg each
+                            tons_per_piece = item.unit_weight / 1000
+                            
+                            conversion4 = ItemUOMConversion(
+                                item_id=item.id,
+                                from_unit_id=pcs_unit.id,
+                                to_unit_id=ton_unit.id,
+                                conversion_factor=tons_per_piece,
+                                notes=f"Auto-generated: 1 piece = {tons_per_piece:.4f} ton (smart weight conversion)"
+                            )
+                            db.session.add(conversion4)
+                            conversions_added += 1
                 
                 # Add standard conversions based on item's current unit
                 current_unit = UnitOfMeasure.query.filter_by(symbol=item.unit_of_measure).first()
