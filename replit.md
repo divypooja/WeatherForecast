@@ -43,6 +43,17 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **Conversion Suggestions**: Intelligent conversion suggestions based on item properties and available UOM conversions
 - **Enhanced User Experience**: Detailed conversion information display showing "Required: 5 pieces = 0.6kg inventory" format for clarity
 
+### Intelligent Weight Management System (Latest - January 24, 2025)
+- **Smart Weight Ranges**: Implemented intelligent weight display and conversion based on quantity ranges:
+  - **Above 1000kg**: Automatically convert to tons (1000kg = 1 ton)
+  - **Below 1kg**: Automatically convert to grams (1kg = 1000g)  
+  - **Between 1kg-1000kg**: Keep as kilograms for optimal readability
+- **Smart Weight Display Service**: Created comprehensive weight formatting with contextual alternatives and suggestions
+- **Enhanced Inventory Display**: Intelligent unit suggestions in inventory lists with visual indicators for optimal unit recommendations
+- **Auto-Setup Enhancement**: UOM auto-setup now creates appropriate weight conversions based on item unit_weight thresholds
+- **Complete Weight Unit Support**: Added ton and gram units with full conversion matrix (kg↔g↔ton) for comprehensive weight management
+- **Contextual Weight Information**: Items display weight information in the most appropriate unit with conversion alternatives for user context
+
 ## Recent Changes (January 23, 2025)
 
 ### Complete BOM-UOM Integration System (Latest - January 23, 2025)

@@ -18,19 +18,38 @@ class SmartConversionService:
     def convert_quantity(item, quantity, from_unit, to_unit):
         """
         Smart quantity conversion using multiple conversion methods
-        Priority: Item-specific > UOM System > Default
+        Priority: Item-specific > UOM System > Smart Weight Logic > Default
         """
         if from_unit == to_unit:
             return quantity
             
-        # Method 1: Item-specific conversions (highest priority)
-        if hasattr(item, 'unit_weight') and item.unit_weight:
-            if from_unit == 'kg' and to_unit in ['pcs', 'pieces']:
+        # Method 1: Smart weight-based conversions (intelligent range handling)
+        if from_unit == 'kg':
+            if to_unit == 'ton' and quantity >= 1000:
+                return quantity / 1000  # kg to ton for large quantities
+            elif to_unit == 'g' and quantity < 1:
+                return quantity * 1000  # kg to grams for small quantities
+            elif to_unit in ['pcs', 'pieces'] and hasattr(item, 'unit_weight') and item.unit_weight:
                 return quantity / item.unit_weight if item.unit_weight > 0 else 0
-            elif from_unit in ['pcs', 'pieces'] and to_unit == 'kg':
+                
+        elif from_unit == 'ton':
+            if to_unit == 'kg':
+                return quantity * 1000  # ton to kg
+            elif to_unit == 'g':
+                return quantity * 1000000  # ton to grams
+                
+        elif from_unit == 'g':
+            if to_unit == 'kg':
+                return quantity / 1000  # grams to kg
+            elif to_unit == 'ton':
+                return quantity / 1000000  # grams to ton
+                
+        # Method 2: Item-specific conversions (unit weight based)
+        if hasattr(item, 'unit_weight') and item.unit_weight:
+            if from_unit in ['pcs', 'pieces'] and to_unit == 'kg':
                 return quantity * item.unit_weight
         
-        # Method 2: Item-specific UOM conversions
+        # Method 3: Item-specific UOM conversions
         item_conversion = ItemUOMConversion.query.filter_by(
             item_id=item.id,
             from_unit=from_unit,
@@ -40,7 +59,7 @@ class SmartConversionService:
         if item_conversion:
             return quantity * item_conversion.conversion_factor
             
-        # Method 3: Standard UOM conversions
+        # Method 4: Standard UOM conversions
         uom_conversion = UOMConversion.query.filter_by(
             from_unit=from_unit,
             to_unit=to_unit
@@ -49,7 +68,7 @@ class SmartConversionService:
         if uom_conversion:
             return quantity * uom_conversion.factor
             
-        # Method 4: Try reverse conversion
+        # Method 5: Try reverse conversion
         reverse_conversion = UOMConversion.query.filter_by(
             from_unit=to_unit,
             to_unit=from_unit
@@ -58,7 +77,7 @@ class SmartConversionService:
         if reverse_conversion and reverse_conversion.factor > 0:
             return quantity / reverse_conversion.factor
             
-        # Method 5: Trading-specific conversions
+        # Method 6: Trading-specific conversions
         if hasattr(item, 'business_type') and item.business_type == 'trading':
             if hasattr(item, 'purchase_unit') and hasattr(item, 'sale_unit'):
                 if from_unit == item.purchase_unit and to_unit == item.sale_unit:

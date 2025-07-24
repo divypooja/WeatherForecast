@@ -185,14 +185,34 @@ class Item(db.Model):
     
     @property
     def weight_info_display(self):
-        """Display weight information for inventory management"""
-        if self.unit_weight:
+        """Display weight information with intelligent unit selection"""
+        from services.smart_weight_display import SmartWeightDisplay
+        
+        if self.unit_weight and self.current_stock:
             total_weight = self.total_weight_kg
+            
             if self.unit_of_measure == 'pcs':
-                return f"{self.unit_weight}kg/pc | Total: {total_weight:.2f}kg"
+                # Show smart weight display for pieces
+                weight_display = SmartWeightDisplay.format_weight_display(total_weight)
+                unit_weight_display = SmartWeightDisplay.format_weight_display(self.unit_weight, include_alternatives=False)
+                return f"{unit_weight_display}/pc | Total: {weight_display}"
+                
             elif self.unit_of_measure == 'kg':
+                # Show pieces equivalent and smart weight
                 pieces = int(self.current_stock / self.unit_weight) if self.unit_weight > 0 else 0
-                return f"≈{pieces} pieces ({self.unit_weight}kg/pc)"
+                weight_display = SmartWeightDisplay.format_weight_display(total_weight)
+                unit_weight_display = SmartWeightDisplay.format_weight_display(self.unit_weight, include_alternatives=False)
+                return f"≈{pieces} pieces ({unit_weight_display}/pc) | {weight_display}"
+                
+        elif self.current_stock and self.unit_of_measure in ['kg', 'g', 'ton']:
+            # Pure weight items without unit_weight
+            if self.unit_of_measure == 'kg':
+                return SmartWeightDisplay.format_weight_display(self.current_stock)
+            elif self.unit_of_measure == 'g':
+                return SmartWeightDisplay.format_weight_display(self.current_stock / 1000)
+            elif self.unit_of_measure == 'ton':
+                return SmartWeightDisplay.format_weight_display(self.current_stock * 1000)
+                
         return "N/A"
     
     def convert_quantity(self, quantity, from_unit, to_unit):
