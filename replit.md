@@ -7,17 +7,19 @@ This is a comprehensive Flask-based Factory Management System designed for small
 ## Recent Changes (January 23, 2025)
 
 ### Enhanced Item Management for Both Trading and Manufacturing (Latest - January 23, 2025)
+- **Database Migration Complete**: Successfully added purchase_unit, sale_unit, unit_weight, business_type columns to items table
 - **Business Type Selection**: Added trading vs manufacturing workflow selection in item forms
 - **Trading Workflow Support**: Items can be bought in one unit (kg) and sold in another (pieces) with automatic conversions
 - **Unit Weight System**: Added unit_weight field for kg/piece conversions in trading scenarios
 - **Dual Business Model**: 
-  - **Trading**: Buy in bulk weight (kg), sell in pieces with automatic unit conversions
+  - **Trading**: Buy in bulk weight (kg), sell in pieces with automatic unit conversions (Example: PU Wheels 100kg = 833 pieces)
   - **Manufacturing**: Buy raw materials, use BOM to produce finished goods
 - **Purchase/Sale Unit Fields**: Separate fields for purchase_unit and sale_unit with automatic conversion logic
 - **Smart Stock Display**: Shows stock in both storage and sale units for trading items
 - **Enhanced Item Form**: Dynamic form fields that show/hide based on business type selection
 - **Inventory List Updates**: Added business type column showing trading vs manufacturing with unit conversion details
 - **Conversion Methods**: Built-in methods for converting between purchase, inventory, and sale units
+- **Example Trading Item**: PU Wheel (buy kg, sell pieces, 0.12kg/piece) - demonstrating cross-unit workflow
 
 ## Recent Changes (January 23, 2025)
 
