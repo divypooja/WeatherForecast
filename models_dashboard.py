@@ -98,7 +98,7 @@ def init_default_modules():
             'title': 'Material Inspection',
             'description': 'Incoming material inspection workflow',
             'icon': 'fas fa-search',
-            'url_endpoint': 'inspection.dashboard'
+            'url_endpoint': 'material_inspection.dashboard'
         },
         {
             'name': 'factory_expenses',

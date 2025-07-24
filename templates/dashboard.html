@@ -285,7 +285,7 @@
                     {% if module.description %}
                     <div class="module-description">{{ module.description }}</div>
                     {% endif %}
-                    <a href="{{ url_for(module.url_endpoint) }}" class="view-btn">View</a>
+                    <a href="{{ module.valid_url or '#' }}" class="view-btn {% if not module.valid_url %}disabled text-muted{% endif %}" {% if not module.valid_url %}title="Coming soon"{% endif %}>View</a>
                 </div>
             </div>
             {% endfor %}
