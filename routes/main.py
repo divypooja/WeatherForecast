@@ -32,6 +32,16 @@ def dashboard():
     recent_sos = SalesOrder.query.order_by(SalesOrder.created_at.desc()).limit(5).all()
     low_stock_items = Item.query.filter(Item.current_stock <= Item.minimum_stock).limit(10).all()
     
+    # Validate URLs for each module to prevent build errors
+    for user_module in user_modules:
+        module = user_module['module']
+        try:
+            # Try to build the URL to check if endpoint exists
+            module.valid_url = url_for(module.url_endpoint)
+        except:
+            # If endpoint doesn't exist, set as None for fallback
+            module.valid_url = None
+    
     return render_template('dashboard.html', 
                          stats=stats, 
                          recent_pos=recent_pos, 
