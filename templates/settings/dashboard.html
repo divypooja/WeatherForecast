@@ -78,18 +78,62 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <p class="card-text">Clear all transactional data and start fresh. This will delete:</p>
-                    <ul class="small">
-                        <li>All Purchase Orders & Sales Orders</li>
-                        <li>All Inventory Items</li>
-                        <li>All Production Orders & Job Work</li>
-                        <li>All Material Inspections & Quality Issues</li>
-                        <li>All Factory Expenses & Employee Records</li>
-                        <li>All uploaded documents</li>
-                    </ul>
-                    <p class="text-warning small"><strong>Note:</strong> User accounts and company settings will be preserved.</p>
-                    <button type="button" class="btn btn-danger" onclick="confirmReset()">
-                        <i class="fas fa-trash-alt"></i> Reset Database
+                    <p class="card-text">Choose what data to clear and what to preserve:</p>
+                    
+                    <!-- Preserve Options -->
+                    <div class="mb-3">
+                        <h6 class="text-success"><i class="fas fa-shield-alt me-1"></i>Always Preserved:</h6>
+                        <ul class="small text-muted mb-0">
+                            <li>User accounts & login credentials</li>
+                            <li>Company settings & notification configuration</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Reset Options -->
+                    <div class="mb-3">
+                        <h6 class="text-danger"><i class="fas fa-trash-alt me-1"></i>Select Data to Clear:</h6>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="resetPurchaseSales" checked>
+                            <label class="form-check-label small" for="resetPurchaseSales">Purchase Orders & Sales Orders</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="resetInventory" checked>
+                            <label class="form-check-label small" for="resetInventory">Inventory Items</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="resetProduction" checked>
+                            <label class="form-check-label small" for="resetProduction">Production Orders & Job Work</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="resetInspections" checked>
+                            <label class="form-check-label small" for="resetInspections">Material Inspections & Quality Issues</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="resetExpenses" checked>
+                            <label class="form-check-label small" for="resetExpenses">Factory Expenses</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="resetEmployees" checked>
+                            <label class="form-check-label small" for="resetEmployees">Employee Records & Payroll</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="resetDocuments" checked>
+                            <label class="form-check-label small" for="resetDocuments">Uploaded Documents</label>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="selectAll()">
+                            <i class="fas fa-check-square me-1"></i>Select All
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="selectNone()">
+                            <i class="fas fa-square me-1"></i>Clear All
+                        </button>
+                    </div>
+                    
+                    <hr>
+                    <button type="button" class="btn btn-danger" onclick="confirmCustomReset()">
+                        <i class="fas fa-trash-alt"></i> Reset Selected Data
                     </button>
                 </div>
             </div>
@@ -124,11 +168,52 @@
 <!-- Hidden form for database reset -->
 <form id="resetForm" method="POST" action="{{ url_for('settings.reset_database') }}" style="display: none;">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}"/>
+    <input type="hidden" name="reset_purchase_sales" id="hiddenPurchaseSales"/>
+    <input type="hidden" name="reset_inventory" id="hiddenInventory"/>
+    <input type="hidden" name="reset_production" id="hiddenProduction"/>
+    <input type="hidden" name="reset_inspections" id="hiddenInspections"/>
+    <input type="hidden" name="reset_expenses" id="hiddenExpenses"/>
+    <input type="hidden" name="reset_employees" id="hiddenEmployees"/>
+    <input type="hidden" name="reset_documents" id="hiddenDocuments"/>
 </form>
 
 <script>
-function confirmReset() {
-    if (confirm('Are you absolutely sure you want to reset the database?\n\nThis will permanently delete:\n• All Purchase Orders & Sales Orders\n• All Inventory Items\n• All Production Orders & Job Work\n• All Material Inspections & Quality Issues\n• All Factory Expenses & Employee Records\n• All uploaded documents\n\nThis action cannot be undone!')) {
+function selectAll() {
+    document.querySelectorAll('.form-check-input').forEach(cb => cb.checked = true);
+}
+
+function selectNone() {
+    document.querySelectorAll('.form-check-input').forEach(cb => cb.checked = false);
+}
+
+function confirmCustomReset() {
+    // Get selected options
+    const selectedItems = [];
+    if (document.getElementById('resetPurchaseSales').checked) selectedItems.push('• Purchase Orders & Sales Orders');
+    if (document.getElementById('resetInventory').checked) selectedItems.push('• Inventory Items');
+    if (document.getElementById('resetProduction').checked) selectedItems.push('• Production Orders & Job Work');
+    if (document.getElementById('resetInspections').checked) selectedItems.push('• Material Inspections & Quality Issues');
+    if (document.getElementById('resetExpenses').checked) selectedItems.push('• Factory Expenses');
+    if (document.getElementById('resetEmployees').checked) selectedItems.push('• Employee Records & Payroll');
+    if (document.getElementById('resetDocuments').checked) selectedItems.push('• Uploaded Documents');
+    
+    if (selectedItems.length === 0) {
+        alert('Please select at least one item to reset.');
+        return;
+    }
+    
+    const confirmMessage = `Are you absolutely sure you want to reset the selected data?\n\nThis will permanently delete:\n${selectedItems.join('\n')}\n\nThis action cannot be undone!`;
+    
+    if (confirm(confirmMessage)) {
+        // Set hidden form values
+        document.getElementById('hiddenPurchaseSales').value = document.getElementById('resetPurchaseSales').checked;
+        document.getElementById('hiddenInventory').value = document.getElementById('resetInventory').checked;
+        document.getElementById('hiddenProduction').value = document.getElementById('resetProduction').checked;
+        document.getElementById('hiddenInspections').value = document.getElementById('resetInspections').checked;
+        document.getElementById('hiddenExpenses').value = document.getElementById('resetExpenses').checked;
+        document.getElementById('hiddenEmployees').value = document.getElementById('resetEmployees').checked;
+        document.getElementById('hiddenDocuments').value = document.getElementById('resetDocuments').checked;
+        
         document.getElementById('resetForm').submit();
     }
 }
