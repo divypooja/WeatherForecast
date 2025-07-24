@@ -7,6 +7,9 @@ from app import db
 # Import UOM models
 from models_uom import UnitOfMeasure, UOMConversion, ItemUOMConversion, UOMConversionLog
 
+# Import permission models
+from models_permissions import Permission, UserPermission
+
 class CompanySettings(db.Model):
     __tablename__ = 'company_settings'
     
@@ -54,6 +57,83 @@ class User(UserMixin, db.Model):
     
     def is_admin(self):
         return self.role == 'admin'
+    
+    def has_permission(self, permission_code):
+        """Check if user has a specific permission"""
+        # Admins have all permissions
+        if self.is_admin():
+            return True
+        
+        # Check user-specific permissions
+        from models_permissions import Permission, UserPermission
+        permission = Permission.query.filter_by(code=permission_code).first()
+        if not permission:
+            return False
+        
+        user_permission = UserPermission.query.filter_by(
+            user_id=self.id,
+            permission_id=permission.id,
+            granted=True
+        ).first()
+        
+        return user_permission is not None
+    
+    def get_permissions(self):
+        """Get all permissions for this user"""
+        if self.is_admin():
+            from models_permissions import Permission
+            return Permission.query.all()
+        
+        from models_permissions import Permission, UserPermission
+        return db.session.query(Permission).join(UserPermission).filter(
+            UserPermission.user_id == self.id,
+            UserPermission.granted == True
+        ).all()
+    
+    def grant_permission(self, permission_code, granted_by_user_id):
+        """Grant a permission to this user"""
+        from models_permissions import Permission, UserPermission
+        permission = Permission.query.filter_by(code=permission_code).first()
+        if not permission:
+            return False
+        
+        # Check if permission already exists
+        existing = UserPermission.query.filter_by(
+            user_id=self.id,
+            permission_id=permission.id
+        ).first()
+        
+        if existing:
+            existing.granted = True
+            existing.granted_by = granted_by_user_id
+            existing.granted_at = datetime.utcnow()
+        else:
+            user_permission = UserPermission(
+                user_id=self.id,
+                permission_id=permission.id,
+                granted=True,
+                granted_by=granted_by_user_id
+            )
+            db.session.add(user_permission)
+        
+        return True
+    
+    def revoke_permission(self, permission_code):
+        """Revoke a permission from this user"""
+        from models_permissions import Permission, UserPermission
+        permission = Permission.query.filter_by(code=permission_code).first()
+        if not permission:
+            return False
+        
+        user_permission = UserPermission.query.filter_by(
+            user_id=self.id,
+            permission_id=permission.id
+        ).first()
+        
+        if user_permission:
+            user_permission.granted = False
+        
+        return True
 
 class Supplier(db.Model):
     __tablename__ = 'suppliers'

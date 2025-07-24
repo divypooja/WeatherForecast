@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from forms import CompanySettingsForm, NotificationSettingsForm
 from models import User, CompanySettings, NotificationSettings, PurchaseOrder, SalesOrder, Item, JobWork, Production, MaterialInspection, QualityIssue, FactoryExpense, Employee, SalaryRecord, EmployeeAdvance
+from models_permissions import Permission, UserPermission, DEFAULT_PERMISSIONS, init_permissions
 from app import db
 from services.notifications import notification_service
 import os
@@ -352,6 +353,99 @@ def change_password():
         db.session.rollback()
         flash(f'Error updating password: {str(e)}', 'danger')
         return redirect(url_for('settings.user_management'))
+
+@settings_bp.route('/permissions')
+@login_required
+def user_permissions():
+    """User permissions management page (admin only)"""
+    if not current_user.role == 'admin':
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.dashboard'))
+    
+    # Initialize permissions if they don't exist
+    init_permissions()
+    
+    # Get all users (exclude admins for permission assignment)
+    users = User.query.order_by(User.username).all()
+    
+    # Get selected user
+    selected_user_id = request.args.get('user_id')
+    selected_user = None
+    user_permissions = set()
+    
+    if selected_user_id:
+        selected_user = User.query.get(selected_user_id)
+        if selected_user and selected_user.role != 'admin':
+            # Get user's current permissions
+            user_perms = UserPermission.query.filter_by(
+                user_id=selected_user.id,
+                granted=True
+            ).join(Permission).all()
+            user_permissions = {up.permission.code for up in user_perms}
+    
+    # Group permissions by category
+    permissions_by_category = {}
+    for category, perms in DEFAULT_PERMISSIONS.items():
+        permissions_by_category[category] = Permission.query.filter_by(category=category).all()
+    
+    # Category icons
+    category_icons = {
+        'inventory': 'boxes',
+        'purchase': 'shopping-cart',
+        'sales': 'chart-line',
+        'production': 'industry',
+        'jobwork': 'tools',
+        'quality': 'award',
+        'employees': 'users',
+        'expenses': 'receipt',
+        'reports': 'chart-bar',
+        'settings': 'cog',
+        'admin': 'crown'
+    }
+    
+    return render_template('settings/permissions.html',
+                         users=users,
+                         selected_user=selected_user,
+                         user_permissions=user_permissions,
+                         permissions_by_category=permissions_by_category,
+                         category_icons=category_icons)
+
+@settings_bp.route('/permissions/<int:user_id>', methods=['POST'])
+@login_required
+def update_user_permissions(user_id):
+    """Update user permissions (admin only)"""
+    if not current_user.role == 'admin':
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.dashboard'))
+    
+    try:
+        user = User.query.get_or_404(user_id)
+        
+        if user.role == 'admin':
+            flash('Cannot modify permissions for admin users', 'warning')
+            return redirect(url_for('settings.user_permissions', user_id=user_id))
+        
+        # Get selected permissions
+        selected_permissions = request.form.getlist('permissions')
+        
+        # Get all available permissions
+        all_permissions = Permission.query.all()
+        
+        # Update permissions
+        for permission in all_permissions:
+            if permission.code in selected_permissions:
+                user.grant_permission(permission.code, current_user.id)
+            else:
+                user.revoke_permission(permission.code)
+        
+        db.session.commit()
+        flash(f'Permissions updated successfully for {user.username}', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating permissions: {str(e)}', 'danger')
+    
+    return redirect(url_for('settings.user_permissions', user_id=user_id))
 
 @settings_bp.route('/reset_database', methods=['POST'])
 @login_required
