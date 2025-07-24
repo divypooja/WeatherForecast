@@ -68,6 +68,34 @@
         </div>
         {% endif %}
 
+        <!-- Database Reset (Admin Only) -->
+        {% if current_user.is_admin() %}
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100 border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-database"></i> Database Reset
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Clear all transactional data and start fresh. This will delete:</p>
+                    <ul class="small">
+                        <li>All Purchase Orders & Sales Orders</li>
+                        <li>All Inventory Items</li>
+                        <li>All Production Orders & Job Work</li>
+                        <li>All Material Inspections & Quality Issues</li>
+                        <li>All Factory Expenses & Employee Records</li>
+                        <li>All uploaded documents</li>
+                    </ul>
+                    <p class="text-warning small"><strong>Note:</strong> User accounts and company settings will be preserved.</p>
+                    <button type="button" class="btn btn-danger" onclick="confirmReset()">
+                        <i class="fas fa-trash-alt"></i> Reset Database
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- System Information -->
         <div class="col-lg-6 mb-4">
             <div class="card h-100">
@@ -92,4 +120,25 @@
         </div>
     </div>
 </div>
+
+<script>
+function confirmReset() {
+    if (confirm('Are you absolutely sure you want to reset the database?\n\nThis will permanently delete:\n• All Purchase Orders & Sales Orders\n• All Inventory Items\n• All Production Orders & Job Work\n• All Material Inspections & Quality Issues\n• All Factory Expenses & Employee Records\n• All uploaded documents\n\nThis action cannot be undone!')) {
+        // Create a form and submit it
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url_for("settings.reset_database") }}';
+        
+        // Add CSRF token
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = 'csrf_token';
+        csrfToken.value = '{{ csrf_token() }}';
+        form.appendChild(csrfToken);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
 {% endblock %}
