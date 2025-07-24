@@ -46,6 +46,37 @@ def dashboard():
     # Unit categories
     unit_categories = db.session.query(UnitOfMeasure.category, db.func.count(UnitOfMeasure.id)).group_by(UnitOfMeasure.category).all()
     
+    # All units for master table
+    all_units = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+    
+    # Get conversion counts for each unit
+    units_with_conversion_data = []
+    for unit in all_units:
+        # Count conversions where this unit is involved
+        from_conversions = UOMConversion.query.filter_by(from_unit_id=unit.id, is_active=True).count()
+        to_conversions = UOMConversion.query.filter_by(to_unit_id=unit.id, is_active=True).count()
+        total_conversions_count = from_conversions + to_conversions
+        
+        # Count items using this unit
+        items_using_unit = 0
+        items_using_unit += Item.query.filter_by(unit_of_measure=unit.symbol).count()
+        items_using_unit += Item.query.filter_by(purchase_unit=unit.symbol).count()
+        items_using_unit += Item.query.filter_by(sale_unit=unit.symbol).count()
+        
+        # Item conversions involving this unit
+        item_conversions = ItemUOMConversion.query.filter(
+            (ItemUOMConversion.purchase_unit_id == unit.id) |
+            (ItemUOMConversion.inventory_unit_id == unit.id) |
+            (ItemUOMConversion.sale_unit_id == unit.id)
+        ).count()
+        
+        units_with_conversion_data.append({
+            'unit': unit,
+            'conversions_count': total_conversions_count,
+            'items_count': items_using_unit,
+            'item_conversions_count': item_conversions
+        })
+    
     return render_template('uom/dashboard.html',
                          total_units=total_units,
                          total_conversions=total_conversions,
@@ -53,7 +84,8 @@ def dashboard():
                          conversion_logs_count=conversion_logs_count,
                          recent_item_conversions=recent_item_conversions,
                          items_needing_setup=items_needing_setup,
-                         unit_categories=unit_categories)
+                         unit_categories=unit_categories,
+                         all_units_data=units_with_conversion_data)
 
 @uom_bp.route('/units')
 @login_required

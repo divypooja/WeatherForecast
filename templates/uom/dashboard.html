@@ -92,6 +92,165 @@
         </div>
     </div>
 
+    <!-- Master Units Table -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-table"></i> Master Units Table</h5>
+                    <div>
+                        <a href="{{ url_for('uom.add_unit') }}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus"></i> Add New Unit
+                        </a>
+                        <a href="{{ url_for('uom.units_list') }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-list"></i> Detailed View
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th style="width: 5%">#</th>
+                                    <th style="width: 15%">Unit Name</th>
+                                    <th style="width: 8%">Symbol</th>
+                                    <th style="width: 12%">Category</th>
+                                    <th style="width: 8%">Base Unit</th>
+                                    <th style="width: 10%">Conversions</th>
+                                    <th style="width: 10%">Items Using</th>
+                                    <th style="width: 12%">Item Conversions</th>
+                                    <th style="width: 20%">Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if all_units_data %}
+                                    {% for unit_data in all_units_data %}
+                                    {% set unit = unit_data.unit %}
+                                    <tr>
+                                        <td>{{ loop.index }}</td>
+                                        <td>
+                                            <strong>{{ unit.name }}</strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ unit.symbol }}</span>
+                                        </td>
+                                        <td>
+                                            {% if unit.category == 'Weight' %}
+                                                <span class="badge bg-success">{{ unit.category }}</span>
+                                            {% elif unit.category == 'Count' %}
+                                                <span class="badge bg-primary">{{ unit.category }}</span>
+                                            {% elif unit.category == 'Length' %}
+                                                <span class="badge bg-warning">{{ unit.category }}</span>
+                                            {% elif unit.category == 'Volume' %}
+                                                <span class="badge bg-info">{{ unit.category }}</span>
+                                            {% elif unit.category == 'Area' %}
+                                                <span class="badge bg-danger">{{ unit.category }}</span>
+                                            {% elif unit.category == 'Time' %}
+                                                <span class="badge bg-dark">{{ unit.category }}</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ unit.category }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if unit.is_base_unit %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-star"></i> Base
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if unit_data.conversions_count > 0 %}
+                                                <span class="badge bg-primary">{{ unit_data.conversions_count }}</span>
+                                            {% else %}
+                                                <span class="text-muted">0</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if unit_data.items_count > 0 %}
+                                                <span class="badge bg-info">{{ unit_data.items_count }}</span>
+                                            {% else %}
+                                                <span class="text-muted">0</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if unit_data.item_conversions_count > 0 %}
+                                                <span class="badge bg-warning">{{ unit_data.item_conversions_count }}</span>
+                                            {% else %}
+                                                <span class="text-muted">0</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if unit.description %}
+                                                <small class="text-muted">{{ unit.description[:50] }}{% if unit.description|length > 50 %}...{% endif %}</small>
+                                            {% else %}
+                                                <small class="text-muted">No description</small>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="9" class="text-center text-muted py-4">
+                                            <i class="fas fa-exclamation-circle fa-2x mb-2"></i><br>
+                                            No units configured yet. <a href="{{ url_for('uom.add_unit') }}">Add your first unit</a>.
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Table Legend -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <small class="text-muted">
+                                <strong>Legend:</strong> 
+                                <span class="badge bg-success">Weight</span>
+                                <span class="badge bg-primary">Count</span>
+                                <span class="badge bg-warning">Length</span>
+                                <span class="badge bg-info">Volume</span>
+                                <span class="badge bg-danger">Area</span>
+                                <span class="badge bg-dark">Time</span>
+                                | <i class="fas fa-star"></i> Base Unit for category
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Stats -->
+                    <div class="row mt-3">
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h6 class="text-primary">{{ all_units_data|length }}</h6>
+                                <small class="text-muted">Total Units</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h6 class="text-success">{{ all_units_data|selectattr('unit.is_base_unit')|list|length }}</h6>
+                                <small class="text-muted">Base Units</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h6 class="text-info">{{ all_units_data|sum(attribute='conversions_count') }}</h6>
+                                <small class="text-muted">Total Conversions</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h6 class="text-warning">{{ all_units_data|sum(attribute='items_count') }}</h6>
+                                <small class="text-muted">Items Using Units</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
         <!-- Unit Categories -->
         <div class="col-md-4">
