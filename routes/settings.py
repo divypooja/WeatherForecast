@@ -480,57 +480,68 @@ def reset_database():
         deleted_items = []
         
         # Delete in order to respect foreign key constraints
+        # CRITICAL: Delete child records first, then parent records
+        
+        # Get counts before deletion
+        counts = {
+            'material_inspections': MaterialInspection.query.count() if reset_inspections else 0,
+            'quality_issues': QualityIssue.query.count() if reset_inspections else 0,
+            'productions': Production.query.count() if reset_production else 0,
+            'job_works': JobWork.query.count() if reset_production else 0,
+            'factory_expenses': FactoryExpense.query.count() if reset_expenses else 0,
+            'salary_records': SalaryRecord.query.count() if reset_employees else 0,
+            'employee_advances': EmployeeAdvance.query.count() if reset_employees else 0,
+            'employees': Employee.query.count() if reset_employees else 0,
+            'sales_orders': SalesOrder.query.count() if reset_purchase_sales else 0,
+            'purchase_orders': PurchaseOrder.query.count() if reset_purchase_sales else 0,
+            'items': Item.query.count() if reset_inventory else 0
+        }
+        
+        # Delete all child tables first to avoid foreign key violations
+        if reset_inspections or reset_production or reset_purchase_sales or reset_inventory:
+            print("Deleting all related child records first...")
+            db.session.execute(db.text("DELETE FROM purchase_order_items"))
+            db.session.execute(db.text("DELETE FROM sales_order_items"))
+            db.session.execute(db.text("DELETE FROM bom_items"))
+            db.session.execute(db.text("DELETE FROM boms"))  # Added missing BOM table
+            db.session.execute(db.text("DELETE FROM item_uom_conversions"))
+            print("Child records deleted successfully")
+        
+        # Now delete parent records in safe order
         if reset_inspections:
-            count_mi = MaterialInspection.query.count()
-            count_qi = QualityIssue.query.count()
-            print(f"Deleting {count_mi} material inspections and {count_qi} quality issues")
+            print(f"Deleting {counts['material_inspections']} material inspections and {counts['quality_issues']} quality issues")
             db.session.execute(db.text("DELETE FROM material_inspections"))
             db.session.execute(db.text("DELETE FROM quality_issues"))
-            deleted_items.append(f'Material Inspections ({count_mi}) & Quality Issues ({count_qi})')
+            deleted_items.append(f"Material Inspections ({counts['material_inspections']}) & Quality Issues ({counts['quality_issues']})")
         
         if reset_production:
-            count_prod = Production.query.count()
-            count_job = JobWork.query.count()
-            print(f"Deleting {count_prod} productions and {count_job} job works")
+            print(f"Deleting {counts['productions']} productions and {counts['job_works']} job works")
             db.session.execute(db.text("DELETE FROM productions"))
             db.session.execute(db.text("DELETE FROM job_works"))
-            deleted_items.append(f'Production Orders ({count_prod}) & Job Work ({count_job})')
+            deleted_items.append(f"Production Orders ({counts['productions']}) & Job Work ({counts['job_works']})")
         
         if reset_expenses:
-            count_exp = FactoryExpense.query.count()
-            print(f"Deleting {count_exp} factory expenses")
+            print(f"Deleting {counts['factory_expenses']} factory expenses")
             db.session.execute(db.text("DELETE FROM factory_expenses"))
-            deleted_items.append(f'Factory Expenses ({count_exp})')
+            deleted_items.append(f"Factory Expenses ({counts['factory_expenses']})")
         
         if reset_employees:
-            count_sal = SalaryRecord.query.count()
-            count_adv = EmployeeAdvance.query.count()
-            count_emp = Employee.query.count()
-            print(f"Deleting {count_emp} employees, {count_sal} salary records, {count_adv} advances")
+            print(f"Deleting {counts['employees']} employees, {counts['salary_records']} salary records, {counts['employee_advances']} advances")
             db.session.execute(db.text("DELETE FROM salary_records"))
             db.session.execute(db.text("DELETE FROM employee_advances"))
             db.session.execute(db.text("DELETE FROM employees"))
-            deleted_items.append(f'Employee Records ({count_emp}) & Payroll ({count_sal + count_adv})')
+            deleted_items.append(f"Employee Records ({counts['employees']}) & Payroll ({counts['salary_records'] + counts['employee_advances']})")
         
         if reset_purchase_sales:
-            count_so = SalesOrder.query.count()
-            count_po = PurchaseOrder.query.count()
-            print(f"Deleting {count_po} purchase orders and {count_so} sales orders")
-            # Delete related items first
-            db.session.execute(db.text("DELETE FROM sales_order_items"))
-            db.session.execute(db.text("DELETE FROM purchase_order_items"))
+            print(f"Deleting {counts['purchase_orders']} purchase orders and {counts['sales_orders']} sales orders")
             db.session.execute(db.text("DELETE FROM sales_orders"))
             db.session.execute(db.text("DELETE FROM purchase_orders"))
-            deleted_items.append(f'Purchase Orders ({count_po}) & Sales Orders ({count_so})')
+            deleted_items.append(f"Purchase Orders ({counts['purchase_orders']}) & Sales Orders ({counts['sales_orders']})")
         
         if reset_inventory:
-            count_items = Item.query.count()
-            print(f"Deleting {count_items} inventory items")
-            # Delete related data first
-            db.session.execute(db.text("DELETE FROM bom_items"))
-            db.session.execute(db.text("DELETE FROM item_uom_conversions"))
+            print(f"Deleting {counts['items']} inventory items")
             db.session.execute(db.text("DELETE FROM items"))
-            deleted_items.append(f'Inventory Items ({count_items})')
+            deleted_items.append(f"Inventory Items ({counts['items']})")
         
         if reset_documents:
             # Clear uploads directory
@@ -542,15 +553,24 @@ def reset_database():
             deleted_items.append('Uploaded Documents')
         
         print("Committing database changes...")
-        db.session.commit()
-        print("Database changes committed successfully")
-        
-        if deleted_items:
-            flash(f'Database reset successful! Cleared: {", ".join(deleted_items)}', 'success')
-        else:
-            flash('No items were selected for reset.', 'info')
+        try:
+            db.session.commit()
+            print("Database changes committed successfully")
+            
+            if deleted_items:
+                success_msg = f'Database reset successful! Cleared: {", ".join(deleted_items)}'
+                print(f"Success message: {success_msg}")
+                flash(success_msg, 'success')
+            else:
+                flash('No items were selected for reset.', 'info')
+                
+        except Exception as commit_error:
+            print(f"Commit error: {commit_error}")
+            db.session.rollback()
+            flash(f'Error committing changes: {str(commit_error)}', 'danger')
         
     except Exception as e:
+        print(f"General error: {e}")
         db.session.rollback()
         flash(f'Error resetting database: {str(e)}', 'danger')
     
