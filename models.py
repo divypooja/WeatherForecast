@@ -417,7 +417,7 @@ class BOM(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # UOM Integration
-    production_unit_id = db.Column(db.Integer, db.ForeignKey('uom_units.id'), nullable=True)  # Unit for production quantity
+    production_unit_id = db.Column(db.Integer, db.ForeignKey('units_of_measure.id'), nullable=True)  # Unit for production quantity
     
     # Relationships
     product = db.relationship('Item', backref='boms')
@@ -474,7 +474,7 @@ class BOMItem(db.Model):
     unit_cost = db.Column(db.Float, default=0.0)
     
     # UOM Integration fields
-    bom_unit_id = db.Column(db.Integer, db.ForeignKey('uom_units.id'), nullable=True)  # Unit used in BOM
+    bom_unit_id = db.Column(db.Integer, db.ForeignKey('units_of_measure.id'), nullable=True)  # Unit used in BOM
     notes = db.Column(db.Text)  # Additional notes about this BOM item
     
     # Relationships
