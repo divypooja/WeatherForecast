@@ -40,6 +40,7 @@
                                 <th>Type</th>
                                 <th>Business</th>
                                 <th>Current Stock</th>
+                                <th>Weight Info</th>
                                 <th>Min Stock</th>
                                 <th>UOM</th>
                                 <th>Unit Price</th>
@@ -75,6 +76,12 @@
                                         <span class="text-danger">{{ item.display_stock_info or (item.current_stock or 0) }}</span>
                                     {% else %}
                                         {{ item.display_stock_info or (item.current_stock or 0) }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ item.weight_info_display }}</small>
+                                    {% if item.total_weight_kg > 0 %}
+                                        <br><span class="badge bg-info">{{ "%.2f"|format(item.total_weight_kg) }}kg total</span>
                                     {% endif %}
                                 </td>
                                 <td>{{ item.minimum_stock or 0 }}</td>
