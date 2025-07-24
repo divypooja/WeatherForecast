@@ -202,6 +202,13 @@ $(document).ready(function() {
 
     // Save preferences
     $("#save-preferences").click(function() {
+        const $saveBtn = $(this);
+        const originalText = $saveBtn.html();
+        
+        // Show loading state
+        $saveBtn.prop('disabled', true)
+                .html('<i class="fas fa-spinner fa-spin"></i> Saving...');
+        
         const preferences = [];
         
         $("#modules-container .module-item").each(function(index) {
@@ -224,18 +231,23 @@ $(document).ready(function() {
             data: JSON.stringify(preferences),
             success: function(response) {
                 if (response.success) {
-                    // Show success message
-                    showAlert('success', response.message);
+                    // Show success state
+                    $saveBtn.html('<i class="fas fa-check"></i> Saved!');
+                    showAlert('success', 'Dashboard preferences saved! Redirecting...');
                     
-                    // Redirect to dashboard after a short delay
+                    // Redirect to dashboard
                     setTimeout(function() {
                         window.location.href = '{{ url_for("main.dashboard") }}';
-                    }, 1500);
+                    }, 800);
                 } else {
+                    // Reset button on error
+                    $saveBtn.prop('disabled', false).html(originalText);
                     showAlert('danger', response.message);
                 }
             },
             error: function(xhr, status, error) {
+                // Reset button on error
+                $saveBtn.prop('disabled', false).html(originalText);
                 const response = xhr.responseJSON;
                 const message = response && response.message ? response.message : 'Error saving preferences';
                 showAlert('danger', message);
