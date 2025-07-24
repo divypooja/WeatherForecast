@@ -79,7 +79,7 @@ def export_excel():
                     'ID': supplier.id,
                     'Name': supplier.name,
                     'Contact Person': supplier.contact_person,
-                    'Mobile Number': supplier.mobile_number,
+                    'Phone': supplier.phone,
                     'Email': supplier.email,
                     'GST Number': supplier.gst_number,
                     'PAN Number': supplier.pan_number,
@@ -92,6 +92,7 @@ def export_excel():
                     'IFSC Code': supplier.ifsc_code,
                     'Partner Type': supplier.partner_type,
                     'Active': supplier.is_active,
+                    'Remarks': supplier.remarks,
                     'Created At': supplier.created_at
                 })
             if suppliers_data:
@@ -104,11 +105,18 @@ def export_excel():
                     'ID': po.id,
                     'PO Number': po.po_number,
                     'Supplier': po.supplier.name if po.supplier else '',
-                    'PO Date': po.po_date,
-                    'Expected Delivery': po.expected_delivery_date,
+                    'Order Date': po.order_date,
+                    'Expected Date': po.expected_date,
                     'Status': po.status,
+                    'Subtotal': po.subtotal,
+                    'GST Amount': po.gst_amount,
                     'Total Amount': po.total_amount,
-                    'Terms': po.terms_conditions,
+                    'Payment Terms': po.payment_terms,
+                    'Freight Terms': po.freight_terms,
+                    'Validity Months': po.validity_months,
+                    'Prepared By': po.prepared_by,
+                    'Verified By': po.verified_by,
+                    'Approved By': po.approved_by,
                     'Notes': po.notes,
                     'Created At': po.created_at
                 })
@@ -121,12 +129,17 @@ def export_excel():
                 so_data.append({
                     'ID': so.id,
                     'SO Number': so.so_number,
-                    'Customer': so.supplier.name if so.supplier else '',
-                    'SO Date': so.so_date,
-                    'Expected Delivery': so.expected_delivery_date,
+                    'Customer': so.customer.name if so.customer else '',
+                    'Order Date': so.order_date,
+                    'Delivery Date': so.delivery_date,
                     'Status': so.status,
                     'Total Amount': so.total_amount,
-                    'Terms': so.terms_conditions,
+                    'Payment Terms': so.payment_terms,
+                    'Freight Terms': so.freight_terms,
+                    'Validity Months': so.validity_months,
+                    'Prepared By': so.prepared_by,
+                    'Verified By': so.verified_by,
+                    'Approved By': so.approved_by,
                     'Notes': so.notes,
                     'Created At': so.created_at
                 })
@@ -140,14 +153,14 @@ def export_excel():
                     'ID': emp.id,
                     'Code': emp.employee_code,
                     'Name': emp.name,
-                    'Position': emp.position,
+                    'Designation': emp.designation,
                     'Department': emp.department,
+                    'Salary Type': emp.salary_type,
+                    'Rate': emp.rate,
                     'Phone': emp.phone,
-                    'Email': emp.email,
                     'Address': emp.address,
-                    'Date of Joining': emp.date_of_joining,
-                    'Salary': emp.salary,
-                    'Status': emp.status,
+                    'Joining Date': emp.joining_date,
+                    'Active': emp.is_active,
                     'Created At': emp.created_at
                 })
             if emp_data:
@@ -159,16 +172,15 @@ def export_excel():
                 jw_data.append({
                     'ID': jw.id,
                     'Job Number': jw.job_number,
+                    'Customer Name': jw.customer_name,
                     'Item': jw.item.name if jw.item else '',
-                    'Vendor': jw.supplier.name if jw.supplier else '',
                     'Quantity Sent': jw.quantity_sent,
                     'Quantity Received': jw.quantity_received,
                     'Rate per Unit': jw.rate_per_unit,
-                    'Total Cost': jw.total_cost,
+                    'Total Cost': jw.quantity_sent * jw.rate_per_unit if jw.quantity_sent and jw.rate_per_unit else 0,
                     'Status': jw.status,
-                    'Start Date': jw.start_date,
-                    'Expected Completion': jw.expected_completion_date,
-                    'Notes': jw.notes,
+                    'Sent Date': jw.sent_date,
+                    'Received Date': jw.received_date,
                     'Created At': jw.created_at
                 })
             if jw_data:
@@ -290,7 +302,7 @@ def export_json():
                 'id': supplier.id,
                 'name': supplier.name,
                 'contact_person': supplier.contact_person,
-                'mobile_number': supplier.mobile_number,
+                'phone': supplier.phone,
                 'email': supplier.email,
                 'gst_number': supplier.gst_number,
                 'pan_number': supplier.pan_number,
@@ -303,6 +315,7 @@ def export_json():
                 'ifsc_code': supplier.ifsc_code,
                 'partner_type': supplier.partner_type,
                 'is_active': supplier.is_active,
+                'remarks': supplier.remarks,
                 'created_at': supplier.created_at.isoformat() if supplier.created_at else None
             })
         backup_data['data']['suppliers'] = suppliers
