@@ -100,13 +100,7 @@ def init_default_modules():
             'icon': 'fas fa-chart-bar',
             'url_endpoint': 'reports.dashboard'
         },
-        {
-            'name': 'backup',
-            'title': 'Data Backup',
-            'description': 'Export data to Excel and cloud backup',
-            'icon': 'fas fa-cloud-download-alt',
-            'url_endpoint': 'backup.backup_dashboard'
-        }
+
     ]
     
     for module_data in default_modules:
