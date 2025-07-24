@@ -58,6 +58,16 @@ def list_items():
 def add_item():
     form = ItemForm()
     
+    # Populate UOM choices from database
+    from models_uom import UnitOfMeasure
+    units = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+    unit_choices = [('', 'Same as Storage')] + [(unit.symbol, f"{unit.name} ({unit.symbol})") for unit in units]
+    primary_unit_choices = [(unit.symbol, f"{unit.name} ({unit.symbol})") for unit in units]
+    
+    form.unit_of_measure.choices = primary_unit_choices
+    form.purchase_unit.choices = unit_choices
+    form.sale_unit.choices = unit_choices
+    
     # Auto-generate item code if not provided
     if not form.code.data:
         form.code.data = generate_item_code()
@@ -97,6 +107,16 @@ def add_item():
 def edit_item(id):
     item = Item.query.get_or_404(id)
     form = ItemForm(obj=item)
+    
+    # Populate UOM choices from database
+    from models_uom import UnitOfMeasure
+    units = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+    unit_choices = [('', 'Same as Storage')] + [(unit.symbol, f"{unit.name} ({unit.symbol})") for unit in units]
+    primary_unit_choices = [(unit.symbol, f"{unit.name} ({unit.symbol})") for unit in units]
+    
+    form.unit_of_measure.choices = primary_unit_choices
+    form.purchase_unit.choices = unit_choices
+    form.sale_unit.choices = unit_choices
     
     if form.validate_on_submit():
         # Check if item code already exists (excluding current item)
