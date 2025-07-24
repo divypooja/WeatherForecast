@@ -38,6 +38,7 @@
                                 <th>Code</th>
                                 <th>Name</th>
                                 <th>Type</th>
+                                <th>Business</th>
                                 <th>Current Stock</th>
                                 <th>Min Stock</th>
                                 <th>UOM</th>
@@ -60,10 +61,20 @@
                                     <span class="badge bg-secondary">{{ item.item_type.title() }}</span>
                                 </td>
                                 <td>
-                                    {% if (item.current_stock or 0) <= (item.minimum_stock or 0) and (item.minimum_stock or 0) > 0 %}
-                                        <span class="text-danger">{{ item.current_stock or 0 }}</span>
+                                    {% if item.business_type == 'trading' %}
+                                        <span class="badge bg-success">Trading</span>
+                                        {% if item.unit_weight %}
+                                            <br><small class="text-muted">{{ item.unit_weight }}kg/pc</small>
+                                        {% endif %}
                                     {% else %}
-                                        {{ item.current_stock or 0 }}
+                                        <span class="badge bg-primary">Manufacturing</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if (item.current_stock or 0) <= (item.minimum_stock or 0) and (item.minimum_stock or 0) > 0 %}
+                                        <span class="text-danger">{{ item.display_stock_info or (item.current_stock or 0) }}</span>
+                                    {% else %}
+                                        {{ item.display_stock_info or (item.current_stock or 0) }}
                                     {% endif %}
                                 </td>
                                 <td>{{ item.minimum_stock or 0 }}</td>

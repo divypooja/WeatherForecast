@@ -13,8 +13,8 @@ class ItemForm(FlaskForm):
     code = StringField('Item Code', validators=[DataRequired(), Length(max=50)])
     name = StringField('Item Name', validators=[DataRequired(), Length(max=100)])
     description = TextAreaField('Description')
-    unit_of_measure = SelectField('Unit of Measure', 
-                                choices=[('pcs', 'Pieces'), ('kg', 'Kilograms'), ('meter', 'Meters'), 
+    unit_of_measure = SelectField('Primary Storage Unit', 
+                                choices=[('kg', 'Kilograms'), ('pcs', 'Pieces'), ('meter', 'Meters'), 
                                        ('liter', 'Liters'), ('box', 'Boxes'), ('set', 'Sets'), ('nos', 'Numbers')],
                                 validators=[DataRequired()])
     hsn_code = StringField('HSN Code', validators=[Length(max=20)])
@@ -23,8 +23,23 @@ class ItemForm(FlaskForm):
     minimum_stock = FloatField('Minimum Stock', validators=[NumberRange(min=0)], default=0.0)
     unit_price = FloatField('Unit Price', validators=[NumberRange(min=0)], default=0.0)
     item_type = SelectField('Item Type', 
-                          choices=[('material', 'Material'), ('product', 'Product'), ('consumable', 'Consumable')],
+                          choices=[('material', 'Raw Material'), ('product', 'Finished Product'), ('consumable', 'Consumable')],
                           validators=[DataRequired()])
+    
+    # Business workflow selection
+    business_type = SelectField('Business Type', 
+                              choices=[('trading', 'Direct Trading (Buy→Sell)'), ('manufacturing', 'Manufacturing (Raw Material→Production)')],
+                              validators=[DataRequired()], default='trading')
+    
+    # UOM Conversion fields for Trading workflow
+    purchase_unit = SelectField('Purchase Unit', 
+                              choices=[('', 'Same as Storage'), ('kg', 'Kilograms'), ('meter', 'Meters'), ('liter', 'Liters')],
+                              validators=[Optional()])
+    sale_unit = SelectField('Sale Unit', 
+                          choices=[('', 'Same as Storage'), ('pcs', 'Pieces'), ('meter', 'Meters'), ('kg', 'Kilograms')],
+                          validators=[Optional()])
+    unit_weight = FloatField('Unit Weight (kg/piece)', validators=[Optional(), NumberRange(min=0)],
+                           render_kw={"placeholder": "e.g., 0.12 kg per piece"})
 
 class SupplierForm(FlaskForm):
     # Basic Information
