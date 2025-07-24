@@ -341,6 +341,209 @@ def export_json():
         current_app.logger.error(f"Error exporting to JSON: {str(e)}")
         return jsonify({'success': False, 'message': f'Export failed: {str(e)}'})
 
+@backup_bp.route('/import/excel', methods=['POST'])
+@login_required
+def import_excel():
+    """Import data from Excel backup file"""
+    if not current_user.role == 'admin':
+        return jsonify({'success': False, 'message': 'Admin access required'})
+    
+    try:
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'message': 'No file uploaded'})
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'success': False, 'message': 'No file selected'})
+        
+        if not (file.filename.endswith('.xlsx') or file.filename.endswith('.xls')):
+            return jsonify({'success': False, 'message': 'Only Excel files (.xlsx, .xls) are supported'})
+        
+        # Read Excel file and get all sheet names
+        excel_data = pd.ExcelFile(file)
+        imported_data = {}
+        
+        # Process each sheet
+        for sheet_name in excel_data.sheet_names:
+            try:
+                df = pd.read_excel(file, sheet_name=sheet_name)
+                if not df.empty:
+                    imported_data[sheet_name] = len(df)
+                    
+                    # Import logic for each sheet type
+                    if sheet_name == 'Items':
+                        import_items_from_excel(df)
+                    elif sheet_name == 'Business Partners':
+                        import_suppliers_from_excel(df)
+                    elif sheet_name == 'Employees':
+                        import_employees_from_excel(df)
+                    elif sheet_name == 'Purchase Orders':
+                        import_purchase_orders_from_excel(df)
+                    elif sheet_name == 'Sales Orders':
+                        import_sales_orders_from_excel(df)
+                    # Add more sheet types as needed
+                        
+            except Exception as sheet_error:
+                current_app.logger.warning(f"Error processing sheet {sheet_name}: {str(sheet_error)}")
+                continue
+        
+        db.session.commit()
+        
+        # Create summary message
+        summary_parts = []
+        for sheet, count in imported_data.items():
+            summary_parts.append(f"{sheet}: {count} records")
+        
+        message = f"Excel import completed successfully!\n\nImported data:\n" + "\n".join(summary_parts)
+        
+        return jsonify({
+            'success': True,
+            'message': message
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error importing Excel: {str(e)}")
+        return jsonify({'success': False, 'message': f'Import failed: {str(e)}'})
+
+def import_items_from_excel(df):
+    """Import items from Excel DataFrame"""
+    for _, row in df.iterrows():
+        try:
+            # Check if item exists by code
+            existing_item = Item.query.filter_by(code=row.get('Code')).first()
+            if existing_item:
+                # Update existing item
+                existing_item.name = row.get('Name', existing_item.name)
+                existing_item.description = row.get('Description', existing_item.description)
+                existing_item.unit_price = float(row.get('Unit Price', existing_item.unit_price or 0))
+                existing_item.current_stock = float(row.get('Current Stock', existing_item.current_stock or 0))
+                existing_item.minimum_stock = float(row.get('Minimum Stock', existing_item.minimum_stock or 0))
+                existing_item.unit_of_measure = row.get('Unit of Measure', existing_item.unit_of_measure)
+                existing_item.gst_rate = float(row.get('GST Rate', existing_item.gst_rate or 0))
+                existing_item.hsn_code = row.get('HSN Code', existing_item.hsn_code)
+                existing_item.item_type = row.get('Item Type', existing_item.item_type)
+            else:
+                # Create new item
+                item = Item(
+                    code=row.get('Code'),
+                    name=row.get('Name'),
+                    description=row.get('Description'),
+                    unit_price=float(row.get('Unit Price', 0)),
+                    current_stock=float(row.get('Current Stock', 0)),
+                    minimum_stock=float(row.get('Minimum Stock', 0)),
+                    unit_of_measure=row.get('Unit of Measure', 'nos'),
+                    gst_rate=float(row.get('GST Rate', 0)),
+                    hsn_code=row.get('HSN Code'),
+                    item_type=row.get('Item Type', 'raw_material')
+                )
+                db.session.add(item)
+        except Exception as e:
+            current_app.logger.warning(f"Error importing item {row.get('Code', 'Unknown')}: {str(e)}")
+            continue
+
+def import_suppliers_from_excel(df):
+    """Import suppliers from Excel DataFrame"""
+    for _, row in df.iterrows():
+        try:
+            # Check if supplier exists by name
+            existing_supplier = Supplier.query.filter_by(name=row.get('Name')).first()
+            if existing_supplier:
+                # Update existing supplier
+                existing_supplier.email = row.get('Email', existing_supplier.email)
+                existing_supplier.phone = row.get('Phone', existing_supplier.phone)
+                existing_supplier.address = row.get('Address', existing_supplier.address)
+                existing_supplier.gst_number = row.get('GST Number', existing_supplier.gst_number)
+                existing_supplier.partner_type = row.get('Partner Type', existing_supplier.partner_type)
+            else:
+                # Create new supplier
+                supplier = Supplier(
+                    name=row.get('Name'),
+                    email=row.get('Email'),
+                    phone=row.get('Phone'),
+                    address=row.get('Address'),  
+                    gst_number=row.get('GST Number'),
+                    partner_type=row.get('Partner Type', 'supplier')
+                )
+                db.session.add(supplier)
+        except Exception as e:
+            current_app.logger.warning(f"Error importing supplier {row.get('Name', 'Unknown')}: {str(e)}")
+            continue
+
+def import_employees_from_excel(df):
+    """Import employees from Excel DataFrame"""
+    for _, row in df.iterrows():
+        try:
+            # Check if employee exists by code
+            existing_employee = Employee.query.filter_by(code=row.get('Employee Code')).first()
+            if existing_employee:
+                # Update existing employee
+                existing_employee.name = row.get('Name', existing_employee.name)
+                existing_employee.email = row.get('Email', existing_employee.email)
+                existing_employee.phone = row.get('Phone', existing_employee.phone)
+                existing_employee.department = row.get('Department', existing_employee.department)
+                existing_employee.designation = row.get('Designation', existing_employee.designation)
+                existing_employee.salary = float(row.get('Salary', existing_employee.salary or 0))
+            else:
+                # Create new employee
+                employee = Employee(
+                    code=row.get('Employee Code'),
+                    name=row.get('Name'),
+                    email=row.get('Email'),
+                    phone=row.get('Phone'),
+                    department=row.get('Department'),
+                    designation=row.get('Designation'),
+                    salary=float(row.get('Salary', 0))
+                )
+                db.session.add(employee)
+        except Exception as e:
+            current_app.logger.warning(f"Error importing employee {row.get('Employee Code', 'Unknown')}: {str(e)}")
+            continue
+
+def import_purchase_orders_from_excel(df):
+    """Import purchase orders from Excel DataFrame - basic implementation"""
+    # This is a simplified version - full implementation would need to handle items
+    for _, row in df.iterrows():
+        try:
+            existing_po = PurchaseOrder.query.filter_by(po_number=row.get('PO Number')).first()
+            if not existing_po:
+                # Find supplier by name
+                supplier = Supplier.query.filter_by(name=row.get('Supplier')).first()
+                if supplier:
+                    po = PurchaseOrder(
+                        po_number=row.get('PO Number'),
+                        supplier_id=supplier.id,
+                        po_date=pd.to_datetime(row.get('Date')).date(),
+                        status=row.get('Status', 'pending'),
+                        total_amount=float(row.get('Total Amount', 0))
+                    )
+                    db.session.add(po)
+        except Exception as e:
+            current_app.logger.warning(f"Error importing PO {row.get('PO Number', 'Unknown')}: {str(e)}")
+            continue
+
+def import_sales_orders_from_excel(df):
+    """Import sales orders from Excel DataFrame - basic implementation"""
+    # This is a simplified version - full implementation would need to handle items
+    for _, row in df.iterrows():
+        try:
+            existing_so = SalesOrder.query.filter_by(so_number=row.get('SO Number')).first()
+            if not existing_so:
+                # Find customer by name
+                customer = Supplier.query.filter_by(name=row.get('Customer')).first()
+                if customer:
+                    so = SalesOrder(
+                        so_number=row.get('SO Number'),
+                        customer_id=customer.id,
+                        so_date=pd.to_datetime(row.get('Date')).date(),
+                        status=row.get('Status', 'pending'),
+                        total_amount=float(row.get('Total Amount', 0))
+                    )
+                    db.session.add(so)
+        except Exception as e:
+            current_app.logger.warning(f"Error importing SO {row.get('SO Number', 'Unknown')}: {str(e)}")
+            continue
+
 @backup_bp.route('/import/json', methods=['POST'])
 @login_required
 def import_json():
