@@ -94,8 +94,8 @@
                             <div class="col-md-12">
                                 <div class="mb-3">
                                     {{ form.rejected_quantity.label(class="form-label") }}
-                                    {{ form.rejected_quantity(class="form-control", step="0.01", id="rejectedQty") }}
-                                    <div class="form-text">Any materials that failed inspection (damaged, defective, or don't meet quality standards)</div>
+                                    {{ form.rejected_quantity(class="form-control", step="0.01", id="rejectedQty", readonly=true) }}
+                                    <div class="form-text">Auto-calculated: Inspected Quantity - Passed Quantity</div>
                                     {% for error in form.rejected_quantity.errors %}
                                         <div class="text-danger">{{ error }}</div>
                                     {% endfor %}
@@ -175,16 +175,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const received = parseFloat(receivedQty.value) || 0;
         const inspected = parseFloat(inspectedQty.value) || 0;
         const passed = parseFloat(passedQty.value) || 0;
-        const damaged = parseFloat(damagedQty.value) || 0;
-        const rejected = parseFloat(rejectedQty.value) || 0;
+        
+        // Auto-calculate rejected quantity
+        const rejected = Math.max(0, inspected - passed);
+        rejectedQty.value = rejected.toFixed(2);
 
-        const totalAccounted = passed + damaged + rejected;
+        const totalAccounted = passed + rejected;
         const acceptanceRate = inspected > 0 ? (passed / inspected * 100) : 0;
-        const damageRate = inspected > 0 ? (damaged / inspected * 100) : 0;
         const rejectionRate = inspected > 0 ? (rejected / inspected * 100) : 0;
 
         document.getElementById('acceptanceRate').textContent = acceptanceRate.toFixed(1) + '%';
-        document.getElementById('damageRate').textContent = damageRate.toFixed(1) + '%';
         document.getElementById('rejectionRate').textContent = rejectionRate.toFixed(1) + '%';
         document.getElementById('totalAccounted').textContent = totalAccounted.toFixed(2);
         
@@ -294,7 +294,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Add event listeners for calculations
-    [receivedQty, inspectedQty, passedQty, damagedQty, rejectedQty].forEach(element => {
+    [receivedQty, inspectedQty, passedQty].forEach(element => {
         element.addEventListener('input', updateSummary);
     });
 

@@ -344,7 +344,7 @@ class MaterialInspectionForm(FlaskForm):
     received_quantity = FloatField('Received Quantity', validators=[DataRequired(), NumberRange(min=0.01)])
     inspected_quantity = FloatField('Inspected Quantity', validators=[DataRequired(), NumberRange(min=0.01)])
     passed_quantity = FloatField('Passed/Good Quantity', validators=[DataRequired(), NumberRange(min=0)])
-    rejected_quantity = FloatField('Rejected Quantity', validators=[DataRequired(), NumberRange(min=0)])
+    rejected_quantity = FloatField('Rejected Quantity', validators=[Optional(), NumberRange(min=0)])
     rejection_reasons = TextAreaField('Rejection Reasons', validators=[Optional()],
                                     render_kw={"placeholder": "e.g., Scratches, Dents, Corrosion, Quality issues, etc."})
     inspection_notes = TextAreaField('Inspection Notes', validators=[Optional()],
