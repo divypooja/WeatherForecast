@@ -73,33 +73,61 @@ def init_default_modules():
             'url_endpoint': 'purchase.dashboard'
         },
         {
+            'name': 'reports',
+            'title': 'Reports & Analytics',
+            'description': 'Business reports and data analytics',
+            'icon': 'fas fa-chart-bar',
+            'url_endpoint': 'reports.dashboard'
+        },
+        {
+            'name': 'notifications',
+            'title': 'Notifications',
+            'description': 'System notifications and alerts',
+            'icon': 'fas fa-bell',
+            'url_endpoint': 'notifications.dashboard'
+        },
+        {
+            'name': 'quality_control',
+            'title': 'Quality Control',
+            'description': 'Quality inspections and issue tracking',
+            'icon': 'fas fa-shield-alt',
+            'url_endpoint': 'quality.dashboard'
+        },
+        {
+            'name': 'material_inspection',
+            'title': 'Material Inspection',
+            'description': 'Incoming material inspection workflow',
+            'icon': 'fas fa-search',
+            'url_endpoint': 'inspection.dashboard'
+        },
+        {
+            'name': 'factory_expenses',
+            'title': 'Factory Expenses',
+            'description': 'Factory operational expenses tracking',
+            'icon': 'fas fa-receipt',
+            'url_endpoint': 'expenses.dashboard'
+        },
+        {
+            'name': 'tally_integration',
+            'title': 'Tally Integration',
+            'description': 'Accounting system integration',
+            'icon': 'fas fa-exchange-alt',
+            'url_endpoint': 'tally.dashboard'
+        },
+        {
+            'name': 'documents',
+            'title': 'Document Management',
+            'description': 'File and document management system',
+            'icon': 'fas fa-folder-open',
+            'url_endpoint': 'documents.list'
+        },
+        {
             'name': 'employees',
             'title': 'Employees',
             'description': 'HR and employee management',
             'icon': 'fas fa-users',
             'url_endpoint': 'hr.dashboard'
-        },
-        {
-            'name': 'expenses',
-            'title': 'Factory Expenses',
-            'description': 'Track factory operational expenses',
-            'icon': 'fas fa-receipt',
-            'url_endpoint': 'expenses.dashboard'
-        },
-        {
-            'name': 'quality',
-            'title': 'Quality Control',
-            'description': 'Quality management and issues',
-            'icon': 'fas fa-shield-alt',
-            'url_endpoint': 'quality.dashboard'
-        },
-        {
-            'name': 'reports',
-            'title': 'Reports',
-            'description': 'Analytics and reporting tools',
-            'icon': 'fas fa-chart-bar',
-            'url_endpoint': 'reports.dashboard'
-        },
+        }
 
     ]
     
