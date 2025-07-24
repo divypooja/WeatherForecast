@@ -456,7 +456,9 @@ def reset_database():
         return redirect(url_for('settings.dashboard'))
     
     try:
-        # Get user selections
+        # Get user selections - debug print form data
+        print("Form data received:", request.form)
+        
         reset_purchase_sales = request.form.get('reset_purchase_sales') == 'true'
         reset_inventory = request.form.get('reset_inventory') == 'true'
         reset_production = request.form.get('reset_production') == 'true'
@@ -465,37 +467,58 @@ def reset_database():
         reset_employees = request.form.get('reset_employees') == 'true'
         reset_documents = request.form.get('reset_documents') == 'true'
         
+        print("Reset flags:", {
+            'purchase_sales': reset_purchase_sales,
+            'inventory': reset_inventory, 
+            'production': reset_production,
+            'inspections': reset_inspections,
+            'expenses': reset_expenses,
+            'employees': reset_employees,
+            'documents': reset_documents
+        })
+        
         deleted_items = []
         
         # Delete in order to respect foreign key constraints
         if reset_inspections:
+            count_mi = MaterialInspection.query.count()
+            count_qi = QualityIssue.query.count()
             MaterialInspection.query.delete()
             QualityIssue.query.delete()
-            deleted_items.append('Material Inspections & Quality Issues')
+            deleted_items.append(f'Material Inspections ({count_mi}) & Quality Issues ({count_qi})')
         
         if reset_production:
+            count_prod = Production.query.count()
+            count_job = JobWork.query.count()
             Production.query.delete()
             JobWork.query.delete()
-            deleted_items.append('Production Orders & Job Work')
+            deleted_items.append(f'Production Orders ({count_prod}) & Job Work ({count_job})')
         
         if reset_expenses:
+            count_exp = FactoryExpense.query.count()
             FactoryExpense.query.delete()
-            deleted_items.append('Factory Expenses')
+            deleted_items.append(f'Factory Expenses ({count_exp})')
         
         if reset_employees:
+            count_sal = SalaryRecord.query.count()
+            count_adv = EmployeeAdvance.query.count()
+            count_emp = Employee.query.count()
             SalaryRecord.query.delete()
             EmployeeAdvance.query.delete()
             Employee.query.delete()
-            deleted_items.append('Employee Records & Payroll')
+            deleted_items.append(f'Employee Records ({count_emp}) & Payroll ({count_sal + count_adv})')
         
         if reset_purchase_sales:
+            count_so = SalesOrder.query.count()
+            count_po = PurchaseOrder.query.count()
             SalesOrder.query.delete()
             PurchaseOrder.query.delete()
-            deleted_items.append('Purchase Orders & Sales Orders')
+            deleted_items.append(f'Purchase Orders ({count_po}) & Sales Orders ({count_so})')
         
         if reset_inventory:
+            count_items = Item.query.count()
             Item.query.delete()
-            deleted_items.append('Inventory Items')
+            deleted_items.append(f'Inventory Items ({count_items})')
         
         if reset_documents:
             # Clear uploads directory
