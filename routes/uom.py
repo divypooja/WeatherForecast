@@ -188,7 +188,7 @@ def simple_setup():
                 
                 flash(f'✅ Simple setup complete! {item.name} uses {unit_type} for all operations.', 'success')
                 
-            elif workflow_type == 'different_units':
+            elif workflow_type == 'trading':
                 # Different units case
                 purchase_unit = request.form.get('purchase_unit')
                 storage_unit = request.form.get('storage_unit')
@@ -212,7 +212,36 @@ def simple_setup():
                     except:
                         pass
                 
-                flash(f'✅ Unit conversion setup complete! {item.name}: 1 {storage_unit} = {conversion_quantity} {sale_unit}', 'success')
+                flash(f'✅ Trading setup complete! {item.name}: 1 {storage_unit} = {conversion_quantity} {sale_unit}', 'success')
+                
+            elif workflow_type == 'production':
+                # Production/Manufacturing case - raw material for production
+                purchase_unit = request.form.get('production_purchase_unit')
+                bom_unit = request.form.get('production_bom_unit')
+                conversion_factor = request.form.get('production_conversion_factor')
+                
+                if not all([purchase_unit, bom_unit]):
+                    flash('Please select both purchase unit and BOM unit for production setup', 'error')
+                    return redirect(url_for('uom.simple_setup'))
+                
+                # Update item for production use
+                item.purchase_unit = purchase_unit
+                item.unit_of_measure = bom_unit  # BOM unit becomes the primary tracking unit
+                item.sale_unit = None  # No direct sale unit for raw materials
+                item.business_type = 'manufacturing'  # Mark as manufacturing item
+                
+                # Set conversion factor if provided
+                if conversion_factor:
+                    try:
+                        factor = float(conversion_factor)
+                        if purchase_unit == 'M' and bom_unit == 'mm':
+                            item.unit_weight = factor / 1000.0  # Store conversion data
+                        elif purchase_unit == 'Kg' and bom_unit == 'g':
+                            item.unit_weight = factor / 1000.0
+                    except:
+                        pass
+                
+                flash(f'✅ Production material setup complete! {item.name} will be used in manufacturing (Purchase: {purchase_unit}, BOM: {bom_unit})', 'success')
             
             db.session.commit()
             return redirect(url_for('uom.dashboard'))
