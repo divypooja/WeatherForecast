@@ -151,11 +151,134 @@ def test_notification_template():
 @login_required
 def user_management():
     """User management page (admin only)"""
-    if not current_user.is_admin():
+    if not current_user.role == 'admin':
         flash('Access denied. Admin privileges required.', 'danger')
         return redirect(url_for('main.dashboard'))
     
-    return render_template('settings/users.html')
+    # Get all users
+    users = User.query.order_by(User.created_at.desc()).all()
+    
+    return render_template('settings/users.html', users=users)
+
+@settings_bp.route('/users/create', methods=['POST'])
+@login_required
+def create_user():
+    """Create new user (admin only)"""
+    if not current_user.role == 'admin':
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.dashboard'))
+    
+    try:
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        role = request.form.get('role')
+        
+        # Validation
+        if not all([username, email, password, role]):
+            flash('All fields are required', 'danger')
+            return redirect(url_for('settings.user_management'))
+        
+        if password != confirm_password:
+            flash('Passwords do not match', 'danger')
+            return redirect(url_for('settings.user_management'))
+        
+        if len(password) < 6:
+            flash('Password must be at least 6 characters', 'danger')
+            return redirect(url_for('settings.user_management'))
+        
+        # Check if user already exists
+        if User.query.filter_by(username=username).first():
+            flash('Username already exists', 'danger')
+            return redirect(url_for('settings.user_management'))
+        
+        if User.query.filter_by(email=email).first():
+            flash('Email already exists', 'danger')
+            return redirect(url_for('settings.user_management'))
+        
+        # Create new user
+        from werkzeug.security import generate_password_hash
+        new_user = User(
+            username=username,
+            email=email,
+            password_hash=generate_password_hash(password),
+            role=role
+        )
+        
+        db.session.add(new_user)
+        db.session.commit()
+        
+        flash(f'User {username} created successfully', 'success')
+        return redirect(url_for('settings.user_management'))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error creating user: {str(e)}', 'danger')
+        return redirect(url_for('settings.user_management'))
+
+@settings_bp.route('/users/<int:user_id>/reset_password', methods=['POST'])
+@login_required
+def reset_user_password(user_id):
+    """Reset user password (admin only)"""
+    if not current_user.role == 'admin':
+        return jsonify({'success': False, 'message': 'Admin access required'})
+    
+    try:
+        user = User.query.get_or_404(user_id)
+        
+        # Don't allow resetting own password
+        if user.id == current_user.id:
+            return jsonify({'success': False, 'message': 'Cannot reset your own password'})
+        
+        # Generate random password
+        import string
+        import random
+        new_password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+        
+        # Update password
+        from werkzeug.security import generate_password_hash
+        user.password_hash = generate_password_hash(new_password)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Password reset successfully',
+            'new_password': new_password
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Error resetting password: {str(e)}'})
+
+@settings_bp.route('/users/<int:user_id>', methods=['DELETE'])
+@login_required
+def delete_user(user_id):
+    """Delete user (admin only)"""
+    if not current_user.role == 'admin':
+        return jsonify({'success': False, 'message': 'Admin access required'})
+    
+    try:
+        user = User.query.get_or_404(user_id)
+        
+        # Don't allow deleting own account
+        if user.id == current_user.id:
+            return jsonify({'success': False, 'message': 'Cannot delete your own account'})
+        
+        # Don't delete if this is the only admin
+        if user.role == 'admin':
+            admin_count = User.query.filter_by(role='admin').count()
+            if admin_count <= 1:
+                return jsonify({'success': False, 'message': 'Cannot delete the last admin user'})
+        
+        db.session.delete(user)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'User deleted successfully'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Error deleting user: {str(e)}'})
 
 @settings_bp.route('/reset_database', methods=['POST'])
 @login_required
