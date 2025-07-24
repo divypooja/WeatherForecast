@@ -13,7 +13,9 @@ settings_bp = Blueprint('settings', __name__)
 def dashboard():
     """Settings dashboard page"""
     settings = CompanySettings.get_settings()
-    return render_template('settings/dashboard.html', settings=settings)
+    # Import csrf token function
+    from flask_wtf.csrf import generate_csrf
+    return render_template('settings/dashboard.html', settings=settings, csrf_token=generate_csrf)
 
 @settings_bp.route('/company', methods=['GET', 'POST'])
 @login_required

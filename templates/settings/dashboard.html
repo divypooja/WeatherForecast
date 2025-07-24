@@ -121,23 +121,15 @@
     </div>
 </div>
 
+<!-- Hidden form for database reset -->
+<form id="resetForm" method="POST" action="{{ url_for('settings.reset_database') }}" style="display: none;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}"/>
+</form>
+
 <script>
 function confirmReset() {
     if (confirm('Are you absolutely sure you want to reset the database?\n\nThis will permanently delete:\n• All Purchase Orders & Sales Orders\n• All Inventory Items\n• All Production Orders & Job Work\n• All Material Inspections & Quality Issues\n• All Factory Expenses & Employee Records\n• All uploaded documents\n\nThis action cannot be undone!')) {
-        // Create a form and submit it
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '{{ url_for("settings.reset_database") }}';
-        
-        // Add CSRF token
-        const csrfToken = document.createElement('input');
-        csrfToken.type = 'hidden';
-        csrfToken.name = 'csrf_token';
-        csrfToken.value = '{{ csrf_token() }}';
-        form.appendChild(csrfToken);
-        
-        document.body.appendChild(form);
-        form.submit();
+        document.getElementById('resetForm').submit();
     }
 }
 </script>
