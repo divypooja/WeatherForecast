@@ -149,6 +149,13 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **User Experience**: Clear notifications inform users that emails will include PDF attachments while WhatsApp sends text-only summaries
 - **Integration**: Seamlessly integrated with existing notification system settings and SendGrid email service
 
+### Complete Material Inspection System Implementation (Enhanced)
+- **Auto-Calculation Feature**: Enhanced Material Inspection form with automatic rejected quantity calculation (Inspected Quantity - Passed Quantity)
+- **User Experience Improvements**: Made rejected quantity field read-only with real-time auto-calculation as users type
+- **Form Validation Updates**: Updated form validation to make rejected quantity optional since it's automatically calculated
+- **Null Safety Fixes**: Added proper handling for items with null current_stock values to prevent database errors
+- **Professional Interface**: Updated help text and form layout to show auto-calculation formula clearly
+
 ### Complete Material Inspection System Implementation
 - **MaterialInspection Model**: Created comprehensive inspection tracking with unique inspection numbers (INSPECT-YYYY-0001 format)
 - **Database Structure**: Fixed database integrity issues and recreated material_inspections table with proper primary key

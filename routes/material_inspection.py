@@ -160,6 +160,8 @@ def log_inspection():
             
             # Update inventory only with passed quantity for the specific item
             item = Item.query.get(form.item_id.data)
+            if item.current_stock is None:
+                item.current_stock = 0.0
             item.current_stock += form.passed_quantity.data
                 
         elif form.job_work_id.data:
@@ -169,6 +171,8 @@ def log_inspection():
             
             # Update inventory only with passed quantity
             item = Item.query.get(job_work.item_id)
+            if item.current_stock is None:
+                item.current_stock = 0.0
             item.current_stock += form.passed_quantity.data
         
         db.session.commit()
