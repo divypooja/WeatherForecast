@@ -88,8 +88,8 @@ def list_employees():
 def add_employee():
     form = EmployeeForm()
     
-    # Auto-generate employee code if not provided
-    if not form.employee_code.data:
+    # Auto-generate employee code for GET request
+    if request.method == 'GET':
         form.employee_code.data = generate_employee_code()
     
     if form.validate_on_submit():
@@ -108,7 +108,7 @@ def add_employee():
             rate=form.rate.data,
             phone=form.phone.data,
             address=form.address.data,
-            hire_date=form.hire_date.data
+            joining_date=form.joining_date.data
         )
         db.session.add(employee)
         db.session.commit()
@@ -151,7 +151,7 @@ def edit_employee(id):
         employee.rate = form.rate.data
         employee.phone = form.phone.data
         employee.address = form.address.data
-        employee.hire_date = form.hire_date.data
+        employee.joining_date = form.joining_date.data
         
         # Handle document uploads
         documents_uploaded = 0

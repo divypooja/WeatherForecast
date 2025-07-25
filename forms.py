@@ -221,7 +221,7 @@ class EmployeeForm(FlaskForm):
     rate = FloatField('Rate', validators=[DataRequired(), NumberRange(min=0)])
     phone = StringField('Phone', validators=[Length(max=20)])
     address = TextAreaField('Address')
-    hire_date = DateField('Hire Date', validators=[DataRequired()])
+    joining_date = DateField('Joining Date', validators=[DataRequired()])
     salary = FloatField('Salary', validators=[NumberRange(min=0)])
     is_active = BooleanField('Active', default=True)
     documents = FileField('Upload Documents', 
