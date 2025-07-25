@@ -23,4 +23,4 @@ class JobWorkRateForm(FlaskForm):
     
     def __init__(self, *args, **kwargs):
         super(JobWorkRateForm, self).__init__(*args, **kwargs)
-        self.item_id.choices = [(0, 'Select Item')] + [(item.id, f"{item.code} - {item.name}") for item in Item.query.filter_by(is_active=True).order_by(Item.name).all()]
+        self.item_id.choices = [(0, 'Select Item')] + [(item.id, f"{item.code} - {item.name}") for item in Item.query.order_by(Item.name).all()]
