@@ -6,7 +6,16 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 25, 2025)
 
-### Enhanced Job Work Forms with Real-time Inventory Checking and Universal Preview System (Latest)
+### Complete Process Field Integration for Job Work Management (Latest)
+- **Process Type Selection**: Successfully implemented process field in JobWork forms allowing selection from 8 manufacturing processes (Zinc, Cutting, Bending, Welding, Painting, Assembly, Machining, Polishing)
+- **Database Schema Integration**: Added process column to job_works table with VARCHAR(100) type for storing process types
+- **Form Field Resolution**: Resolved WTForms naming conflict by using 'process_type' field name internally while displaying as 'Process' to users
+- **Route Integration**: Updated both add and edit JobWork routes to handle process field data during creation and modification
+- **Preview System Enhancement**: Enhanced JobWork preview system to display selected process with professional badge styling using Bootstrap info badge
+- **Template Updates**: Added Process field to JobWork form template positioned between Item and Quantity fields with proper validation and help text
+- **Complete CRUD Operations**: Process field fully integrated across create, read, update operations with proper form validation and database persistence
+
+### Enhanced Job Work Forms with Real-time Inventory Checking and Universal Preview System
 - **Real-time Stock Validation**: Enhanced Job Work forms with "Check Stock" button providing instant inventory availability checks before quantity operations
 - **Insufficient Stock Prevention**: System prevents overselling by displaying clear warnings when requested quantity exceeds available stock with color-coded alerts (red for insufficient, yellow for low stock, green for adequate)
 - **Universal Preview System**: Created comprehensive JavaScript framework for form preview functionality across all major forms (Job Work, Inventory, Production, Purchase Orders, Sales Orders)
