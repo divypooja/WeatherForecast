@@ -66,7 +66,13 @@
                             
                             <div class="col-md-6 mb-3">
                                 {{ form.quantity_sent.label(class="form-label") }}
-                                {{ form.quantity_sent(class="form-control", step="0.01") }}
+                                <div class="input-group">
+                                    {{ form.quantity_sent(class="form-control", step="0.01", id="quantity_sent") }}
+                                    <button type="button" class="btn btn-outline-info" id="check-stock-btn" onclick="checkInventoryStock()">
+                                        <i class="fas fa-search"></i> Check Stock
+                                    </button>
+                                </div>
+                                <div id="stock-info" class="mt-2"></div>
                                 <small class="text-muted">Available stock will be checked before sending</small>
                                 {% if form.quantity_sent.errors %}
                                     <div class="text-danger small">
@@ -136,9 +142,14 @@
                             <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-secondary">
                                 <i class="fas fa-times"></i> Cancel
                             </a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> {{ 'Update' if job else 'Save' }} Job Work
-                            </button>
+                            <div>
+                                <button type="button" class="btn btn-outline-info me-2" onclick="previewJobWork()">
+                                    <i class="fas fa-eye"></i> Preview
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> {{ 'Update' if job else 'Save' }} Job Work
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -157,10 +168,162 @@
     </div>
 </div>
 
+<!-- Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="previewModalLabel">
+                    <i class="fas fa-eye"></i> Job Work Preview
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="preview-content">
+                    <!-- Preview content will be loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="document.querySelector('form').submit()">
+                    <i class="fas fa-save"></i> Save Job Work
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-// Auto-filling removed as requested - users will manually enter rate per unit
+// Function to check inventory stock
+function checkInventoryStock() {
+    const itemSelect = document.getElementById('item_id');
+    const quantityInput = document.getElementById('quantity_sent');
+    const stockInfo = document.getElementById('stock-info');
+    
+    if (!itemSelect.value) {
+        stockInfo.innerHTML = '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle"></i> Please select an item first</div>';
+        return;
+    }
+    
+    const quantity = parseFloat(quantityInput.value) || 0;
+    
+    // Fetch item stock information
+    fetch(`/api/item-stock/${itemSelect.value}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const availableStock = data.current_stock || 0;
+                const unit = data.unit_of_measure || 'units';
+                
+                let stockClass = 'alert-success';
+                let stockMessage = `Available Stock: ${availableStock} ${unit}`;
+                let stockIcon = 'fa-check-circle';
+                
+                if (quantity > availableStock) {
+                    stockClass = 'alert-danger';
+                    stockMessage = `Insufficient Stock! Available: ${availableStock} ${unit}, Required: ${quantity} ${unit}`;
+                    stockIcon = 'fa-exclamation-triangle';
+                } else if (availableStock < 10) { // Low stock warning
+                    stockClass = 'alert-warning';
+                    stockMessage = `Low Stock Warning: ${availableStock} ${unit} available`;
+                    stockIcon = 'fa-exclamation-circle';
+                }
+                
+                stockInfo.innerHTML = `<div class="alert ${stockClass}"><i class="fas ${stockIcon}"></i> ${stockMessage}</div>`;
+            } else {
+                stockInfo.innerHTML = '<div class="alert alert-danger"><i class="fas fa-times"></i> Error checking stock</div>';
+            }
+        })
+        .catch(error => {
+            stockInfo.innerHTML = '<div class="alert alert-danger"><i class="fas fa-times"></i> Error checking stock</div>';
+        });
+}
+
+// Function to preview job work
+function previewJobWork() {
+    const form = document.querySelector('form');
+    const formData = new FormData(form);
+    
+    // Get selected item name
+    const itemSelect = document.getElementById('item_id');
+    const selectedItemText = itemSelect.options[itemSelect.selectedIndex].text;
+    
+    // Get selected customer name
+    const customerSelect = document.querySelector('select[name="customer_name"]');
+    const selectedCustomerText = customerSelect.options[customerSelect.selectedIndex].text;
+    
+    const previewData = {
+        job_number: formData.get('job_number'),
+        customer_name: selectedCustomerText,
+        item_name: selectedItemText,
+        quantity_sent: formData.get('quantity_sent'),
+        rate_per_unit: formData.get('rate_per_unit'),
+        sent_date: formData.get('sent_date'),
+        expected_return: formData.get('expected_return'),
+        notes: formData.get('notes')
+    };
+    
+    // Calculate total value
+    const totalValue = (parseFloat(previewData.quantity_sent) || 0) * (parseFloat(previewData.rate_per_unit) || 0);
+    
+    const previewContent = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6><i class="fas fa-hashtag"></i> Job Number</h6>
+                <p class="bg-light p-2 rounded">${previewData.job_number || 'Auto-generated'}</p>
+                
+                <h6><i class="fas fa-user"></i> Customer</h6>
+                <p class="bg-light p-2 rounded">${previewData.customer_name || 'Not selected'}</p>
+                
+                <h6><i class="fas fa-box"></i> Item</h6>
+                <p class="bg-light p-2 rounded">${previewData.item_name || 'Not selected'}</p>
+            </div>
+            <div class="col-md-6">
+                <h6><i class="fas fa-shipping-fast"></i> Quantity Sent</h6>
+                <p class="bg-light p-2 rounded">${previewData.quantity_sent || 0}</p>
+                
+                <h6><i class="fas fa-rupee-sign"></i> Rate per Unit</h6>
+                <p class="bg-light p-2 rounded">₹${previewData.rate_per_unit || 0}</p>
+                
+                <h6><i class="fas fa-calculator"></i> Total Value</h6>
+                <p class="bg-success text-white p-2 rounded"><strong>₹${totalValue.toFixed(2)}</strong></p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <h6><i class="fas fa-calendar"></i> Sent Date</h6>
+                <p class="bg-light p-2 rounded">${previewData.sent_date || 'Not set'}</p>
+            </div>
+            <div class="col-md-6">
+                <h6><i class="fas fa-calendar-check"></i> Expected Return</h6>
+                <p class="bg-light p-2 rounded">${previewData.expected_return || 'Not set'}</p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <h6><i class="fas fa-sticky-note"></i> Notes</h6>
+                <p class="bg-light p-2 rounded" style="min-height: 60px;">${previewData.notes || 'No notes added'}</p>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('preview-content').innerHTML = previewContent;
+    new bootstrap.Modal(document.getElementById('previewModal')).show();
+}
+
+// Auto-check stock when item or quantity changes
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Job Work form loaded - manual rate entry mode');
+    const itemSelect = document.getElementById('item_id');
+    const quantityInput = document.getElementById('quantity_sent');
+    
+    if (itemSelect && quantityInput) {
+        itemSelect.addEventListener('change', checkInventoryStock);
+        quantityInput.addEventListener('input', function() {
+            if (itemSelect.value) {
+                checkInventoryStock();
+            }
+        });
+    }
 });
 </script>
 {% endblock %}

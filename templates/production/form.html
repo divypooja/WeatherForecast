@@ -147,9 +147,14 @@
                             <a href="{{ url_for('production.list_productions') }}" class="btn btn-secondary">
                                 <i class="fas fa-times"></i> Cancel
                             </a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> {{ 'Update' if production else 'Save' }} Production Order
-                            </button>
+                            <div>
+                                <button type="button" class="btn btn-outline-info me-2" onclick="previewForm()">
+                                    <i class="fas fa-eye"></i> Preview
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> {{ 'Update' if production else 'Save' }} Production Order
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -240,6 +245,14 @@
         </div>
     </div>
 </div>
+
+<script src="{{ url_for('static', filename='js/preview-system.js') }}"></script>
+<script>
+// Initialize preview system for production orders
+document.addEventListener('DOMContentLoaded', function() {
+    initializePreviewSystem('production');
+});
+</script>
 {% endblock %}
 
 {% block scripts %}

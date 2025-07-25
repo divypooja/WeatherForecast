@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from forms import ItemForm
 from models import Item, ItemType
@@ -225,3 +225,29 @@ def delete_item(id):
     db.session.commit()
     flash('Item deleted successfully', 'success')
     return redirect(url_for('inventory.list_items'))
+
+
+# API Endpoints
+@inventory_bp.route('/inventory/api/item-stock/<int:item_id>')
+@inventory_bp.route('/api/item-stock/<int:item_id>')
+@login_required
+def get_item_stock(item_id):
+    """API endpoint to get item stock information"""
+    try:
+        item = Item.query.get_or_404(item_id)
+        return jsonify({
+            'success': True,
+            'item_id': item.id,
+            'item_name': item.name,
+            'item_code': item.code,
+            'current_stock': item.current_stock or 0,
+            'minimum_stock': item.minimum_stock or 0,
+            'unit_of_measure': item.unit_of_measure or 'units',
+            'unit_price': float(item.unit_price or 0),
+            'low_stock': (item.current_stock or 0) <= (item.minimum_stock or 0)
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
