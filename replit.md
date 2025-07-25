@@ -81,6 +81,22 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **Simplified Form Interface**: Job Work form now has clean, streamlined interface with only Cancel and Save buttons
 - **Code Optimization**: Eliminated unnecessary preview-related code for better performance and maintainability
 
+### Enhanced Job Work Form with Conditional Field Visibility and Smart Validation (Latest - January 25, 2025)
+- **Conditional Field Display**: Implemented intelligent form layout with dynamic field visibility based on work type selection:
+  - In-House Work: Shows Department field only, hides Customer Name and Rate per Unit fields
+  - Outsourced Work: Shows Customer Name and Rate per Unit fields, hides Department field
+- **Smart Form Validation**: Added custom validation requiring different fields based on work type:
+  - In-House Work: Department required, Rate automatically set to ₹0 (no external cost)
+  - Outsourced Work: Customer Name and Rate per Unit both required with positive rate validation
+- **JavaScript Field Management**: Enhanced form with real-time JavaScript toggling of field visibility and validation requirements
+- **Duplicate Field Resolution**: Removed duplicate "Customer Name" field that was causing form confusion
+- **Enhanced Success Messages**: Updated form submission to show contextual success messages:
+  - In-House: Shows department allocation message
+  - Outsourced: Shows customer and rate information in success message
+- **Dashboard Redirect**: Changed form submission redirect from job list to Job Work dashboard for better workflow
+- **Rate Field Optimization**: Made rate per unit optional in form definition with custom validation handling based on work type
+- **Professional User Experience**: Clean form interface with appropriate field hiding/showing and contextual help text
+
 ### Complete Job Work Enhancement with Process Types and Scrap Management
 - **Process Type Selection**: Successfully implemented process field in JobWork forms allowing selection from 8 manufacturing processes (Zinc, Cutting, Bending, Welding, Painting, Assembly, Machining, Polishing)
 - **Scrap Management Integration**: Added Expected Finished Material and Expected Scrap fields for processes where scrap is applicable, allowing better material planning and waste tracking
