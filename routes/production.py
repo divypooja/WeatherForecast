@@ -230,6 +230,7 @@ def add_bom():
             overhead_percentage=form.overhead_percentage.data or 0.0,
             freight_cost_per_unit=form.freight_cost_per_unit.data or 0.0,
             freight_unit_type=form.freight_unit_type.data or 'per_piece',
+            transporter_id=form.transporter_id.data if form.transporter_id.data and form.transporter_id.data != 0 else None,
             markup_percentage=form.markup_percentage.data or 0.0
         )
         db.session.add(bom)
@@ -266,6 +267,7 @@ def edit_bom(id):
         bom.overhead_percentage = form.overhead_percentage.data or 0.0
         bom.freight_cost_per_unit = form.freight_cost_per_unit.data or 0.0
         bom.freight_unit_type = form.freight_unit_type.data or 'per_piece'
+        bom.transporter_id = form.transporter_id.data if form.transporter_id.data and form.transporter_id.data != 0 else None
         bom.markup_percentage = form.markup_percentage.data or 0.0
         
         db.session.commit()

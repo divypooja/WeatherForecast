@@ -112,6 +112,15 @@
                             </div>
                             <div class="card-body">
                                 <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="mb-3">
+                                            {{ form.transporter_id.label(class="form-label") }}
+                                            {{ form.transporter_id(class="form-select", onchange="fetchTransporterRate()") }}
+                                            <small class="text-muted">Select transporter to auto-fill freight rate</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
                                     <div class="col-md-8">
                                         <div class="mb-3">
                                             {{ form.freight_cost_per_unit.label(class="form-label") }}
@@ -282,7 +291,11 @@
                                     <th></th>
                                 </tr>
                                 <tr class="table-secondary">
-                                    <th colspan="7">Freight Cost per Unit</th>
+                                    <th colspan="7">Freight Cost per Unit
+                                        {% if bom.transporter %}
+                                            <small class="text-info d-block"><i class="fas fa-truck"></i> {{ bom.transporter.name }}</small>
+                                        {% endif %}
+                                    </th>
                                     <th>₹{{ "%.2f"|format(bom.calculated_freight_cost_per_unit or 0) }}
                                         {% if bom.freight_unit_type and bom.freight_unit_type != 'per_piece' %}
                                             <small class="text-muted d-block">(₹{{ "%.2f"|format(bom.freight_cost_per_unit or 0) }} {{ bom.freight_unit_type.replace('_', ' ').title() }})</small>
@@ -341,6 +354,7 @@
                                 <input type="hidden" name="overhead_percentage" value="{{ bom.overhead_percentage or 0 }}">
                                 <input type="hidden" name="freight_cost_per_unit" value="{{ bom.freight_cost_per_unit or 0 }}">
                                 <input type="hidden" name="freight_unit_type" value="{{ bom.freight_unit_type or 'per_piece' }}">
+                                <input type="hidden" name="transporter_id" value="{{ bom.transporter_id or 0 }}">
                                 <input type="hidden" name="markup_percentage" value="{{ bom.markup_percentage or 0 }}">
                                 <button type="button" class="btn btn-success btn-lg" onclick="saveBOMWithCurrentValues()">
                                     <i class="fas fa-save"></i> Save BOM
@@ -380,6 +394,35 @@ function updateUnitCost() {
         unitCostInput.value = parseFloat(unitPrice).toFixed(2);
     } else {
         unitCostInput.value = '0.00';
+    }
+}
+
+function fetchTransporterRate() {
+    const transporterSelect = document.querySelector('[name="transporter_id"]');
+    const freightCostInput = document.querySelector('[name="freight_cost_per_unit"]');
+    const freightUnitTypeSelect = document.querySelector('[name="freight_unit_type"]');
+    
+    if (transporterSelect.value && transporterSelect.value !== '0') {
+        // Make API call to get transporter details
+        fetch(`/api/transporter/${transporterSelect.value}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    freightCostInput.value = data.freight_rate_per_unit.toFixed(2);
+                    freightUnitTypeSelect.value = data.freight_unit_type;
+                    
+                    // Trigger cost calculation update
+                    previewBOM();
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching transporter rate:', error);
+            });
+    } else {
+        // Clear fields if no transporter selected
+        freightCostInput.value = '0.00';
+        freightUnitTypeSelect.value = 'per_piece';
+        previewBOM();
     }
 }
 
