@@ -241,17 +241,19 @@ function checkInventoryStock() {
 
 // Function to preview job work with detailed breakdown like BOM
 function previewJobWork() {
+    console.log('Preview function called'); // Debug log
+    
     const form = document.querySelector('form');
     const formData = new FormData(form);
     
     // Get selected item name and details
     const itemSelect = document.getElementById('item_id');
-    const selectedItemText = itemSelect.options[itemSelect.selectedIndex].text;
-    const itemId = itemSelect.value;
+    const selectedItemText = itemSelect && itemSelect.selectedIndex > 0 ? itemSelect.options[itemSelect.selectedIndex].text : 'Not selected';
+    const itemId = itemSelect ? itemSelect.value : '';
     
     // Get selected customer name
     const customerSelect = document.querySelector('select[name="customer_name"]');
-    const selectedCustomerText = customerSelect.options[customerSelect.selectedIndex].text;
+    const selectedCustomerText = customerSelect && customerSelect.selectedIndex > 0 ? customerSelect.options[customerSelect.selectedIndex].text : 'Not selected';
     
     const previewData = {
         job_number: formData.get('job_number'),
@@ -387,9 +389,24 @@ function previewJobWork() {
 </div>
 `;
     
-    document.getElementById('preview-content').innerHTML = previewContent;
-    const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
-    previewModal.show();
+    console.log('Setting preview content:', previewContent); // Debug log
+    
+    const previewContentDiv = document.getElementById('preview-content');
+    if (previewContentDiv) {
+        previewContentDiv.innerHTML = previewContent;
+        console.log('Content set successfully'); // Debug log
+    } else {
+        console.error('preview-content div not found'); // Debug log
+    }
+    
+    const modalElement = document.getElementById('previewModal');
+    if (modalElement) {
+        const previewModal = new bootstrap.Modal(modalElement);
+        previewModal.show();
+        console.log('Modal shown'); // Debug log
+    } else {
+        console.error('previewModal not found'); // Debug log
+    }
 }
 
 // Auto-check stock when item or quantity changes
