@@ -361,9 +361,21 @@ class OpenCVPackingIntegrator:
         bin_height = bin_config.get('height', 800)
         algorithm = config.get('algorithm', 'skyline') if config else 'skyline'
         
-        # Create packing calculator for rectangular optimization
-        calculator = PackingCalculator()
-        result = calculator.calculate_material_cutting(rectangles, bin_width, bin_height, algorithm)
+        # Use existing Rectpack optimization with proper method
+        from services.packing_optimizer import MaterialOptimizer
+        optimizer = MaterialOptimizer(algorithm=algorithm)
+        
+        # Convert rectangles to parts format
+        parts = []
+        for rect in rectangles:
+            parts.append({
+                'width': rect['width'],
+                'height': rect['height'],
+                'item_name': rect['id'],
+                'quantity': 1
+            })
+        
+        result = optimizer.optimize_sheet_cutting(parts, (bin_width, bin_height), 5)
         result['opencv_enhanced'] = True
         
         return result

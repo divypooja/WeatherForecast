@@ -373,12 +373,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function displayAnalysisResults(data) {
         const results = document.getElementById('analysisResults');
+        const enhanced = data.enhanced_stats || {};
+        
         results.innerHTML = `
             <div class="row">
                 <div class="col-md-3">
                     <div class="card bg-primary text-white">
                         <div class="card-body text-center">
-                            <h4>${data.shapes_detected}</h4>
+                            <h4>${data.shapes_detected || 0}</h4>
                             <small>Shapes Detected</small>
                         </div>
                     </div>
@@ -386,7 +388,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="col-md-3">
                     <div class="card bg-success text-white">
                         <div class="card-body text-center">
-                            <h4>${data.processing_type}</h4>
+                            <h4>${(data.processing_type || 'auto').toUpperCase()}</h4>
                             <small>Recommended Algorithm</small>
                         </div>
                     </div>
@@ -394,7 +396,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="col-md-3">
                     <div class="card bg-info text-white">
                         <div class="card-body text-center">
-                            <h4>${data.image_analysis.complexity_score.toFixed(2)}</h4>
+                            <h4>${(enhanced.average_complexity || 0).toFixed(2)}</h4>
                             <small>Complexity Score</small>
                         </div>
                     </div>
@@ -402,17 +404,95 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="col-md-3">
                     <div class="card bg-warning text-white">
                         <div class="card-body text-center">
-                            <h4>${data.recommendation.estimated_savings}</h4>
+                            <h4>${enhanced.estimated_savings || '15-30%'}</h4>
                             <small>Est. Material Savings</small>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="mt-3">
-                <h6>Algorithm Recommendation: <span class="badge bg-success">${data.processing_type.toUpperCase()}</span></h6>
-                <p><strong>Best for:</strong> ${data.recommendation.best_for.join(', ')}</p>
-                <p><strong>Processing Time:</strong> ${data.recommendation.processing_time}</p>
+            
+            <!-- Enhanced Statistics -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6><i class="fas fa-chart-bar"></i> Analysis Statistics</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-6">
+                                    <strong>Material Efficiency:</strong><br>
+                                    <span class="text-${enhanced.material_efficiency > 50 ? 'success' : enhanced.material_efficiency > 20 ? 'warning' : 'danger'} fs-4">
+                                        ${enhanced.material_efficiency || 0}%
+                                    </span>
+                                </div>
+                                <div class="col-6">
+                                    <strong>Total Area:</strong><br>
+                                    <span class="fs-6">${enhanced.total_area || 0} px²</span><br>
+                                    <small class="text-muted">Image: ${enhanced.image_area || 0} px²</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6><i class="fas fa-info-circle"></i> Recommendation</h6>
+                        </div>
+                        <div class="card-body">
+                            <h6>Algorithm: <span class="badge bg-success">${(data.processing_type || 'AUTO').toUpperCase()}</span></h6>
+                            <p><strong>Best for:</strong> ${data.recommendation ? data.recommendation.best_for.join(', ') : 'Laser cutting, Complex CNC parts, Irregular geometries'}</p>
+                            <p><strong>Processing Time:</strong> ${data.recommendation ? data.recommendation.processing_time : 'Medium'}</p>
+                        </div>
+                    </div>
+                </div>
             </div>
+            
+            <!-- Shape Details -->
+            ${enhanced.shape_details && enhanced.shape_details.length > 0 ? `
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6><i class="fas fa-shapes"></i> Detected Shapes (${enhanced.shape_details.length})</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Shape ID</th>
+                                    <th>Type</th>
+                                    <th>Dimensions (W×H)</th>
+                                    <th>Area</th>
+                                    <th>Position (X,Y)</th>
+                                    <th>Complexity</th>
+                                    <th>Vertices</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${enhanced.shape_details.map(shape => `
+                                <tr>
+                                    <td><code>${shape.id}</code></td>
+                                    <td><span class="badge bg-secondary">${shape.type}</span></td>
+                                    <td>${shape.dimensions.width} × ${shape.dimensions.height}</td>
+                                    <td>${shape.dimensions.area} px²</td>
+                                    <td>(${shape.position.x}, ${shape.position.y})</td>
+                                    <td>
+                                        <div class="progress" style="width:60px; height:15px;">
+                                            <div class="progress-bar bg-${shape.complexity > 0.6 ? 'danger' : shape.complexity > 0.3 ? 'warning' : 'success'}" 
+                                                 style="width: ${shape.complexity * 100}%"></div>
+                                        </div>
+                                        <small>${shape.complexity}</small>
+                                    </td>
+                                    <td>${shape.vertices}</td>
+                                </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            ` : ''}
         `;
         
         document.getElementById('resultsCard').style.display = 'block';
