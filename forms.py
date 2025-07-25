@@ -602,21 +602,9 @@ class SalaryRecordForm(FlaskForm):
         super(SalaryRecordForm, self).__init__(*args, **kwargs)
         from models import Employee
         self.employee_id.choices = [(0, 'Select Employee')] + [
-            (e.id, f"{e.name} ({e.employee_code}) - {e.salary_type.replace('_', ' ').title()}") 
+            (e.id, f"{e.name} ({e.employee_code})") 
             for e in Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
         ]
-
-class OvertimeRateForm(FlaskForm):
-    salary_type = SelectField('Employee Type', validators=[DataRequired()],
-                             choices=[
-                                 ('daily', 'Daily Wage'),
-                                 ('monthly', 'Monthly Salary'),
-                                 ('piece_rate', 'Piece Rate')
-                             ])
-    rate_per_hour = FloatField('Overtime Rate per Hour (₹)', validators=[DataRequired(), NumberRange(min=0.01)],
-                              render_kw={"placeholder": "Enter rate per hour"})
-    is_active = BooleanField('Active', default=True)
-    submit = SubmitField('Save Overtime Rate')
 
 class EmployeeAdvanceForm(FlaskForm):
     advance_number = StringField('Advance Number', validators=[DataRequired()], render_kw={'readonly': True})
