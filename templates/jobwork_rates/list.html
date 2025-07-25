@@ -2,6 +2,10 @@
 
 {% block title %}Job Work Rates - Factory Management System{% endblock %}
 
+{% block extra_head %}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+{% endblock %}
+
 {% block content %}
 <div class="container">
     <div class="row mb-4">
@@ -160,7 +164,7 @@ function deleteRate(rateId) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token() }}'
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
             }
         })
         .then(response => {
