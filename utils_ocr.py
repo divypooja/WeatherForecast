@@ -289,11 +289,37 @@ class ReceiptOCR:
     
     def extract_amount_fallback(self, text):
         """Fallback method to extract amount from text"""
-        # Find all numbers that could be amounts
+        # Look for amount patterns specifically
+        amount_patterns = [
+            r'amount\s*[₹\$]?\s*(\d+(?:,\d{3})*(?:\.\d{2})?)',
+            r'₹\s*(\d+(?:,\d{3})*(?:\.\d{2})?)',
+            r'total\s*[₹\$]?\s*(\d+(?:,\d{3})*(?:\.\d{2})?)',
+            r'paid\s*[₹\$]?\s*(\d+(?:,\d{3})*(?:\.\d{2})?)'
+        ]
+        
+        for pattern in amount_patterns:
+            matches = re.findall(pattern, text.lower())
+            if matches:
+                # Clean and convert first match
+                amount_str = matches[0].replace(',', '')
+                try:
+                    amount = float(amount_str)
+                    if 10 <= amount <= 100000:  # Reasonable amount range
+                        return amount
+                except:
+                    continue
+        
+        # If no pattern match, find reasonable numbers
         numbers = re.findall(r'\d+\.?\d*', text)
         if numbers:
-            # Return the largest number (likely the total amount)
-            amounts = [float(n) for n in numbers if float(n) > 10]  # Filter small numbers
+            amounts = []
+            for n in numbers:
+                try:
+                    amount = float(n)
+                    if 10 <= amount <= 100000:  # Filter reasonable amounts
+                        amounts.append(amount)
+                except:
+                    continue
             if amounts:
                 return max(amounts)
         return None
