@@ -229,7 +229,7 @@
                                 <a href="{{ url_for('jobwork.update_quantity', id=job.id) }}" class="btn btn-info btn-sm">
                                     <i class="fas fa-box"></i> Update Quantity
                                 </a>
-                                <a href="{{ url_for('jobwork.send_job_work', id=job.id) }}" class="btn btn-warning btn-sm">
+                                <a href="{{ url_for('jobwork.send_job_work', job_id=job.id) }}" class="btn btn-warning btn-sm">
                                     <i class="fas fa-paper-plane"></i> Send Order
                                 </a>
                             </div>
