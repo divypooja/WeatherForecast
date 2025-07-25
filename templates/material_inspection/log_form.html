@@ -187,11 +187,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('acceptanceRate').textContent = acceptanceRate.toFixed(1) + '%';
         document.getElementById('rejectionRate').textContent = rejectionRate.toFixed(1) + '%';
         document.getElementById('totalAccounted').textContent = totalAccounted.toFixed(2);
-        
-        // Auto-populate inspected quantity if not set
-        if (received > 0 && inspected === 0) {
-            inspectedQty.value = received.toFixed(2);
-        }
     }
 
     // Mutual exclusion for PO and Job Work selection
