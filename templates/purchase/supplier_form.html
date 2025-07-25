@@ -232,12 +232,24 @@
                             <h5 class="mb-3 text-primary"><i class="fas fa-truck"></i> Transportation Information</h5>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    {{ form.freight_rate_per_km.label(class="form-label") }}
-                                    {{ form.freight_rate_per_km(class="form-control", step="0.01") }}
-                                    <small class="text-muted">Rate charged per kilometer for transportation</small>
-                                    {% if form.freight_rate_per_km.errors %}
+                                    {{ form.freight_rate_per_unit.label(class="form-label") }}
+                                    {{ form.freight_rate_per_unit(class="form-control", step="0.01") }}
+                                    <small class="text-muted">Freight rate amount</small>
+                                    {% if form.freight_rate_per_unit.errors %}
                                         <div class="text-danger small">
-                                            {% for error in form.freight_rate_per_km.errors %}
+                                            {% for error in form.freight_rate_per_unit.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    {{ form.freight_unit_type.label(class="form-label") }}
+                                    {{ form.freight_unit_type(class="form-select") }}
+                                    <small class="text-muted">Billing unit for freight charges</small>
+                                    {% if form.freight_unit_type.errors %}
+                                        <div class="text-danger small">
+                                            {% for error in form.freight_unit_type.errors %}
                                                 <div>{{ error }}</div>
                                             {% endfor %}
                                         </div>
@@ -289,7 +301,8 @@ function toggleTransportationSection() {
         transportationSection.style.display = 'none';
         // Clear freight rate if not transporter
         if (partnerType !== 'both') {
-            document.getElementById('freight_rate_per_km').value = '0.0';
+            document.getElementById('freight_rate_per_unit').value = '0.0';
+            document.getElementById('freight_unit_type').value = 'per_km';
         }
     }
 }

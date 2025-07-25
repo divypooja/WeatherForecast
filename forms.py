@@ -104,7 +104,16 @@ class SupplierForm(FlaskForm):
                            render_kw={"placeholder": "SBIN0001234"})
     
     # Transportation Specific (for transporters)
-    freight_rate_per_km = FloatField('Freight Rate per KM (₹)', validators=[Optional(), NumberRange(min=0)], default=0.0)
+    freight_rate_per_unit = FloatField('Freight Rate (₹)', validators=[Optional(), NumberRange(min=0)], default=0.0)
+    freight_unit_type = SelectField('Freight Rate Type', validators=[Optional()],
+                                   choices=[
+                                       ('per_km', 'Per Kilometer'),
+                                       ('per_kg', 'Per Kilogram'),
+                                       ('per_box', 'Per Box'),
+                                       ('per_carton', 'Per Carton'),
+                                       ('per_ton', 'Per Ton')
+                                   ],
+                                   default='per_km')
     
     # Additional Information
     remarks = TextAreaField('Remarks', render_kw={"placeholder": "Preferred for steel items"})
