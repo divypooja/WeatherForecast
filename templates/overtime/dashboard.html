@@ -132,11 +132,13 @@
                                            onclick="return confirm('{{ 'Deactivate' if rate.is_active else 'Activate' }} this overtime rate?')">
                                             <i class="fas fa-{{ 'pause' if rate.is_active else 'play' }}"></i>
                                         </a>
+                                        {% if current_user.is_admin() %}
                                         <a href="{{ url_for('overtime.delete_overtime_rate', id=rate.id) }}" 
                                            class="btn btn-outline-danger" title="Delete"
                                            onclick="return confirm('Delete this overtime rate? This action cannot be undone.')">
                                             <i class="fas fa-trash"></i>
                                         </a>
+                                        {% endif %}
                                     </div>
                                 </td>
                             </tr>
