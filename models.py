@@ -398,11 +398,37 @@ class BOM(db.Model):
     product_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     version = db.Column(db.String(20), default='1.0')
     is_active = db.Column(db.Boolean, default=True)
+    
+    # Labor and Overhead costs
+    labor_cost_per_unit = db.Column(db.Float, default=0.0)
+    overhead_cost_per_unit = db.Column(db.Float, default=0.0)
+    labor_hours_per_unit = db.Column(db.Float, default=0.0)
+    labor_rate_per_hour = db.Column(db.Float, default=0.0)
+    overhead_percentage = db.Column(db.Float, default=0.0)  # Percentage of material cost
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
     product = db.relationship('Item', backref='boms')
     items = db.relationship('BOMItem', backref='bom', lazy=True, cascade='all, delete-orphan')
+    
+    @property
+    def total_material_cost(self):
+        """Calculate total material cost for one unit"""
+        return sum(item.quantity_required * item.unit_cost for item in self.items)
+    
+    @property
+    def total_cost_per_unit(self):
+        """Calculate total cost per unit including materials, labor, and overhead"""
+        material_cost = self.total_material_cost
+        labor_cost = self.labor_cost_per_unit or 0
+        overhead_cost = self.overhead_cost_per_unit or 0
+        
+        # If overhead is percentage-based, calculate from material cost
+        if self.overhead_percentage and self.overhead_percentage > 0:
+            overhead_cost = material_cost * (self.overhead_percentage / 100)
+        
+        return material_cost + labor_cost + overhead_cost
 
 class BOMItem(db.Model):
     __tablename__ = 'bom_items'
@@ -412,6 +438,16 @@ class BOMItem(db.Model):
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     quantity_required = db.Column(db.Float, nullable=False)
     unit_cost = db.Column(db.Float, default=0.0)
+    
+    def __init__(self, **kwargs):
+        super(BOMItem, self).__init__(**kwargs)
+        # Auto-populate unit cost from item's unit price if not provided
+        if self.unit_cost == 0.0 and self.item_id:
+            item = Item.query.get(self.item_id)
+            if item and item.unit_price:
+                self.unit_cost = item.unit_price
+    
+    # No need for relationship here since Item already defines bom_items with backref
 
 class QualityIssue(db.Model):
     __tablename__ = 'quality_issues'

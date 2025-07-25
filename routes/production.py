@@ -222,7 +222,12 @@ def add_bom():
         bom = BOM(
             product_id=form.product_id.data,
             version=form.version.data,
-            is_active=True
+            is_active=True,
+            labor_cost_per_unit=form.labor_cost_per_unit.data or 0.0,
+            labor_hours_per_unit=form.labor_hours_per_unit.data or 0.0,
+            labor_rate_per_hour=form.labor_rate_per_hour.data or 0.0,
+            overhead_cost_per_unit=form.overhead_cost_per_unit.data or 0.0,
+            overhead_percentage=form.overhead_percentage.data or 0.0
         )
         db.session.add(bom)
         db.session.commit()
@@ -251,6 +256,11 @@ def edit_bom(id):
         
         bom.product_id = form.product_id.data
         bom.version = form.version.data
+        bom.labor_cost_per_unit = form.labor_cost_per_unit.data or 0.0
+        bom.labor_hours_per_unit = form.labor_hours_per_unit.data or 0.0
+        bom.labor_rate_per_hour = form.labor_rate_per_hour.data or 0.0
+        bom.overhead_cost_per_unit = form.overhead_cost_per_unit.data or 0.0
+        bom.overhead_percentage = form.overhead_percentage.data or 0.0
         
         db.session.commit()
         flash('BOM updated successfully', 'success')
@@ -259,8 +269,9 @@ def edit_bom(id):
     # Get BOM items
     bom_items = BOMItem.query.filter_by(bom_id=bom.id).all()
     
-    # Calculate total BOM cost
-    total_cost = sum(item.quantity_required * item.unit_cost for item in bom_items)
+    # Calculate total BOM cost using the enhanced BOM model properties
+    material_cost = bom.total_material_cost
+    total_cost_per_unit = bom.total_cost_per_unit
     
     # Get materials for adding new items
     materials = Item.query.filter(Item.item_type.in_(['material', 'consumable'])).all()
@@ -271,7 +282,8 @@ def edit_bom(id):
                          bom=bom,
                          bom_items=bom_items,
                          materials=materials,
-                         total_cost=total_cost)
+                         material_cost=material_cost,
+                         total_cost_per_unit=total_cost_per_unit)
 
 @production_bp.route('/bom/<int:bom_id>/add_item', methods=['POST'])
 @login_required
@@ -291,6 +303,12 @@ def add_bom_item(bom_id):
     if existing_item:
         flash('This item is already in the BOM', 'warning')
         return redirect(url_for('production.edit_bom', id=bom_id))
+    
+    # Auto-populate unit cost from inventory if not provided
+    if unit_cost == 0.0:
+        item = Item.query.get(item_id)
+        if item and item.unit_price:
+            unit_cost = item.unit_price
     
     bom_item = BOMItem(
         bom_id=bom_id,
@@ -328,6 +346,20 @@ def delete_bom(id):
     flash('BOM deactivated successfully', 'success')
     
     return redirect(url_for('production.list_bom'))
+
+@production_bp.route('/api/item_details/<int:item_id>')
+@login_required  
+def get_item_details(item_id):
+    """API endpoint to get item details including unit price for BOM auto-population"""
+    item = Item.query.get_or_404(item_id)
+    return {
+        'id': item.id,
+        'code': item.code,
+        'name': item.name,
+        'unit_price': item.unit_price or 0.0,
+        'unit_of_measure': item.unit_of_measure,
+        'item_type': item.item_type
+    }
 
 @production_bp.route('/check_material_availability', methods=['POST'])
 @login_required

@@ -52,7 +52,60 @@
                             {% endif %}
                         </div>
 
-                        <div class="d-flex gap-2">
+                        <!-- Labor Cost Section -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6><i class="fas fa-users"></i> Labor Costs</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.labor_hours_per_unit.label(class="form-label") }}
+                                            {{ form.labor_hours_per_unit(class="form-control", step="0.1") }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.labor_rate_per_hour.label(class="form-label") }}
+                                            {{ form.labor_rate_per_hour(class="form-control", step="0.01") }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    {{ form.labor_cost_per_unit.label(class="form-label") }}
+                                    {{ form.labor_cost_per_unit(class="form-control", step="0.01") }}
+                                    <small class="text-muted">Or enter direct labor cost per unit</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Overhead Cost Section -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6><i class="fas fa-industry"></i> Overhead Costs</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.overhead_cost_per_unit.label(class="form-label") }}
+                                            {{ form.overhead_cost_per_unit(class="form-control", step="0.01") }}
+                                            <small class="text-muted">Fixed overhead per unit</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.overhead_percentage.label(class="form-label") }}
+                                            {{ form.overhead_percentage(class="form-control", step="0.1") }}
+                                            <small class="text-muted">% of material cost</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2 mt-3">
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-save"></i> Save BOM
                             </button>
@@ -75,10 +128,10 @@
                     <form method="POST" action="{{ url_for('production.add_bom_item', bom_id=bom.id) }}">
                         <div class="mb-3">
                             <label class="form-label">Material/Component</label>
-                            <select name="item_id" class="form-select" required>
+                            <select name="item_id" id="material_select" class="form-select" required onchange="updateUnitCost()">
                                 <option value="">Select Material/Component</option>
                                 {% for material in materials %}
-                                    <option value="{{ material.id }}">{{ material.code }} - {{ material.name }}</option>
+                                    <option value="{{ material.id }}" data-unit-price="{{ material.unit_price or 0 }}">{{ material.code }} - {{ material.name }} (₹{{ "%.2f"|format(material.unit_price or 0) }})</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -89,8 +142,9 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Unit Cost (Optional)</label>
-                            <input type="number" name="unit_cost" class="form-control" step="0.01" min="0" value="0">
+                            <label class="form-label">Unit Cost (Auto-filled from Inventory)</label>
+                            <input type="number" name="unit_cost" id="unit_cost" class="form-control" step="0.01" min="0" value="0" readonly>
+                            <small class="text-muted">Cost will be automatically filled from inventory item price</small>
                         </div>
 
                         <button type="submit" class="btn btn-success">
@@ -150,9 +204,24 @@
                                 {% endfor %}
                             </tbody>
                             <tfoot>
+                                <tr class="table-secondary">
+                                    <th colspan="6">Material Cost Subtotal</th>
+                                    <th>₹{{ "%.2f"|format(material_cost or 0) }}</th>
+                                    <th></th>
+                                </tr>
+                                <tr class="table-secondary">
+                                    <th colspan="6">Labor Cost per Unit</th>
+                                    <th>₹{{ "%.2f"|format(bom.labor_cost_per_unit or 0) }}</th>
+                                    <th></th>
+                                </tr>
+                                <tr class="table-secondary">
+                                    <th colspan="6">Overhead Cost per Unit</th>
+                                    <th>₹{{ "%.2f"|format(bom.overhead_cost_per_unit or (material_cost * (bom.overhead_percentage or 0) / 100)) }}</th>
+                                    <th></th>
+                                </tr>
                                 <tr class="table-dark">
-                                    <th colspan="6">Total BOM Cost</th>
-                                    <th>₹{{ "%.2f"|format(total_cost or 0) }}</th>
+                                    <th colspan="6">Total BOM Cost per Unit</th>
+                                    <th>₹{{ "%.2f"|format(total_cost_per_unit or 0) }}</th>
                                     <th></th>
                                 </tr>
                             </tfoot>
@@ -180,7 +249,39 @@
 
 {% block scripts %}
 <script>
+function updateUnitCost() {
+    const materialSelect = document.getElementById('material_select');
+    const unitCostInput = document.getElementById('unit_cost');
+    
+    if (materialSelect.value) {
+        const selectedOption = materialSelect.options[materialSelect.selectedIndex];
+        const unitPrice = selectedOption.getAttribute('data-unit-price') || '0';
+        unitCostInput.value = parseFloat(unitPrice).toFixed(2);
+    } else {
+        unitCostInput.value = '0.00';
+    }
+}
+
+// Auto-calculate labor cost from hours and rate
 document.addEventListener('DOMContentLoaded', function() {
+    const laborHours = document.getElementById('labor_hours_per_unit');
+    const laborRate = document.getElementById('labor_rate_per_hour');
+    const laborCost = document.getElementById('labor_cost_per_unit');
+    
+    function calculateLaborCost() {
+        if (laborHours && laborRate && laborCost) {
+            const hours = parseFloat(laborHours.value) || 0;
+            const rate = parseFloat(laborRate.value) || 0;
+            const calculated = hours * rate;
+            if (calculated > 0 && parseFloat(laborCost.value) === 0) {
+                laborCost.value = calculated.toFixed(2);
+            }
+        }
+    }
+    
+    if (laborHours) laborHours.addEventListener('input', calculateLaborCost);
+    if (laborRate) laborRate.addEventListener('input', calculateLaborCost);
+    
     // Auto-focus first input
     const firstInput = document.querySelector('form select:first-of-type');
     if (firstInput) {

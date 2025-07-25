@@ -334,6 +334,13 @@ class BOMForm(FlaskForm):
     version = StringField('Version', validators=[DataRequired(), Length(max=20)], default='1.0')
     is_active = BooleanField('Active', default=True)
     
+    # Labor and Overhead fields
+    labor_cost_per_unit = FloatField('Labor Cost per Unit', validators=[NumberRange(min=0)], default=0.0)
+    labor_hours_per_unit = FloatField('Labor Hours per Unit', validators=[NumberRange(min=0)], default=0.0)
+    labor_rate_per_hour = FloatField('Labor Rate per Hour', validators=[NumberRange(min=0)], default=0.0)
+    overhead_cost_per_unit = FloatField('Fixed Overhead per Unit', validators=[NumberRange(min=0)], default=0.0)
+    overhead_percentage = FloatField('Overhead % (of material cost)', validators=[NumberRange(min=0, max=100)], default=0.0)
+    
     def __init__(self, *args, **kwargs):
         super(BOMForm, self).__init__(*args, **kwargs)
         self.product_id.choices = [(0, 'Select Product')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.filter_by(item_type='product').all()]
