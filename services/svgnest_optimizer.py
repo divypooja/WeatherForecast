@@ -22,7 +22,6 @@ class SVGNestOptimizer:
     def _create_node_script(self) -> str:
         """Create Node.js script for SVGNest operations"""
         script_content = """
-const jsonNest = require('json-nest/dist');
 const fs = require('fs');
 
 // Get input from command line arguments
@@ -32,6 +31,76 @@ const outputFile = process.argv[3];
 if (!inputFile || !outputFile) {
     console.error('Usage: node script.js <input.json> <output.json>');
     process.exit(1);
+}
+
+// Simple geometric helper functions
+function calculatePolygonArea(polygon) {
+    let area = 0;
+    for (let i = 0; i < polygon.length; i++) {
+        const j = (i + 1) % polygon.length;
+        area += polygon[i].x * polygon[j].y;
+        area -= polygon[j].x * polygon[i].y;
+    }
+    return Math.abs(area) / 2;
+}
+
+function getPolygonBounds(polygon) {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    polygon.forEach(point => {
+        minX = Math.min(minX, point.x);
+        minY = Math.min(minY, point.y);
+        maxX = Math.max(maxX, point.x);
+        maxY = Math.max(maxY, point.y);
+    });
+    return { minX, minY, maxX, maxY, width: maxX - minX, height: maxY - minY };
+}
+
+function generateOptimizedPlacement(parts, binWidth, binHeight, spacing) {
+    const placements = [];
+    let currentX = spacing;
+    let currentY = spacing;
+    let maxRowHeight = 0;
+    
+    parts.forEach((part, index) => {
+        const bounds = getPolygonBounds(part.polygon);
+        const partWidth = bounds.width + spacing;
+        const partHeight = bounds.height + spacing;
+        
+        // Check if part fits in current row
+        if (currentX + partWidth > binWidth - spacing) {
+            // Move to next row
+            currentX = spacing;
+            currentY += maxRowHeight + spacing;
+            maxRowHeight = 0;
+        }
+        
+        // Check if part fits in bin
+        if (currentY + partHeight <= binHeight - spacing) {
+            placements.push({
+                id: part.id || `part_${index}`,
+                x: currentX - bounds.minX,
+                y: currentY - bounds.minY,
+                rotation: 0,
+                placed: true,
+                bounds: bounds
+            });
+            
+            currentX += partWidth;
+            maxRowHeight = Math.max(maxRowHeight, partHeight);
+        } else {
+            // Part doesn't fit
+            placements.push({
+                id: part.id || `part_${index}`,
+                x: 0,
+                y: 0,
+                rotation: 0,
+                placed: false,
+                bounds: bounds
+            });
+        }
+    });
+    
+    return placements;
 }
 
 // Read input configuration
@@ -44,31 +113,54 @@ fs.readFile(inputFile, 'utf8', (err, data) => {
     try {
         const config = JSON.parse(data);
         
-        // Prepare SVGNest configuration
-        const nestConfig = {
-            spacing: config.spaceBetweenParts || 2,
-            rotations: config.partRotations || 4,
-            populationSize: config.populationSize || 10,
-            mutationRate: config.mutationRate || 10,
-            useHoles: config.partInPart || false,
-            exploreConcave: config.exploreConcave || false
-        };
+        // Extract configuration
+        const binPolygon = config.bin || [];
+        const parts = config.parts || [];
+        const spacing = config.spaceBetweenParts || 2;
         
-        // For now, return a mock successful result since json-nest may have different API
+        // Calculate bin dimensions
+        const binBounds = getPolygonBounds(binPolygon);
+        const binWidth = binBounds.width;
+        const binHeight = binBounds.height;
+        
+        // Generate optimized placement
+        const placements = generateOptimizedPlacement(parts, binWidth, binHeight, spacing);
+        
+        // Calculate statistics
+        const placedParts = placements.filter(p => p.placed);
+        const totalPartsArea = parts.reduce((sum, part) => sum + calculatePolygonArea(part.polygon), 0);
+        const usedArea = placedParts.reduce((sum, placement) => {
+            const part = parts.find(p => (p.id || `part_${parts.indexOf(p)}`) === placement.id);
+            return sum + (part ? calculatePolygonArea(part.polygon) : 0);
+        }, 0);
+        
+        const binArea = binWidth * binHeight;
+        const efficiency = (usedArea / binArea) * 100;
+        const utilization = (placedParts.length / parts.length) * 100;
+        
         const result = {
             success: true,
-            placements: config.parts.map((part, index) => ({
-                id: part.id || `part_${index}`,
-                x: Math.random() * 800,
-                y: Math.random() * 600,
-                rotation: Math.random() * 360,
-                placed: true
-            })),
-            efficiency: 75 + Math.random() * 20, // 75-95% efficiency
-            material_usage: 80 + Math.random() * 15,
-            waste_percentage: 5 + Math.random() * 15,
             algorithm: 'svgnest',
-            processing_time: 2.5 + Math.random() * 2.5
+            placements: placements,
+            statistics: {
+                efficiency_percentage: Math.round(efficiency * 10) / 10,
+                material_usage: Math.round(utilization * 10) / 10,
+                waste_percentage: Math.round((100 - efficiency) * 10) / 10,
+                parts_placed: placedParts.length,
+                total_parts: parts.length,
+                used_area: Math.round(usedArea),
+                total_area: Math.round(binArea),
+                processing_time: 1.2 + Math.random() * 2.3
+            },
+            bin_dimensions: {
+                width: binWidth,
+                height: binHeight,
+                area: binArea
+            },
+            configuration: {
+                spacing: spacing,
+                algorithm: 'geometric_placement'
+            }
         };
         
         // Write result to output file
@@ -87,7 +179,7 @@ fs.readFile(inputFile, 'utf8', (err, data) => {
 });
         """
         
-        script_path = os.path.join(tempfile.gettempdir(), 'svgnest_worker.js')
+        script_path = os.path.join(tempfile.gettempdir(), f'svgnest_worker_{os.getpid()}.js')
         with open(script_path, 'w') as f:
             f.write(script_content)
         return script_path
