@@ -479,6 +479,7 @@ class BOM(db.Model):
     overhead_percentage = db.Column(db.Float, default=0.0)  # Percentage of material cost
     freight_cost_per_unit = db.Column(db.Float, default=0.0)  # Transportation/freight cost per unit (optional)
     freight_unit_type = db.Column(db.String(20), default='per_piece')  # per_piece, per_kg, per_box, per_carton
+    markup_percentage = db.Column(db.Float, default=0.0)  # Markup percentage for profit margin
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -532,7 +533,7 @@ class BOM(db.Model):
     
     @property
     def total_cost_per_unit(self):
-        """Calculate total cost per unit including materials, labor, overhead, and freight"""
+        """Calculate total cost per unit including materials, labor, overhead, freight, and markup"""
         material_cost = self.total_material_cost
         labor_cost = self.labor_cost_per_unit or 0
         overhead_cost = self.overhead_cost_per_unit or 0
@@ -542,7 +543,28 @@ class BOM(db.Model):
         if self.overhead_percentage and self.overhead_percentage > 0:
             overhead_cost = material_cost * (self.overhead_percentage / 100)
         
-        return material_cost + labor_cost + overhead_cost + freight_cost
+        subtotal = material_cost + labor_cost + overhead_cost + freight_cost
+        
+        # Apply markup percentage
+        markup_amount = subtotal * (self.markup_percentage or 0) / 100
+        
+        return subtotal + markup_amount
+    
+    @property
+    def markup_amount_per_unit(self):
+        """Calculate markup amount per unit"""
+        material_cost = self.total_material_cost
+        labor_cost = self.labor_cost_per_unit or 0
+        overhead_cost = self.overhead_cost_per_unit or 0
+        freight_cost = self.calculated_freight_cost_per_unit
+        
+        # If overhead is percentage-based, calculate from material cost
+        if self.overhead_percentage and self.overhead_percentage > 0:
+            overhead_cost = material_cost * (self.overhead_percentage / 100)
+        
+        subtotal = material_cost + labor_cost + overhead_cost + freight_cost
+        
+        return subtotal * (self.markup_percentage or 0) / 100
 
 class BOMItem(db.Model):
     __tablename__ = 'bom_items'

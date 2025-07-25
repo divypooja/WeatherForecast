@@ -6,6 +6,18 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 25, 2025)
 
+### Enhanced BOM System with Unit Selection and Markup (Latest)
+- **BOM Unit Selection**: Added unit field to BOMItem model allowing selection of different units (pcs, kg, g, nos, m, cm, l, ml, sqft, sqm) for each material in BOM independent of inventory item's default unit
+- **Database Schema Updates**: Added unit column to bom_items table with default 'pcs' value for flexible unit specification per BOM material
+- **Enhanced BOM Forms**: Updated BOMItemForm with unit selection dropdown and enhanced BOM form template with unit field integration
+- **Production Route Updates**: Modified add_bom_item route to handle unit field when adding materials to BOM
+- **BOM Display Enhancement**: Updated BOM templates to show selected units instead of default item units for better production planning clarity
+- **Markup System Integration**: Added markup_percentage field to BOM model for profit margin calculations applied to total cost (material + labor + overhead + freight)
+- **Cost Calculation Enhancement**: Enhanced total_cost_per_unit property to include markup calculations with separate markup_amount_per_unit property for detailed breakdown
+- **Professional Markup Interface**: Added markup section to BOM form with percentage input and helpful description, integrated markup row in cost breakdown table
+- **Database Migration**: Added markup_percentage column to boms table with proper default values for existing records
+- **Comprehensive Cost Transparency**: BOM cost breakdown now shows all components including markup percentage and amount for complete cost visibility
+
 ### Dynamic Item Type Management System (Latest)
 - **Custom Item Types**: Implemented complete ItemType model with dynamic management allowing users to create custom item categories beyond default Material/Product/Consumable
 - **Database Architecture**: Created item_types table with foreign key relationships to items table, maintaining backward compatibility with legacy item_type string field

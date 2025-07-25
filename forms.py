@@ -365,6 +365,7 @@ class BOMForm(FlaskForm):
                                        ('per_ton', 'Per Ton')
                                    ],
                                    default='per_piece')
+    markup_percentage = FloatField('Markup % (Profit Margin)', validators=[NumberRange(min=0, max=500)], default=0.0)
     
     def __init__(self, *args, **kwargs):
         super(BOMForm, self).__init__(*args, **kwargs)
