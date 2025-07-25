@@ -161,6 +161,9 @@ class Supplier(db.Model):
     bank_name = db.Column(db.String(200))
     ifsc_code = db.Column(db.String(20))
     
+    # Transportation Specific (for transporters)
+    freight_rate_per_km = db.Column(db.Float, default=0.0)  # Rate per kilometer for transportation
+    
     # Partner Type - can be 'supplier', 'customer', 'vendor', 'transporter', or 'both'
     partner_type = db.Column(db.String(20), default='supplier')  # supplier, customer, vendor, transporter, both
     

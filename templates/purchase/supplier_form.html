@@ -227,6 +227,26 @@
 
                         <hr class="my-4">
                         
+                        <!-- Transportation Section (for transporters) -->
+                        <div id="transportation-section" style="display: none;">
+                            <h5 class="mb-3 text-primary"><i class="fas fa-truck"></i> Transportation Information</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    {{ form.freight_rate_per_km.label(class="form-label") }}
+                                    {{ form.freight_rate_per_km(class="form-control", step="0.01") }}
+                                    <small class="text-muted">Rate charged per kilometer for transportation</small>
+                                    {% if form.freight_rate_per_km.errors %}
+                                        <div class="text-danger small">
+                                            {% for error in form.freight_rate_per_km.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <hr class="my-4">
+                        </div>
+                        
                         <!-- Additional Information Section -->
                         <h5 class="mb-3 text-secondary"><i class="fas fa-notes-medical"></i> Additional Information</h5>
                         <div class="mb-3">
@@ -256,4 +276,31 @@
         </div>
     </div>
 </div>
+
+<script>
+// Show/hide transportation section based on partner type
+function toggleTransportationSection() {
+    const partnerType = document.getElementById('partner_type').value;
+    const transportationSection = document.getElementById('transportation-section');
+    
+    if (partnerType === 'transporter' || partnerType === 'both') {
+        transportationSection.style.display = 'block';
+    } else {
+        transportationSection.style.display = 'none';
+        // Clear freight rate if not transporter
+        if (partnerType !== 'both') {
+            document.getElementById('freight_rate_per_km').value = '0.0';
+        }
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listener to partner type field
+    document.getElementById('partner_type').addEventListener('change', toggleTransportationSection);
+    
+    // Initialize on page load
+    toggleTransportationSection();
+});
+</script>
 {% endblock %}

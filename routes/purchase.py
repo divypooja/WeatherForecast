@@ -349,6 +349,7 @@ def add_supplier():
             account_number=form.account_number.data,
             bank_name=form.bank_name.data,
             ifsc_code=form.ifsc_code.data,
+            freight_rate_per_km=form.freight_rate_per_km.data or 0.0,
             remarks=form.remarks.data,
             is_active=form.is_active.data
         )
@@ -380,6 +381,7 @@ def edit_supplier(id):
         supplier.account_number = form.account_number.data
         supplier.bank_name = form.bank_name.data
         supplier.ifsc_code = form.ifsc_code.data
+        supplier.freight_rate_per_km = form.freight_rate_per_km.data or 0.0
         supplier.remarks = form.remarks.data
         supplier.is_active = form.is_active.data
         
