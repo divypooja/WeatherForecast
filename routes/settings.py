@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
-from forms import CompanySettingsForm, NotificationSettingsForm, PayrollSettingsForm
-from models import User, CompanySettings, PayrollSettings, NotificationSettings, PurchaseOrder, SalesOrder, Item, JobWork, Production, MaterialInspection, QualityIssue, FactoryExpense, Employee, SalaryRecord, EmployeeAdvance
+from forms import CompanySettingsForm, NotificationSettingsForm
+from models import User, CompanySettings, NotificationSettings, PurchaseOrder, SalesOrder, Item, JobWork, Production, MaterialInspection, QualityIssue, FactoryExpense, Employee, SalaryRecord, EmployeeAdvance
 from models_permissions import Permission, UserPermission, DEFAULT_PERMISSIONS, init_permissions
 from app import db
 from services.notifications import notification_service
@@ -43,52 +43,6 @@ def company_settings():
         return redirect(url_for('settings.company_settings'))
     
     return render_template('settings/company.html', form=form, settings=settings)
-
-@settings_bp.route('/payroll', methods=['GET', 'POST'])
-@login_required
-def payroll_settings():
-    """Payroll settings page for configuring salary and overtime rules"""
-    if not current_user.is_admin():
-        flash('Only administrators can modify payroll settings', 'danger')
-        return redirect(url_for('settings.dashboard'))
-    
-    settings = PayrollSettings.get_settings()
-    form = PayrollSettingsForm(obj=settings)
-    
-    if form.validate_on_submit():
-        # Update all payroll settings from form
-        settings.standard_working_hours_per_day = form.standard_working_hours_per_day.data
-        settings.working_days_per_week = form.working_days_per_week.data
-        settings.include_sunday = form.include_sunday.data
-        
-        settings.overtime_calculation_method = form.overtime_calculation_method.data
-        settings.overtime_threshold_hours = form.overtime_threshold_hours.data
-        settings.overtime_rate_multiplier = form.overtime_rate_multiplier.data
-        settings.maximum_overtime_hours_per_day = form.maximum_overtime_hours_per_day.data
-        
-        settings.salary_calculation_method = form.salary_calculation_method.data
-        settings.prorate_partial_days = form.prorate_partial_days.data
-        settings.exclude_weekends_from_calculation = form.exclude_weekends_from_calculation.data
-        settings.auto_calculate_daily_rate = form.auto_calculate_daily_rate.data
-        
-        settings.half_day_hours_threshold = form.half_day_hours_threshold.data
-        settings.minimum_hours_for_full_day = form.minimum_hours_for_full_day.data
-        settings.late_arrival_threshold_minutes = form.late_arrival_threshold_minutes.data
-        
-        settings.maximum_advance_percentage = form.maximum_advance_percentage.data
-        settings.default_advance_repayment_months = form.default_advance_repayment_months.data
-        settings.auto_deduct_advances = form.auto_deduct_advances.data
-        
-        settings.default_overtime_rate_per_hour = form.default_overtime_rate_per_hour.data
-        settings.default_daily_rate = form.default_daily_rate.data
-        
-        settings.updated_by = current_user.id
-        
-        db.session.commit()
-        flash('Payroll settings updated successfully! These settings will apply to new salary calculations.', 'success')
-        return redirect(url_for('settings.payroll_settings'))
-    
-    return render_template('settings/payroll.html', form=form, settings=settings)
 
 @settings_bp.route('/notifications', methods=['GET', 'POST'])
 @login_required
