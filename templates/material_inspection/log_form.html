@@ -225,7 +225,7 @@ document.addEventListener('DOMContentLoaded', function() {
         itemSelect.innerHTML = '<option value="">Loading items...</option>';
         itemSelect.disabled = true;
         
-        fetch(`/inspection/api/po_items/${poId}`)
+        fetch(`/material_inspection/api/po_items/${poId}`)
             .then(response => response.json())
             .then(data => {
                 itemSelect.innerHTML = '<option value="">Select Item from Purchase Order</option>';
@@ -234,7 +234,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     data.items.forEach(item => {
                         const option = document.createElement('option');
                         option.value = item.item_id;
-                        option.textContent = `${item.item_code} - ${item.item_name} (Ordered: ${item.quantity})`;
+                        option.textContent = `${item.item_code} - ${item.item_name} (Ordered: ${item.quantity} ${item.unit})`;
+                        option.setAttribute('data-unit', item.unit);
                         itemSelect.appendChild(option);
                     });
                     itemHelp.innerHTML = '<i class="fas fa-check-circle text-success me-1"></i>Items loaded from selected Purchase Order.';
@@ -260,7 +261,7 @@ document.addEventListener('DOMContentLoaded', function() {
         itemSelect.innerHTML = '<option value="">Loading items...</option>';
         itemSelect.disabled = true;
         
-        fetch(`/inspection/api/job_items/${jobId}`)
+        fetch(`/material_inspection/api/job_items/${jobId}`)
             .then(response => response.json())
             .then(data => {
                 itemSelect.innerHTML = '<option value="">Select Item from Job Work</option>';
@@ -269,7 +270,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     data.items.forEach(item => {
                         const option = document.createElement('option');
                         option.value = item.item_id;
-                        option.textContent = `${item.item_code} - ${item.item_name} (Sent: ${item.quantity})`;
+                        option.textContent = `${item.item_code} - ${item.item_name} (Sent: ${item.quantity} ${item.unit})`;
+                        option.setAttribute('data-unit', item.unit);
                         itemSelect.appendChild(option);
                     });
                     itemHelp.innerHTML = '<i class="fas fa-check-circle text-success me-1"></i>Items loaded from selected Job Work.';
