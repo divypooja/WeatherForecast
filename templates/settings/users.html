@@ -180,12 +180,12 @@
 </div>
 
 <!-- Password Reset Modal -->
-<div class="modal fade" id="resetPasswordModal" tabindex="-1">
-    <div class="modal-dialog">
+<div class="modal fade" id="resetPasswordModal" tabindex="-1" role="dialog" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Reset Password</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title" id="resetPasswordModalLabel">Reset Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <p>Are you sure you want to reset the password for user <strong id="resetUsername"></strong>?</p>
@@ -193,7 +193,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-warning" id="confirmResetPassword">Reset Password</button>
+                <button type="button" class="btn btn-warning" id="confirmResetPassword" style="z-index: 1050; position: relative; pointer-events: auto;">Reset Password</button>
             </div>
         </div>
     </div>
@@ -274,28 +274,54 @@ function deleteUser(userId, username) {
     new bootstrap.Modal(document.getElementById('deleteUserModal')).show();
 }
 
-document.getElementById('confirmResetPassword').addEventListener('click', function() {
-    if (currentUserId) {
-        fetch(`{{ url_for('settings.reset_user_password', user_id=0) }}`.replace('0', currentUserId), {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
+// Enhanced event handler for password reset with better error handling
+document.addEventListener('DOMContentLoaded', function() {
+    const resetButton = document.getElementById('confirmResetPassword');
+    if (resetButton) {
+        resetButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (currentUserId) {
+                // Disable button during processing
+                this.disabled = true;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Resetting...';
+                
+                fetch(`{{ url_for('settings.reset_user_password', user_id=0) }}`.replace('0', currentUserId), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        alert(`Password reset successful. New password: ${data.new_password}`);
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.message);
+                        // Re-enable button
+                        this.disabled = false;
+                        this.innerHTML = 'Reset Password';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error resetting password: ' + error.message);
+                    // Re-enable button
+                    this.disabled = false;
+                    this.innerHTML = 'Reset Password';
+                });
+                
+                bootstrap.Modal.getInstance(document.getElementById('resetPasswordModal')).hide();
             }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert(`Password reset successful. New password: ${data.new_password}`);
-                location.reload();
-            } else {
-                alert('Error: ' + data.message);
-            }
-        })
-        .catch(error => {
-            alert('Error resetting password: ' + error.message);
         });
-        
-        bootstrap.Modal.getInstance(document.getElementById('resetPasswordModal')).hide();
     }
 });
 
