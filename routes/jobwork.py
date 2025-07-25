@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
-from forms import JobWorkForm, JobWorkQuantityUpdateForm, DailyJobWorkForm
-from models import JobWork, Supplier, Item, BOM, BOMItem, CompanySettings, DailyJobWorkEntry
+from forms import JobWorkForm, JobWorkQuantityUpdateForm, DailyJobWorkForm, JobWorkTeamAssignmentForm
+from models import JobWork, Supplier, Item, BOM, BOMItem, CompanySettings, DailyJobWorkEntry, JobWorkTeamAssignment, Employee
 from app import db
 from sqlalchemy import func
 from utils import generate_job_number  
@@ -96,6 +96,8 @@ def add_job_work():
             sent_date=form.sent_date.data,
             expected_return=form.expected_return.data,
             notes=form.notes.data,
+            is_team_work=form.is_team_work.data if form.work_type.data == 'in_house' else False,
+            max_team_members=form.max_team_members.data if form.is_team_work.data and form.work_type.data == 'in_house' else 1,
             created_by=current_user.id
         )
         
@@ -114,6 +116,19 @@ def add_job_work():
         return redirect(url_for('jobwork.dashboard'))
     
     return render_template('jobwork/form.html', form=form, title='Add Job Work')
+
+@jobwork_bp.route('/detail/<int:id>')
+@login_required
+def detail(id):
+    """View job work details with team assignments"""
+    job = JobWork.query.get_or_404(id)
+    
+    # Get team assignments if this is a team work
+    team_assignments = []
+    if job.is_team_work:
+        team_assignments = JobWorkTeamAssignment.query.filter_by(job_work_id=id).all()
+    
+    return render_template('jobwork/detail.html', job=job, team_assignments=team_assignments)
 
 @jobwork_bp.route('/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -160,6 +175,8 @@ def edit_job_work(id):
         job.sent_date = form.sent_date.data
         job.expected_return = form.expected_return.data
         job.notes = form.notes.data
+        job.is_team_work = form.is_team_work.data if form.work_type.data == 'in_house' else False
+        job.max_team_members = form.max_team_members.data if form.is_team_work.data and form.work_type.data == 'in_house' else 1
         
         db.session.commit()
         
@@ -409,3 +426,122 @@ def daily_entries_list():
                          job_work_id=job_work_id,
                          date_from=date_from,
                          date_to=date_to)
+
+@jobwork_bp.route('/team-assignments/<int:job_id>')
+@login_required
+def team_assignments(job_id):
+    """View and manage team assignments for a job work"""
+    job = JobWork.query.get_or_404(job_id)
+    
+    # Check if this is a team work job
+    if not job.is_team_work:
+        flash('This job work is not configured for team assignments.', 'warning')
+        return redirect(url_for('jobwork.detail', id=job_id))
+    
+    # Get existing team assignments
+    assignments = JobWorkTeamAssignment.query.filter_by(job_work_id=job_id).all()
+    
+    # Get available employees for assignment
+    available_employees = Employee.query.filter_by(status='active').all()
+    
+    return render_template('jobwork/team_assignments.html', 
+                         job=job, 
+                         assignments=assignments,
+                         available_employees=available_employees)
+
+@jobwork_bp.route('/assign-team-member/<int:job_id>', methods=['GET', 'POST'])
+@login_required  
+def assign_team_member(job_id):
+    """Assign a team member to a job work"""
+    job = JobWork.query.get_or_404(job_id)
+    
+    # Check if this is a team work job
+    if not job.is_team_work:
+        flash('This job work is not configured for team assignments.', 'warning')
+        return redirect(url_for('jobwork.detail', id=job_id))
+    
+    # Check if we've reached max team members
+    current_assignments = JobWorkTeamAssignment.query.filter_by(job_work_id=job_id).count()
+    if current_assignments >= job.max_team_members:
+        flash(f'Maximum team members ({job.max_team_members}) already assigned to this job.', 'warning')
+        return redirect(url_for('jobwork.team_assignments', job_id=job_id))
+    
+    form = JobWorkTeamAssignmentForm()
+    
+    # Filter out already assigned employees
+    assigned_employee_ids = [a.employee_id for a in JobWorkTeamAssignment.query.filter_by(job_work_id=job_id).all()]
+    available_employees = Employee.query.filter(
+        Employee.status == 'active',
+        ~Employee.id.in_(assigned_employee_ids)
+    ).all()
+    
+    form.employee_id.choices = [(emp.id, f"{emp.name} ({emp.employee_code})") for emp in available_employees]
+    
+    if form.validate_on_submit():
+        # Check if employee is already assigned
+        existing_assignment = JobWorkTeamAssignment.query.filter_by(
+            job_work_id=job_id,
+            employee_id=form.employee_id.data
+        ).first()
+        
+        if existing_assignment:
+            flash('This employee is already assigned to this job work.', 'warning')
+            return redirect(url_for('jobwork.team_assignments', job_id=job_id))
+        
+        # Create new team assignment
+        assignment = JobWorkTeamAssignment(
+            job_work_id=job_id,
+            employee_id=form.employee_id.data,
+            assigned_quantity=form.assigned_quantity.data,
+            status='assigned',
+            notes=form.notes.data,
+            assigned_by=current_user.id
+        )
+        
+        db.session.add(assignment)
+        db.session.commit()
+        
+        employee = Employee.query.get(form.employee_id.data)
+        flash(f'Successfully assigned {employee.name} to job work {job.job_number}!', 'success')
+        return redirect(url_for('jobwork.team_assignments', job_id=job_id))
+    
+    return render_template('jobwork/assign_team_member.html', 
+                         form=form, 
+                         job=job,
+                         available_count=len(available_employees))
+
+@jobwork_bp.route('/update-team-assignment/<int:assignment_id>', methods=['POST'])
+@login_required
+def update_team_assignment(assignment_id):
+    """Update team assignment progress"""
+    assignment = JobWorkTeamAssignment.query.get_or_404(assignment_id)
+    
+    try:
+        data = request.get_json()
+        if 'completed_quantity' in data:
+            assignment.completed_quantity = float(data['completed_quantity'])
+        if 'status' in data:
+            assignment.status = data['status']
+        if 'progress_notes' in data:
+            assignment.progress_notes = data['progress_notes']
+        
+        assignment.last_updated = db.func.now()
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Assignment updated successfully'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 400
+
+@jobwork_bp.route('/remove-team-assignment/<int:assignment_id>')
+@login_required
+def remove_team_assignment(assignment_id):
+    """Remove a team member from job work"""
+    assignment = JobWorkTeamAssignment.query.get_or_404(assignment_id)
+    job_id = assignment.job_work_id
+    employee_name = assignment.employee.name
+    
+    db.session.delete(assignment)
+    db.session.commit()
+    
+    flash(f'Removed {employee_name} from team assignment.', 'success')
+    return redirect(url_for('jobwork.team_assignments', job_id=job_id))
