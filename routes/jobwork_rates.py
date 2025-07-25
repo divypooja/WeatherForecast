@@ -24,7 +24,7 @@ def dashboard():
     # Items without rates
     items_with_rates = db.session.query(JobWorkRate.item_id).filter_by(is_active=True).distinct().all()
     items_with_rates_ids = [rate[0] for rate in items_with_rates]
-    items_without_rates = Item.query.filter(~Item.id.in_(items_with_rates_ids)).limit(10).all()
+    items_without_rates = Item.query.filter(~Item.id.in_(items_with_rates_ids)).limit(50).all()
     
     return render_template('jobwork_rates/dashboard.html', 
                          stats=stats, 
