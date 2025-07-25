@@ -65,6 +65,21 @@
                             </div>
                             
                             <div class="col-md-6 mb-3">
+                                {{ form.process.label(class="form-label") }}
+                                {{ form.process(class="form-select", id="process") }}
+                                <small class="text-muted">Select the type of process for this job work</small>
+                                {% if form.process.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.process.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
                                 {{ form.quantity_sent.label(class="form-label") }}
                                 <div class="input-group">
                                     {{ form.quantity_sent(class="form-control", step="0.01", id="quantity_sent") }}
@@ -82,9 +97,7 @@
                                     </div>
                                 {% endif %}
                             </div>
-                        </div>
-                        
-                        <div class="row">
+                            
                             <div class="col-md-6 mb-3">
                                 {{ form.rate_per_unit.label(class="form-label") }}
                                 {{ form.rate_per_unit(class="form-control", step="0.01", id="rate_per_unit") }}
@@ -97,7 +110,9 @@
                                     </div>
                                 {% endif %}
                             </div>
-                            
+                        </div>
+                        
+                        <div class="row">
                             <div class="col-md-6 mb-3">
                                 {{ form.sent_date.label(class="form-label") }}
                                 {{ form.sent_date(class="form-control") }}
@@ -109,9 +124,7 @@
                                     </div>
                                 {% endif %}
                             </div>
-                        </div>
-                        
-                        <div class="row">
+                            
                             <div class="col-md-6 mb-3">
                                 {{ form.expected_return.label(class="form-label") }}
                                 {{ form.expected_return(class="form-control") }}
@@ -124,6 +137,7 @@
                                 {% endif %}
                             </div>
                         </div>
+
                         
                         <div class="mb-3">
                             {{ form.notes.label(class="form-label") }}
@@ -255,10 +269,14 @@ function previewJobWork() {
     const customerSelect = document.querySelector('select[name="customer_name"]');
     const selectedCustomerText = customerSelect && customerSelect.selectedIndex > 0 ? customerSelect.options[customerSelect.selectedIndex].text : 'Not selected';
     
+    const processSelect = document.getElementById('process');
+    const selectedProcessText = processSelect && processSelect.selectedIndex > 0 ? processSelect.options[processSelect.selectedIndex].text : 'Not selected';
+    
     const previewData = {
         job_number: formData.get('job_number'),
         customer_name: selectedCustomerText,
         item_name: selectedItemText,
+        process: selectedProcessText,
         quantity_sent: parseFloat(formData.get('quantity_sent')) || 0,
         rate_per_unit: parseFloat(formData.get('rate_per_unit')) || 0,
         sent_date: formData.get('sent_date'),
@@ -321,6 +339,10 @@ function previewJobWork() {
             <tr>
                 <td><strong>Item:</strong></td>
                 <td>${previewData.item_name || 'Not selected'}</td>
+            </tr>
+            <tr>
+                <td><strong>Process:</strong></td>
+                <td><span class="badge bg-info">${previewData.process || 'Not selected'}</span></td>
             </tr>
             <tr>
                 <td><strong>Quantity Sent:</strong></td>

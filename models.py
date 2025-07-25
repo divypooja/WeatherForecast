@@ -427,6 +427,7 @@ class JobWork(db.Model):
     job_number = db.Column(db.String(50), unique=True, nullable=False)
     customer_name = db.Column(db.String(100), nullable=False)
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
+    process = db.Column(db.String(100), nullable=False)  # Process type: Zinc, Cutting, Bending, etc.
     quantity_sent = db.Column(db.Float, nullable=False)
     quantity_received = db.Column(db.Float, default=0.0)
     unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg

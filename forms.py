@@ -201,6 +201,16 @@ class JobWorkForm(FlaskForm):
     job_number = StringField('Job Number', validators=[DataRequired(), Length(max=50)])
     customer_name = SelectField('Customer Name', validators=[DataRequired()], coerce=str)
     item_id = SelectField('Item', validators=[DataRequired()], coerce=int)
+    process = SelectField('Process', validators=[DataRequired()], coerce=str,
+                         choices=[('', 'Select Process'),
+                                ('Zinc', 'Zinc'),
+                                ('Cutting', 'Cutting'), 
+                                ('Bending', 'Bending'),
+                                ('Welding', 'Welding'),
+                                ('Painting', 'Painting'),
+                                ('Assembly', 'Assembly'),
+                                ('Machining', 'Machining'),
+                                ('Polishing', 'Polishing')])
     quantity_sent = FloatField('Quantity Sent', validators=[DataRequired(), NumberRange(min=0)])
     rate_per_unit = FloatField('Rate per Unit', validators=[DataRequired(), NumberRange(min=0)])
     sent_date = DateField('Sent Date', validators=[DataRequired()])
