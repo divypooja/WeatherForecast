@@ -394,24 +394,31 @@ function previewBOM() {
     // Calculate actual freight cost based on unit type and product weight
     let freightCost = freightCostInput;
     if (freightCostInput > 0 && freightUnitType !== 'per_piece') {
-        // Calculate total weight from BOM components
+        // Calculate total weight from BOM components table
         let totalWeight = 0;
-        const bomTableRows = document.querySelectorAll('#bom-components-table tbody tr');
-        bomTableRows.forEach(row => {
-            const cells = row.querySelectorAll('td');
-            if (cells.length >= 6) {
-                const quantity = parseFloat(cells[3]?.textContent || '0'); // Quantity Required
-                const unitWeightText = cells[5]?.textContent || '0'; // Unit Weight column
-                let unitWeight = parseFloat(unitWeightText.replace('g/unit', '').replace('kg/unit', '').trim()) || 0;
-                
-                // Convert grams to kg if needed
-                if (unitWeightText.includes('g/unit') && !unitWeightText.includes('kg/unit')) {
-                    unitWeight = unitWeight / 1000;
+        const bomTable = document.querySelector('.table-striped tbody');
+        if (bomTable) {
+            const bomTableRows = bomTable.querySelectorAll('tr');
+            bomTableRows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 6) {
+                    const quantity = parseFloat(cells[3]?.textContent || '0'); // Quantity Required
+                    const unitWeightText = cells[5]?.textContent?.trim() || '0'; // Unit Weight column
+                    
+                    // Skip if no weight data
+                    if (unitWeightText === '-' || unitWeightText === '') return;
+                    
+                    let unitWeight = parseFloat(unitWeightText.replace('g/unit', '').replace('kg/unit', '').trim()) || 0;
+                    
+                    // Convert grams to kg if needed
+                    if (unitWeightText.includes('g/unit') && !unitWeightText.includes('kg/unit')) {
+                        unitWeight = unitWeight / 1000;
+                    }
+                    
+                    totalWeight += quantity * unitWeight;
                 }
-                
-                totalWeight += quantity * unitWeight;
-            }
-        });
+            });
+        }
         
         // Calculate freight cost based on unit type
         if (freightUnitType === 'per_kg' && totalWeight > 0) {
