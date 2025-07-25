@@ -342,22 +342,40 @@ function previewJobWork() {
                     const afterSending = availableStock - previewData.quantity_sent;
                     const stockStatus = previewData.quantity_sent > availableStock ? 'Insufficient Stock' : 'Sufficient Stock';
                     const stockClass = previewData.quantity_sent > availableStock ? 'bg-danger text-white' : 'bg-success text-white';
+                    const unit = data.unit_of_measure || 'units';
+                    const unitWeight = data.unit_weight || 0;
                     
                     stockInfo = `
-                        <div class="alert alert-info">
+                        <div class="alert ${previewData.quantity_sent > availableStock ? 'alert-danger' : 'alert-success'}">
                             <strong>Stock Impact Analysis:</strong><br>
-                            Current Stock: ${availableStock} ${data.unit_of_measure || 'units'}<br>
-                            Quantity to Send: ${previewData.quantity_sent} ${data.unit_of_measure || 'units'}<br>
-                            Remaining After Send: <span class="${previewData.quantity_sent > availableStock ? 'text-danger' : 'text-success'}">${afterSending} ${data.unit_of_measure || 'units'}</span><br>
-                            Status: <span class="${previewData.quantity_sent > availableStock ? 'text-danger' : 'text-success'}">${stockStatus}</span>
+                            Current Stock: ${availableStock} ${unit}<br>
+                            Quantity to Send: ${previewData.quantity_sent} ${unit}<br>
+                            Remaining After Send: ${afterSending} ${unit}<br>
+                            Status: <strong>${stockStatus}</strong>
                         </div>
                     `;
+                    
+                    // Add weight conversion info if applicable
+                    const isWeightUnit = ['kg', 'g', 'gm', 'gram', 'kilogram', 'ton', 'tonne'].includes(unit.toLowerCase());
+                    if (!isWeightUnit && unitWeight > 0 && previewData.quantity_sent > 0) {
+                        const totalWeight = previewData.quantity_sent * unitWeight;
+                        const weightUnit = totalWeight >= 1 ? 'kg' : 'g';
+                        const displayWeight = totalWeight >= 1 ? totalWeight.toFixed(3) : (totalWeight * 1000).toFixed(1);
+                        
+                        stockInfo += `
+                            <div class="alert alert-info mt-2">
+                                <i class="fas fa-weight"></i> <strong>Weight Calculation:</strong><br>
+                                ${previewData.quantity_sent} ${unit} × ${unitWeight} kg/unit = <strong>${displayWeight} ${weightUnit}</strong>
+                            </div>
+                        `;
+                    }
                     
                     document.getElementById('stock-analysis').innerHTML = stockInfo;
                 }
             })
             .catch(error => {
                 console.error('Error fetching stock info:', error);
+                document.getElementById('stock-analysis').innerHTML = '<div class="alert alert-warning">Unable to fetch stock information</div>';
             });
     }
     
