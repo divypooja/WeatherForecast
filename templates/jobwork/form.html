@@ -340,6 +340,11 @@ function previewJobWork() {
         if (previewContentDiv) {
             previewContentDiv.innerHTML = previewContent;
             showPreviewModal();
+            
+            // Load stock information asynchronously after showing modal
+            if (itemId) {
+                loadStockAnalysis(previewData, itemId);
+            }
         } else {
             console.error('preview-content div not found');
             alert('Preview modal not found. Please refresh the page.');
@@ -516,12 +521,6 @@ function loadStockAnalysis(previewData, itemId) {
                 stockAnalysisDiv.innerHTML = '<div class="alert alert-warning">Unable to fetch stock information</div>';
             }
         });
-}
-        
-        // Load stock information asynchronously after showing modal
-        if (itemId) {
-            loadStockAnalysis(previewData, itemId);
-        }
 }
 
 // Auto-check stock when item or quantity changes
