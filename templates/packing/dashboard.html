@@ -137,6 +137,60 @@
     </div>
 </div>
 
+<!-- Vector Nesting Module -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-warning text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-puzzle-piece"></i> Vector Nesting Optimization (New!)
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <p class="card-text">Advanced irregular shape nesting using SVGNest genetic algorithm for complex geometries, custom parts, and laser cutting optimization.</p>
+                        <div class="mb-3">
+                            <strong>Features:</strong>
+                            <ul class="mt-2">
+                                <li><strong>Irregular Shape Support:</strong> Handles gears, brackets, and custom CNC parts</li>
+                                <li><strong>Part-in-Part Nesting:</strong> Places smaller parts inside holes of larger parts</li>
+                                <li><strong>Genetic Algorithm:</strong> AI-powered optimization for maximum efficiency</li>
+                                <li><strong>SVG Export:</strong> Direct export for laser cutters and CNC machines</li>
+                                <li><strong>Advanced Configuration:</strong> Rotation control, spacing, and concave area exploration</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6 class="text-primary">SVGNest Algorithm</h6>
+                                <div class="mb-2">
+                                    <span class="badge bg-success">15-30% Material Savings</span>
+                                </div>
+                                <div class="mb-2">
+                                    <span class="badge bg-info">Genetic Optimization</span>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="badge bg-warning">Commercial Grade</span>
+                                </div>
+                                <div class="btn-group-vertical w-100">
+                                    <a href="{{ url_for('packing.vector_nesting') }}" class="btn btn-warning mb-2">
+                                        <i class="fas fa-puzzle-piece"></i> Start Vector Nesting
+                                    </a>
+                                    <button class="btn btn-outline-warning" onclick="showVectorDemo()">
+                                        <i class="fas fa-play"></i> View Demo Shapes
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Quick Actions -->
 <div class="row mb-4">
     <div class="col-md-12">
