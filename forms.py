@@ -355,7 +355,16 @@ class BOMForm(FlaskForm):
     labor_rate_per_hour = FloatField('Labor Rate per Hour', validators=[NumberRange(min=0)], default=0.0)
     overhead_cost_per_unit = FloatField('Fixed Overhead per Unit', validators=[NumberRange(min=0)], default=0.0)
     overhead_percentage = FloatField('Overhead % (of material cost)', validators=[NumberRange(min=0, max=100)], default=0.0)
-    freight_cost_per_unit = FloatField('Freight/Transportation Cost per Unit (Optional)', validators=[NumberRange(min=0)], default=0.0)
+    freight_cost_per_unit = FloatField('Freight/Transportation Cost (Optional)', validators=[NumberRange(min=0)], default=0.0)
+    freight_unit_type = SelectField('Freight Unit Type', validators=[Optional()],
+                                   choices=[
+                                       ('per_piece', 'Per Piece/Unit'),
+                                       ('per_kg', 'Per Kilogram'),
+                                       ('per_box', 'Per Box'),
+                                       ('per_carton', 'Per Carton'),
+                                       ('per_ton', 'Per Ton')
+                                   ],
+                                   default='per_piece')
     
     def __init__(self, *args, **kwargs):
         super(BOMForm, self).__init__(*args, **kwargs)

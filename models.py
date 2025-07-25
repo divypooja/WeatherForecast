@@ -478,6 +478,7 @@ class BOM(db.Model):
     labor_rate_per_hour = db.Column(db.Float, default=0.0)
     overhead_percentage = db.Column(db.Float, default=0.0)  # Percentage of material cost
     freight_cost_per_unit = db.Column(db.Float, default=0.0)  # Transportation/freight cost per unit (optional)
+    freight_unit_type = db.Column(db.String(20), default='per_piece')  # per_piece, per_kg, per_box, per_carton
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
