@@ -10,6 +10,8 @@ from PIL import Image, ImageEnhance, ImageFilter
 from datetime import datetime
 from dateutil import parser
 import logging
+import fitz  # PyMuPDF for PDF processing
+import io
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -56,10 +58,16 @@ class ReceiptOCR:
     def preprocess_image(self, image_path):
         """Preprocess image for better OCR accuracy using PIL"""
         try:
+            # Handle PDF files
+            if image_path.lower().endswith('.pdf'):
+                return self.convert_pdf_to_image(image_path)
+            
             # Open image with PIL
             img = Image.open(image_path)
             
-            # Convert to grayscale
+            # Convert to RGB if needed, then to grayscale
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
             gray = img.convert('L')
             
             # Enhance contrast
@@ -78,6 +86,34 @@ class ReceiptOCR:
         except Exception as e:
             logger.error(f"Error preprocessing image: {str(e)}")
             return image_path  # Return original if preprocessing fails
+    
+    def convert_pdf_to_image(self, pdf_path):
+        """Convert PDF to image for OCR processing"""
+        try:
+            # Open PDF
+            doc = fitz.open(pdf_path)
+            
+            # Get first page
+            page = doc[0]
+            
+            # Convert to image with high DPI for better OCR
+            mat = fitz.Matrix(2.0, 2.0)  # 2x zoom
+            pix = page.get_pixmap(matrix=mat)
+            
+            # Convert to PIL Image
+            img_data = pix.tobytes("ppm")
+            img = Image.open(io.BytesIO(img_data))
+            
+            # Save as temporary image
+            temp_path = pdf_path.replace('.pdf', '_converted.png')
+            img.save(temp_path, 'PNG')
+            
+            doc.close()
+            return temp_path
+            
+        except Exception as e:
+            logger.error(f"Error converting PDF to image: {str(e)}")
+            return pdf_path
     
     def extract_text(self, image_path):
         """Extract text from image using Tesseract OCR"""

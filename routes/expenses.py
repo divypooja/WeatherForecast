@@ -7,8 +7,7 @@ from datetime import datetime, date
 from sqlalchemy import func, desc, extract
 from utils_documents import save_uploaded_file_expense
 from utils_export import export_factory_expenses
-# Temporarily comment out OCR import to fix OpenCV dependency issue
-# from utils_ocr import process_receipt_image
+from utils_ocr import process_receipt_image
 import calendar
 import os
 import tempfile
@@ -461,23 +460,8 @@ def process_ocr():
             temp_path = tmp_file.name
         
         try:
-            # Simulate OCR processing for demo
-            import random
-            from datetime import date
-            
-            # Demo OCR result - replace with real OCR when dependencies are resolved
-            ocr_result = {
-                "date": date.today().strftime("%Y-%m-%d"),
-                "amount": round(random.uniform(100, 5000), 2),
-                "base_amount": round(random.uniform(85, 4500), 2),
-                "tax_amount": round(random.uniform(15, 500), 2),
-                "vendor": f"Sample Vendor {random.randint(1, 10)}",
-                "invoice_number": f"INV-{random.randint(1000, 9999)}",
-                "category": random.choice(["Utilities", "Materials", "Transport", "Maintenance"]),
-                "gst_rate": random.choice([5, 12, 18, 28]),
-                "gstin": f"22AAAAA0000A1Z{random.randint(1, 9)}",
-                "confidence": 100
-            }
+            # Process image with real OCR
+            ocr_result = process_receipt_image(temp_path)
             
             # Clean up temporary file
             os.unlink(temp_path)
@@ -491,7 +475,7 @@ def process_ocr():
             # Return processed data
             return jsonify({
                 "success": True,
-                "message": "Receipt processed successfully (Demo Mode)",
+                "message": "Receipt processed successfully with real OCR",
                 "data": ocr_result
             })
             
