@@ -388,7 +388,8 @@ function previewJobWork() {
     `;
     
     document.getElementById('preview-content').innerHTML = previewContent;
-    new bootstrap.Modal(document.getElementById('previewModal')).show();
+    const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
+    previewModal.show();
 }
 
 // Auto-check stock when item or quantity changes
