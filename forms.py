@@ -103,6 +103,9 @@ class SupplierForm(FlaskForm):
     ifsc_code = StringField('IFSC Code', validators=[Optional(), Length(max=20)], 
                            render_kw={"placeholder": "SBIN0001234"})
     
+    # Transportation Specific (for transporters)
+    freight_rate_per_km = FloatField('Freight Rate per KM (₹)', validators=[Optional(), NumberRange(min=0)], default=0.0)
+    
     # Additional Information
     remarks = TextAreaField('Remarks', render_kw={"placeholder": "Preferred for steel items"})
     is_active = BooleanField('Active', default=True)
