@@ -63,7 +63,10 @@
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     {{ form.received_quantity.label(class="form-label") }}
-                                    {{ form.received_quantity(class="form-control", step="0.01", id="receivedQty", autocomplete="off") }}
+                                    <div class="input-group">
+                                        {{ form.received_quantity(class="form-control", step="0.01", id="receivedQty", autocomplete="off") }}
+                                        <span class="input-group-text" id="receivedUnit">Unit</span>
+                                    </div>
                                     {% for error in form.received_quantity.errors %}
                                         <div class="text-danger">{{ error }}</div>
                                     {% endfor %}
@@ -72,7 +75,10 @@
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     {{ form.inspected_quantity.label(class="form-label") }}
-                                    {{ form.inspected_quantity(class="form-control", step="0.01", id="inspectedQty", autocomplete="off") }}
+                                    <div class="input-group">
+                                        {{ form.inspected_quantity(class="form-control", step="0.01", id="inspectedQty", autocomplete="off") }}
+                                        <span class="input-group-text" id="inspectedUnit">Unit</span>
+                                    </div>
                                     {% for error in form.inspected_quantity.errors %}
                                         <div class="text-danger">{{ error }}</div>
                                     {% endfor %}
@@ -81,7 +87,10 @@
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     {{ form.passed_quantity.label(class="form-label") }}
-                                    {{ form.passed_quantity(class="form-control", step="0.01", id="passedQty", autocomplete="off") }}
+                                    <div class="input-group">
+                                        {{ form.passed_quantity(class="form-control", step="0.01", id="passedQty", autocomplete="off") }}
+                                        <span class="input-group-text" id="passedUnit">Unit</span>
+                                    </div>
                                     {% for error in form.passed_quantity.errors %}
                                         <div class="text-danger">{{ error }}</div>
                                     {% endfor %}
@@ -94,7 +103,10 @@
                             <div class="col-md-12">
                                 <div class="mb-3">
                                     {{ form.rejected_quantity.label(class="form-label") }}
-                                    {{ form.rejected_quantity(class="form-control", step="0.01", id="rejectedQty", readonly=true, autocomplete="off") }}
+                                    <div class="input-group">
+                                        {{ form.rejected_quantity(class="form-control", step="0.01", id="rejectedQty", readonly=true, autocomplete="off") }}
+                                        <span class="input-group-text" id="rejectedUnit">Unit</span>
+                                    </div>
                                     <div class="form-text">Auto-calculated: Inspected Quantity - Passed Quantity</div>
                                     {% for error in form.rejected_quantity.errors %}
                                         <div class="text-danger">{{ error }}</div>
@@ -116,7 +128,7 @@
                                             <strong>Rejection Rate:</strong> <span id="rejectionRate">0.0%</span>
                                         </div>
                                         <div class="col-md-4">
-                                            <strong>Total Accounted:</strong> <span id="totalAccounted">0.0</span>
+                                            <strong>Total Accounted:</strong> <span id="totalAccounted">0.0</span> <span id="summaryUnit"></span>
                                         </div>
                                     </div>
                                 </div>
@@ -169,6 +181,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const rejectedQty = document.getElementById('rejectedQty');
     const poSelect = document.getElementById('poSelect');
     const jobSelect = document.getElementById('jobSelect');
+    const itemSelect = document.getElementById('itemSelect');
 
     // Function to calculate and update summary
     function updateSummary() {
@@ -195,6 +208,11 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('acceptanceRate').textContent = acceptanceRate.toFixed(1) + '%';
         document.getElementById('rejectionRate').textContent = rejectionRate.toFixed(1) + '%';
         document.getElementById('totalAccounted').textContent = totalAccounted.toFixed(2);
+        
+        // Update summary unit
+        const summaryUnit = document.getElementById('summaryUnit');
+        const currentUnit = document.getElementById('receivedUnit').textContent;
+        summaryUnit.textContent = currentUnit !== 'Unit' ? currentUnit : '';
     }
 
     // Mutual exclusion for PO and Job Work selection
@@ -310,6 +328,26 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('totalAccounted').textContent = '0.00';
     }
 
+    // Function to update unit labels
+    function updateUnitLabels(unit) {
+        const unitElements = ['receivedUnit', 'inspectedUnit', 'passedUnit', 'rejectedUnit'];
+        unitElements.forEach(elementId => {
+            document.getElementById(elementId).textContent = unit || 'Unit';
+        });
+        updateSummary(); // Update summary to show unit in total accounted
+    }
+    
+    // Add event listener for item selection to update units
+    itemSelect.addEventListener('change', function() {
+        if (this.value) {
+            const selectedOption = this.options[this.selectedIndex];
+            const unit = selectedOption.getAttribute('data-unit');
+            updateUnitLabels(unit);
+        } else {
+            updateUnitLabels('Unit');
+        }
+    });
+
     // Add event listeners for calculations
     [receivedQty, inspectedQty, passedQty].forEach(element => {
         element.addEventListener('input', updateSummary);
@@ -327,6 +365,9 @@ document.addEventListener('DOMContentLoaded', function() {
     } else if (initialJobSelection && initialJobSelection !== '0') {
         loadJobWorkItems(initialJobSelection);
     }
+    
+    // Set default unit labels
+    updateUnitLabels('Unit');
 });
 </script>
 {% endblock %}
