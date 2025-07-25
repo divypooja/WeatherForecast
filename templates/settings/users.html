@@ -180,9 +180,9 @@
 </div>
 
 <!-- Password Reset Modal -->
-<div class="modal fade" id="resetPasswordModal" tabindex="-1" role="dialog" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
+<div class="modal fade" id="resetPasswordModal" tabindex="-1" role="dialog" aria-labelledby="resetPasswordModalLabel" aria-hidden="true" style="z-index: 1060;">
+    <div class="modal-dialog" role="document" style="z-index: 1061;">
+        <div class="modal-content" style="z-index: 1062;">
             <div class="modal-header">
                 <h5 class="modal-title" id="resetPasswordModalLabel">Reset Password</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -193,7 +193,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-warning" id="confirmResetPassword" style="z-index: 1050; position: relative; pointer-events: auto;">Reset Password</button>
+                <button type="button" class="btn btn-warning" id="confirmResetPassword" style="z-index: 1065; position: relative; pointer-events: auto;">Reset Password</button>
             </div>
         </div>
     </div>
@@ -265,7 +265,30 @@ function showChangePasswordModal() {
 function resetPassword(userId, username) {
     currentUserId = userId;
     document.getElementById('resetUsername').textContent = username;
-    new bootstrap.Modal(document.getElementById('resetPasswordModal')).show();
+    
+    // Create modal with specific options to prevent backdrop interference
+    const modalElement = document.getElementById('resetPasswordModal');
+    const modal = new bootstrap.Modal(modalElement, {
+        backdrop: 'static',
+        keyboard: true,
+        focus: true
+    });
+    
+    // Ensure proper z-index layering
+    modalElement.style.zIndex = '1060';
+    
+    modal.show();
+    
+    // Additional fix: Ensure modal content is above backdrop
+    modalElement.addEventListener('shown.bs.modal', function () {
+        const backdrop = document.querySelector('.modal-backdrop');
+        if (backdrop) {
+            backdrop.style.zIndex = '1059';
+        }
+        modalElement.style.zIndex = '1060';
+        modalElement.querySelector('.modal-dialog').style.zIndex = '1061';
+        modalElement.querySelector('.modal-content').style.zIndex = '1062';
+    });
 }
 
 function deleteUser(userId, username) {

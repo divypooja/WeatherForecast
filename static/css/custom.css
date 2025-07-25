@@ -2,6 +2,30 @@
 
 /* Use minimal custom styles - rely on Bootstrap theme */
 
+/* Modal Z-Index Fix - Ensure modals appear above all other content */
+.modal {
+    z-index: 1060 !important;
+}
+
+.modal-backdrop {
+    z-index: 1059 !important;
+}
+
+.modal-dialog {
+    z-index: 1061 !important;
+}
+
+.modal-content {
+    z-index: 1062 !important;
+    position: relative;
+}
+
+.modal-footer .btn {
+    z-index: 1065 !important;
+    position: relative;
+    pointer-events: auto !important;
+}
+
 /* Universal Table Scrolling System */
 .table-responsive {
     overflow-x: auto;
