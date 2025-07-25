@@ -299,87 +299,60 @@ function checkInventoryStock() {
 function previewJobWork() {
     console.log('Preview function called'); // Debug log
     
-    const form = document.querySelector('form');
-    const formData = new FormData(form);
-    
-    // Get selected item name and details
-    const itemSelect = document.getElementById('item_id');
-    const selectedItemText = itemSelect && itemSelect.selectedIndex > 0 ? itemSelect.options[itemSelect.selectedIndex].text : 'Not selected';
-    const itemId = itemSelect ? itemSelect.value : '';
-    
-    // Get selected customer name
-    const customerSelect = document.querySelector('select[name="customer_name"]');
-    const selectedCustomerText = customerSelect && customerSelect.selectedIndex > 0 ? customerSelect.options[customerSelect.selectedIndex].text : 'Not selected';
-    
-    const processSelect = document.getElementById('process_type');
-    const selectedProcessText = processSelect && processSelect.selectedIndex > 0 ? processSelect.options[processSelect.selectedIndex].text : 'Not selected';
-    
-    const previewData = {
-        job_number: formData.get('job_number'),
-        customer_name: selectedCustomerText,
-        item_name: selectedItemText,
-        process: selectedProcessText,
-        quantity_sent: parseFloat(formData.get('quantity_sent')) || 0,
-        expected_finished_material: parseFloat(formData.get('expected_finished_material')) || 0,
-        expected_scrap: parseFloat(formData.get('expected_scrap')) || 0,
-        rate_per_unit: parseFloat(formData.get('rate_per_unit')) || 0,
-        sent_date: formData.get('sent_date'),
-        expected_return: formData.get('expected_return'),
-        notes: formData.get('notes')
-    };
-    
-    // Calculate values
-    const totalValue = previewData.quantity_sent * previewData.rate_per_unit;
-    
-    // Get item stock information for detailed preview
-    let stockInfo = '';
-    if (itemId) {
-        fetch(`/inventory/api/item-stock/${itemId}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const availableStock = data.current_stock || 0;
-                    const afterSending = availableStock - previewData.quantity_sent;
-                    const stockStatus = previewData.quantity_sent > availableStock ? 'Insufficient Stock' : 'Sufficient Stock';
-                    const stockClass = previewData.quantity_sent > availableStock ? 'bg-danger text-white' : 'bg-success text-white';
-                    const unit = data.unit_of_measure || 'units';
-                    const unitWeight = data.unit_weight || 0;
-                    
-                    stockInfo = `
-                        <div class="alert ${previewData.quantity_sent > availableStock ? 'alert-danger' : 'alert-success'}">
-                            <strong>Stock Impact Analysis:</strong><br>
-                            Current Stock: ${availableStock} ${unit}<br>
-                            Quantity to Send: ${previewData.quantity_sent} ${unit}<br>
-                            Remaining After Send: ${afterSending} ${unit}<br>
-                            Status: <strong>${stockStatus}</strong>
-                        </div>
-                    `;
-                    
-                    // Add weight conversion info if applicable
-                    const isWeightUnit = ['kg', 'g', 'gm', 'gram', 'kilogram', 'ton', 'tonne'].includes(unit.toLowerCase());
-                    if (!isWeightUnit && unitWeight > 0 && previewData.quantity_sent > 0) {
-                        const totalWeight = previewData.quantity_sent * unitWeight;
-                        const weightUnit = totalWeight >= 1 ? 'kg' : 'g';
-                        const displayWeight = totalWeight >= 1 ? totalWeight.toFixed(3) : (totalWeight * 1000).toFixed(1);
-                        
-                        stockInfo += `
-                            <div class="alert alert-info mt-2">
-                                <i class="fas fa-weight"></i> <strong>Weight Calculation:</strong><br>
-                                ${previewData.quantity_sent} ${unit} × ${unitWeight} kg/unit = <strong>${displayWeight} ${weightUnit}</strong>
-                            </div>
-                        `;
-                    }
-                    
-                    document.getElementById('stock-analysis').innerHTML = stockInfo;
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching stock info:', error);
-                document.getElementById('stock-analysis').innerHTML = '<div class="alert alert-warning">Unable to fetch stock information</div>';
-            });
+    try {
+        const form = document.querySelector('form');
+        const formData = new FormData(form);
+        
+        // Get selected item name and details
+        const itemSelect = document.getElementById('item_id');
+        const selectedItemText = itemSelect && itemSelect.selectedIndex > 0 ? itemSelect.options[itemSelect.selectedIndex].text : 'Not selected';
+        const itemId = itemSelect ? itemSelect.value : '';
+        
+        // Get selected customer name
+        const customerSelect = document.querySelector('select[name="customer_name"]');
+        const selectedCustomerText = customerSelect && customerSelect.selectedIndex > 0 ? customerSelect.options[customerSelect.selectedIndex].text : 'Not selected';
+        
+        const processSelect = document.getElementById('process_type');
+        const selectedProcessText = processSelect && processSelect.selectedIndex > 0 ? processSelect.options[processSelect.selectedIndex].text : 'Not selected';
+        
+        const previewData = {
+            job_number: formData.get('job_number') || 'Auto-generated',
+            customer_name: selectedCustomerText,
+            item_name: selectedItemText,
+            process: selectedProcessText,
+            quantity_sent: parseFloat(formData.get('quantity_sent')) || 0,
+            expected_finished_material: parseFloat(formData.get('expected_finished_material')) || 0,
+            expected_scrap: parseFloat(formData.get('expected_scrap')) || 0,
+            rate_per_unit: parseFloat(formData.get('rate_per_unit')) || 0,
+            sent_date: formData.get('sent_date') || 'Not set',
+            expected_return: formData.get('expected_return') || 'Not set',
+            notes: formData.get('notes') || ''
+        };
+        
+        // Calculate values
+        const totalValue = previewData.quantity_sent * previewData.rate_per_unit;
+        
+        // Create immediate preview content
+        const previewContent = createPreviewContent(previewData, totalValue, itemId);
+        
+        // Set content and show modal immediately
+        const previewContentDiv = document.getElementById('preview-content');
+        if (previewContentDiv) {
+            previewContentDiv.innerHTML = previewContent;
+            showPreviewModal();
+        } else {
+            console.error('preview-content div not found');
+            alert('Preview modal not found. Please refresh the page.');
+        }
+        
+    } catch (error) {
+        console.error('Error in preview function:', error);
+        alert('Error creating preview. Please check your form data.');
     }
-    
-    const previewContent = `
+}
+
+function createPreviewContent(previewData, totalValue, itemId) {
+    return `
 <div class="alert alert-info">
     <i class="fas fa-info-circle"></i> <strong>Review your Job Work configuration before saving.</strong>
 </div>
@@ -392,31 +365,31 @@ function previewJobWork() {
         <table class="table table-borderless">
             <tr>
                 <td><strong>Job Number:</strong></td>
-                <td>${previewData.job_number || 'Auto-generated'}</td>
+                <td>${previewData.job_number}</td>
             </tr>
             <tr>
                 <td><strong>Customer:</strong></td>
-                <td>${previewData.customer_name || 'Not selected'}</td>
+                <td>${previewData.customer_name}</td>
             </tr>
             <tr>
                 <td><strong>Item:</strong></td>
-                <td>${previewData.item_name || 'Not selected'}</td>
+                <td>${previewData.item_name}</td>
             </tr>
             <tr>
                 <td><strong>Process:</strong></td>
-                <td><span class="badge bg-info">${previewData.process || 'Not selected'}</span></td>
+                <td><span class="badge bg-info">${previewData.process}</span></td>
             </tr>
             <tr>
                 <td><strong>Quantity Sent:</strong></td>
-                <td>${previewData.quantity_sent}</td>
+                <td><strong>${previewData.quantity_sent}</strong></td>
             </tr>
             <tr>
                 <td><strong>Expected Finished Material:</strong></td>
-                <td>${previewData.expected_finished_material || '0'}</td>
+                <td><span class="badge bg-success">${previewData.expected_finished_material}</span></td>
             </tr>
             <tr>
                 <td><strong>Expected Scrap:</strong></td>
-                <td>${previewData.expected_scrap || '0'}</td>
+                <td><span class="badge bg-warning">${previewData.expected_scrap}</span></td>
             </tr>
             <tr>
                 <td><strong>Rate per Unit:</strong></td>
@@ -424,11 +397,11 @@ function previewJobWork() {
             </tr>
             <tr>
                 <td><strong>Sent Date:</strong></td>
-                <td>${previewData.sent_date || 'Not set'}</td>
+                <td>${previewData.sent_date}</td>
             </tr>
             <tr>
                 <td><strong>Expected Return:</strong></td>
-                <td>${previewData.expected_return || 'Not set'}</td>
+                <td>${previewData.expected_return}</td>
             </tr>
         </table>
     </div>
@@ -480,25 +453,75 @@ function previewJobWork() {
     </div>
 </div>
 `;
-    
-    console.log('Setting preview content:', previewContent); // Debug log
-    
-    const previewContentDiv = document.getElementById('preview-content');
-    if (previewContentDiv) {
-        previewContentDiv.innerHTML = previewContent;
-        console.log('Content set successfully'); // Debug log
-    } else {
-        console.error('preview-content div not found'); // Debug log
-    }
-    
+}
+
+function showPreviewModal() {
     const modalElement = document.getElementById('previewModal');
     if (modalElement) {
         const previewModal = new bootstrap.Modal(modalElement);
         previewModal.show();
-        console.log('Modal shown'); // Debug log
+        console.log('Modal shown successfully');
     } else {
-        console.error('previewModal not found'); // Debug log
+        console.error('previewModal element not found');
+        alert('Preview modal not found in the page.');
     }
+}
+
+function loadStockAnalysis(previewData, itemId) {
+    fetch(`/inventory/api/item-stock/${itemId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const availableStock = data.current_stock || 0;
+                const afterSending = availableStock - previewData.quantity_sent;
+                const stockStatus = previewData.quantity_sent > availableStock ? 'Insufficient Stock' : 'Sufficient Stock';
+                const unit = data.unit_of_measure || 'units';
+                const unitWeight = data.unit_weight || 0;
+                
+                let stockInfo = `
+                    <div class="alert ${previewData.quantity_sent > availableStock ? 'alert-danger' : 'alert-success'}">
+                        <strong>Stock Impact Analysis:</strong><br>
+                        Current Stock: ${availableStock} ${unit}<br>
+                        Quantity to Send: ${previewData.quantity_sent} ${unit}<br>
+                        Remaining After Send: ${afterSending} ${unit}<br>
+                        Status: <strong>${stockStatus}</strong>
+                    </div>
+                `;
+                
+                // Add weight conversion info if applicable
+                const isWeightUnit = ['kg', 'g', 'gm', 'gram', 'kilogram', 'ton', 'tonne'].includes(unit.toLowerCase());
+                if (!isWeightUnit && unitWeight > 0 && previewData.quantity_sent > 0) {
+                    const totalWeight = previewData.quantity_sent * unitWeight;
+                    const weightUnit = totalWeight >= 1 ? 'kg' : 'g';
+                    const displayWeight = totalWeight >= 1 ? totalWeight.toFixed(3) : (totalWeight * 1000).toFixed(1);
+                    
+                    stockInfo += `
+                        <div class="alert alert-info mt-2">
+                            <i class="fas fa-weight"></i> <strong>Weight Calculation:</strong><br>
+                            ${previewData.quantity_sent} ${unit} × ${unitWeight} kg/unit = <strong>${displayWeight} ${weightUnit}</strong>
+                        </div>
+                    `;
+                }
+                
+                const stockAnalysisDiv = document.getElementById('stock-analysis');
+                if (stockAnalysisDiv) {
+                    stockAnalysisDiv.innerHTML = stockInfo;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching stock info:', error);
+            const stockAnalysisDiv = document.getElementById('stock-analysis');
+            if (stockAnalysisDiv) {
+                stockAnalysisDiv.innerHTML = '<div class="alert alert-warning">Unable to fetch stock information</div>';
+            }
+        });
+}
+        
+        // Load stock information asynchronously after showing modal
+        if (itemId) {
+            loadStockAnalysis(previewData, itemId);
+        }
 }
 
 // Auto-check stock when item or quantity changes
