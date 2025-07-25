@@ -232,10 +232,24 @@ def reset_user_password(user_id):
         if user.id == current_user.id:
             return jsonify({'success': False, 'message': 'Cannot reset your own password'})
         
-        # Generate random password
-        import string
-        import random
-        new_password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+        # Get request data
+        data = request.get_json() or {}
+        reset_type = data.get('reset_type', 'generate')
+        custom_password = data.get('custom_password')
+        
+        if reset_type == 'custom' and custom_password:
+            # Validate custom password
+            if len(custom_password) < 6:
+                return jsonify({'success': False, 'message': 'Password must be at least 6 characters'})
+            
+            new_password = custom_password
+            display_password = "Custom password set successfully"
+        else:
+            # Generate random password
+            import string
+            import random
+            new_password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+            display_password = new_password
         
         # Update password
         from werkzeug.security import generate_password_hash
@@ -245,7 +259,8 @@ def reset_user_password(user_id):
         return jsonify({
             'success': True, 
             'message': 'Password reset successfully',
-            'new_password': new_password
+            'new_password': display_password,
+            'is_custom': reset_type == 'custom'
         })
         
     except Exception as e:
