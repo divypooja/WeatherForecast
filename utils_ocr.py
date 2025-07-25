@@ -10,11 +10,6 @@ from PIL import Image, ImageEnhance, ImageFilter
 from datetime import datetime
 from dateutil import parser
 import logging
-try:
-    import fitz  # PyMuPDF for PDF processing
-except ImportError:
-    fitz = None
-import io
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -61,16 +56,10 @@ class ReceiptOCR:
     def preprocess_image(self, image_path):
         """Preprocess image for better OCR accuracy using PIL"""
         try:
-            # Handle PDF files
-            if image_path.lower().endswith('.pdf'):
-                return self.convert_pdf_to_image(image_path)
-            
             # Open image with PIL
             img = Image.open(image_path)
             
-            # Convert to RGB if needed, then to grayscale
-            if img.mode != 'RGB':
-                img = img.convert('RGB')
+            # Convert to grayscale
             gray = img.convert('L')
             
             # Enhance contrast
@@ -89,37 +78,6 @@ class ReceiptOCR:
         except Exception as e:
             logger.error(f"Error preprocessing image: {str(e)}")
             return image_path  # Return original if preprocessing fails
-    
-    def convert_pdf_to_image(self, pdf_path):
-        """Convert PDF to image for OCR processing"""
-        try:
-            if fitz is None:
-                raise ImportError("PyMuPDF not available")
-            
-            # Open PDF
-            doc = fitz.open(pdf_path)
-            
-            # Get first page
-            page = doc[0]
-            
-            # Convert to image with high DPI for better OCR
-            mat = fitz.Matrix(2.0, 2.0)  # 2x zoom
-            pix = page.get_pixmap(matrix=mat)
-            
-            # Convert to PIL Image
-            img_data = pix.tobytes("ppm")
-            img = Image.open(io.BytesIO(img_data))
-            
-            # Save as temporary image
-            temp_path = pdf_path.replace('.pdf', '_converted.png')
-            img.save(temp_path, 'PNG')
-            
-            doc.close()
-            return temp_path
-            
-        except Exception as e:
-            logger.error(f"Error converting PDF to image: {str(e)}")
-            return pdf_path
     
     def extract_text(self, image_path):
         """Extract text from image using Tesseract OCR"""
@@ -227,8 +185,6 @@ class ReceiptOCR:
             if not raw_text:
                 return {'error': 'Could not extract text from image'}
             
-            logger.info(f"Extracted text: {raw_text[:200]}...")  # Log first 200 chars for debugging
-            
             # Parse individual fields
             extracted_data = {
                 'raw_text': raw_text,
@@ -240,24 +196,14 @@ class ReceiptOCR:
                 'invoice_number': self.parse_field(raw_text, 'invoice_number')
             }
             
-            # Fallback extraction for better results
-            if not extracted_data['amount']:
-                extracted_data['amount'] = self.extract_amount_fallback(raw_text)
-            
-            if not extracted_data['vendor']:
-                extracted_data['vendor'] = self.extract_vendor_fallback(raw_text)
-            
-            if not extracted_data['date']:
-                extracted_data['date'] = datetime.now().strftime('%Y-%m-%d')  # Default to today
-            
             # Auto-categorize expense
             extracted_data['category'] = self.categorize_expense(raw_text, extracted_data['vendor'])
             
             # Calculate base amount if GST is found
             if extracted_data['amount'] and extracted_data['gst_amount']:
                 try:
-                    total_amount = float(extracted_data['amount'])
-                    gst_rate = float(extracted_data['gst_amount'])
+                    total_amount = extracted_data['amount']
+                    gst_rate = extracted_data['gst_amount']
                     if gst_rate > 1:  # If GST is given as percentage
                         gst_rate = gst_rate / 100
                     
@@ -269,14 +215,7 @@ class ReceiptOCR:
                     extracted_data['tax_amount'] = round(tax_amount, 2)
                     extracted_data['gst_rate'] = gst_rate * 100  # Convert back to percentage
                 except:
-                    # If calculation fails, assume 18% GST and split amount
-                    if extracted_data['amount']:
-                        total_amount = float(extracted_data['amount'])
-                        base_amount = total_amount / 1.18
-                        tax_amount = total_amount - base_amount
-                        extracted_data['base_amount'] = round(base_amount, 2)
-                        extracted_data['tax_amount'] = round(tax_amount, 2)
-                        extracted_data['gst_rate'] = 18
+                    pass
             
             # Add confidence indicators
             extracted_data['confidence'] = self.calculate_confidence(extracted_data)
@@ -286,54 +225,6 @@ class ReceiptOCR:
         except Exception as e:
             logger.error(f"Error extracting structured data: {str(e)}")
             return {'error': f'OCR processing failed: {str(e)}'}
-    
-    def extract_amount_fallback(self, text):
-        """Fallback method to extract amount from text"""
-        # Look for amount patterns specifically
-        amount_patterns = [
-            r'amount\s*[₹\$]?\s*(\d+(?:,\d{3})*(?:\.\d{2})?)',
-            r'₹\s*(\d+(?:,\d{3})*(?:\.\d{2})?)',
-            r'total\s*[₹\$]?\s*(\d+(?:,\d{3})*(?:\.\d{2})?)',
-            r'paid\s*[₹\$]?\s*(\d+(?:,\d{3})*(?:\.\d{2})?)'
-        ]
-        
-        for pattern in amount_patterns:
-            matches = re.findall(pattern, text.lower())
-            if matches:
-                # Clean and convert first match
-                amount_str = matches[0].replace(',', '')
-                try:
-                    amount = float(amount_str)
-                    if 10 <= amount <= 100000:  # Reasonable amount range
-                        return amount
-                except:
-                    continue
-        
-        # If no pattern match, find reasonable numbers
-        numbers = re.findall(r'\d+\.?\d*', text)
-        if numbers:
-            amounts = []
-            for n in numbers:
-                try:
-                    amount = float(n)
-                    if 10 <= amount <= 100000:  # Filter reasonable amounts
-                        amounts.append(amount)
-                except:
-                    continue
-            if amounts:
-                return max(amounts)
-        return None
-    
-    def extract_vendor_fallback(self, text):
-        """Fallback method to extract vendor from text"""
-        lines = text.split('\n')
-        for line in lines[:3]:  # Check first 3 lines
-            line = line.strip()
-            if len(line) > 5 and len(line) < 40:  # Reasonable vendor name length
-                # Skip lines with only numbers or common words
-                if not re.match(r'^[\d\s\-/]+$', line) and 'bill' not in line.lower():
-                    return line.title()
-        return 'Unknown Vendor'
     
     def calculate_confidence(self, data):
         """Calculate confidence score based on extracted fields"""
