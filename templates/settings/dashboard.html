@@ -49,6 +49,26 @@
             </div>
         </div>
 
+        <!-- Item Types Management -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-tags"></i> Item Types Management
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Manage and customize item categories for your inventory system.</p>
+                    <div class="mb-3">
+                        <small class="text-muted">Default types: Material, Product, Consumable, Tool, Spare Part, Packaging</small>
+                    </div>
+                    <a href="{{ url_for('item_types.list_item_types') }}" class="btn btn-primary">
+                        <i class="fas fa-cog"></i> Manage Item Types
+                    </a>
+                </div>
+            </div>
+        </div>
+
         <!-- Dashboard Customization -->
         <div class="col-lg-6 mb-4">
             <div class="card h-100">
