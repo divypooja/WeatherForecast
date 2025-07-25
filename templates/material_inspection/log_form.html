@@ -63,7 +63,7 @@
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     {{ form.received_quantity.label(class="form-label") }}
-                                    {{ form.received_quantity(class="form-control", step="0.01", id="receivedQty") }}
+                                    {{ form.received_quantity(class="form-control", step="0.01", id="receivedQty", autocomplete="off") }}
                                     {% for error in form.received_quantity.errors %}
                                         <div class="text-danger">{{ error }}</div>
                                     {% endfor %}
@@ -72,7 +72,7 @@
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     {{ form.inspected_quantity.label(class="form-label") }}
-                                    {{ form.inspected_quantity(class="form-control", step="0.01", id="inspectedQty") }}
+                                    {{ form.inspected_quantity(class="form-control", step="0.01", id="inspectedQty", autocomplete="off") }}
                                     {% for error in form.inspected_quantity.errors %}
                                         <div class="text-danger">{{ error }}</div>
                                     {% endfor %}
@@ -81,7 +81,7 @@
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     {{ form.passed_quantity.label(class="form-label") }}
-                                    {{ form.passed_quantity(class="form-control", step="0.01", id="passedQty") }}
+                                    {{ form.passed_quantity(class="form-control", step="0.01", id="passedQty", autocomplete="off") }}
                                     {% for error in form.passed_quantity.errors %}
                                         <div class="text-danger">{{ error }}</div>
                                     {% endfor %}
@@ -94,7 +94,7 @@
                             <div class="col-md-12">
                                 <div class="mb-3">
                                     {{ form.rejected_quantity.label(class="form-label") }}
-                                    {{ form.rejected_quantity(class="form-control", step="0.01", id="rejectedQty", readonly=true) }}
+                                    {{ form.rejected_quantity(class="form-control", step="0.01", id="rejectedQty", readonly=true, autocomplete="off") }}
                                     <div class="form-text">Auto-calculated: Inspected Quantity - Passed Quantity</div>
                                     {% for error in form.rejected_quantity.errors %}
                                         <div class="text-danger">{{ error }}</div>
@@ -296,13 +296,25 @@ document.addEventListener('DOMContentLoaded', function() {
         itemHelp.innerHTML = '<i class="fas fa-info-circle me-1"></i>Select a Purchase Order or Job Work above to automatically load available items.';
     }
 
+    // Clear all quantity fields on page load to prevent auto-fill
+    function clearQuantityFields() {
+        inspectedQty.value = '';
+        passedQty.value = '';
+        rejectedQty.value = '';
+        
+        // Reset summary display
+        document.getElementById('acceptanceRate').textContent = '0.0%';
+        document.getElementById('rejectionRate').textContent = '0.0%';
+        document.getElementById('totalAccounted').textContent = '0.00';
+    }
+
     // Add event listeners for calculations
     [receivedQty, inspectedQty, passedQty].forEach(element => {
         element.addEventListener('input', updateSummary);
     });
 
-    // Initial calculation
-    updateSummary();
+    // Clear fields on page load instead of running updateSummary
+    clearQuantityFields();
     
     // Auto-load items if PO or Job Work is pre-selected
     const initialPOSelection = poSelect.value;
