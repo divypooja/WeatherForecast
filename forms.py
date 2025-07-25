@@ -214,6 +214,8 @@ class JobWorkForm(FlaskForm):
                                 ('Machining', 'Machining'),
                                 ('Polishing', 'Polishing')])
     quantity_sent = FloatField('Quantity Sent', validators=[DataRequired(), NumberRange(min=0)])
+    expected_finished_material = FloatField('Expected Finished Material', validators=[NumberRange(min=0)], default=0.0)
+    expected_scrap = FloatField('Expected Scrap', validators=[NumberRange(min=0)], default=0.0)
     rate_per_unit = FloatField('Rate per Unit', validators=[DataRequired(), NumberRange(min=0)])
     sent_date = DateField('Sent Date', validators=[DataRequired()])
     expected_return = DateField('Expected Return Date')

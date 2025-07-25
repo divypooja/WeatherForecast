@@ -430,6 +430,8 @@ class JobWork(db.Model):
     process = db.Column(db.String(100), nullable=False)  # Process type: Zinc, Cutting, Bending, etc.
     quantity_sent = db.Column(db.Float, nullable=False)
     quantity_received = db.Column(db.Float, default=0.0)
+    expected_finished_material = db.Column(db.Float, default=0.0)  # Expected finished material quantity
+    expected_scrap = db.Column(db.Float, default=0.0)  # Expected scrap quantity
     unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
     total_weight_sent = db.Column(db.Float, default=0.0)  # Total weight sent
     total_weight_received = db.Column(db.Float, default=0.0)  # Total weight received

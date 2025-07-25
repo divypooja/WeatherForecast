@@ -114,6 +114,34 @@
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
+                                {{ form.expected_finished_material.label(class="form-label") }}
+                                {{ form.expected_finished_material(class="form-control", id="expected_finished_material", step="0.01") }}
+                                <small class="text-muted">Expected finished material quantity (optional)</small>
+                                {% if form.expected_finished_material.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.expected_finished_material.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.expected_scrap.label(class="form-label") }}
+                                {{ form.expected_scrap(class="form-control", id="expected_scrap", step="0.01") }}
+                                <small class="text-muted">Expected scrap quantity (optional)</small>
+                                {% if form.expected_scrap.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.expected_scrap.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
                                 {{ form.sent_date.label(class="form-label") }}
                                 {{ form.sent_date(class="form-control") }}
                                 {% if form.sent_date.errors %}
@@ -278,6 +306,8 @@ function previewJobWork() {
         item_name: selectedItemText,
         process: selectedProcessText,
         quantity_sent: parseFloat(formData.get('quantity_sent')) || 0,
+        expected_finished_material: parseFloat(formData.get('expected_finished_material')) || 0,
+        expected_scrap: parseFloat(formData.get('expected_scrap')) || 0,
         rate_per_unit: parseFloat(formData.get('rate_per_unit')) || 0,
         sent_date: formData.get('sent_date'),
         expected_return: formData.get('expected_return'),
@@ -347,6 +377,14 @@ function previewJobWork() {
             <tr>
                 <td><strong>Quantity Sent:</strong></td>
                 <td>${previewData.quantity_sent}</td>
+            </tr>
+            <tr>
+                <td><strong>Expected Finished Material:</strong></td>
+                <td>${previewData.expected_finished_material || '0'}</td>
+            </tr>
+            <tr>
+                <td><strong>Expected Scrap:</strong></td>
+                <td>${previewData.expected_scrap || '0'}</td>
             </tr>
             <tr>
                 <td><strong>Rate per Unit:</strong></td>

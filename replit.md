@@ -6,14 +6,16 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 25, 2025)
 
-### Complete Process Field Integration for Job Work Management (Latest)
+### Complete Job Work Enhancement with Process Types and Scrap Management (Latest)
 - **Process Type Selection**: Successfully implemented process field in JobWork forms allowing selection from 8 manufacturing processes (Zinc, Cutting, Bending, Welding, Painting, Assembly, Machining, Polishing)
-- **Database Schema Integration**: Added process column to job_works table with VARCHAR(100) type for storing process types
+- **Scrap Management Integration**: Added Expected Finished Material and Expected Scrap fields for processes where scrap is applicable, allowing better material planning and waste tracking
+- **Database Schema Enhancement**: Added process, expected_finished_material, and expected_scrap columns to job_works table with proper data types and defaults
 - **Form Field Resolution**: Resolved WTForms naming conflict by using 'process_type' field name internally while displaying as 'Process' to users
-- **Route Integration**: Updated both add and edit JobWork routes to handle process field data during creation and modification
-- **Preview System Enhancement**: Enhanced JobWork preview system to display selected process with professional badge styling using Bootstrap info badge
-- **Template Updates**: Added Process field to JobWork form template positioned between Item and Quantity fields with proper validation and help text
-- **Complete CRUD Operations**: Process field fully integrated across create, read, update operations with proper form validation and database persistence
+- **Comprehensive Form Layout**: Enhanced JobWork form with three-row layout including process selection, quantity management (sent/finished/scrap), and scheduling fields
+- **Route Integration**: Updated both add and edit JobWork routes to handle all new fields (process, expected_finished_material, expected_scrap) during creation and modification
+- **Preview System Enhancement**: Enhanced JobWork preview system to display process with badge styling and show expected finished material and scrap quantities
+- **Template Updates**: Added all new fields to JobWork form template with proper validation, help text, and professional styling
+- **Complete CRUD Operations**: All new fields fully integrated across create, read, update operations with proper form validation and database persistence
 
 ### Enhanced Job Work Forms with Real-time Inventory Checking and Universal Preview System
 - **Real-time Stock Validation**: Enhanced Job Work forms with "Check Stock" button providing instant inventory availability checks before quantity operations
