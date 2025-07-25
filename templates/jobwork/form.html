@@ -298,7 +298,7 @@ function previewJobWork() {
     }
     
     const previewContent = `
-        <div class="alert alert-primary">
+        <div class="alert alert-info">
             <i class="fas fa-info-circle"></i> <strong>Review your Job Work configuration before saving.</strong>
         </div>
         
@@ -307,54 +307,36 @@ function previewJobWork() {
                 <h6><i class="fas fa-cog"></i> Job Work Configuration</h6>
             </div>
             <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <strong>Job Number:</strong><br>
-                        <span class="text-muted">${previewData.job_number || 'Auto-generated'}</span>
-                    </div>
-                    <div class="col-md-6">
-                        <strong>Customer:</strong><br>
-                        <span class="text-muted">${previewData.customer_name || 'Not selected'}</span>
-                    </div>
-                </div>
-                <div class="row mt-2">
-                    <div class="col-md-6">
-                        <strong>Item:</strong><br>
-                        <span class="text-muted">${previewData.item_name || 'Not selected'}</span>
-                    </div>
-                    <div class="col-md-6">
-                        <strong>Quantity Sent:</strong><br>
-                        <span class="text-muted">${previewData.quantity_sent}</span>
-                    </div>
-                </div>
-                <div class="row mt-2">
-                    <div class="col-md-6">
-                        <strong>Rate per Unit:</strong><br>
-                        <span class="text-muted">₹${previewData.rate_per_unit.toFixed(2)}</span>
-                    </div>
-                    <div class="col-md-6">
-                        <strong>Total Value:</strong><br>
-                        <span class="text-success"><strong>₹${totalValue.toFixed(2)}</strong></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="card mb-3">
-            <div class="card-header">
-                <h6><i class="fas fa-calendar-alt"></i> Schedule Information</h6>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <strong>Sent Date:</strong><br>
-                        <span class="text-muted">${previewData.sent_date || 'Not set'}</span>
-                    </div>
-                    <div class="col-md-6">
-                        <strong>Expected Return:</strong><br>
-                        <span class="text-muted">${previewData.expected_return || 'Not set'}</span>
-                    </div>
-                </div>
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Job Number:</strong></td>
+                        <td>${previewData.job_number || 'Auto-generated'}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Customer:</strong></td>
+                        <td>${previewData.customer_name || 'Not selected'}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Item:</strong></td>
+                        <td>${previewData.item_name || 'Not selected'}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Quantity Sent:</strong></td>
+                        <td>${previewData.quantity_sent}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Rate per Unit:</strong></td>
+                        <td>₹${previewData.rate_per_unit.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Sent Date:</strong></td>
+                        <td>${previewData.sent_date || 'Not set'}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Expected Return:</strong></td>
+                        <td>${previewData.expected_return || 'Not set'}</td>
+                    </tr>
+                </table>
             </div>
         </div>
         
@@ -371,29 +353,35 @@ function previewJobWork() {
             </div>
         </div>
         
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6><i class="fas fa-calculator"></i> Value Breakdown</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Quantity:</strong></td>
+                        <td class="text-end">${previewData.quantity_sent}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Rate per Unit:</strong></td>
+                        <td class="text-end">₹${previewData.rate_per_unit.toFixed(2)}</td>
+                    </tr>
+                    <tr class="table-dark">
+                        <td><strong>Total Value:</strong></td>
+                        <td class="text-end"><strong>₹${totalValue.toFixed(2)}</strong></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        
         <div class="card">
             <div class="card-header">
-                <h6><i class="fas fa-sticky-note"></i> Additional Notes</h6>
+                <h6><i class="fas fa-sticky-note"></i> Notes</h6>
             </div>
             <div class="card-body">
                 <div class="bg-light p-3 rounded" style="min-height: 60px;">
                     ${previewData.notes || '<em class="text-muted">No notes added</em>'}
-                </div>
-            </div>
-        </div>
-        
-        <div class="card mt-3">
-            <div class="card-header bg-primary text-white">
-                <h6><i class="fas fa-calculator"></i> Job Work Summary</h6>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-8">
-                        <strong>Total Job Work Value:</strong>
-                    </div>
-                    <div class="col-md-4 text-end">
-                        <strong class="text-success">₹${totalValue.toFixed(2)}</strong>
-                    </div>
                 </div>
             </div>
         </div>
