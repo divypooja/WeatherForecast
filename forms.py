@@ -52,8 +52,10 @@ class ItemForm(FlaskForm):
         
         # Populate Item Type choices from database
         try:
-            ItemType.get_default_types()  # Ensure default types exist
-            self.item_type.choices = ItemType.get_choices()
+            from app import app
+            with app.app_context():
+                ItemType.get_default_types()  # Ensure default types exist
+                self.item_type.choices = ItemType.get_choices()
         except Exception:
             # Fallback choices if database error
             self.item_type.choices = [
