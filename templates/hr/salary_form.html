@@ -90,18 +90,50 @@
                             </div>
                         </div>
 
-                        <!-- Salary Details Section -->
+                        <!-- Attendance-Based Calculation Section -->
                         <div class="row mb-4">
                             <div class="col-12">
-                                <h6 class="text-success border-bottom pb-2 mb-3">
-                                    <i class="fas fa-calculator"></i> Salary Calculation
+                                <h6 class="text-info border-bottom pb-2 mb-3">
+                                    <i class="fas fa-calendar-check"></i> Attendance-Based Calculation
                                 </h6>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.daily_rate.label(class="form-label") }}
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    {{ form.daily_rate(class="form-control", id="daily_rate") }}
+                                </div>
+                                {% if form.daily_rate.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.daily_rate.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Amount paid per working day</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="d-grid">
+                                    <label class="form-label">&nbsp;</label>
+                                    {{ form.calculate_attendance(class="btn btn-info") }}
+                                </div>
+                                <small class="text-muted">Calculate salary based on actual attendance</small>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                {{ form.expected_working_days.label(class="form-label") }}
+                                {{ form.expected_working_days(class="form-control bg-light", readonly=True) }}
+                                <small class="text-muted">Total working days in period</small>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                {{ form.actual_days_worked.label(class="form-label") }}
+                                {{ form.actual_days_worked(class="form-control bg-light", readonly=True) }}
+                                <small class="text-muted">Days from attendance records</small>
                             </div>
                             <div class="col-md-6 mb-3">
                                 {{ form.basic_amount.label(class="form-label") }}
                                 <div class="input-group">
                                     <span class="input-group-text">₹</span>
-                                    {{ form.basic_amount(class="form-control", id="basic_amount", onchange="calculateTotals()") }}
+                                    {{ form.basic_amount(class="form-control bg-light", id="basic_amount", readonly=True) }}
                                 </div>
                                 {% if form.basic_amount.errors %}
                                     <div class="text-danger">
@@ -110,10 +142,20 @@
                                         {% endfor %}
                                     </div>
                                 {% endif %}
+                                <small class="text-muted">Days worked × Daily rate</small>
+                            </div>
+                        </div>
+
+                        <!-- Overtime & Additional Amounts Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-success border-bottom pb-2 mb-3">
+                                    <i class="fas fa-clock"></i> Overtime & Additional Amounts
+                                </h6>
                             </div>
                             <div class="col-md-3 mb-3">
                                 {{ form.overtime_hours.label(class="form-label") }}
-                                {{ form.overtime_hours(class="form-control", id="overtime_hours", onchange="calculateTotals()") }}
+                                {{ form.overtime_hours(class="form-control bg-light", id="overtime_hours", readonly=True) }}
                                 {% if form.overtime_hours.errors %}
                                     <div class="text-danger">
                                         {% for error in form.overtime_hours.errors %}
@@ -121,6 +163,7 @@
                                         {% endfor %}
                                     </div>
                                 {% endif %}
+                                <small class="text-muted">From attendance records</small>
                             </div>
                             <div class="col-md-3 mb-3">
                                 {{ form.overtime_rate.label(class="form-label") }}
@@ -135,6 +178,7 @@
                                         {% endfor %}
                                     </div>
                                 {% endif %}
+                                <small class="text-muted">Rate per overtime hour</small>
                             </div>
                             <div class="col-md-6 mb-3">
                                 {{ form.bonus_amount.label(class="form-label") }}

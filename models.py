@@ -927,7 +927,11 @@ class SalaryRecord(db.Model):
     employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=False)
     pay_period_start = db.Column(db.Date, nullable=False)
     pay_period_end = db.Column(db.Date, nullable=False)
-    basic_amount = db.Column(db.Float, nullable=False)
+    # Days-based calculation fields
+    expected_working_days = db.Column(db.Integer, default=0)  # Total working days in period
+    actual_days_worked = db.Column(db.Integer, default=0)    # Days from attendance records
+    daily_rate = db.Column(db.Float, default=0.0)           # Rate per day
+    basic_amount = db.Column(db.Float, nullable=False)       # Calculated from days * daily rate
     overtime_hours = db.Column(db.Float, default=0.0)
     overtime_rate = db.Column(db.Float, default=0.0)
     overtime_amount = db.Column(db.Float, default=0.0)
@@ -968,6 +972,63 @@ class SalaryRecord(db.Model):
             next_num = 1
         
         return f"SAL-{year}-{next_num:04d}"
+    
+    def calculate_attendance_based_salary(self):
+        """Calculate salary based on actual attendance records"""
+        from datetime import timedelta
+        
+        # Get attendance records for the pay period
+        attendance_records = EmployeeAttendance.query.filter(
+            EmployeeAttendance.employee_id == self.employee_id,
+            EmployeeAttendance.attendance_date >= self.pay_period_start,
+            EmployeeAttendance.attendance_date <= self.pay_period_end
+        ).all()
+        
+        # Calculate expected working days (excluding Sundays)
+        current_date = self.pay_period_start
+        expected_days = 0
+        while current_date <= self.pay_period_end:
+            # Exclude Sundays (weekday 6)
+            if current_date.weekday() != 6:
+                expected_days += 1
+            current_date += timedelta(days=1)
+        
+        self.expected_working_days = expected_days
+        
+        # Calculate actual days worked and overtime
+        actual_days = 0
+        total_overtime_hours = 0.0
+        
+        for attendance in attendance_records:
+            if attendance.status in ['present', 'late', 'half_day']:
+                if attendance.status == 'half_day':
+                    actual_days += 0.5
+                else:
+                    actual_days += 1
+                
+                # Add overtime hours
+                if attendance.overtime_hours:
+                    total_overtime_hours += attendance.overtime_hours
+        
+        self.actual_days_worked = int(actual_days)
+        self.overtime_hours = total_overtime_hours
+        
+        # Calculate basic amount based on actual days worked
+        if self.daily_rate > 0:
+            self.basic_amount = self.actual_days_worked * self.daily_rate
+        
+        # Calculate overtime amount
+        if self.overtime_rate > 0:
+            self.overtime_amount = self.overtime_hours * self.overtime_rate
+        
+        return {
+            'expected_working_days': self.expected_working_days,
+            'actual_days_worked': self.actual_days_worked,
+            'daily_rate': self.daily_rate,
+            'basic_amount': self.basic_amount,
+            'overtime_hours': self.overtime_hours,
+            'overtime_amount': self.overtime_amount
+        }
 
 class EmployeeAdvance(db.Model):
     __tablename__ = 'employee_advances'

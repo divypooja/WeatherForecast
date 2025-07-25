@@ -587,8 +587,20 @@ class SalaryRecordForm(FlaskForm):
     employee_id = SelectField('Employee', coerce=int, validators=[DataRequired()])
     pay_period_start = DateField('Pay Period Start', validators=[DataRequired()])
     pay_period_end = DateField('Pay Period End', validators=[DataRequired()])
-    basic_amount = FloatField('Basic Amount', validators=[DataRequired(), NumberRange(min=0.01)])
-    overtime_hours = FloatField('Overtime Hours', validators=[Optional(), NumberRange(min=0)], default=0)
+    
+    # Attendance-based calculation fields
+    daily_rate = FloatField('Daily Rate', validators=[DataRequired(), NumberRange(min=0.01)], 
+                           render_kw={'placeholder': 'Rate per working day'})
+    expected_working_days = IntegerField('Expected Working Days', validators=[Optional()], 
+                                       render_kw={'readonly': True, 'placeholder': 'Auto-calculated'})
+    actual_days_worked = IntegerField('Actual Days Worked', validators=[Optional()], 
+                                    render_kw={'readonly': True, 'placeholder': 'From attendance records'})
+    basic_amount = FloatField('Basic Amount', validators=[Optional()], 
+                             render_kw={'readonly': True, 'placeholder': 'Auto-calculated from days worked'})
+    
+    # Overtime and additional amounts
+    overtime_hours = FloatField('Overtime Hours', validators=[Optional(), NumberRange(min=0)], default=0,
+                               render_kw={'readonly': True, 'placeholder': 'From attendance records'})
     overtime_rate = FloatField('Overtime Rate per Hour', validators=[Optional(), NumberRange(min=0)], default=0)
     bonus_amount = FloatField('Bonus Amount', validators=[Optional(), NumberRange(min=0)], default=0)
     deduction_amount = FloatField('Other Deductions', validators=[Optional(), NumberRange(min=0)], default=0)
@@ -596,6 +608,9 @@ class SalaryRecordForm(FlaskForm):
     payment_method = SelectField('Payment Method', 
                                 choices=[('cash', 'Cash'), ('bank_transfer', 'Bank Transfer'), ('cheque', 'Cheque')])
     notes = TextAreaField('Notes', render_kw={'rows': 3})
+    
+    # Form buttons
+    calculate_attendance = SubmitField('Calculate from Attendance', render_kw={'class': 'btn btn-info'})
     submit = SubmitField('Save Salary Record')
     
     def __init__(self, *args, **kwargs):
