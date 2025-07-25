@@ -128,7 +128,21 @@
                                 <td>{{ item.unit_of_measure }}</td>
                                 <td>
                                     {% if (item.unit_weight or 0) > 0 %}
-                                        {{ "%.3f"|format(item.unit_weight) }} kg
+                                        {% if item.unit_of_measure %}
+                                            {% if 'Square' in item.unit_of_measure or 'sq' in item.unit_of_measure %}
+                                                {{ "%.3f"|format(item.unit_weight) }} kg/sq.ft
+                                            {% elif 'Meter' in item.unit_of_measure or 'Length' in item.unit_of_measure %}
+                                                {{ "%.3f"|format(item.unit_weight) }} kg/m
+                                            {% elif 'Kilogram' in item.unit_of_measure %}
+                                                {{ "%.3f"|format(item.unit_weight) }} kg/kg
+                                            {% elif 'Liter' in item.unit_of_measure or 'Volume' in item.unit_of_measure %}
+                                                {{ "%.3f"|format(item.unit_weight) }} kg/L
+                                            {% else %}
+                                                {{ "%.3f"|format(item.unit_weight) }} kg/unit
+                                            {% endif %}
+                                        {% else %}
+                                            {{ "%.3f"|format(item.unit_weight) }} kg
+                                        {% endif %}
                                     {% else %}
                                         <span class="text-muted">-</span>
                                     {% endif %}
