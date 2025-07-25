@@ -449,12 +449,14 @@ def process_ocr():
             return jsonify({"success": False, "message": "No file selected"})
         
         # Validate file type
-        allowed_extensions = {"png", "jpg", "jpeg", "gif", "bmp", "tiff", "webp"}
-        if not file.filename.lower().split(".")[-1] in allowed_extensions:
-            return jsonify({"success": False, "message": "Invalid file type. Please upload an image file."})
+        allowed_extensions = {"png", "jpg", "jpeg", "gif", "bmp", "tiff", "webp", "pdf"}
+        file_extension = file.filename.lower().split(".")[-1] if "." in file.filename else ""
+        if not file_extension in allowed_extensions:
+            return jsonify({"success": False, "message": "Invalid file type. Please upload an image file (PNG, JPG, JPEG, GIF, BMP, TIFF, WEBP) or PDF."})
         
         # Create temporary file
-        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{file.filename.split('.')[-1]}") as tmp_file:
+        file_extension = file.filename.split('.')[-1] if '.' in file.filename else 'tmp'
+        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{file_extension}") as tmp_file:
             file.save(tmp_file.name)
             temp_path = tmp_file.name
         

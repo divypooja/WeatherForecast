@@ -34,10 +34,10 @@
                                         <label for="receiptImage" class="form-label">
                                             <i class="fas fa-upload me-1"></i>Upload Receipt/Invoice Image
                                         </label>
-                                        <input type="file" class="form-control" id="receiptImage" accept="image/*" capture="camera">
+                                        <input type="file" class="form-control" id="receiptImage" accept="image/*,.pdf" capture="camera">
                                         <div class="form-text">
                                             <i class="fas fa-info-circle me-1"></i>
-                                            Upload receipt/invoice image to automatically extract data (Date, Amount, Vendor, GST, etc.)
+                                            Upload receipt/invoice image or PDF to automatically extract data (Date, Amount, Vendor, GST, etc.)
                                         </div>
                                     </div>
                                 </div>
@@ -480,7 +480,7 @@ document.addEventListener('DOMContentLoaded', function() {
     processButton.addEventListener('click', function() {
         const file = receiptInput.files[0];
         if (!file) {
-            alert('Please select an image file first.');
+            alert('Please select an image or PDF file first.');
             return;
         }
         
