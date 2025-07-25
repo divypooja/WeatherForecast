@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
-from forms import EmployeeForm, SalaryRecordForm, EmployeeAdvanceForm, AttendanceForm
+from forms import EmployeeForm, SalaryRecordForm, EmployeeAdvanceForm, AttendanceForm, BulkAttendanceForm
 from models import Employee, SalaryRecord, EmployeeAdvance, EmployeeAttendance, FactoryExpense
 from app import db
 from sqlalchemy import func, desc
@@ -625,11 +625,16 @@ def add_attendance():
             attendance_date=form.attendance_date.data,
             check_in_time=form.check_in_time.data,
             check_out_time=form.check_out_time.data,
+            overtime_hours=form.overtime_hours.data or 0.0,
             status=form.status.data,
             leave_type=form.leave_type.data if form.leave_type.data else None,
             notes=form.notes.data,
             marked_by=current_user.id
         )
+        
+        # Set flag if overtime was manually entered 
+        if form.overtime_hours.data and form.overtime_hours.data > 0:
+            attendance._manual_overtime_set = True
         
         # Calculate hours worked if check-in and check-out times are provided
         attendance.calculate_hours_worked()
@@ -663,6 +668,11 @@ def edit_attendance(id):
         
         form.populate_obj(attendance)
         attendance.leave_type = form.leave_type.data if form.leave_type.data else None
+        attendance.overtime_hours = form.overtime_hours.data or 0.0
+        
+        # Set flag if overtime was manually entered 
+        if form.overtime_hours.data and form.overtime_hours.data > 0:
+            attendance._manual_overtime_set = True
         
         # Recalculate hours worked
         attendance.calculate_hours_worked()

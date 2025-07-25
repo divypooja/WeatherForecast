@@ -630,7 +630,8 @@ class AttendanceForm(FlaskForm):
     employee_id = SelectField('Employee', coerce=int, validators=[DataRequired()])
     attendance_date = DateField('Attendance Date', validators=[DataRequired()], default=datetime.utcnow().date())
     check_in_time = TimeField('Check-in Time')
-    check_out_time = TimeField('Check-out Time') 
+    check_out_time = TimeField('Check-out Time')
+    overtime_hours = FloatField('Overtime Hours', validators=[Optional(), NumberRange(min=0, max=24)], default=0.0)
     status = SelectField('Attendance Status', 
                         choices=[('present', 'Present'), 
                                 ('absent', 'Absent'), 
@@ -655,3 +656,7 @@ class AttendanceForm(FlaskForm):
             (e.id, f"{e.name} ({e.employee_code})") 
             for e in Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
         ]
+
+class BulkAttendanceForm(FlaskForm):
+    attendance_date = DateField('Attendance Date', validators=[DataRequired()], default=datetime.utcnow().date())
+    submit = SubmitField('Mark All Present')

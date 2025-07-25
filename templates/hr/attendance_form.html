@@ -58,7 +58,7 @@
 
                         <!-- Time Information Section -->
                         <div class="row g-3 mb-4">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label for="{{ form.check_in_time.id }}" class="form-label">
                                     <i class="fas fa-sign-in-alt me-1 text-success"></i>{{ form.check_in_time.label.text }}
                                 </label>
@@ -70,7 +70,7 @@
                                 {% endif %}
                                 <div class="form-text">Format: HH:MM (24-hour)</div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label for="{{ form.check_out_time.id }}" class="form-label">
                                     <i class="fas fa-sign-out-alt me-1 text-danger"></i>{{ form.check_out_time.label.text }}
                                 </label>
@@ -82,7 +82,19 @@
                                 {% endif %}
                                 <div class="form-text">Format: HH:MM (24-hour)</div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
+                                <label for="{{ form.overtime_hours.id }}" class="form-label">
+                                    <i class="fas fa-plus-circle me-1 text-warning"></i>{{ form.overtime_hours.label.text }}
+                                </label>
+                                {{ form.overtime_hours(class="form-control" + (" is-invalid" if form.overtime_hours.errors else ""), step="0.5", min="0", max="24") }}
+                                {% if form.overtime_hours.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.overtime_hours.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Hours (e.g., 2.5 for 2hr 30min)</div>
+                            </div>
+                            <div class="col-md-3">
                                 <label for="{{ form.status.id }}" class="form-label">
                                     <i class="fas fa-clipboard-check me-1"></i>{{ form.status.label.text }}
                                     <span class="text-danger">*</span>
@@ -142,6 +154,13 @@
                         </div>
                         {% endif %}
                         
+                        <!-- Overtime Calculation Helper -->
+                        <div class="alert alert-light" id="overtime-help" style="display: none;">
+                            <h6><i class="fas fa-calculator me-2"></i>Overtime Calculation Helper</h6>
+                            <p class="mb-2">Based on check-in/out times, calculated overtime would be: <strong id="calculated-overtime">0.0</strong> hours</p>
+                            <small class="text-muted">You can manually adjust the overtime hours field above or use this calculated value.</small>
+                        </div>
+                        
                         <!-- Submit Button -->
                         <div class="d-flex justify-content-end gap-2">
                             <a href="{{ url_for('hr.attendance_list') }}" class="btn btn-secondary">
@@ -182,7 +201,47 @@ function setCurrentTime(field) {
     document.getElementById(field).value = timeString;
 }
 
-// Add quick time buttons
+// Calculate overtime based on check-in/out times
+function calculateOvertimeFromTimes() {
+    const checkInField = document.querySelector('input[name="check_in_time"]');
+    const checkOutField = document.querySelector('input[name="check_out_time"]');
+    const overtimeField = document.querySelector('input[name="overtime_hours"]');
+    const calculatedOvertimeSpan = document.getElementById('calculated-overtime');
+    const overtimeHelp = document.getElementById('overtime-help');
+    
+    if (checkInField.value && checkOutField.value) {
+        const checkIn = new Date('2000-01-01T' + checkInField.value);
+        let checkOut = new Date('2000-01-01T' + checkOutField.value);
+        
+        // Handle overnight shifts
+        if (checkOut < checkIn) {
+            checkOut.setDate(checkOut.getDate() + 1);
+        }
+        
+        const totalHours = (checkOut - checkIn) / (1000 * 60 * 60);
+        const standardHours = 8.0;
+        const calculatedOvertime = Math.max(0, totalHours - standardHours);
+        
+        if (calculatedOvertimeSpan) {
+            calculatedOvertimeSpan.textContent = calculatedOvertime.toFixed(1);
+        }
+        
+        if (overtimeHelp) {
+            overtimeHelp.style.display = calculatedOvertime > 0 ? 'block' : 'none';
+        }
+        
+        // Auto-suggest overtime if field is empty or zero
+        if (overtimeField && (overtimeField.value === '' || parseFloat(overtimeField.value) === 0)) {
+            overtimeField.value = calculatedOvertime.toFixed(1);
+        }
+    } else {
+        if (overtimeHelp) {
+            overtimeHelp.style.display = 'none';
+        }
+    }
+}
+
+// Add quick time buttons and overtime calculation
 document.addEventListener('DOMContentLoaded', function() {
     const checkInField = document.querySelector('input[name="check_in_time"]');
     const checkOutField = document.querySelector('input[name="check_out_time"]');
@@ -192,8 +251,14 @@ document.addEventListener('DOMContentLoaded', function() {
         checkInButton.type = 'button';
         checkInButton.className = 'btn btn-sm btn-outline-success mt-1';
         checkInButton.innerHTML = '<i class="fas fa-clock me-1"></i>Now';
-        checkInButton.onclick = () => setCurrentTime('check_in_time');
+        checkInButton.onclick = () => {
+            setCurrentTime('check_in_time');
+            setTimeout(calculateOvertimeFromTimes, 100);
+        };
         checkInField.parentNode.appendChild(checkInButton);
+        
+        // Add event listener for overtime calculation
+        checkInField.addEventListener('change', calculateOvertimeFromTimes);
     }
     
     if (checkOutField) {
@@ -201,9 +266,18 @@ document.addEventListener('DOMContentLoaded', function() {
         checkOutButton.type = 'button';
         checkOutButton.className = 'btn btn-sm btn-outline-danger mt-1';
         checkOutButton.innerHTML = '<i class="fas fa-clock me-1"></i>Now';
-        checkOutButton.onclick = () => setCurrentTime('check_out_time');
+        checkOutButton.onclick = () => {
+            setCurrentTime('check_out_time');
+            setTimeout(calculateOvertimeFromTimes, 100);
+        };
         checkOutField.parentNode.appendChild(checkOutButton);
+        
+        // Add event listener for overtime calculation
+        checkOutField.addEventListener('change', calculateOvertimeFromTimes);
     }
+    
+    // Initial calculation on page load
+    calculateOvertimeFromTimes();
 });
 </script>
 {% endblock %}
