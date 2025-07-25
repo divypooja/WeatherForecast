@@ -127,6 +127,13 @@ def init_default_modules():
             'description': 'HR and employee management',
             'icon': 'fas fa-users',
             'url_endpoint': 'hr.dashboard'
+        },
+        {
+            'name': 'packing',
+            'title': 'Packing Optimization',
+            'description': 'Material cutting and layout optimization using advanced algorithms',
+            'icon': 'fas fa-cubes',
+            'url_endpoint': 'packing.dashboard'
         }
 
     ]
