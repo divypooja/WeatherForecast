@@ -472,6 +472,26 @@ class JobWork(db.Model):
     item = db.relationship('Item', backref='job_works')
     creator = db.relationship('User', foreign_keys=[created_by], backref='created_job_works')
     inspector = db.relationship('User', foreign_keys=[inspected_by], backref='inspected_job_works')
+    
+    @property
+    def total_cost(self):
+        """Calculate total job cost (quantity_sent × rate_per_unit)"""
+        return (self.quantity_sent or 0.0) * (self.rate_per_unit or 0.0)
+    
+    @property
+    def total_cost_received(self):
+        """Calculate total cost for received quantity (quantity_received × rate_per_unit)"""
+        return (self.quantity_received or 0.0) * (self.rate_per_unit or 0.0)
+    
+    @property
+    def cost_per_unit_display(self):
+        """Return formatted cost per unit for display"""
+        return f"₹{self.rate_per_unit:.2f}" if self.rate_per_unit else "₹0.00"
+    
+    @property
+    def total_cost_display(self):
+        """Return formatted total cost for display"""
+        return f"₹{self.total_cost:.2f}"
 
 class Production(db.Model):
     __tablename__ = 'productions'
