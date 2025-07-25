@@ -167,6 +167,23 @@
                         </div>
 
                         <div class="mb-3">
+                            <label class="form-label">Unit</label>
+                            <select name="unit" class="form-select" required>
+                                <option value="pcs" selected>Pieces (pcs)</option>
+                                <option value="kg">Kilograms (kg)</option>
+                                <option value="g">Grams (g)</option>
+                                <option value="nos">Numbers (nos)</option>
+                                <option value="m">Meters (m)</option>
+                                <option value="cm">Centimeters (cm)</option>
+                                <option value="l">Liters (l)</option>
+                                <option value="ml">Milliliters (ml)</option>
+                                <option value="sqft">Square Feet (sq.ft)</option>
+                                <option value="sqm">Square Meters (sq.m)</option>
+                            </select>
+                            <small class="text-muted">Select the unit for this material in the BOM</small>
+                        </div>
+
+                        <div class="mb-3">
                             <label class="form-label">Unit Cost (Auto-filled from Inventory)</label>
                             <input type="number" name="unit_cost" id="unit_cost" class="form-control" step="0.01" min="0" value="0" readonly>
                             <small class="text-muted">Cost will be automatically filled from inventory item price</small>
@@ -216,7 +233,7 @@
                                         </span>
                                     </td>
                                     <td>{{ "%.2f"|format(bom_item.quantity_required) }}</td>
-                                    <td>{{ bom_item.item.unit_of_measure }}</td>
+                                    <td><strong>{{ bom_item.unit or bom_item.item.unit_of_measure }}</strong></td>
                                     <td>
                                         {% if (bom_item.item.unit_weight or 0) > 0 %}
                                             {% set weight_val = bom_item.item.unit_weight %}

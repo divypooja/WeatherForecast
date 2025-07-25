@@ -551,6 +551,7 @@ class BOMItem(db.Model):
     bom_id = db.Column(db.Integer, db.ForeignKey('boms.id'), nullable=False)
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     quantity_required = db.Column(db.Float, nullable=False)
+    unit = db.Column(db.String(20), nullable=False, default='pcs')  # Unit for this BOM item (pcs, kg, etc.)
     unit_cost = db.Column(db.Float, default=0.0)
     unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
     total_weight = db.Column(db.Float, default=0.0)  # Total weight (qty × unit_weight)
