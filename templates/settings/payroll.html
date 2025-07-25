@@ -1,0 +1,401 @@
+{% extends "base.html" %}
+
+{% block title %}Payroll Settings - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-money-bill-wave"></i> Payroll Settings</h1>
+            <p class="text-muted">Configure overtime rates, working hours, and salary calculation rules</p>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('settings.dashboard') }}">Settings</a></li>
+                    <li class="breadcrumb-item active">Payroll Settings</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('settings.dashboard') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Settings
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-cog"></i> Payroll Configuration
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Working Hours Configuration -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary border-bottom pb-2 mb-3">
+                                    <i class="fas fa-clock"></i> Working Hours Configuration
+                                </h6>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.standard_working_hours_per_day.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.standard_working_hours_per_day(class="form-control") }}
+                                    <span class="input-group-text">hours/day</span>
+                                </div>
+                                {% if form.standard_working_hours_per_day.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.standard_working_hours_per_day.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Standard working hours per day (usually 8 hours)</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.working_days_per_week.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.working_days_per_week(class="form-control") }}
+                                    <span class="input-group-text">days/week</span>
+                                </div>
+                                {% if form.working_days_per_week.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.working_days_per_week.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Number of working days per week (usually 6)</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.include_sunday(class="form-check-input") }}
+                                    {{ form.include_sunday.label(class="form-check-label") }}
+                                </div>
+                                <small class="text-muted">Check if Sunday is a working day</small>
+                            </div>
+                        </div>
+
+                        <!-- Overtime Configuration -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-warning border-bottom pb-2 mb-3">
+                                    <i class="fas fa-clock"></i> Overtime Configuration
+                                </h6>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.overtime_calculation_method.label(class="form-label") }}
+                                {{ form.overtime_calculation_method(class="form-select") }}
+                                {% if form.overtime_calculation_method.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.overtime_calculation_method.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">How overtime hours are calculated</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.overtime_threshold_hours.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.overtime_threshold_hours(class="form-control") }}
+                                    <span class="input-group-text">hours</span>
+                                </div>
+                                {% if form.overtime_threshold_hours.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.overtime_threshold_hours.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Hours after which overtime applies</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.overtime_rate_multiplier.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.overtime_rate_multiplier(class="form-control") }}
+                                    <span class="input-group-text">x</span>
+                                </div>
+                                {% if form.overtime_rate_multiplier.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.overtime_rate_multiplier.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Multiplier for overtime rate (1.5 = 1.5x regular rate)</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.maximum_overtime_hours_per_day.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.maximum_overtime_hours_per_day(class="form-control") }}
+                                    <span class="input-group-text">hours</span>
+                                </div>
+                                {% if form.maximum_overtime_hours_per_day.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.maximum_overtime_hours_per_day.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Maximum overtime hours allowed per day</small>
+                            </div>
+                        </div>
+
+                        <!-- Salary Calculation Rules -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-success border-bottom pb-2 mb-3">
+                                    <i class="fas fa-calculator"></i> Salary Calculation Rules
+                                </h6>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.salary_calculation_method.label(class="form-label") }}
+                                {{ form.salary_calculation_method(class="form-select") }}
+                                {% if form.salary_calculation_method.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.salary_calculation_method.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">How salaries are calculated</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.prorate_partial_days(class="form-check-input") }}
+                                    {{ form.prorate_partial_days.label(class="form-check-label") }}
+                                </div>
+                                <small class="text-muted">Count half days as 0.5 in salary calculation</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.exclude_weekends_from_calculation(class="form-check-input") }}
+                                    {{ form.exclude_weekends_from_calculation.label(class="form-check-label") }}
+                                </div>
+                                <small class="text-muted">Exclude weekends from working days calculation</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.auto_calculate_daily_rate(class="form-check-input") }}
+                                    {{ form.auto_calculate_daily_rate.label(class="form-check-label") }}
+                                </div>
+                                <small class="text-muted">Auto-calculate daily rate from monthly salary</small>
+                            </div>
+                        </div>
+
+                        <!-- Leave and Absence Policies -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-info border-bottom pb-2 mb-3">
+                                    <i class="fas fa-calendar-times"></i> Leave and Absence Policies
+                                </h6>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.half_day_hours_threshold.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.half_day_hours_threshold(class="form-control") }}
+                                    <span class="input-group-text">hours</span>
+                                </div>
+                                {% if form.half_day_hours_threshold.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.half_day_hours_threshold.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Less than this = half day</small>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.minimum_hours_for_full_day.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.minimum_hours_for_full_day(class="form-control") }}
+                                    <span class="input-group-text">hours</span>
+                                </div>
+                                {% if form.minimum_hours_for_full_day.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.minimum_hours_for_full_day.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">At least this = full day</small>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.late_arrival_threshold_minutes.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.late_arrival_threshold_minutes(class="form-control") }}
+                                    <span class="input-group-text">minutes</span>
+                                </div>
+                                {% if form.late_arrival_threshold_minutes.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.late_arrival_threshold_minutes.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Late arrival threshold for "Late" status</small>
+                            </div>
+                        </div>
+
+                        <!-- Advance and Deduction Settings -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-secondary border-bottom pb-2 mb-3">
+                                    <i class="fas fa-hand-holding-usd"></i> Advance and Deduction Settings
+                                </h6>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.maximum_advance_percentage.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.maximum_advance_percentage(class="form-control") }}
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                {% if form.maximum_advance_percentage.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.maximum_advance_percentage.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Maximum advance as % of monthly salary</small>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.default_advance_repayment_months.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.default_advance_repayment_months(class="form-control") }}
+                                    <span class="input-group-text">months</span>
+                                </div>
+                                {% if form.default_advance_repayment_months.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.default_advance_repayment_months.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Default repayment period</small>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check mt-4">
+                                    {{ form.auto_deduct_advances(class="form-check-input") }}
+                                    {{ form.auto_deduct_advances.label(class="form-check-label") }}
+                                </div>
+                                <small class="text-muted">Auto-deduct advances from salary</small>
+                            </div>
+                        </div>
+
+                        <!-- Default Rates -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-dark border-bottom pb-2 mb-3">
+                                    <i class="fas fa-money-bill"></i> Default Rates
+                                </h6>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.default_overtime_rate_per_hour.label(class="form-label") }}
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    {{ form.default_overtime_rate_per_hour(class="form-control") }}
+                                    <span class="input-group-text">/hour</span>
+                                </div>
+                                {% if form.default_overtime_rate_per_hour.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.default_overtime_rate_per_hour.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Default overtime rate (can be overridden per employee)</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.default_daily_rate.label(class="form-label") }}
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    {{ form.default_daily_rate(class="form-control") }}
+                                    <span class="input-group-text">/day</span>
+                                </div>
+                                {% if form.default_daily_rate.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.default_daily_rate.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Default daily rate (can be overridden per employee)</small>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save Payroll Settings
+                                </button>
+                                <a href="{{ url_for('settings.dashboard') }}" class="btn btn-secondary ms-2">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Summary Sidebar -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-info-circle"></i> Current Settings Summary
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6 class="text-primary">Working Hours</h6>
+                        <ul class="list-unstyled mb-0">
+                            <li><small>Standard Hours: {{ settings.standard_working_hours_per_day }} hours/day</small></li>
+                            <li><small>Working Days: {{ settings.working_days_per_week }} days/week</small></li>
+                            <li><small>Sunday Work: {{ 'Yes' if settings.include_sunday else 'No' }}</small></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6 class="text-warning">Overtime Rules</h6>
+                        <ul class="list-unstyled mb-0">
+                            <li><small>Method: {{ settings.overtime_calculation_method.replace('_', ' ').title() }}</small></li>
+                            <li><small>Threshold: {{ settings.overtime_threshold_hours }} hours</small></li>
+                            <li><small>Rate: {{ settings.overtime_rate_multiplier }}x regular</small></li>
+                            <li><small>Max OT: {{ settings.maximum_overtime_hours_per_day }} hours/day</small></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6 class="text-success">Salary Rules</h6>
+                        <ul class="list-unstyled mb-0">
+                            <li><small>Method: {{ settings.salary_calculation_method.replace('_', ' ').title() }}</small></li>
+                            <li><small>Half Days: {{ 'Prorated' if settings.prorate_partial_days else 'Full' }}</small></li>
+                            <li><small>Weekends: {{ 'Excluded' if settings.exclude_weekends_from_calculation else 'Included' }}</small></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6 class="text-info">Default Rates</h6>
+                        <ul class="list-unstyled mb-0">
+                            <li><small>Overtime: ₹{{ "%.2f"|format(settings.default_overtime_rate_per_hour) }}/hour</small></li>
+                            <li><small>Daily: ₹{{ "%.2f"|format(settings.default_daily_rate) }}/day</small></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <small><i class="fas fa-exclamation-triangle"></i> <strong>Note:</strong> Changes will apply to new salary calculations. Existing records are not affected.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
