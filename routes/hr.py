@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from forms import EmployeeForm, SalaryRecordForm, EmployeeAdvanceForm
-from models import Employee, SalaryRecord, EmployeeAdvance
+from models import Employee, SalaryRecord, EmployeeAdvance, FactoryExpense
 from app import db
 from sqlalchemy import func, desc
 from utils import generate_employee_code
@@ -337,6 +337,60 @@ def approve_salary(id):
     flash(f'Salary record {salary.salary_number} approved successfully!', 'success')
     return redirect(url_for('hr.salary_detail', id=id))
 
+@hr_bp.route('/salaries/mark-paid/<int:id>')
+@login_required
+def mark_salary_paid(id):
+    """Mark salary as paid and create factory expense record"""
+    if not current_user.is_admin():
+        flash('Only administrators can mark salaries as paid', 'danger')
+        return redirect(url_for('hr.salary_list'))
+    
+    salary = SalaryRecord.query.get_or_404(id)
+    
+    if salary.status != 'approved':
+        flash('Salary must be approved before marking as paid', 'warning')
+        return redirect(url_for('hr.salary_detail', id=id))
+    
+    try:
+        # Update salary status
+        salary.status = 'paid'
+        salary.payment_date = date.today()
+        
+        # Create corresponding factory expense record
+        expense = FactoryExpense(
+            expense_number=FactoryExpense.generate_expense_number(),
+            expense_date=date.today(),
+            category='salary',  # Salaries & Benefits category
+            subcategory='Employee Salary',
+            description=f'Salary Payment - {salary.employee.name} ({salary.salary_number}) for period {salary.pay_period_start.strftime("%b %d")} - {salary.pay_period_end.strftime("%b %d, %Y")}',
+            amount=float(salary.net_amount),
+            tax_amount=0.0,
+            total_amount=float(salary.net_amount),
+            payment_method=salary.payment_method,
+            paid_by=f'Admin - {current_user.username}',
+            vendor_name=salary.employee.name,
+            vendor_contact=salary.employee.mobile_number or 'N/A',
+            invoice_number=salary.salary_number,
+            invoice_date=salary.pay_period_start,
+            status='paid',  # Mark as paid immediately
+            requested_by_id=current_user.id,
+            approved_by_id=current_user.id,
+            approval_date=datetime.utcnow(),
+            payment_date=date.today(),
+            notes=f'Auto-created from Salary Record: {salary.salary_number}\nBasic: ₹{salary.basic_amount}\nOvertime: ₹{salary.overtime_amount}\nBonus: ₹{salary.bonus_amount}\nDeductions: ₹{salary.deduction_amount}\nAdvance Deduction: ₹{salary.advance_deduction}\nNet Amount: ₹{salary.net_amount}'
+        )
+        
+        db.session.add(expense)
+        db.session.commit()
+        
+        flash(f'Salary {salary.salary_number} marked as paid and expense record {expense.expense_number} created!', 'success')
+        return redirect(url_for('hr.salary_detail', id=id))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error processing salary payment: {str(e)}', 'danger')
+        return redirect(url_for('hr.salary_detail', id=id))
+
 # ============ EMPLOYEE ADVANCES MANAGEMENT ============
 
 @hr_bp.route('/advances')
@@ -436,3 +490,56 @@ def approve_advance(id):
     db.session.commit()
     flash(f'Advance {advance.advance_number} approved successfully!', 'success')
     return redirect(url_for('hr.advance_detail', id=id))
+
+@hr_bp.route('/advances/mark-paid/<int:id>')
+@login_required
+def mark_advance_paid(id):
+    """Mark advance as paid and create factory expense record"""
+    if not current_user.is_admin():
+        flash('Only administrators can mark advances as paid', 'danger')
+        return redirect(url_for('hr.advance_list'))
+    
+    advance = EmployeeAdvance.query.get_or_404(id)
+    
+    if advance.status not in ['approved', 'active']:
+        flash('Advance must be approved before marking as paid', 'warning')
+        return redirect(url_for('hr.advance_detail', id=id))
+    
+    try:
+        # Update advance status
+        advance.status = 'active'  # Active means money has been paid out
+        
+        # Create corresponding factory expense record
+        expense = FactoryExpense(
+            expense_number=FactoryExpense.generate_expense_number(),
+            expense_date=date.today(),
+            category='salary',  # Salaries & Benefits category
+            subcategory='Employee Advance',
+            description=f'Employee Advance Payment - {advance.employee.name} ({advance.advance_number}): {advance.reason}',
+            amount=float(advance.amount),
+            tax_amount=0.0,
+            total_amount=float(advance.amount),
+            payment_method=advance.payment_method,
+            paid_by=f'Admin - {current_user.username}',
+            vendor_name=advance.employee.name,
+            vendor_contact=advance.employee.mobile_number or 'N/A',
+            invoice_number=advance.advance_number,
+            invoice_date=advance.advance_date,
+            status='paid',  # Mark as paid immediately
+            requested_by_id=current_user.id,
+            approved_by_id=current_user.id,
+            approval_date=datetime.utcnow(),
+            payment_date=date.today(),
+            notes=f'Auto-created from Employee Advance: {advance.advance_number}\nReason: {advance.reason}\nRepayment Period: {advance.repayment_months} months'
+        )
+        
+        db.session.add(expense)
+        db.session.commit()
+        
+        flash(f'Advance {advance.advance_number} marked as paid and expense record {expense.expense_number} created!', 'success')
+        return redirect(url_for('hr.advance_detail', id=id))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error processing advance payment: {str(e)}', 'danger')
+        return redirect(url_for('hr.advance_detail', id=id))

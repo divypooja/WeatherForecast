@@ -28,6 +28,13 @@
                         <i class="fas fa-check"></i> Approve
                     </a>
                 {% endif %}
+                {% if salary.status == 'approved' and current_user.is_admin() %}
+                    <a href="{{ url_for('hr.mark_salary_paid', id=salary.id) }}" 
+                       class="btn btn-primary"
+                       onclick="return confirm('Mark this salary as paid? This will create a corresponding factory expense record.')">
+                        <i class="fas fa-money-bill-wave"></i> Mark as Paid
+                    </a>
+                {% endif %}
             </div>
         </div>
     </div>
