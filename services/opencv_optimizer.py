@@ -103,21 +103,37 @@ class OpenCVPackingIntegrator:
     
     def _auto_detect_shapes(self, processed_data: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Automatically detect and classify shapes"""
-        contours, _ = cv2.findContours(processed_data['cleaned'], cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        
-        shapes = []
-        for i, contour in enumerate(contours):
-            # Filter small contours
-            area = cv2.contourArea(contour)
-            if area < 100:  # Minimum area threshold
-                continue
+        try:
+            contours, _ = cv2.findContours(processed_data['cleaned'], cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            logger.info(f"Found {len(contours)} contours in image")
             
-            # Analyze shape properties
-            shape_data = self._analyze_shape(contour, i)
-            if shape_data:
-                shapes.append(shape_data)
-        
-        return shapes
+            shapes = []
+            for i, contour in enumerate(contours):
+                if i >= 50:  # Limit to 50 shapes to prevent hanging
+                    logger.warning("Too many contours detected, limiting to first 50")
+                    break
+                    
+                # Filter small contours
+                area = cv2.contourArea(contour)
+                if area < 100:  # Minimum area threshold
+                    continue
+                
+                # Analyze shape properties with timeout protection
+                try:
+                    shape_data = self._analyze_shape(contour, i)
+                    if shape_data:
+                        shapes.append(shape_data)
+                        logger.debug(f"Processed shape {i}: {shape_data['type']}")
+                except Exception as e:
+                    logger.error(f"Error analyzing shape {i}: {str(e)}")
+                    continue
+            
+            logger.info(f"Successfully processed {len(shapes)} valid shapes")
+            return shapes
+            
+        except Exception as e:
+            logger.error(f"Error in shape detection: {str(e)}")
+            return []
     
     def _analyze_shape(self, contour: np.ndarray, shape_id: int) -> Optional[Dict[str, Any]]:
         """Analyze individual shape properties"""

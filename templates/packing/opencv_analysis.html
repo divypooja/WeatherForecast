@@ -278,11 +278,20 @@ document.addEventListener('DOMContentLoaded', function() {
         loadingModal.show();
         document.getElementById('loadingMessage').textContent = 'Analyzing shapes and complexity...';
 
+        // Add timeout for OpenCV processing
+        const timeoutId = setTimeout(() => {
+            loadingModal.hide();
+            alert('Analysis is taking too long. Please try with a simpler image or refresh the page.');
+        }, 30000); // 30 second timeout
+
         fetch('/packing/api/opencv-process-image', {
             method: 'POST',
             body: formData
         })
-        .then(response => response.json())
+        .then(response => {
+            clearTimeout(timeoutId);
+            return response.json();
+        })
         .then(data => {
             loadingModal.hide();
             if (data.success) {
@@ -292,9 +301,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .catch(error => {
+            clearTimeout(timeoutId);
             loadingModal.hide();
             console.error('Error:', error);
-            alert('Analysis request failed');
+            alert('Analysis request failed. Please check your connection and try again.');
         });
     };
 

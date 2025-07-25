@@ -555,16 +555,35 @@ def opencv_process_image():
         if file.filename == '':
             return jsonify({'success': False, 'error': 'No file selected'}), 400
         
-        # Save uploaded file temporarily
-        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
-        file.save(temp_file.name)
-        
-        # Get processing parameters
-        processing_type = request.form.get('processing_type', 'auto')
-        
-        # Process image with OpenCV
-        cv_integrator = OpenCVPackingIntegrator()
-        result = cv_integrator.process_image_for_packing(temp_file.name, processing_type)
+        temp_file = None
+        try:
+            # Import required modules
+            import cv2
+            from services.opencv_optimizer import OpenCVPackingIntegrator
+            
+            # Save uploaded file temporarily
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
+            file.save(temp_file.name)
+            
+            # Get processing parameters
+            processing_type = request.form.get('processing_type', 'auto')
+            
+            logger.info(f"Starting OpenCV processing: {processing_type}")
+            
+            # Process image with OpenCV
+            cv_integrator = OpenCVPackingIntegrator()
+            result = cv_integrator.process_image_for_packing(temp_file.name, processing_type)
+            logger.info(f"OpenCV processing result: {result.get('success')}")
+            
+        except Exception as e:
+            logger.error(f"OpenCV processing error: {str(e)}")
+            # Clean up temp file
+            if temp_file:
+                try:
+                    os.unlink(temp_file.name)
+                except:
+                    pass
+            return jsonify({'success': False, 'error': f'Processing failed: {str(e)}'}), 500
         
         # Enhanced result with complete dimensions and statistics
         if result.get('success') and 'shapes' in result:
