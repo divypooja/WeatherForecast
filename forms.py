@@ -32,22 +32,22 @@ class ItemForm(FlaskForm):
         # Populate UOM choices from database
         try:
             units = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
-            self.unit_of_measure.choices = [(unit.symbol.lower(), f"{unit.name} ({unit.symbol}) - {unit.category}") for unit in units]
+            self.unit_of_measure.choices = [(unit.symbol, f"{unit.name} ({unit.symbol}) - {unit.category}") for unit in units]
             # Add fallback options if no units in database
             if not self.unit_of_measure.choices:
                 self.unit_of_measure.choices = [
-                    ('pcs', 'Pieces (Pcs) - Count'), 
-                    ('kg', 'Kilogram (Kg) - Weight'), 
-                    ('m', 'Meter (M) - Length'),
-                    ('l', 'Liter (L) - Volume')
+                    ('Pcs', 'Pieces (Pcs) - Count'), 
+                    ('Kg', 'Kilogram (Kg) - Weight'), 
+                    ('M', 'Meter (M) - Length'),
+                    ('L', 'Liter (L) - Volume')
                 ]
         except Exception:
             # Fallback choices if database error
             self.unit_of_measure.choices = [
-                ('pcs', 'Pieces (Pcs) - Count'), 
-                ('kg', 'Kilogram (Kg) - Weight'), 
-                ('m', 'Meter (M) - Length'),
-                ('l', 'Liter (L) - Volume')
+                ('Pcs', 'Pieces (Pcs) - Count'), 
+                ('Kg', 'Kilogram (Kg) - Weight'), 
+                ('M', 'Meter (M) - Length'),
+                ('L', 'Liter (L) - Volume')
             ]
         
         # Populate Item Type choices from database
