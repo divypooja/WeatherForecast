@@ -6,7 +6,27 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 25, 2025)
 
-### Complete Weight Tracking Implementation (Latest)
+### Dynamic Item Type Management System (Latest)
+- **Custom Item Types**: Implemented complete ItemType model with dynamic management allowing users to create custom item categories beyond default Material/Product/Consumable
+- **Database Architecture**: Created item_types table with foreign key relationships to items table, maintaining backward compatibility with legacy item_type string field
+- **Admin Interface**: Full CRUD operations for item types with admin-only access restrictions and soft delete capabilities
+- **Default Types Provided**: System initializes with 6 default types (Material, Product, Consumable, Tool, Spare Part, Packaging) with auto-creation on first use
+- **Smart Form Integration**: Enhanced ItemForm with dynamic item type dropdown populated from database with direct management link
+- **Professional UI**: Added item type management accessible from Settings → Item Types and directly from inventory form with gear icon
+- **Usage Tracking**: System tracks which items use each type and prevents deletion of types in use
+- **Status Management**: Active/inactive toggle functionality with immediate UI feedback
+- **Navigation Integration**: Added Item Types section to Settings subsection in sidebar navigation
+
+### Enhanced Weight System with Gram Support (Latest)
+- **Dual Unit Support**: Complete weight input system supporting both kilograms and grams with intelligent conversion and display
+- **Smart Unit Selector**: Added dropdown in inventory form allowing users to enter weights in preferred unit (kg or g)
+- **Automatic Conversion**: System stores all weights in kg internally but displays in most appropriate unit (<1kg shows as grams, ≥1kg shows as kilograms)
+- **Contextual Help Text**: Dynamic help text that adapts to both selected unit of measure AND chosen weight unit
+- **Real-time Conversion**: When switching between kg/g in form, existing values convert automatically without data loss
+- **Professional Display**: Enhanced inventory tables and reports with intelligent weight formatting (e.g., "15.0 g/unit", "2.500 kg/unit")
+- **Form Enhancement**: Weight field with unit selector integrated seamlessly into existing layout with proper validation
+
+### Complete Weight Tracking Implementation
 - **Universal Weight Fields**: Added unit_weight and total_weight columns to all transaction and inventory tables across the entire system
 - **Database Schema Enhancement**: Updated Items, PurchaseOrderItem, SalesOrderItem, BOMItem, Production, JobWork, QualityIssue, MaterialInspection, and FactoryExpense models with weight fields
 - **Inventory Form Enhancement**: Added unit weight input field to inventory item form with kg unit indicator and validation

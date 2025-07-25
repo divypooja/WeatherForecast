@@ -111,8 +111,7 @@ document.addEventListener('DOMContentLoaded', function() {
             fetch(`/item-types/toggle/${id}`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token() }}'
+                    'Content-Type': 'application/json'
                 }
             })
             .then(response => response.json())

@@ -115,7 +115,7 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <span class="badge bg-secondary">{{ item.item_type.title() }}</span>
+                                    <span class="badge bg-secondary">{{ item.display_item_type }}</span>
                                 </td>
                                 <td>
                                     {% if (item.current_stock or 0) <= (item.minimum_stock or 0) and (item.minimum_stock or 0) > 0 %}
