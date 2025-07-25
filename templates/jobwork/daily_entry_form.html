@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-clock"></i> {{ title }}</h1>
+            <p class="text-muted">Quick daily entry for job work progress tracking</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('jobwork.daily_entries_list') }}" class="btn btn-secondary">
+                <i class="fas fa-list"></i> View Daily Entries
+            </a>
+            <a href="{{ url_for('jobwork.dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Job Work Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-user-hard-hat"></i> Daily Work Entry</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Worker Information Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-info border-bottom pb-2 mb-3">
+                                    <i class="fas fa-user"></i> Worker Information
+                                </h6>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.worker_name.label(class="form-label") }}
+                                {{ form.worker_name(class="form-control") }}
+                                {% if form.worker_name.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.worker_name.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.work_date.label(class="form-label") }}
+                                {{ form.work_date(class="form-control") }}
+                                {% if form.work_date.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.work_date.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Job Work Selection Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-success border-bottom pb-2 mb-3">
+                                    <i class="fas fa-tools"></i> Job Work Details
+                                </h6>
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                {{ form.job_work_id.label(class="form-label") }}
+                                {{ form.job_work_id(class="form-select") }}
+                                <small class="text-muted">Select the job work order you worked on today</small>
+                                {% if form.job_work_id.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.job_work_id.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Work Progress Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-warning border-bottom pb-2 mb-3">
+                                    <i class="fas fa-chart-line"></i> Today's Progress
+                                </h6>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.hours_worked.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.hours_worked(class="form-control") }}
+                                    <span class="input-group-text">hours</span>
+                                </div>
+                                <small class="text-muted">Total hours spent on this job work today</small>
+                                {% if form.hours_worked.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.hours_worked.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.quantity_completed.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.quantity_completed(class="form-control") }}
+                                    <span class="input-group-text">units</span>
+                                </div>
+                                <small class="text-muted">Number of units completed today</small>
+                                {% if form.quantity_completed.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.quantity_completed.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Quality and Status Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-secondary border-bottom pb-2 mb-3">
+                                    <i class="fas fa-award"></i> Quality & Status
+                                </h6>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.quality_status.label(class="form-label") }}
+                                {{ form.quality_status(class="form-select") }}
+                                <small class="text-muted">Overall quality of work completed</small>
+                                {% if form.quality_status.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.quality_status.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.process_stage.label(class="form-label") }}
+                                {{ form.process_stage(class="form-select") }}
+                                <small class="text-muted">Current stage of the job work</small>
+                                {% if form.process_stage.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.process_stage.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Notes Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-dark border-bottom pb-2 mb-3">
+                                    <i class="fas fa-sticky-note"></i> Work Notes
+                                </h6>
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                {{ form.notes.label(class="form-label") }}
+                                {{ form.notes(class="form-control") }}
+                                <small class="text-muted">Any issues, observations, or comments about today's work</small>
+                                {% if form.notes.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.notes.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <a href="{{ url_for('jobwork.dashboard') }}" class="btn btn-secondary">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </a>
+                                    {{ form.submit(class="btn btn-success") }}
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

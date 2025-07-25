@@ -1192,3 +1192,53 @@ class Document(db.Model):
     def get_file_path(self):
         import os
         return os.path.join('uploads', self.upload_path)
+
+class DailyJobWorkEntry(db.Model):
+    """Model for tracking daily job work progress by workers"""
+    __tablename__ = 'daily_job_work_entries'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    job_work_id = db.Column(db.Integer, db.ForeignKey('job_works.id'), nullable=False)
+    worker_name = db.Column(db.String(100), nullable=False)
+    work_date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date())
+    hours_worked = db.Column(db.Float, nullable=False)
+    quantity_completed = db.Column(db.Float, nullable=False)
+    quality_status = db.Column(db.String(20), nullable=False, default='good')  # good, needs_rework, defective
+    process_stage = db.Column(db.String(20), nullable=False, default='in_progress')  # started, in_progress, completed, on_hold
+    notes = db.Column(db.Text)
+    
+    # Audit fields
+    logged_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    job_work = db.relationship('JobWork', backref='daily_entries')
+    logger = db.relationship('User', backref='logged_daily_work')
+    
+    # Unique constraint to prevent duplicate entries for same worker/job/date
+    __table_args__ = (db.UniqueConstraint('job_work_id', 'worker_name', 'work_date', name='unique_worker_job_date'),)
+    
+    @property
+    def quality_badge_class(self):
+        """Return Bootstrap badge class for quality status"""
+        quality_classes = {
+            'good': 'bg-success',
+            'needs_rework': 'bg-warning',
+            'defective': 'bg-danger'
+        }
+        return quality_classes.get(self.quality_status, 'bg-light')
+    
+    @property
+    def stage_badge_class(self):
+        """Return Bootstrap badge class for process stage"""
+        stage_classes = {
+            'started': 'bg-info',
+            'in_progress': 'bg-primary',
+            'completed': 'bg-success',
+            'on_hold': 'bg-secondary'
+        }
+        return stage_classes.get(self.process_stage, 'bg-light')
+    
+    def __repr__(self):
+        return f'<DailyJobWorkEntry {self.worker_name} - {self.job_work.job_number} - {self.work_date}>'

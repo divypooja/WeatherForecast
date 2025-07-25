@@ -3,7 +3,7 @@ from flask_wtf.file import FileField, FileAllowed
 from wtforms import StringField, PasswordField, SubmitField, SelectField, TextAreaField, FloatField, IntegerField, DateField, TimeField, BooleanField, SelectMultipleField, ValidationError, DateTimeField
 from wtforms.validators import DataRequired, Length, Email, NumberRange, Optional
 from wtforms.widgets import CheckboxInput, ListWidget
-from models import User, Item, Supplier, QualityIssue, Production, PurchaseOrder, JobWork, ItemType
+from models import User, Item, Supplier, QualityIssue, Production, PurchaseOrder, JobWork, ItemType, DailyJobWorkEntry
 from models_uom import UnitOfMeasure
 from datetime import datetime
 
@@ -273,6 +273,42 @@ class JobWorkForm(FlaskForm):
         super(JobWorkForm, self).__init__(*args, **kwargs)
         self.item_id.choices = [(0, 'Select Item')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.all()]
         self.customer_name.choices = [('', 'Select Customer')] + [(s.name, s.name) for s in Supplier.query.order_by(Supplier.name).all()]
+
+class DailyJobWorkForm(FlaskForm):
+    """Simplified form for daily job work entry by workers"""
+    worker_name = StringField('Worker Name', validators=[DataRequired(), Length(max=100)], 
+                             render_kw={'placeholder': 'Enter your name'})
+    job_work_id = SelectField('Job Work Order', validators=[DataRequired()], coerce=int)
+    work_date = DateField('Work Date', validators=[DataRequired()], default=datetime.utcnow().date())
+    hours_worked = FloatField('Hours Worked', validators=[DataRequired(), NumberRange(min=0.1, max=24)],
+                             render_kw={'placeholder': 'Hours spent on this job work'})
+    quantity_completed = FloatField('Quantity Completed', validators=[DataRequired(), NumberRange(min=0)],
+                                   render_kw={'placeholder': 'Units completed today'})
+    quality_status = SelectField('Quality Status', 
+                                validators=[DataRequired()],
+                                choices=[('good', 'Good Quality'),
+                                       ('needs_rework', 'Needs Rework'),
+                                       ('defective', 'Defective')],
+                                default='good')
+    process_stage = SelectField('Process Stage',
+                               validators=[DataRequired()],
+                               choices=[('started', 'Started'),
+                                      ('in_progress', 'In Progress'),
+                                      ('completed', 'Completed'),
+                                      ('on_hold', 'On Hold')],
+                               default='in_progress')
+    notes = TextAreaField('Work Notes', 
+                         render_kw={'rows': 3, 'placeholder': 'Any issues, observations, or comments about today\'s work'})
+    submit = SubmitField('Log Daily Work')
+    
+    def __init__(self, *args, **kwargs):
+        super(DailyJobWorkForm, self).__init__(*args, **kwargs)
+        # Only show active job works that are in progress
+        active_jobs = JobWork.query.filter(JobWork.status.in_(['sent', 'partial_received'])).order_by(JobWork.job_number).all()
+        self.job_work_id.choices = [(0, 'Select Job Work')] + [
+            (job.id, f"{job.job_number} - {job.item.name} ({job.process})") 
+            for job in active_jobs
+        ]
 
 class JobWorkQuantityUpdateForm(FlaskForm):
     quantity_received = FloatField('Quantity Received', validators=[DataRequired(), NumberRange(min=0)])
