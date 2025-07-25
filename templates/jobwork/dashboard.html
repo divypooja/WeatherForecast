@@ -125,10 +125,19 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5><i class="fas fa-chart-line"></i> Active Job Work Progress</h5>
+                    <h5>
+                        <i class="fas fa-chart-line"></i> Active Job Work Progress
+                        <button class="btn btn-sm btn-outline-secondary ms-2" type="button" 
+                                data-bs-toggle="collapse" data-bs-target="#jobProgressSection" 
+                                aria-expanded="true" aria-controls="jobProgressSection"
+                                id="toggleProgressBtn">
+                            <i class="fas fa-chevron-up" id="toggleProgressIcon"></i>
+                        </button>
+                    </h5>
                     <span class="badge bg-info">{{ active_jobs|length }} Active Jobs</span>
                 </div>
-                <div class="card-body">
+                <div class="collapse show" id="jobProgressSection">
+                    <div class="card-body">
                     {% if active_jobs %}
                         {% for job in active_jobs %}
                         <div class="card mb-3 border-left-{{ 'success' if job.status == 'completed' else 'warning' if job.status == 'partial_received' else 'primary' }}">
@@ -238,6 +247,7 @@
                             <i class="fas fa-info-circle"></i> No active job works found. All jobs are completed!
                         </div>
                     {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -411,4 +421,22 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+// Handle collapse icon rotation for Job Work Progress section
+document.addEventListener('DOMContentLoaded', function() {
+    const progressSection = document.getElementById('jobProgressSection');
+    const toggleIcon = document.getElementById('toggleProgressIcon');
+    
+    if (progressSection && toggleIcon) {
+        progressSection.addEventListener('show.bs.collapse', function() {
+            toggleIcon.className = 'fas fa-chevron-up';
+        });
+        
+        progressSection.addEventListener('hide.bs.collapse', function() {
+            toggleIcon.className = 'fas fa-chevron-down';
+        });
+    }
+});
+</script>
 {% endblock %}
