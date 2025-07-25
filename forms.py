@@ -379,15 +379,11 @@ class BOMForm(FlaskForm):
                                        ('per_ton', 'Per Ton')
                                    ],
                                    default='per_piece')
-    transporter_id = SelectField('Select Transporter (Optional)', validators=[Optional()], coerce=int)
     markup_percentage = FloatField('Markup % (Profit Margin)', validators=[NumberRange(min=0, max=500)], default=0.0)
     
     def __init__(self, *args, **kwargs):
         super(BOMForm, self).__init__(*args, **kwargs)
         self.product_id.choices = [(0, 'Select Product')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.filter_by(item_type='product').all()]
-        # Get transporters and "both" partners for transporter selection
-        transporters = Supplier.query.filter(Supplier.partner_type.in_(['transporter', 'both'])).all()
-        self.transporter_id.choices = [(0, 'Select Transporter')] + [(t.id, f"{t.name} - ₹{t.freight_rate_per_unit:.2f} {t.freight_unit_type.replace('_', ' ').title()}") for t in transporters if t.freight_rate_per_unit > 0]
 
 class BOMItemForm(FlaskForm):
     item_id = SelectField('Material/Component', validators=[DataRequired()], coerce=int)

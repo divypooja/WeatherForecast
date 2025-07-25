@@ -490,11 +490,7 @@ class BOM(db.Model):
     labor_rate_per_hour = db.Column(db.Float, default=0.0)
     overhead_percentage = db.Column(db.Float, default=0.0)  # Percentage of material cost
     freight_cost_per_unit = db.Column(db.Float, default=0.0)  # Transportation/freight cost per unit (optional)
-    freight_unit_type = db.Column(db.String(20), default='per_piece')
-    transporter_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=True)  # Reference to transporter
-    
-    # Relationship to transporter
-    transporter = db.relationship('Supplier', foreign_keys=[transporter_id], lazy='select')  # per_piece, per_kg, per_box, per_carton
+    freight_unit_type = db.Column(db.String(20), default='per_piece')  # per_piece, per_kg, per_box, per_carton
     markup_percentage = db.Column(db.Float, default=0.0)  # Markup percentage for profit margin
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
