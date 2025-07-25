@@ -342,7 +342,7 @@
                                 <input type="hidden" name="freight_cost_per_unit" value="{{ bom.freight_cost_per_unit or 0 }}">
                                 <input type="hidden" name="freight_unit_type" value="{{ bom.freight_unit_type or 'per_piece' }}">
                                 <input type="hidden" name="markup_percentage" value="{{ bom.markup_percentage or 0 }}">
-                                <button type="submit" class="btn btn-success btn-lg">
+                                <button type="button" class="btn btn-success btn-lg" onclick="saveBOMWithCurrentValues()">
                                     <i class="fas fa-save"></i> Save BOM
                                 </button>
                             </form>
@@ -524,8 +524,47 @@ function saveBOM() {
     const modal = bootstrap.Modal.getInstance(document.getElementById('bomPreviewModal'));
     if (modal) modal.hide();
     
-    // Submit the main form
-    document.querySelector('form').submit();
+    // Update hidden fields with current form values before submitting
+    const hiddenForm = document.querySelector('.card-footer form');
+    if (hiddenForm) {
+        // Update all hidden fields with current form values
+        hiddenForm.querySelector('[name="labor_cost_per_unit"]').value = document.querySelector('[name="labor_cost_per_unit"]').value || 0;
+        hiddenForm.querySelector('[name="labor_hours_per_unit"]').value = document.querySelector('[name="labor_hours_per_unit"]').value || 0;
+        hiddenForm.querySelector('[name="labor_rate_per_hour"]').value = document.querySelector('[name="labor_rate_per_hour"]').value || 0;
+        hiddenForm.querySelector('[name="overhead_cost_per_unit"]').value = document.querySelector('[name="overhead_cost_per_unit"]').value || 0;
+        hiddenForm.querySelector('[name="overhead_percentage"]').value = document.querySelector('[name="overhead_percentage"]').value || 0;
+        hiddenForm.querySelector('[name="freight_cost_per_unit"]').value = document.querySelector('[name="freight_cost_per_unit"]').value || 0;
+        hiddenForm.querySelector('[name="freight_unit_type"]').value = document.querySelector('[name="freight_unit_type"]').value || 'per_piece';
+        hiddenForm.querySelector('[name="markup_percentage"]').value = document.querySelector('[name="markup_percentage"]').value || 0;
+        
+        // Submit the hidden form
+        hiddenForm.submit();
+    } else {
+        // Fallback: submit the main form
+        document.querySelector('form').submit();
+    }
+}
+
+function saveBOMWithCurrentValues() {
+    // Update hidden fields with current form values before submitting
+    const hiddenForm = document.querySelector('.card-footer form');
+    if (hiddenForm) {
+        // Update all hidden fields with current form values
+        hiddenForm.querySelector('[name="labor_cost_per_unit"]').value = document.querySelector('[name="labor_cost_per_unit"]').value || 0;
+        hiddenForm.querySelector('[name="labor_hours_per_unit"]').value = document.querySelector('[name="labor_hours_per_unit"]').value || 0;
+        hiddenForm.querySelector('[name="labor_rate_per_hour"]').value = document.querySelector('[name="labor_rate_per_hour"]').value || 0;
+        hiddenForm.querySelector('[name="overhead_cost_per_unit"]').value = document.querySelector('[name="overhead_cost_per_unit"]').value || 0;
+        hiddenForm.querySelector('[name="overhead_percentage"]').value = document.querySelector('[name="overhead_percentage"]').value || 0;
+        hiddenForm.querySelector('[name="freight_cost_per_unit"]').value = document.querySelector('[name="freight_cost_per_unit"]').value || 0;
+        hiddenForm.querySelector('[name="freight_unit_type"]').value = document.querySelector('[name="freight_unit_type"]').value || 'per_piece';
+        hiddenForm.querySelector('[name="markup_percentage"]').value = document.querySelector('[name="markup_percentage"]').value || 0;
+        
+        // Submit the hidden form
+        hiddenForm.submit();
+    } else {
+        // Fallback: submit the main form
+        document.querySelector('form').submit();
+    }
 }
 
 // Auto-calculate labor cost from hours and rate
