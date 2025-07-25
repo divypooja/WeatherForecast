@@ -11,6 +11,7 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **Complete CRUD Operations**: Full add, edit, list, and delete functionality for job work rates
 - **Professional Dashboard**: Statistics showing total rates, items with rates, average rate, and inactive rates
 - **Advanced Filtering**: Search by item name/code and filter by process type with pagination support
+- **Vertical Scrolling**: Items Without Rates section with scrollable interface showing 10 items with sticky headers
 - **Auto-Rate Loading**: Job Work form automatically loads rates from rates table when item/process is selected
 - **Process-Specific Rates**: Support for different rates per manufacturing process (optional general rates)
 - **Smart Rate Lookup**: Finds process-specific rates first, falls back to general rates for flexibility
