@@ -88,10 +88,11 @@ def add_job_work():
             item_id=form.item_id.data,
             process=form.process_type.data,
             work_type=form.work_type.data,
+            department=form.department.data if form.work_type.data == 'in_house' else None,
             quantity_sent=form.quantity_sent.data,
             expected_finished_material=form.expected_finished_material.data or 0.0,
             expected_scrap=form.expected_scrap.data or 0.0,
-            rate_per_unit=form.rate_per_unit.data,
+            rate_per_unit=form.rate_per_unit.data if form.work_type.data == 'outsourced' else 0.0,
             sent_date=form.sent_date.data,
             expected_return=form.expected_return.data,
             notes=form.notes.data,
@@ -145,6 +146,7 @@ def edit_job_work(id):
         job.item_id = form.item_id.data
         job.process = form.process_type.data
         job.work_type = form.work_type.data
+        job.department = form.department.data if form.work_type.data == 'in_house' else None
         job.quantity_sent = form.quantity_sent.data
         job.expected_finished_material = form.expected_finished_material.data or 0.0
         job.expected_scrap = form.expected_scrap.data or 0.0

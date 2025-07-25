@@ -447,6 +447,7 @@ class JobWork(db.Model):
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     process = db.Column(db.String(100), nullable=False)  # Process type: Zinc, Cutting, Bending, etc.
     work_type = db.Column(db.String(20), nullable=False, default='outsourced')  # in_house or outsourced
+    department = db.Column(db.String(100), nullable=True)  # Department for in-house work
     quantity_sent = db.Column(db.Float, nullable=False)
     quantity_received = db.Column(db.Float, default=0.0)
     expected_finished_material = db.Column(db.Float, default=0.0)  # Expected finished material quantity
@@ -476,7 +477,9 @@ class JobWork(db.Model):
     
     @property
     def total_cost(self):
-        """Calculate total job cost (quantity_sent × rate_per_unit)"""
+        """Calculate total job cost (quantity_sent × rate_per_unit). Returns 0 for in-house work."""
+        if self.work_type == 'in_house':
+            return 0.0  # In-house work has no direct cost
         return (self.quantity_sent or 0.0) * (self.rate_per_unit or 0.0)
     
     @property
@@ -492,6 +495,8 @@ class JobWork(db.Model):
     @property
     def total_cost_display(self):
         """Return formatted total cost for display"""
+        if self.work_type == 'in_house':
+            return "Internal Cost"
         return f"₹{self.total_cost:.2f}"
     
     @property
