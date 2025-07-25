@@ -251,6 +251,23 @@
                                     <th>₹{{ "%.2f"|format(bom.freight_cost_per_unit or 0) }}</th>
                                     <th></th>
                                 </tr>
+                                <tr class="table-info">
+                                    <th colspan="7">Total Weight per Unit</th>
+                                    <th>
+                                        {% set total_weight = 0 %}
+                                        {% for bom_item in bom_items %}
+                                            {% if bom_item.item.unit_weight %}
+                                                {% set total_weight = total_weight + (bom_item.item.unit_weight * bom_item.quantity_required) %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {% if total_weight < 1 %}
+                                            {{ "%.1f"|format(total_weight * 1000) }} g/unit
+                                        {% else %}
+                                            {{ "%.3f"|format(total_weight) }} kg/unit
+                                        {% endif %}
+                                    </th>
+                                    <th></th>
+                                </tr>
                                 <tr class="table-dark">
                                     <th colspan="7">Total BOM Cost per Unit</th>
                                     <th>₹{{ "%.2f"|format(total_cost_per_unit or 0) }}</th>
