@@ -65,12 +65,12 @@
                             </div>
                             
                             <div class="col-md-6 mb-3">
-                                {{ form.process.label(class="form-label") }}
-                                {{ form.process(class="form-select", id="process") }}
+                                {{ form.process_type.label(class="form-label") }}
+                                {{ form.process_type(class="form-select", id="process_type") }}
                                 <small class="text-muted">Select the type of process for this job work</small>
-                                {% if form.process.errors %}
+                                {% if form.process_type.errors %}
                                     <div class="text-danger small">
-                                        {% for error in form.process.errors %}
+                                        {% for error in form.process_type.errors %}
                                             <div>{{ error }}</div>
                                         {% endfor %}
                                     </div>
@@ -269,7 +269,7 @@ function previewJobWork() {
     const customerSelect = document.querySelector('select[name="customer_name"]');
     const selectedCustomerText = customerSelect && customerSelect.selectedIndex > 0 ? customerSelect.options[customerSelect.selectedIndex].text : 'Not selected';
     
-    const processSelect = document.getElementById('process');
+    const processSelect = document.getElementById('process_type');
     const selectedProcessText = processSelect && processSelect.selectedIndex > 0 ? processSelect.options[processSelect.selectedIndex].text : 'Not selected';
     
     const previewData = {

@@ -84,7 +84,7 @@ def add_job_work():
             job_number=form.job_number.data,
             customer_name=form.customer_name.data,
             item_id=form.item_id.data,
-            process=form.process.data,
+            process=form.process_type.data,
             quantity_sent=form.quantity_sent.data,
             rate_per_unit=form.rate_per_unit.data,
             sent_date=form.sent_date.data,
@@ -138,7 +138,7 @@ def edit_job_work(id):
         job.job_number = form.job_number.data
         job.customer_name = form.customer_name.data
         job.item_id = form.item_id.data
-        job.process = form.process.data
+        job.process = form.process_type.data
         job.quantity_sent = form.quantity_sent.data
         job.rate_per_unit = form.rate_per_unit.data
         job.sent_date = form.sent_date.data

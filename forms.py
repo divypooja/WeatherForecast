@@ -201,7 +201,9 @@ class JobWorkForm(FlaskForm):
     job_number = StringField('Job Number', validators=[DataRequired(), Length(max=50)])
     customer_name = SelectField('Customer Name', validators=[DataRequired()], coerce=str)
     item_id = SelectField('Item', validators=[DataRequired()], coerce=int)
-    process = SelectField('Process', validators=[DataRequired()], coerce=str,
+    process_type = SelectField('Process', 
+                         validators=[DataRequired()], 
+                         coerce=str,
                          choices=[('', 'Select Process'),
                                 ('Zinc', 'Zinc'),
                                 ('Cutting', 'Cutting'), 
