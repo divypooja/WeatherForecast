@@ -1,8 +1,10 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, make_response
 from flask_login import login_required, current_user
 from models import Item, PurchaseOrder, SalesOrder, Employee, JobWork, Production
+from models_uom import ItemUOMConversion
 from app import db
 from sqlalchemy import func, and_
+from sqlalchemy.orm import joinedload
 from datetime import datetime, date, timedelta
 import csv
 import io
@@ -31,7 +33,7 @@ def inventory_report():
     item_type_filter = request.args.get('item_type', '', type=str)
     low_stock_only = request.args.get('low_stock', False, type=bool)
     
-    query = Item.query
+    query = Item.query.options(joinedload(Item.uom_conversion))
     
     if item_type_filter:
         query = query.filter_by(item_type=item_type_filter)

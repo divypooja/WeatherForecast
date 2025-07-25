@@ -155,6 +155,7 @@
                                 <th style="min-width: 80px;">Type</th>
                                 <th style="min-width: 90px;">Current Stock</th>
                                 <th style="min-width: 60px;">Unit</th>
+                                <th style="min-width: 100px;">Current Stock (pcs)</th>
                                 <th style="min-width: 80px;">Min Stock</th>
                                 <th style="min-width: 90px;">Unit Weight</th>
                                 <th style="min-width: 100px;">Total Weight</th>
@@ -175,6 +176,19 @@
                                 </td>
                                 <td>{{ "%.2f"|format(item.current_stock or 0) }}</td>
                                 <td>{{ item.unit_of_measure or 'N/A' }}</td>
+                                <td>
+                                    {% if item.uom_conversion %}
+                                        {% set inventory_qty = item.current_stock or 0 %}
+                                        {% set pieces_qty = inventory_qty * (item.uom_conversion.inventory_to_sale or 1) %}
+                                        <strong>{{ "%.0f"|format(pieces_qty) }} pcs</strong>
+                                    {% else %}
+                                        {% if item.unit_of_measure and ('pcs' in item.unit_of_measure.lower() or 'piece' in item.unit_of_measure.lower() or 'nos' in item.unit_of_measure.lower()) %}
+                                            <strong>{{ "%.0f"|format(item.current_stock or 0) }} pcs</strong>
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
                                 <td>{{ "%.2f"|format(item.minimum_stock or 0) }}</td>
                                 <td>
                                     {% if (item.unit_weight or 0) > 0 %}
