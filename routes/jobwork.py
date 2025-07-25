@@ -471,7 +471,7 @@ def assign_team_member(job_id):
     # Filter out already assigned employees
     assigned_employee_ids = [a.employee_id for a in JobWorkTeamAssignment.query.filter_by(job_work_id=job_id).all()]
     available_employees = Employee.query.filter(
-        Employee.status == 'active',
+        Employee.is_active == True,
         ~Employee.id.in_(assigned_employee_ids)
     ).all()
     
