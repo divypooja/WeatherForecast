@@ -181,16 +181,40 @@
                 </div>
             </div>
             
-            <!-- Document Management Section -->
             {% if employee %}
-            <div class="col-md-4">
-                {% set documents = get_documents_for_transaction('employee', employee.id) %}
-                {% set transaction_type = 'employee' %}
-                {% set transaction_id = employee.id %}
-                {% include 'documents/_document_card.html' %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i> Employee Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Employee Code:</strong> {{ employee.employee_code }}</p>
+                            <p><strong>Status:</strong> 
+                                <span class="badge bg-{{ 'success' if employee.is_active else 'secondary' }}">
+                                    {{ 'Active' if employee.is_active else 'Inactive' }}
+                                </span>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Created:</strong> {{ employee.created_at.strftime('%B %d, %Y at %I:%M %p') if employee.created_at else 'N/A' }}</p>
+                            <p><strong>Salary Type:</strong> {{ employee.salary_type.replace('_', ' ').title() }}</p>
+                        </div>
+                    </div>
+                </div>
             </div>
             {% endif %}
         </div>
+        
+        <!-- Document Management Section -->
+        {% if employee %}
+        <div class="col-md-4">
+            {% set documents = get_documents_for_transaction('employee', employee.id) %}
+            {% set transaction_type = 'employee' %}
+            {% set transaction_id = employee.id %}
+            {% include 'documents/_document_card.html' %}
+        </div>
+        {% endif %}
     </div>
 </div>
 
@@ -226,32 +250,4 @@ document.getElementById('documents').addEventListener('change', function(e) {
 });
 </script>
 
-{% endblock %}
-            
-            {% if employee %}
-            <div class="card mt-4">
-                <div class="card-header">
-                    <h5><i class="fas fa-info-circle"></i> Employee Information</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <p><strong>Employee Code:</strong> {{ employee.employee_code }}</p>
-                            <p><strong>Status:</strong> 
-                                <span class="badge bg-{{ 'success' if employee.is_active else 'secondary' }}">
-                                    {{ 'Active' if employee.is_active else 'Inactive' }}
-                                </span>
-                            </p>
-                        </div>
-                        <div class="col-md-6">
-                            <p><strong>Created:</strong> {{ employee.created_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
-                            <p><strong>Salary Type:</strong> {{ employee.salary_type.replace('_', ' ').title() }}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-</div>
 {% endblock %}
