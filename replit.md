@@ -4,9 +4,21 @@
 
 This is a comprehensive Flask-based Factory Management System designed for small to medium manufacturing companies. The application provides modular dashboards for managing various aspects of factory operations including inventory, purchase orders, sales, HR, job work, production, and reporting.
 
-## Recent Changes (January 24, 2025)
+## Recent Changes (January 25, 2025)
 
-### Comprehensive Data Backup System (Latest)
+### Complete Weight Tracking Implementation (Latest)
+- **Universal Weight Fields**: Added unit_weight and total_weight columns to all transaction and inventory tables across the entire system
+- **Database Schema Enhancement**: Updated Items, PurchaseOrderItem, SalesOrderItem, BOMItem, Production, JobWork, QualityIssue, MaterialInspection, and FactoryExpense models with weight fields
+- **Inventory Form Enhancement**: Added unit weight input field to inventory item form with kg unit indicator and validation
+- **Comprehensive Weight Calculation**: System now tracks weight per unit and calculates total weights for all transactions and inventory movements
+- **Database Migration Completed**: Successfully executed SQL migrations to add weight columns to all relevant PostgreSQL tables
+- **Form Integration**: Enhanced ItemForm with unit_weight field including proper validation and help text
+- **Template Updates**: Updated inventory form template with professional weight input field and proper styling
+- **Route Updates**: Enhanced both add_item and edit_item routes to handle unit_weight field data
+- **Complete System Coverage**: Weight tracking now available across Purchase Orders, Sales Orders, Production, Job Work, Quality Control, Material Inspection, and Factory Expenses
+- **Professional UI**: Weight fields integrated with Bootstrap styling and proper unit indicators (kg) for consistency
+
+### Comprehensive Data Backup System
 - **Excel Export Functionality**: Complete data export to Excel with separate sheets for all major data types (Items, Business Partners, Purchase Orders, Sales Orders, Employees, Job Works, Productions, Factory Expenses, Quality Issues)
 - **JSON Backup System**: Technical backup format preserving complete data structure for system restoration and migrations
 - **Professional Backup Dashboard**: Dedicated backup interface showing database statistics and export options with real-time data counts
