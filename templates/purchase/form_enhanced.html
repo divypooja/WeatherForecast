@@ -150,7 +150,7 @@
                                 <th style="min-width: 50px;">No.</th>
                                 <th style="min-width: 100px;">Item Code</th>
                                 <th style="min-width: 200px;">Item + Description</th>
-                                <th style="min-width: 120px;">Specification</th>
+                                <th style="min-width: 120px;">Unit Weight</th>
                                 <th style="min-width: 100px;">HSN Code</th>
                                 <th style="min-width: 120px;">GST Rate</th>
                                 <th style="min-width: 80px;">UOM</th>
@@ -190,8 +190,11 @@
                                                   rows="2" placeholder="Item description">{{ item.item_description or item.item.description }}</textarea>
                                     </td>
                                     <td class="align-middle">
-                                        <input type="text" class="form-control form-control-sm" name="drawing_spec_{{ item.id }}" 
-                                               value="{{ item.drawing_spec_no or '' }}" placeholder="Specification">
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" class="form-control" name="unit_weight_{{ item.id }}" 
+                                                   value="{{ item.item.unit_weight or '' }}" step="0.001" min="0" placeholder="0.000">
+                                            <span class="input-group-text">kg</span>
+                                        </div>
                                     </td>
                                     <td class="align-middle">
                                         <input type="text" class="form-control form-control-sm text-center fw-bold" name="hsn_code_{{ item.id }}" 
@@ -327,6 +330,7 @@ const itemsData = [
         gst_rate: {{ item.gst_rate or 0.0 }},
         unit_of_measure: "{{ item.purchase_unit if item.purchase_unit else item.unit_of_measure }}",
         unit_price: {{ item.unit_price or 0.0 }},
+        unit_weight: {{ item.unit_weight or 0.0 }},
         bom_rate: {{ item.purchase_rate if item.purchase_rate else (item.bom_rate or item.unit_price or 0.0) }}
     }{% if not loop.last %},{% endif %}
     {% endfor %}
@@ -358,7 +362,11 @@ function addPOItem() {
                       rows="2" placeholder="Item description"></textarea>
         </td>
         <td class="align-middle">
-            <input type="text" class="form-control form-control-sm" name="drawing_spec_new_${itemCounter}" placeholder="Specification">
+            <div class="input-group input-group-sm">
+                <input type="number" class="form-control" name="unit_weight_new_${itemCounter}" 
+                       step="0.001" min="0" placeholder="0.000">
+                <span class="input-group-text">kg</span>
+            </div>
         </td>
         <td class="align-middle">
             <input type="text" class="form-control form-control-sm text-center fw-bold" name="hsn_code_new_${itemCounter}" placeholder="HSN Code">
@@ -404,6 +412,7 @@ function addPOItem() {
         option.dataset.hsn = item.hsn_code;
         option.dataset.gst = item.gst_rate;  // This should be GST percentage like 18%
         option.dataset.uom = item.unit_of_measure;
+        option.dataset.unitWeight = item.unit_weight;
         option.dataset.price = item.bom_rate;  // This should be the BOM unit cost like 42.94
         
         console.log(`=== DATASET MAPPING FOR ${item.code} ===`);
@@ -448,6 +457,7 @@ function populateItemDetails(selectElement) {
         // Find all input fields in this row
         const rmCodeInput = row.querySelector(`input[name*="rm_code"]`);
         const descriptionTextarea = row.querySelector(`textarea[name*="description"]`);
+        const unitWeightInput = row.querySelector(`input[name*="unit_weight"]`);
         const hsnInput = row.querySelector(`input[name*="hsn_code"]`);
         const gstInput = row.querySelector(`input.gst-field[name*="gst_rate"]`);
         const uomInput = row.querySelector(`input[name*="uom"]`);
@@ -473,7 +483,7 @@ function populateItemDetails(selectElement) {
         console.log('==================================');
 
         // Clear all fields first to prevent conflicts
-        [rmCodeInput, descriptionTextarea, hsnInput, gstInput, uomInput, rateInput].forEach(field => {
+        [rmCodeInput, descriptionTextarea, unitWeightInput, hsnInput, gstInput, uomInput, rateInput].forEach(field => {
             if (field) field.value = '';
         });
 
@@ -485,6 +495,10 @@ function populateItemDetails(selectElement) {
         if (descriptionTextarea) {
             descriptionTextarea.value = selectedOption.dataset.description || '';
             console.log('✓ Description set to:', descriptionTextarea.value);
+        }
+        if (unitWeightInput) {
+            unitWeightInput.value = selectedOption.dataset.unitWeight || '';
+            console.log('✓ Unit Weight set to:', unitWeightInput.value);
         }
         if (hsnInput) {
             hsnInput.value = selectedOption.dataset.hsn || '';
