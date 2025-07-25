@@ -144,3 +144,26 @@ def format_file_size(size_bytes):
     p = math.pow(1024, i)
     s = round(size_bytes / p, 2)
     return f"{s} {size_names[i]}"
+
+def save_uploaded_documents(files, transaction_type, transaction_id, document_category='general'):
+    """
+    Save multiple uploaded files for a transaction
+    
+    Args:
+        files: List of FileStorage objects
+        transaction_type: Type of transaction (employee, purchase_order, etc.)
+        transaction_id: ID of the transaction
+        document_category: Category for documents (default: 'general')
+    
+    Returns:
+        Number of successfully uploaded files
+    """
+    uploaded_count = 0
+    
+    for file in files:
+        if file and file.filename:
+            document = save_uploaded_file(file, transaction_type, transaction_id, document_category)
+            if document:
+                uploaded_count += 1
+    
+    return uploaded_count

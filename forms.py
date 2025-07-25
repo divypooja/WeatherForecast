@@ -1,4 +1,5 @@
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileField, FileAllowed
 from wtforms import StringField, PasswordField, SubmitField, SelectField, TextAreaField, FloatField, IntegerField, DateField, BooleanField, SelectMultipleField, ValidationError, DateTimeField
 from wtforms.validators import DataRequired, Length, Email, NumberRange, Optional
 from wtforms.widgets import CheckboxInput, ListWidget
@@ -196,6 +197,10 @@ class EmployeeForm(FlaskForm):
     hire_date = DateField('Hire Date', validators=[DataRequired()])
     salary = FloatField('Salary', validators=[NumberRange(min=0)])
     is_active = BooleanField('Active', default=True)
+    documents = FileField('Upload Documents', 
+                         validators=[FileAllowed(['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'], 
+                                               'Only PDF, Images, and Word documents are allowed!')],
+                         render_kw={'multiple': True, 'accept': '.pdf,.jpg,.jpeg,.png,.doc,.docx'})
 
 class JobWorkForm(FlaskForm):
     job_number = StringField('Job Number', validators=[DataRequired(), Length(max=50)])

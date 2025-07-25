@@ -5,8 +5,10 @@ from models import Employee, SalaryRecord, EmployeeAdvance
 from app import db
 from sqlalchemy import func, desc
 from utils import generate_employee_code
+from utils_documents import save_uploaded_documents, get_documents_for_transaction
 from datetime import datetime, date
 from calendar import monthrange
+import os
 
 hr_bp = Blueprint('hr', __name__)
 
@@ -95,7 +97,7 @@ def add_employee():
         existing_employee = Employee.query.filter_by(employee_code=form.employee_code.data).first()
         if existing_employee:
             flash('Employee code already exists', 'danger')
-            return render_template('hr/employee_form.html', form=form, title='Add Employee')
+            return render_template('hr/employee_form.html', form=form, title='Add Employee', get_documents_for_transaction=get_documents_for_transaction)
         
         employee = Employee(
             employee_code=form.employee_code.data,
@@ -106,14 +108,24 @@ def add_employee():
             rate=form.rate.data,
             phone=form.phone.data,
             address=form.address.data,
-            joining_date=form.joining_date.data
+            hire_date=form.hire_date.data
         )
         db.session.add(employee)
         db.session.commit()
-        flash('Employee added successfully', 'success')
+        
+        # Handle document uploads
+        documents_uploaded = 0
+        if form.documents.data:
+            files = request.files.getlist('documents')
+            documents_uploaded = save_uploaded_documents(files, 'employee', employee.id)
+        
+        success_message = f'Employee added successfully'
+        if documents_uploaded > 0:
+            success_message += f' with {documents_uploaded} document(s) uploaded'
+        flash(success_message, 'success')
         return redirect(url_for('hr.list_employees'))
     
-    return render_template('hr/employee_form.html', form=form, title='Add Employee')
+    return render_template('hr/employee_form.html', form=form, title='Add Employee', get_documents_for_transaction=get_documents_for_transaction)
 
 @hr_bp.route('/employees/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -129,7 +141,7 @@ def edit_employee(id):
         ).first()
         if existing_employee:
             flash('Employee code already exists', 'danger')
-            return render_template('hr/employee_form.html', form=form, title='Edit Employee', employee=employee)
+            return render_template('hr/employee_form.html', form=form, title='Edit Employee', employee=employee, get_documents_for_transaction=get_documents_for_transaction)
         
         employee.employee_code = form.employee_code.data
         employee.name = form.name.data
@@ -139,13 +151,22 @@ def edit_employee(id):
         employee.rate = form.rate.data
         employee.phone = form.phone.data
         employee.address = form.address.data
-        employee.joining_date = form.joining_date.data
+        employee.hire_date = form.hire_date.data
+        
+        # Handle document uploads
+        documents_uploaded = 0
+        if form.documents.data:
+            files = request.files.getlist('documents')
+            documents_uploaded = save_uploaded_documents(files, 'employee', employee.id)
         
         db.session.commit()
-        flash('Employee updated successfully', 'success')
+        success_message = f'Employee updated successfully'
+        if documents_uploaded > 0:
+            success_message += f' with {documents_uploaded} new document(s) uploaded'
+        flash(success_message, 'success')
         return redirect(url_for('hr.list_employees'))
     
-    return render_template('hr/employee_form.html', form=form, title='Edit Employee', employee=employee)
+    return render_template('hr/employee_form.html', form=form, title='Edit Employee', employee=employee, get_documents_for_transaction=get_documents_for_transaction)
 
 @hr_bp.route('/employees/toggle_status/<int:id>')
 @login_required
