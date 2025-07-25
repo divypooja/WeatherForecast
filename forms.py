@@ -352,9 +352,10 @@ class JobWorkQuantityUpdateForm(FlaskForm):
 
 class JobWorkTeamAssignmentForm(FlaskForm):
     """Form for assigning job work to team members"""
-    member_name = StringField('Team Member Name', 
-                             validators=[DataRequired(), Length(max=100)],
-                             render_kw={'placeholder': 'Enter team member name'})
+    employee_id = SelectField('Select Employee', 
+                             validators=[DataRequired()],
+                             coerce=int,
+                             render_kw={'class': 'form-select'})
     assigned_quantity = FloatField('Assigned Quantity', 
                                   validators=[DataRequired(), NumberRange(min=0.1)],
                                   render_kw={'placeholder': 'Quantity to assign to this member'})

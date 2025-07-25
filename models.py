@@ -567,7 +567,8 @@ class JobWorkTeamAssignment(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     job_work_id = db.Column(db.Integer, db.ForeignKey('job_works.id'), nullable=False)
-    member_name = db.Column(db.String(100), nullable=False)
+    employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=False)
+    member_name = db.Column(db.String(100), nullable=False)  # Keep for backward compatibility
     assigned_quantity = db.Column(db.Float, nullable=False)  # Quantity assigned to this member
     completion_percentage = db.Column(db.Float, default=0.0)  # Progress percentage (0-100)
     estimated_hours = db.Column(db.Float, nullable=True)  # Estimated hours for this assignment
@@ -585,10 +586,11 @@ class JobWorkTeamAssignment(db.Model):
     
     # Relationships
     job_work = db.relationship('JobWork', backref='team_assignments')
+    employee = db.relationship('Employee', backref='team_assignments')
     assigner = db.relationship('User', backref='team_assignments_created')
     
     # Unique constraint to prevent duplicate assignments
-    __table_args__ = (db.UniqueConstraint('job_work_id', 'member_name', name='unique_job_member'),)
+    __table_args__ = (db.UniqueConstraint('job_work_id', 'employee_id', name='unique_job_employee'),)
     
     @property
     def status_badge_class(self):
