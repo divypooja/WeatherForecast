@@ -273,40 +273,63 @@ def get_employee_hire_date(employee_id):
 @hr_bp.route('/salaries/add', methods=['GET', 'POST'])
 @login_required
 def add_salary():
-    """Add new salary record"""
+    """Add new salary record with attendance-based calculation"""
     form = SalaryRecordForm()
     form.salary_number.data = SalaryRecord.generate_salary_number()
     
-    if form.validate_on_submit():
+    # Handle attendance calculation button
+    if form.calculate_attendance.data and form.employee_id.data and form.pay_period_start.data and form.pay_period_end.data and form.daily_rate.data:
+        # Create temporary salary record to calculate attendance
+        temp_salary = SalaryRecord(
+            employee_id=form.employee_id.data,
+            pay_period_start=form.pay_period_start.data,
+            pay_period_end=form.pay_period_end.data,
+            daily_rate=form.daily_rate.data,
+            overtime_rate=form.overtime_rate.data or 0
+        )
+        
+        # Calculate attendance-based values
+        attendance_data = temp_salary.calculate_attendance_based_salary()
+        
+        # Update form fields with calculated values
+        form.expected_working_days.data = attendance_data['expected_working_days']
+        form.actual_days_worked.data = attendance_data['actual_days_worked']
+        form.basic_amount.data = attendance_data['basic_amount']
+        form.overtime_hours.data = attendance_data['overtime_hours']
+        
+        flash(f'Attendance calculated: {attendance_data["actual_days_worked"]} days worked out of {attendance_data["expected_working_days"]} expected days', 'info')
+    
+    if form.validate_on_submit() and not form.calculate_attendance.data:
         try:
-            # Calculate amounts
-            overtime_amount = form.overtime_hours.data * form.overtime_rate.data
-            gross_amount = form.basic_amount.data + overtime_amount + form.bonus_amount.data
-            net_amount = gross_amount - form.deduction_amount.data - form.advance_deduction.data
-            
+            # Create salary record with attendance-based data
             salary = SalaryRecord(
                 salary_number=form.salary_number.data,
                 employee_id=form.employee_id.data,
                 pay_period_start=form.pay_period_start.data,
                 pay_period_end=form.pay_period_end.data,
-                basic_amount=form.basic_amount.data,
+                daily_rate=form.daily_rate.data,
+                expected_working_days=form.expected_working_days.data or 0,
+                actual_days_worked=form.actual_days_worked.data or 0,
+                basic_amount=form.basic_amount.data or 0,
                 overtime_hours=form.overtime_hours.data or 0,
                 overtime_rate=form.overtime_rate.data or 0,
-                overtime_amount=overtime_amount,
                 bonus_amount=form.bonus_amount.data or 0,
                 deduction_amount=form.deduction_amount.data or 0,
                 advance_deduction=form.advance_deduction.data or 0,
-                gross_amount=gross_amount,
-                net_amount=net_amount,
                 payment_method=form.payment_method.data,
                 notes=form.notes.data,
                 created_by=current_user.id
             )
             
+            # Calculate overtime and gross amounts
+            salary.overtime_amount = salary.overtime_hours * salary.overtime_rate
+            salary.gross_amount = salary.basic_amount + salary.overtime_amount + salary.bonus_amount
+            salary.net_amount = salary.gross_amount - salary.deduction_amount - salary.advance_deduction
+            
             db.session.add(salary)
             db.session.commit()
             
-            flash(f'Salary record {salary.salary_number} created successfully!', 'success')
+            flash(f'Salary record {salary.salary_number} created successfully with attendance-based calculation!', 'success')
             return redirect(url_for('hr.salary_detail', id=salary.id))
             
         except Exception as e:
