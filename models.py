@@ -614,6 +614,11 @@ class JobWorkTeamAssignment(db.Model):
             return 'bg-warning'
         else:
             return 'bg-danger'
+    
+    @property
+    def completed_quantity(self):
+        """Calculate completed quantity based on completion percentage"""
+        return (self.completion_percentage * self.assigned_quantity / 100) if self.assigned_quantity > 0 else 0
 
 class Production(db.Model):
     __tablename__ = 'productions'
