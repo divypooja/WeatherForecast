@@ -666,7 +666,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <h5 class="modal-title">
                                 <i class="fas fa-puzzle-piece"></i> OpenCV → SVGNest Workflow
                             </h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
                             <div class="alert alert-success">
@@ -702,7 +702,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="button" class="btn btn-warning" onclick="proceedToSVGNest()">
+                            <button type="button" class="btn btn-warning" onclick="proceedToSVGNest()" data-bs-dismiss="modal">
                                 <i class="fas fa-arrow-right"></i> Continue to SVGNest
                             </button>
                         </div>
@@ -715,9 +715,6 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     window.proceedToSVGNest = function() {
-        // Close modal
-        bootstrap.Modal.getInstance(document.getElementById('svgNestWorkflowModal')).hide();
-        
         // Prepare shape data for SVGNest
         const shapeData = {
             source: 'opencv_analysis',
@@ -729,8 +726,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Store in sessionStorage for SVGNest page
         sessionStorage.setItem('opencv_shapes_for_svgnest', JSON.stringify(shapeData));
         
-        // Navigate to SVGNest page
-        window.location.href = '/packing/vector-nesting?source=opencv';
+        // Navigate to SVGNest page (modal closes automatically with data-bs-dismiss)
+        setTimeout(() => {
+            window.location.href = '/packing/vector-nesting?source=opencv';
+        }, 100);
     };
 
     function displayOptimizationResults(data) {
