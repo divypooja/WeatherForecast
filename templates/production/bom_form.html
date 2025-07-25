@@ -130,6 +130,20 @@
                             </div>
                         </div>
 
+                        <!-- Markup Section -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6><i class="fas fa-percentage"></i> Markup/Profit Margin</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    {{ form.markup_percentage.label(class="form-label") }}
+                                    {{ form.markup_percentage(class="form-control", step="0.1") }}
+                                    <small class="text-muted">Markup percentage applied to total cost (material + labor + overhead + freight)</small>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="d-flex gap-2 mt-3">
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-save"></i> Save BOM
@@ -283,6 +297,11 @@
                                     </th>
                                     <th></th>
                                 </tr>
+                                <tr class="table-secondary">
+                                    <th colspan="7">Markup ({{ "%.1f"|format(bom.markup_percentage or 0) }}%)</th>
+                                    <th>₹{{ "%.2f"|format(bom.markup_amount_per_unit or 0) }}</th>
+                                    <th></th>
+                                </tr>
                                 <tr class="table-info">
                                     <th colspan="7">Total Weight per Unit</th>
                                     <th>
@@ -300,7 +319,7 @@
                                     <th></th>
                                 </tr>
                                 <tr class="table-dark">
-                                    <th colspan="7">Total BOM Cost per Unit</th>
+                                    <th colspan="7">Total BOM Cost per Unit (Including Markup)</th>
                                     <th>₹{{ "%.2f"|format(total_cost_per_unit or 0) }}</th>
                                     <th></th>
                                 </tr>
