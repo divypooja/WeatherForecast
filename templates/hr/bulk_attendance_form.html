@@ -84,19 +84,30 @@
                 <div class="card-body">
                     <p class="text-muted">The following active employees will be marked as present:</p>
                     <div class="row">
-                        {% set active_employees = [] %}
-                        {% for employee in current_user.__class__.query.join(Employee).filter_by(is_active=True).all() if hasattr(current_user.__class__, 'query') %}
-                            {% set _ = active_employees.append(employee) %}
-                        {% endfor %}
-                        
                         <div class="col-12">
                             <div class="alert alert-light">
                                 <strong>Total Active Employees:</strong> 
-                                <span class="badge bg-primary">{{ active_employees|length if active_employees else 'Loading...' }}</span>
+                                <span class="badge bg-primary">{{ active_employees|length }}</span>
                             </div>
+                            
+                            {% if active_employees|length > 0 %}
+                            <div class="row">
+                                {% for employee in active_employees[:10] %}
+                                <div class="col-md-6 col-lg-4 mb-2">
+                                    <span class="badge bg-light text-dark">{{ employee.name }}</span>
+                                </div>
+                                {% endfor %}
+                                {% if active_employees|length > 10 %}
+                                <div class="col-12">
+                                    <small class="text-muted">... and {{ active_employees|length - 10 }} more employees</small>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% else %}
                             <div class="text-muted">
-                                <small>Employee names will be shown after form submission for security reasons.</small>
+                                <small>No active employees found.</small>
                             </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
