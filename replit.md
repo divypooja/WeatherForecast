@@ -6,6 +6,17 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 25, 2025)
 
+### Enhanced Job Work Forms with Real-time Inventory Checking and Universal Preview System (Latest)
+- **Real-time Stock Validation**: Enhanced Job Work forms with "Check Stock" button providing instant inventory availability checks before quantity operations
+- **Insufficient Stock Prevention**: System prevents overselling by displaying clear warnings when requested quantity exceeds available stock with color-coded alerts (red for insufficient, yellow for low stock, green for adequate)
+- **Universal Preview System**: Created comprehensive JavaScript framework for form preview functionality across all major forms (Job Work, Inventory, Production, Purchase Orders, Sales Orders)
+- **API Stock Endpoint**: Added secure API endpoint `/inventory/api/item-stock/<id>` for real-time inventory data with proper authentication and error handling
+- **Modal Preview Interface**: Professional preview modals show complete form data before submission with calculated totals and formatted display
+- **Automatic Stock Monitoring**: Job Work forms automatically check stock when items or quantities change, providing immediate feedback to users
+- **Enhanced User Experience**: Preview buttons added to Job Work, Inventory, and Production forms with "Save" option directly from preview modal
+- **Form Validation Integration**: Preview system validates form data and displays warnings for missing or invalid information before allowing submission
+- **Professional UI Design**: Consistent preview interface with proper Bootstrap styling, icons, and responsive layout across all form types
+
 ### Complete Rectpack Integration for Manufacturing Optimization (Latest)
 - **Advanced Rectangle Packing Library**: Integrated Rectpack Python library providing comprehensive 2D rectangle packing algorithms for manufacturing optimization
 - **Material Cutting Optimization**: Created complete material cutting optimization system supporting sheet metal, wood, glass, and fabric cutting with multiple algorithms (Skyline, MaxRects, Guillotine)

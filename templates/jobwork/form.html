@@ -208,7 +208,7 @@ function checkInventoryStock() {
     const quantity = parseFloat(quantityInput.value) || 0;
     
     // Fetch item stock information
-    fetch(`/api/item-stock/${itemSelect.value}`)
+    fetch(`/inventory/api/item-stock/${itemSelect.value}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
