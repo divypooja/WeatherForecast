@@ -189,11 +189,11 @@
                                         <textarea class="form-control form-control-sm mt-1" name="description_{{ item.id }}" 
                                                   rows="2" placeholder="Item description">{{ item.item_description or item.item.description }}</textarea>
                                     </td>
-                                    <td class="align-middle">
-                                        <div class="d-flex gap-1">
+                                    <td class="align-middle" style="min-width: 120px;">
+                                        <div class="d-flex gap-1" style="width: 100%; max-width: 120px;">
                                             <input type="number" class="form-control form-control-sm" name="unit_weight_{{ item.id }}" 
-                                                   value="{{ item.item.unit_weight or '' }}" step="0.001" min="0" placeholder="0.000" style="flex: 2;">
-                                            <select class="form-select form-select-sm" name="weight_unit_{{ item.id }}" style="flex: 1; max-width: 60px;">
+                                                   value="{{ item.item.unit_weight or '' }}" step="0.001" min="0" placeholder="0.000" style="width: 70px; flex-shrink: 0;">
+                                            <select class="form-select form-select-sm" name="weight_unit_{{ item.id }}" style="width: 45px; flex-shrink: 0;">
                                                 <option value="kg" selected>kg</option>
                                                 <option value="g">g</option>
                                                 <option value="lbs">lbs</option>
@@ -367,11 +367,11 @@ function addPOItem() {
             <textarea class="form-control form-control-sm mt-1" name="description_new_${itemCounter}" 
                       rows="2" placeholder="Item description"></textarea>
         </td>
-        <td class="align-middle">
-            <div class="d-flex gap-1">
+        <td class="align-middle" style="min-width: 120px;">
+            <div class="d-flex gap-1" style="width: 100%; max-width: 120px;">
                 <input type="number" class="form-control form-control-sm" name="unit_weight_new_${itemCounter}" 
-                       step="0.001" min="0" placeholder="0.000" style="flex: 2;">
-                <select class="form-select form-select-sm" name="weight_unit_new_${itemCounter}" style="flex: 1; max-width: 60px;">
+                       step="0.001" min="0" placeholder="0.000" style="width: 70px; flex-shrink: 0;">
+                <select class="form-select form-select-sm" name="weight_unit_new_${itemCounter}" style="width: 45px; flex-shrink: 0;">
                     <option value="kg" selected>kg</option>
                     <option value="g">g</option>
                     <option value="lbs">lbs</option>
