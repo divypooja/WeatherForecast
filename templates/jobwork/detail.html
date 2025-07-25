@@ -260,10 +260,16 @@
                     </div>
                     
                     <!-- Document Management Section -->
-                    {% set documents = get_documents_for_transaction('job_work', job.id) %}
-                    {% set transaction_type = 'job_work' %}
-                    {% set transaction_id = job.id %}
-                    {% include 'documents/_document_card.html' %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-paperclip"></i> Documents</h6>
+                        </div>
+                        <div class="card-body text-center">
+                            <a href="{{ url_for('documents.upload_document', transaction_type='job_work', transaction_id=job.id) }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-upload"></i> Upload Document
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
