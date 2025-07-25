@@ -269,16 +269,7 @@
                                 <tr class="table-info">
                                     <th colspan="7">Total Weight per Unit</th>
                                     <th>
-                                        {% set total_weight = 0.0 %}
-                                        {% for bom_item in bom_items %}
-                                            {% if bom_item.item.unit_weight %}
-                                                {% set weight = bom_item.item.unit_weight|float %}
-                                                {% set qty = bom_item.quantity_required|float %}
-                                                {% if weight > 0 %}
-                                                    {% set total_weight = total_weight + (weight * qty) %}
-                                                {% endif %}
-                                            {% endif %}
-                                        {% endfor %}
+                                        {% set total_weight = bom.total_weight_per_unit %}
                                         {% if total_weight > 0 %}
                                             {% if total_weight < 1 %}
                                                 {{ "%.1f"|format(total_weight * 1000) }} g/unit
