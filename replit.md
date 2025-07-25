@@ -6,7 +6,7 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 25, 2025)
 
-### Complete OCR Receipt Processing System Implementation (Latest - January 25, 2025) ✅ FULLY OPERATIONAL
+### Complete OCR Receipt Processing System Implementation (Latest - January 25, 2025)
 - **Smart Receipt Processing Section**: Added comprehensive OCR section to Factory Expenses form with professional "NEW" badge and success color scheme
 - **Image Upload with Camera Support**: File input with camera capture capability accepting images (PNG, JPG, JPEG, GIF, BMP, TIFF, WEBP) and PDF files
 - **OCR Backend Endpoint**: Created `/process_ocr` endpoint in expenses routes for processing uploaded receipt/invoice images with proper file validation and error handling
@@ -14,7 +14,7 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **Professional Preview Interface**: Two-column extracted data display with financial data (amounts, GST) and document data (date, category, confidence score)
 - **Apply to Form Functionality**: One-click application of extracted OCR data to expense form fields with real-time total calculation and success notifications
 - **Review/Edit Workflow**: Emphasized user review capability with clear warnings to verify extracted data before applying, ensuring accuracy as requested
-- **Real OCR Implementation**: ✅ CONFIRMED WORKING - Tesseract OCR successfully extracting text from receipts (tested with CRED bill payment receipt extracting "amount ₹5193", vendor "CRED", transaction details)
+- **Demo Mode Implementation**: Currently running in demo mode with simulated OCR results while resolving OpenCV/Tesseract dependencies
 - **Error Handling & Validation**: Comprehensive file type validation, temporary file management, and graceful error handling with user-friendly messages
 - **Confidence Score Display**: Visual progress bar showing OCR processing accuracy with color-coded confidence levels (green/yellow/red)
 - **Enhanced User Experience**: Loading animations, clear/apply buttons, auto-dismiss notifications, and professional styling throughout OCR workflow
