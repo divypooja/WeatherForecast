@@ -23,7 +23,7 @@
 
     <!-- Statistics Cards -->
     <div class="row mb-4">
-        <div class="col-md-3 mb-3">
+        <div class="col-md-2 mb-3">
             <div class="card bg-primary">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
@@ -39,7 +39,7 @@
             </div>
         </div>
         
-        <div class="col-md-3 mb-3">
+        <div class="col-md-2 mb-3">
             <div class="card bg-warning">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
@@ -55,7 +55,7 @@
             </div>
         </div>
         
-        <div class="col-md-3 mb-3">
+        <div class="col-md-2 mb-3">
             <div class="card bg-info">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
@@ -71,7 +71,7 @@
             </div>
         </div>
         
-        <div class="col-md-3 mb-3">
+        <div class="col-md-2 mb-3">
             <div class="card bg-success">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
@@ -83,6 +83,161 @@
                             <i class="fas fa-check-circle fa-2x"></i>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-2 mb-3">
+            <div class="card bg-secondary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">In-House Jobs</h5>
+                            <h3>{{ stats.in_house_jobs }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-building fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-2 mb-3">
+            <div class="card bg-dark">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Team Jobs</h5>
+                            <h3>{{ stats.team_jobs }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Job Work Progress Section -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-chart-line"></i> Active Job Work Progress</h5>
+                    <span class="badge bg-info">{{ active_jobs|length }} Active Jobs</span>
+                </div>
+                <div class="card-body">
+                    {% if active_jobs %}
+                        {% for job in active_jobs %}
+                        <div class="card mb-3 border-left-{{ 'success' if job.status == 'completed' else 'warning' if job.status == 'partial_received' else 'primary' }}">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <h6 class="card-title mb-2">
+                                            <a href="{{ url_for('jobwork.detail', id=job.id) }}" class="text-decoration-none">
+                                                {{ job.job_number }} - {{ job.item.name }}
+                                            </a>
+                                            <span class="badge bg-{{ 'success' if job.status == 'completed' else 'warning' if job.status == 'partial_received' else 'primary' }} ms-2">
+                                                {{ job.status.replace('_', ' ').title() }}
+                                            </span>
+                                            {% if job.work_type == 'in_house' %}
+                                                <span class="badge bg-secondary ms-1">In-House</span>
+                                            {% endif %}
+                                            {% if job.is_team_work %}
+                                                <span class="badge bg-info ms-1">Team Work</span>
+                                            {% endif %}
+                                        </h6>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <small class="text-muted">
+                                                    <i class="fas fa-user"></i> {{ job.customer_name if job.work_type == 'outsourced' else job.department }}
+                                                </small><br>
+                                                <small class="text-muted">
+                                                    <i class="fas fa-box"></i> {{ job.quantity_sent }} {{ job.item.unit_of_measure }} sent
+                                                </small>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <small class="text-muted">
+                                                    <i class="fas fa-calendar"></i> {{ job.sent_date.strftime('%d %b %Y') if job.sent_date else 'N/A' }}
+                                                </small><br>
+                                                {% if job.expected_return %}
+                                                <small class="text-muted">
+                                                    <i class="fas fa-clock"></i> Expected: {{ job.expected_return.strftime('%d %b %Y') }}
+                                                </small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                        {% if job.is_team_work and job.id in team_assignments %}
+                                        <div class="mt-3">
+                                            <h6><i class="fas fa-users"></i> Team Progress:</h6>
+                                            <div class="row">
+                                                {% for assignment in team_assignments[job.id] %}
+                                                <div class="col-md-6 mb-2">
+                                                    <div class="card border-0 bg-light">
+                                                        <div class="card-body p-2">
+                                                            <div class="d-flex justify-content-between align-items-center">
+                                                                <div>
+                                                                    <strong>{{ assignment.employee.name }}</strong><br>
+                                                                    <small class="text-muted">{{ assignment.assigned_quantity }} {{ job.item.unit_of_measure }} assigned</small>
+                                                                </div>
+                                                                <div class="text-end">
+                                                                    <span class="badge bg-{{ assignment.status_badge_class }}">
+                                                                        {{ assignment.status.replace('_', ' ').title() }}
+                                                                    </span>
+                                                                    <div class="progress mt-1" style="height: 8px; width: 60px;">
+                                                                        <div class="progress-bar {{ assignment.completion_progress_class }}" 
+                                                                             style="width: {{ assignment.completion_percentage }}%">
+                                                                        </div>
+                                                                    </div>
+                                                                    <small class="text-muted">{{ "%.0f"|format(assignment.completion_percentage) }}%</small>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="col-md-4 text-end">
+                                        <div class="btn-group-vertical btn-group-sm">
+                                            <a href="{{ url_for('jobwork.detail', id=job.id) }}" class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-eye"></i> View Details
+                                            </a>
+                                            {% if job.is_team_work %}
+                                            <a href="{{ url_for('jobwork.team_assignments', job_id=job.id) }}" class="btn btn-outline-success btn-sm">
+                                                <i class="fas fa-users"></i> Team Assignments
+                                            </a>
+                                            {% endif %}
+                                            {% if job.status != 'completed' %}
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ url_for('jobwork.update_status', id=job.id, status='partial_received') }}" 
+                                                   class="btn btn-outline-warning btn-sm">
+                                                    <i class="fas fa-clock"></i> Partial
+                                                </a>
+                                                <a href="{{ url_for('jobwork.update_status', id=job.id, status='completed') }}" 
+                                                   class="btn btn-outline-success btn-sm">
+                                                    <i class="fas fa-check"></i> Complete
+                                                </a>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="alert alert-info text-center">
+                            <i class="fas fa-info-circle"></i> No active job works found. All jobs are completed!
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

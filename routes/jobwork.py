@@ -21,8 +21,19 @@ def dashboard():
         'partial_received': JobWork.query.filter_by(status='partial_received').count(),
         'completed_jobs': JobWork.query.filter_by(status='completed').count(),
         'in_house_jobs': JobWork.query.filter_by(work_type='in_house').count(),
-        'outsourced_jobs': JobWork.query.filter_by(work_type='outsourced').count()
+        'outsourced_jobs': JobWork.query.filter_by(work_type='outsourced').count(),
+        'team_jobs': JobWork.query.filter_by(is_team_work=True).count()
     }
+    
+    # Get all active job works with progress information
+    active_jobs = JobWork.query.filter(JobWork.status.in_(['sent', 'partial_received'])).order_by(JobWork.created_at.desc()).all()
+    
+    # Get team assignments for team jobs
+    team_assignments = {}
+    for job in active_jobs:
+        if job.is_team_work:
+            assignments = JobWorkTeamAssignment.query.filter_by(job_work_id=job.id).all()
+            team_assignments[job.id] = assignments
     
     # Recent job works
     recent_jobs = JobWork.query.order_by(JobWork.created_at.desc()).limit(10).all()
@@ -38,6 +49,8 @@ def dashboard():
     
     return render_template('jobwork/dashboard.html', 
                          stats=stats, 
+                         active_jobs=active_jobs,
+                         team_assignments=team_assignments,
                          recent_jobs=recent_jobs,
                          pending_jobs=pending_jobs,
                          top_customers=top_customers)
