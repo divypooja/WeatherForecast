@@ -116,12 +116,12 @@
                             </div>
                             
                             <div class="col-md-6 mb-3">
-                                {{ form.unit_weight.label(class="form-label") }}
+                                <label class="form-label">Unit Weight (kg)</label>
                                 <div class="input-group">
-                                    {{ form.unit_weight(class="form-control", step="0.001") }}
-                                    <span class="input-group-text">kg</span>
+                                    {{ form.unit_weight(class="form-control", step="0.001", id="unit_weight_field") }}
+                                    <span class="input-group-text" id="weight_unit_display">kg</span>
                                 </div>
-                                <div class="form-text">Weight per unit in kilograms (leave 0 if not applicable)</div>
+                                <div class="form-text" id="weight_help_text">Weight per unit in kilograms (leave 0 if not applicable)</div>
                                 {% if form.unit_weight.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.unit_weight.errors %}
@@ -131,6 +131,46 @@
                                 {% endif %}
                             </div>
                         </div>
+                        
+                        <script>
+                        // Update weight label based on selected unit of measure
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const uomSelect = document.getElementById('{{ form.unit_of_measure.id }}');
+                            const weightUnitDisplay = document.getElementById('weight_unit_display');
+                            const weightHelpText = document.getElementById('weight_help_text');
+                            
+                            function updateWeightLabel() {
+                                const selectedOption = uomSelect.options[uomSelect.selectedIndex];
+                                const uomText = selectedOption.text;
+                                
+                                if (uomText.includes('Pieces') || uomText.includes('Numbers')) {
+                                    weightUnitDisplay.textContent = 'kg/unit';
+                                    weightHelpText.textContent = 'Weight per piece/unit in kilograms';
+                                } else if (uomText.includes('Kilogram')) {
+                                    weightUnitDisplay.textContent = 'kg/kg';
+                                    weightHelpText.textContent = 'Weight factor (usually 1.0 for pure weight items)';
+                                } else if (uomText.includes('Meter') || uomText.includes('Length')) {
+                                    weightUnitDisplay.textContent = 'kg/m';
+                                    weightHelpText.textContent = 'Weight per meter in kilograms';
+                                } else if (uomText.includes('Square') || uomText.includes('sq')) {
+                                    weightUnitDisplay.textContent = 'kg/sq.unit';
+                                    weightHelpText.textContent = 'Weight per square unit in kilograms';
+                                } else if (uomText.includes('Liter') || uomText.includes('Volume')) {
+                                    weightUnitDisplay.textContent = 'kg/L';
+                                    weightHelpText.textContent = 'Weight per liter in kilograms (density)';
+                                } else {
+                                    weightUnitDisplay.textContent = 'kg/unit';
+                                    weightHelpText.textContent = 'Weight per unit of measure in kilograms';
+                                }
+                            }
+                            
+                            // Update on page load
+                            updateWeightLabel();
+                            
+                            // Update when UOM changes
+                            uomSelect.addEventListener('change', updateWeightLabel);
+                        });
+                        </script>
                         
                         <div class="d-flex justify-content-between">
                             <a href="{{ url_for('inventory.list_items') }}" class="btn btn-secondary">
