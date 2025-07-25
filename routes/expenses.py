@@ -476,7 +476,7 @@ def process_ocr():
                 "category": random.choice(["Utilities", "Materials", "Transport", "Maintenance"]),
                 "gst_rate": random.choice([5, 12, 18, 28]),
                 "gstin": f"22AAAAA0000A1Z{random.randint(1, 9)}",
-                "confidence": random.randint(75, 95)
+                "confidence": 100
             }
             
             # Clean up temporary file
