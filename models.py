@@ -969,6 +969,33 @@ class SalaryRecord(db.Model):
         
         return f"SAL-{year}-{next_num:04d}"
 
+class OvertimeRate(db.Model):
+    __tablename__ = 'overtime_rates'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    salary_type = db.Column(db.String(20), nullable=False)  # daily, monthly, piece_rate
+    rate_per_hour = db.Column(db.Float, nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    @staticmethod
+    def get_rate_for_salary_type(salary_type):
+        """Get active overtime rate for a salary type"""
+        rate = OvertimeRate.query.filter_by(
+            salary_type=salary_type, 
+            is_active=True
+        ).first()
+        return rate.rate_per_hour if rate else 0.0
+    
+    @staticmethod
+    def get_all_active_rates():
+        """Get all active overtime rates"""
+        return OvertimeRate.query.filter_by(is_active=True).all()
+    
+    def __repr__(self):
+        return f'<OvertimeRate {self.salary_type}: ₹{self.rate_per_hour}/hour>'
+
 class EmployeeAdvance(db.Model):
     __tablename__ = 'employee_advances'
     

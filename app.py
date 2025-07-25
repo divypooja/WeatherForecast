@@ -38,7 +38,7 @@ def create_app():
     login_manager.login_message_category = 'info'
     
     # Import models
-    from models import User, Item, Supplier, PurchaseOrder, SalesOrder, Employee, JobWork, Production, BOM, NotificationSettings, NotificationLog, NotificationRecipient, CompanySettings, QualityIssue, QualityControlLog, FactoryExpense, Document
+    from models import User, Item, Supplier, PurchaseOrder, SalesOrder, Employee, JobWork, Production, BOM, NotificationSettings, NotificationLog, NotificationRecipient, CompanySettings, QualityIssue, QualityControlLog, FactoryExpense, Document, OvertimeRate
     from models_uom import UnitOfMeasure, UOMConversion, ItemUOMConversion, UOMConversionLog
     from models_department import Department
     
@@ -88,6 +88,9 @@ def create_app():
     app.register_blueprint(packing_bp, url_prefix='/packing')
     from routes.backup import backup_bp
     app.register_blueprint(backup_bp, url_prefix='/backup')
+    
+    from routes.overtime import overtime_bp
+    app.register_blueprint(overtime_bp, url_prefix='/overtime')
     
     # Register Item Types blueprint
     from routes.item_types import item_types_bp

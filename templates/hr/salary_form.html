@@ -123,6 +123,9 @@
                                 <div class="input-group">
                                     <span class="input-group-text">₹</span>
                                     {{ form.overtime_rate(class="form-control", id="overtime_rate", onchange="calculateTotals()") }}
+                                    <button type="button" class="btn btn-outline-primary" id="loadOvertimeRate" title="Load from configured rates">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
                                 </div>
                                 {% if form.overtime_rate.errors %}
                                     <div class="text-danger">
@@ -131,6 +134,10 @@
                                         {% endfor %}
                                     </div>
                                 {% endif %}
+                                <div class="form-text">
+                                    <small>Rate per hour for overtime work. <a href="{{ url_for('overtime.overtime_dashboard') }}" target="_blank">Manage rates</a></small>
+                                </div>
+                                <div id="overtimeRateStatus" class="small text-muted"></div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 {{ form.bonus_amount.label(class="form-label") }}
@@ -287,6 +294,49 @@ function calculateTotals() {
 // Initialize calculation on page load
 document.addEventListener('DOMContentLoaded', function() {
     calculateTotals();
+    
+    // Auto-load overtime rate functionality
+    const employeeSelect = document.getElementById('employee_id');
+    const loadOvertimeButton = document.getElementById('loadOvertimeRate');
+    const overtimeRateInput = document.getElementById('overtime_rate');
+    const overtimeRateStatus = document.getElementById('overtimeRateStatus');
+    
+    // Load overtime rate when employee is selected
+    employeeSelect.addEventListener('change', function() {
+        if (this.value && this.value !== '0') {
+            loadOvertimeRateForEmployee(this.value);
+        } else {
+            overtimeRateStatus.textContent = '';
+        }
+    });
+    
+    // Manual load button
+    loadOvertimeButton.addEventListener('click', function() {
+        const employeeId = employeeSelect.value;
+        if (employeeId && employeeId !== '0') {
+            loadOvertimeRateForEmployee(employeeId);
+        } else {
+            alert('Please select an employee first');
+        }
+    });
+    
+    function loadOvertimeRateForEmployee(employeeId) {
+        fetch(`/hr/api/employee/${employeeId}/overtime-rate`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.overtime_rate > 0) {
+                    overtimeRateInput.value = data.overtime_rate.toFixed(2);
+                    overtimeRateStatus.innerHTML = `<span class="text-success"><i class="fas fa-check"></i> Rate loaded from ${data.salary_type.replace('_', ' ')} overtime configuration (₹${data.overtime_rate}/hour)</span>`;
+                    calculateTotals();
+                } else {
+                    overtimeRateStatus.innerHTML = `<span class="text-warning"><i class="fas fa-exclamation-triangle"></i> No overtime rate configured for ${data.salary_type.replace('_', ' ')} employees. <a href="/overtime/add" target="_blank">Add rate</a></span>`;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading overtime rate:', error);
+                overtimeRateStatus.innerHTML = '<span class="text-danger"><i class="fas fa-times"></i> Error loading overtime rate</span>';
+            });
+    }
 });
 </script>
 {% endblock %}

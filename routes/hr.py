@@ -1,7 +1,7 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from forms import EmployeeForm, SalaryRecordForm, EmployeeAdvanceForm
-from models import Employee, SalaryRecord, EmployeeAdvance
+from models import Employee, SalaryRecord, EmployeeAdvance, OvertimeRate
 from app import db
 from sqlalchemy import func, desc
 from utils import generate_employee_code
@@ -408,8 +408,21 @@ def approve_advance(id):
     if not current_user.is_admin():
         flash('Only administrators can approve advances', 'danger')
         return redirect(url_for('hr.advance_list'))
+
+# ============ API ENDPOINTS ============
+
+@hr_bp.route('/api/employee/<int:employee_id>/overtime-rate')
+@login_required
+def get_employee_overtime_rate(employee_id):
+    """Get overtime rate for employee based on their salary type"""
+    employee = Employee.query.get_or_404(employee_id)
+    overtime_rate = OvertimeRate.get_rate_for_salary_type(employee.salary_type)
     
-    advance = EmployeeAdvance.query.get_or_404(id)
+    return jsonify({
+        'employee_id': employee_id,
+        'salary_type': employee.salary_type,
+        'overtime_rate': overtime_rate
+    })
     
     if advance.status != 'pending':
         flash('Advance is not pending approval', 'warning')
