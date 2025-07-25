@@ -188,8 +188,27 @@
                 <button type="button" class="btn-close" onclick="closeResetModal()" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p>Are you sure you want to reset the password for user <strong id="resetUsername"></strong>?</p>
-                <p class="text-muted">A new temporary password will be generated and displayed.</p>
+                <p>Reset password for user <strong id="resetUsername"></strong>:</p>
+                
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="radio" name="resetType" id="generatePassword" value="generate" checked>
+                    <label class="form-check-label" for="generatePassword">
+                        Generate random password
+                    </label>
+                </div>
+                
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="radio" name="resetType" id="customPassword" value="custom">
+                    <label class="form-check-label" for="customPassword">
+                        Set custom password
+                    </label>
+                </div>
+                
+                <div id="customPasswordInput" style="display: none;" class="mb-3">
+                    <label for="newPassword" class="form-label">New Password</label>
+                    <input type="password" class="form-control" id="newPassword" minlength="6" placeholder="Enter new password (min 6 characters)">
+                    <div class="form-text">Minimum 6 characters required</div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeResetModal()">Cancel</button>
@@ -276,7 +295,35 @@ function closeResetModal() {
     const modalElement = document.getElementById('resetPasswordModal');
     modalElement.style.display = 'none';
     document.body.style.overflow = ''; // Restore scrolling
+    
+    // Reset form
+    document.getElementById('generatePassword').checked = true;
+    document.getElementById('customPassword').checked = false;
+    document.getElementById('customPasswordInput').style.display = 'none';
+    document.getElementById('newPassword').value = '';
 }
+
+// Handle password reset type toggle
+document.addEventListener('DOMContentLoaded', function() {
+    const generateRadio = document.getElementById('generatePassword');
+    const customRadio = document.getElementById('customPassword');
+    const customInput = document.getElementById('customPasswordInput');
+    
+    if (generateRadio && customRadio && customInput) {
+        generateRadio.addEventListener('change', function() {
+            if (this.checked) {
+                customInput.style.display = 'none';
+            }
+        });
+        
+        customRadio.addEventListener('change', function() {
+            if (this.checked) {
+                customInput.style.display = 'block';
+                document.getElementById('newPassword').focus();
+            }
+        });
+    }
+});
 
 function deleteUser(userId, username) {
     currentUserId = userId;
@@ -293,16 +340,37 @@ document.addEventListener('DOMContentLoaded', function() {
             e.stopPropagation();
             
             if (currentUserId) {
+                // Get reset type and custom password if selected
+                const resetType = document.querySelector('input[name="resetType"]:checked').value;
+                const customPassword = resetType === 'custom' ? document.getElementById('newPassword').value : null;
+                
+                // Validate custom password if selected
+                if (resetType === 'custom') {
+                    if (!customPassword || customPassword.length < 6) {
+                        alert('Please enter a password with at least 6 characters.');
+                        return;
+                    }
+                }
+                
                 // Disable button during processing
                 this.disabled = true;
                 this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Resetting...';
+                
+                const requestData = {
+                    reset_type: resetType
+                };
+                
+                if (customPassword) {
+                    requestData.custom_password = customPassword;
+                }
                 
                 fetch(`{{ url_for('settings.reset_user_password', user_id=0) }}`.replace('0', currentUserId), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
-                    }
+                    },
+                    body: JSON.stringify(requestData)
                 })
                 .then(response => {
                     if (!response.ok) {
@@ -312,7 +380,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .then(data => {
                     if (data.success) {
-                        alert(`Password reset successful. New password: ${data.new_password}`);
+                        if (data.is_custom) {
+                            alert('Password reset successful. Custom password has been set.');
+                        } else {
+                            alert(`Password reset successful. New password: ${data.new_password}`);
+                        }
                         location.reload();
                     } else {
                         alert('Error: ' + data.message);
