@@ -1075,15 +1075,22 @@ class EmployeeAttendance(db.Model):
             # Standard working hours (8 hours)
             standard_hours = 8.0
             
+            # Calculate regular hours worked
             if hours > standard_hours:
                 self.hours_worked = standard_hours
-                self.overtime_hours = round(hours - standard_hours, 2)
+                # Only auto-calculate overtime if not manually set (i.e., overtime_hours is 0)
+                if not hasattr(self, '_manual_overtime_set') and self.overtime_hours == 0:
+                    self.overtime_hours = round(hours - standard_hours, 2)
             else:
                 self.hours_worked = round(hours, 2)
-                self.overtime_hours = 0.0
+                # Only reset overtime if not manually set
+                if not hasattr(self, '_manual_overtime_set') and self.overtime_hours == 0:
+                    self.overtime_hours = 0.0
         else:
             self.hours_worked = 0.0
-            self.overtime_hours = 0.0
+            # Only reset overtime if not manually set
+            if not hasattr(self, '_manual_overtime_set'):
+                self.overtime_hours = 0.0
     
     def __repr__(self):
         return f'<EmployeeAttendance {self.employee.full_name} - {self.attendance_date}>'
