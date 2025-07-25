@@ -231,7 +231,7 @@ class EmployeeForm(FlaskForm):
 
 class JobWorkForm(FlaskForm):
     job_number = StringField('Job Number', validators=[DataRequired(), Length(max=50)])
-    customer_name = SelectField('Customer Name', validators=[DataRequired()], coerce=str)
+    customer_name = SelectField('Customer Name', coerce=str)
     item_id = SelectField('Item', validators=[DataRequired()], coerce=int)
     process_type = SelectField('Process', 
                          validators=[DataRequired()], 
@@ -292,7 +292,8 @@ class JobWorkForm(FlaskForm):
             if not self.department.data:
                 self.department.errors.append('Department is required for in-house work.')
                 return False
-            # Set rate to 0 for in-house work
+            # Clear customer name and set rate to 0 for in-house work
+            self.customer_name.data = ''
             self.rate_per_unit.data = 0.0
         
         return True
