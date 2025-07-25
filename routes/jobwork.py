@@ -442,7 +442,7 @@ def team_assignments(job_id):
     assignments = JobWorkTeamAssignment.query.filter_by(job_work_id=job_id).all()
     
     # Get available employees for assignment
-    available_employees = Employee.query.filter_by(status='active').all()
+    available_employees = Employee.query.filter_by(is_active=True).all()
     
     return render_template('jobwork/team_assignments.html', 
                          job=job, 
