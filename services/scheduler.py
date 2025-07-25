@@ -33,17 +33,21 @@ class NotificationScheduler:
     def check_low_stock_job(self):
         """Scheduled job to check for low stock items"""
         try:
-            alerts_sent = check_and_alert_low_stock()
-            if alerts_sent > 0:
-                logger.info(f"Low stock check completed - {alerts_sent} alerts sent")
+            from app import app
+            with app.app_context():
+                alerts_sent = check_and_alert_low_stock()
+                if alerts_sent > 0:
+                    logger.info(f"Low stock check completed - {alerts_sent} alerts sent")
         except Exception as e:
             logger.error(f"Error in low stock check job: {e}")
     
     def daily_health_check(self):
         """Daily system health check"""
         try:
-            from models import NotificationLog, Item, PurchaseOrder, SalesOrder
-            from datetime import datetime, timedelta
+            from app import app
+            with app.app_context():
+                from models import NotificationLog, Item, PurchaseOrder, SalesOrder
+                from datetime import datetime, timedelta
             
             # Check notification health
             yesterday = datetime.utcnow() - timedelta(days=1)
@@ -68,7 +72,7 @@ class NotificationScheduler:
                     'system_alert'
                 )
             
-            logger.info("Daily health check completed")
+                logger.info("Daily health check completed")
             
         except Exception as e:
             logger.error(f"Error in daily health check: {e}")
@@ -76,28 +80,30 @@ class NotificationScheduler:
     def weekly_summary(self):
         """Weekly notification summary"""
         try:
-            from models import NotificationLog, Item
-            from datetime import datetime, timedelta
+            from app import app
+            with app.app_context():
+                from models import NotificationLog, Item
+                from datetime import datetime, timedelta
             
-            week_ago = datetime.utcnow() - timedelta(days=7)
-            
-            # Get weekly statistics
-            total_notifications = NotificationLog.query.filter(
-                NotificationLog.sent_at >= week_ago
-            ).count()
-            
-            successful_notifications = NotificationLog.query.filter(
-                NotificationLog.sent_at >= week_ago,
-                NotificationLog.success == True
-            ).count()
-            
-            low_stock_items = Item.query.filter(
-                Item.current_stock <= Item.minimum_stock,
-                Item.minimum_stock > 0
-            ).count()
-            
-            summary = f"""Weekly Factory Management Summary:
-            
+                week_ago = datetime.utcnow() - timedelta(days=7)
+                
+                # Get weekly statistics
+                total_notifications = NotificationLog.query.filter(
+                    NotificationLog.sent_at >= week_ago
+                ).count()
+                
+                successful_notifications = NotificationLog.query.filter(
+                    NotificationLog.sent_at >= week_ago,
+                    NotificationLog.success == True
+                ).count()
+                
+                low_stock_items = Item.query.filter(
+                    Item.current_stock <= Item.minimum_stock,
+                    Item.minimum_stock > 0
+                ).count()
+                
+                summary = f"""Weekly Factory Management Summary:
+                
 📊 Notification Statistics:
 - Total notifications sent: {total_notifications}
 - Successful delivery rate: {(successful_notifications/total_notifications*100):.1f}% if total_notifications > 0 else 0
@@ -106,14 +112,14 @@ class NotificationScheduler:
 📈 System Health: {'Good' if successful_notifications/total_notifications > 0.9 else 'Needs Attention' if total_notifications > 0 else 'No Activity'}
 
 This is an automated weekly summary from your Factory Management System."""
-            
-            send_system_alert(
-                "Weekly Factory Management Summary",
-                summary,
-                'system_alert'
-            )
-            
-            logger.info("Weekly summary sent")
+                
+                send_system_alert(
+                    "Weekly Factory Management Summary",
+                    summary,
+                    'system_alert'
+                )
+                
+                logger.info("Weekly summary sent")
             
         except Exception as e:
             logger.error(f"Error in weekly summary: {e}")
