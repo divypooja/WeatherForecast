@@ -122,11 +122,11 @@
                             </div>
                             
                             <div class="col-md-6 mb-3">
-                                {{ form.hire_date.label(class="form-label") }}
-                                {{ form.hire_date(class="form-control") }}
-                                {% if form.hire_date.errors %}
+                                {{ form.joining_date.label(class="form-label") }}
+                                {{ form.joining_date(class="form-control") }}
+                                {% if form.joining_date.errors %}
                                     <div class="text-danger small">
-                                        {% for error in form.hire_date.errors %}
+                                        {% for error in form.joining_date.errors %}
                                             <div>{{ error }}</div>
                                         {% endfor %}
                                     </div>
