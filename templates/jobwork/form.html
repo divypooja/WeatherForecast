@@ -39,11 +39,12 @@
                             </div>
                             
                             <div class="col-md-6 mb-3">
-                                {{ form.customer_name.label(class="form-label") }}
-                                {{ form.customer_name(class="form-select") }}
-                                {% if form.customer_name.errors %}
+                                {{ form.work_type.label(class="form-label") }}
+                                {{ form.work_type(class="form-select", id="work_type", onchange="toggleCustomerFields()") }}
+                                <small class="text-muted">Choose whether this is in-house work or outsourced to vendors</small>
+                                {% if form.work_type.errors %}
                                     <div class="text-danger small">
-                                        {% for error in form.customer_name.errors %}
+                                        {% for error in form.work_type.errors %}
                                             <div>{{ error }}</div>
                                         {% endfor %}
                                     </div>
@@ -78,23 +79,11 @@
                             </div>
                         </div>
                         
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                {{ form.work_type.label(class="form-label") }}
-                                {{ form.work_type(class="form-select", id="work_type") }}
-                                <small class="text-muted">Choose whether this is in-house work or outsourced to vendors</small>
-                                {% if form.work_type.errors %}
-                                    <div class="text-danger small">
-                                        {% for error in form.work_type.errors %}
-                                            <div>{{ error }}</div>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="col-md-6 mb-3">
+                        <!-- Customer/Vendor Selection - Only for Outsourced Work -->
+                        <div class="row" id="customer-row" style="display: none;">
+                            <div class="col-md-12 mb-3">
                                 {{ form.customer_name.label(class="form-label") }}
-                                {{ form.customer_name(class="form-select") }}
+                                {{ form.customer_name(class="form-select", id="customer_name") }}
                                 <small class="text-muted">Select vendor/customer for this job work</small>
                                 {% if form.customer_name.errors %}
                                     <div class="text-danger small">
@@ -105,25 +94,10 @@
                                 {% endif %}
                             </div>
                         </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3" id="rate_field">
-                                {{ form.rate_per_unit.label(class="form-label") }}
-                                <div class="input-group">
-                                    {{ form.rate_per_unit(class="form-control", id="rate_per_unit") }}
-                                    <span class="input-group-text">₹</span>
-                                </div>
-                                <small class="text-muted">Rate per unit for this job work</small>
-                                {% if form.rate_per_unit.errors %}
-                                    <div class="text-danger small">
-                                        {% for error in form.rate_per_unit.errors %}
-                                            <div>{{ error }}</div>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="col-md-6 mb-3" id="department_field" style="display: none;">
+
+                        <!-- Department Selection - Only for In-House Work -->
+                        <div class="row" id="department-row" style="display: none;">
+                            <div class="col-md-12 mb-3">
                                 {{ form.department.label(class="form-label") }}
                                 {{ form.department(class="form-select", id="department") }}
                                 <small class="text-muted">Select department for in-house work</small>
@@ -136,6 +110,8 @@
                                 {% endif %}
                             </div>
                         </div>
+                        
+
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
@@ -167,7 +143,10 @@
                             
                             <div class="col-md-6 mb-3">
                                 {{ form.rate_per_unit.label(class="form-label") }}
-                                {{ form.rate_per_unit(class="form-control", step="0.01", id="rate_per_unit") }}
+                                <div class="input-group">
+                                    {{ form.rate_per_unit(class="form-control", step="0.01", id="rate_per_unit") }}
+                                    <span class="input-group-text">₹</span>
+                                </div>
                                 <small class="text-muted">Enter the rate per unit for this job work</small>
                                 {% if form.rate_per_unit.errors %}
                                     <div class="text-danger small">
@@ -405,56 +384,62 @@ function loadJobWorkRate() {
 
 
 
-// Function to toggle between rate and department fields based on work type
-function toggleWorkTypeFields() {
+// Function to toggle customer/department fields based on work type
+function toggleCustomerFields() {
     const workTypeSelect = document.getElementById('work_type');
-    const rateField = document.getElementById('rate_field');
-    const departmentField = document.getElementById('department_field');
-    const costRateSection = document.getElementById('cost-rate-section');
-    const costDepartmentSection = document.getElementById('cost-department-section');
+    const customerRow = document.getElementById('customer-row');
+    const departmentRow = document.getElementById('department-row');
+    const customerNameSelect = document.getElementById('customer_name');
+    const departmentSelect = document.getElementById('department');
     
     if (workTypeSelect.value === 'in_house') {
-        // Show department field, hide rate field
-        rateField.style.display = 'none';
-        departmentField.style.display = 'block';
-        costRateSection.style.display = 'none';
-        costDepartmentSection.style.display = 'block';
+        // Hide customer fields, show department fields
+        customerRow.style.display = 'none';
+        departmentRow.style.display = 'block';
         
-        // Clear rate validation requirement
-        const rateInput = document.getElementById('rate_per_unit');
-        if (rateInput) {
-            rateInput.removeAttribute('required');
-            rateInput.value = '0'; // Set to 0 for in-house work
+        // Clear customer validation requirement
+        if (customerNameSelect) {
+            customerNameSelect.removeAttribute('required');
+            customerNameSelect.value = '';
         }
         
         // Add department validation requirement
-        const departmentSelect = document.getElementById('department');
         if (departmentSelect) {
             departmentSelect.setAttribute('required', 'required');
         }
-    } else {
-        // Show rate field, hide department field
-        rateField.style.display = 'block';
-        departmentField.style.display = 'none';
-        costRateSection.style.display = 'block';
-        costDepartmentSection.style.display = 'none';
+    } else if (workTypeSelect.value === 'outsourced') {
+        // Show customer fields, hide department fields
+        customerRow.style.display = 'block';
+        departmentRow.style.display = 'none';
         
-        // Add rate validation requirement
-        const rateInput = document.getElementById('rate_per_unit');
-        if (rateInput) {
-            rateInput.setAttribute('required', 'required');
+        // Add customer validation requirement
+        if (customerNameSelect) {
+            customerNameSelect.setAttribute('required', 'required');
         }
         
         // Clear department validation requirement
-        const departmentSelect = document.getElementById('department');
         if (departmentSelect) {
             departmentSelect.removeAttribute('required');
             departmentSelect.value = '';
         }
+    } else {
+        // Hide both if no work type selected
+        customerRow.style.display = 'none';
+        departmentRow.style.display = 'none';
+        
+        // Clear all requirements
+        if (customerNameSelect) {
+            customerNameSelect.removeAttribute('required');
+        }
+        if (departmentSelect) {
+            departmentSelect.removeAttribute('required');
+        }
     }
-    
-    // Update cost calculation
-    updateCostCalculation();
+}
+
+// Function to toggle between rate and department fields based on work type (kept for legacy compatibility)
+function toggleWorkTypeFields() {
+    toggleCustomerFields();
 }
 
 // Function to update cost calculation based on work type
@@ -522,9 +507,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add work type change listener
     const workTypeSelect = document.getElementById('work_type');
     if (workTypeSelect) {
-        workTypeSelect.addEventListener('change', toggleWorkTypeFields);
+        workTypeSelect.addEventListener('change', toggleCustomerFields);
         // Initialize on page load
-        toggleWorkTypeFields();
+        toggleCustomerFields();
     }
     
     // Add rate and department change listeners for cost calculation
