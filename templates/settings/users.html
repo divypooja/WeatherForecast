@@ -179,21 +179,21 @@
     </div>
 </div>
 
-<!-- Password Reset Modal -->
-<div class="modal fade" id="resetPasswordModal" tabindex="-1" role="dialog" aria-labelledby="resetPasswordModalLabel" aria-hidden="true" style="z-index: 1060;">
-    <div class="modal-dialog" role="document" style="z-index: 1061;">
-        <div class="modal-content" style="z-index: 1062;">
+<!-- Password Reset Modal - Fixed Version -->
+<div class="modal" id="resetPasswordModal" tabindex="-1" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999;">
+    <div class="modal-dialog" style="position: relative; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10001;">
+        <div class="modal-content" style="position: relative; z-index: 10002;">
             <div class="modal-header">
-                <h5 class="modal-title" id="resetPasswordModalLabel">Reset Password</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title">Reset Password</h5>
+                <button type="button" class="btn-close" onclick="closeResetModal()" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <p>Are you sure you want to reset the password for user <strong id="resetUsername"></strong>?</p>
                 <p class="text-muted">A new temporary password will be generated and displayed.</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-warning" id="confirmResetPassword" style="z-index: 1065; position: relative; pointer-events: auto;">Reset Password</button>
+                <button type="button" class="btn btn-secondary" onclick="closeResetModal()">Cancel</button>
+                <button type="button" class="btn btn-warning" id="confirmResetPassword" style="z-index: 10005; position: relative;">Reset Password</button>
             </div>
         </div>
     </div>
@@ -266,29 +266,16 @@ function resetPassword(userId, username) {
     currentUserId = userId;
     document.getElementById('resetUsername').textContent = username;
     
-    // Create modal with specific options to prevent backdrop interference
+    // Show modal with custom display (bypass Bootstrap modal backdrop issues)
     const modalElement = document.getElementById('resetPasswordModal');
-    const modal = new bootstrap.Modal(modalElement, {
-        backdrop: 'static',
-        keyboard: true,
-        focus: true
-    });
-    
-    // Ensure proper z-index layering
-    modalElement.style.zIndex = '1060';
-    
-    modal.show();
-    
-    // Additional fix: Ensure modal content is above backdrop
-    modalElement.addEventListener('shown.bs.modal', function () {
-        const backdrop = document.querySelector('.modal-backdrop');
-        if (backdrop) {
-            backdrop.style.zIndex = '1059';
-        }
-        modalElement.style.zIndex = '1060';
-        modalElement.querySelector('.modal-dialog').style.zIndex = '1061';
-        modalElement.querySelector('.modal-content').style.zIndex = '1062';
-    });
+    modalElement.style.display = 'block';
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+}
+
+function closeResetModal() {
+    const modalElement = document.getElementById('resetPasswordModal');
+    modalElement.style.display = 'none';
+    document.body.style.overflow = ''; // Restore scrolling
 }
 
 function deleteUser(userId, username) {
@@ -342,7 +329,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     this.innerHTML = 'Reset Password';
                 });
                 
-                bootstrap.Modal.getInstance(document.getElementById('resetPasswordModal')).hide();
+                closeResetModal();
             }
         });
     }
