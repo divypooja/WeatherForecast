@@ -197,6 +197,7 @@ class Item(db.Model):
     current_stock = db.Column(db.Float, default=0.0)
     minimum_stock = db.Column(db.Float, default=0.0)
     unit_price = db.Column(db.Float, default=0.0)
+    unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
     item_type = db.Column(db.String(20), default='material')  # material, product, consumable
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -265,7 +266,16 @@ class PurchaseOrderItem(db.Model):
     quantity_received = db.Column(db.Float, default=0.0)
     unit_price = db.Column(db.Float, nullable=False)
     total_price = db.Column(db.Float, nullable=False)
+    unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
+    total_weight = db.Column(db.Float, default=0.0)  # Total weight (qty × unit_weight)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    @property
+    def calculated_total_weight(self):
+        """Calculate total weight based on quantity and unit weight"""
+        if self.item and self.item.unit_weight:
+            return self.quantity_ordered * self.item.unit_weight
+        return self.total_weight or 0.0
 
 class SalesOrder(db.Model):
     __tablename__ = 'sales_orders'
@@ -305,6 +315,8 @@ class SalesOrderItem(db.Model):
     quantity_delivered = db.Column(db.Float, default=0.0)
     unit_price = db.Column(db.Float, nullable=False)
     total_price = db.Column(db.Float, nullable=False)
+    unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
+    total_weight = db.Column(db.Float, default=0.0)  # Total weight (qty × unit_weight)
 
 class Employee(db.Model):
     __tablename__ = 'employees'
@@ -350,6 +362,9 @@ class JobWork(db.Model):
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     quantity_sent = db.Column(db.Float, nullable=False)
     quantity_received = db.Column(db.Float, default=0.0)
+    unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
+    total_weight_sent = db.Column(db.Float, default=0.0)  # Total weight sent
+    total_weight_received = db.Column(db.Float, default=0.0)  # Total weight received
     rate_per_unit = db.Column(db.Float, nullable=False)
     sent_date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date())
     received_date = db.Column(db.Date)
@@ -380,6 +395,9 @@ class Production(db.Model):
     quantity_produced = db.Column(db.Float, default=0.0)
     quantity_good = db.Column(db.Float, default=0.0)  # Good quality items
     quantity_damaged = db.Column(db.Float, default=0.0)  # Damaged/defective items
+    unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
+    total_weight_planned = db.Column(db.Float, default=0.0)  # Total planned weight
+    total_weight_produced = db.Column(db.Float, default=0.0)  # Total produced weight
     production_date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date())
     status = db.Column(db.String(20), default='planned')  # planned, in_progress, completed
     notes = db.Column(db.Text)
@@ -440,6 +458,8 @@ class BOMItem(db.Model):
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     quantity_required = db.Column(db.Float, nullable=False)
     unit_cost = db.Column(db.Float, default=0.0)
+    unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
+    total_weight = db.Column(db.Float, default=0.0)  # Total weight (qty × unit_weight)
     
     def __init__(self, **kwargs):
         super(BOMItem, self).__init__(**kwargs)
@@ -461,6 +481,8 @@ class QualityIssue(db.Model):
     issue_type = db.Column(db.String(50), nullable=False)  # damage, malfunction, defect, contamination
     severity = db.Column(db.String(20), nullable=False)  # low, medium, high, critical
     quantity_affected = db.Column(db.Float, nullable=False)
+    unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
+    total_weight_affected = db.Column(db.Float, default=0.0)  # Total weight affected
     description = db.Column(db.Text, nullable=False)
     root_cause = db.Column(db.Text)
     corrective_action = db.Column(db.Text)
@@ -580,6 +602,10 @@ class MaterialInspection(db.Model):
     passed_quantity = db.Column(db.Float, nullable=False)
     damaged_quantity = db.Column(db.Float, nullable=False)
     rejected_quantity = db.Column(db.Float, nullable=False)
+    unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
+    total_weight_inspected = db.Column(db.Float, default=0.0)  # Total weight inspected
+    total_weight_passed = db.Column(db.Float, default=0.0)  # Total weight passed
+    total_weight_rejected = db.Column(db.Float, default=0.0)  # Total weight rejected
     acceptance_rate = db.Column(db.Float, nullable=False)  # Percentage of accepted quantity
     damage_types = db.Column(db.Text)  # JSON or comma-separated damage types
     rejection_reasons = db.Column(db.Text)  # Reasons for rejection
