@@ -190,10 +190,16 @@
                                                   rows="2" placeholder="Item description">{{ item.item_description or item.item.description }}</textarea>
                                     </td>
                                     <td class="align-middle">
-                                        <div class="input-group input-group-sm">
-                                            <input type="number" class="form-control" name="unit_weight_{{ item.id }}" 
-                                                   value="{{ item.item.unit_weight or '' }}" step="0.001" min="0" placeholder="0.000">
-                                            <span class="input-group-text">kg</span>
+                                        <div class="d-flex gap-1">
+                                            <input type="number" class="form-control form-control-sm" name="unit_weight_{{ item.id }}" 
+                                                   value="{{ item.item.unit_weight or '' }}" step="0.001" min="0" placeholder="0.000" style="flex: 2;">
+                                            <select class="form-select form-select-sm" name="weight_unit_{{ item.id }}" style="flex: 1; max-width: 60px;">
+                                                <option value="kg" selected>kg</option>
+                                                <option value="g">g</option>
+                                                <option value="lbs">lbs</option>
+                                                <option value="oz">oz</option>
+                                                <option value="ton">ton</option>
+                                            </select>
                                         </div>
                                     </td>
                                     <td class="align-middle">
@@ -362,10 +368,16 @@ function addPOItem() {
                       rows="2" placeholder="Item description"></textarea>
         </td>
         <td class="align-middle">
-            <div class="input-group input-group-sm">
-                <input type="number" class="form-control" name="unit_weight_new_${itemCounter}" 
-                       step="0.001" min="0" placeholder="0.000">
-                <span class="input-group-text">kg</span>
+            <div class="d-flex gap-1">
+                <input type="number" class="form-control form-control-sm" name="unit_weight_new_${itemCounter}" 
+                       step="0.001" min="0" placeholder="0.000" style="flex: 2;">
+                <select class="form-select form-select-sm" name="weight_unit_new_${itemCounter}" style="flex: 1; max-width: 60px;">
+                    <option value="kg" selected>kg</option>
+                    <option value="g">g</option>
+                    <option value="lbs">lbs</option>
+                    <option value="oz">oz</option>
+                    <option value="ton">ton</option>
+                </select>
             </div>
         </td>
         <td class="align-middle">
@@ -458,6 +470,7 @@ function populateItemDetails(selectElement) {
         const rmCodeInput = row.querySelector(`input[name*="rm_code"]`);
         const descriptionTextarea = row.querySelector(`textarea[name*="description"]`);
         const unitWeightInput = row.querySelector(`input[name*="unit_weight"]`);
+        const weightUnitSelect = row.querySelector(`select[name*="weight_unit"]`);
         const hsnInput = row.querySelector(`input[name*="hsn_code"]`);
         const gstInput = row.querySelector(`input.gst-field[name*="gst_rate"]`);
         const uomInput = row.querySelector(`input[name*="uom"]`);
@@ -486,6 +499,7 @@ function populateItemDetails(selectElement) {
         [rmCodeInput, descriptionTextarea, unitWeightInput, hsnInput, gstInput, uomInput, rateInput].forEach(field => {
             if (field) field.value = '';
         });
+        if (weightUnitSelect) weightUnitSelect.value = 'kg';
 
         // Set values with explicit mapping
         if (rmCodeInput) {
@@ -499,6 +513,10 @@ function populateItemDetails(selectElement) {
         if (unitWeightInput) {
             unitWeightInput.value = selectedOption.dataset.unitWeight || '';
             console.log('✓ Unit Weight set to:', unitWeightInput.value);
+        }
+        if (weightUnitSelect) {
+            weightUnitSelect.value = 'kg'; // Default weight unit
+            console.log('✓ Weight Unit set to: kg');
         }
         if (hsnInput) {
             hsnInput.value = selectedOption.dataset.hsn || '';
