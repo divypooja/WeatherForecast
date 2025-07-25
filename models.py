@@ -818,6 +818,7 @@ class FactoryExpense(db.Model):
     expense_date = db.Column(db.Date, nullable=False)
     category = db.Column(db.String(50), nullable=False)  # utilities, maintenance, salary, materials, overhead, transport, others
     subcategory = db.Column(db.String(100))  # electricity, water, repair, cleaning, etc.
+    department_code = db.Column(db.String(50))  # Link to Department.code for organization
     description = db.Column(db.String(500), nullable=False)
     
     # Financial Details
@@ -894,6 +895,18 @@ class FactoryExpense(db.Model):
             'others': 'Other Expenses'
         }
         return categories.get(self.category, self.category.title())
+    
+    @property
+    def department_name(self):
+        """Return department name from department code"""
+        if not self.department_code:
+            return None
+        try:
+            from models_department import Department
+            dept = Department.get_by_code(self.department_code)
+            return dept.name if dept else self.department_code.replace('_', ' ').title()
+        except Exception:
+            return self.department_code.replace('_', ' ').title() if self.department_code else None
     
     @property
     def status_badge_class(self):
