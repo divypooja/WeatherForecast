@@ -488,11 +488,19 @@ def assign_team_member(job_id):
             flash('This employee is already assigned to this job work.', 'warning')
             return redirect(url_for('jobwork.team_assignments', job_id=job_id))
         
+        # Get the selected employee
+        employee = Employee.query.get(form.employee_id.data)
+        
         # Create new team assignment
         assignment = JobWorkTeamAssignment(
             job_work_id=job_id,
             employee_id=form.employee_id.data,
+            member_name=employee.name,  # Populate from employee
             assigned_quantity=form.assigned_quantity.data,
+            estimated_hours=form.estimated_hours.data,
+            member_role=form.member_role.data,
+            start_date=form.start_date.data,
+            target_completion=form.target_completion.data,
             status='assigned',
             notes=form.notes.data,
             assigned_by=current_user.id
@@ -501,7 +509,6 @@ def assign_team_member(job_id):
         db.session.add(assignment)
         db.session.commit()
         
-        employee = Employee.query.get(form.employee_id.data)
         flash(f'Successfully assigned {employee.name} to job work {job.job_number}!', 'success')
         return redirect(url_for('jobwork.team_assignments', job_id=job_id))
     
