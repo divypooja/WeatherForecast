@@ -74,7 +74,14 @@
                             </div>
                             
                             <div class="col-md-4 mb-3">
-                                {{ form.item_type.label(class="form-label") }}
+                                <div class="d-flex align-items-center">
+                                    {{ form.item_type.label(class="form-label me-2") }}
+                                    <a href="{{ url_for('item_types.list_item_types') }}" 
+                                       class="btn btn-sm btn-outline-secondary" 
+                                       title="Manage Item Types">
+                                        <i class="fas fa-cog"></i>
+                                    </a>
+                                </div>
                                 {{ form.item_type(class="form-select") }}
                                 {% if form.item_type.errors %}
                                     <div class="text-danger small">
@@ -83,6 +90,9 @@
                                         {% endfor %}
                                     </div>
                                 {% endif %}
+                                <div class="form-text">
+                                    <a href="{{ url_for('item_types.list_item_types') }}">Manage item types</a>
+                                </div>
                             </div>
                             
                             <div class="col-md-4 mb-3">

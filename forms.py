@@ -2,7 +2,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, SelectField, TextAreaField, FloatField, IntegerField, DateField, BooleanField, SelectMultipleField, ValidationError, DateTimeField
 from wtforms.validators import DataRequired, Length, Email, NumberRange, Optional
 from wtforms.widgets import CheckboxInput, ListWidget
-from models import User, Item, Supplier, QualityIssue, Production, PurchaseOrder, JobWork
+from models import User, Item, Supplier, QualityIssue, Production, PurchaseOrder, JobWork, ItemType
 from models_uom import UnitOfMeasure
 from datetime import datetime
 
@@ -24,7 +24,7 @@ class ItemForm(FlaskForm):
     unit_price = FloatField('Unit Price', validators=[NumberRange(min=0)], default=0.0)
     unit_weight = FloatField('Unit Weight (kg)', validators=[NumberRange(min=0)], default=0.0)
     item_type = SelectField('Item Type', 
-                          choices=[('material', 'Material'), ('product', 'Product'), ('consumable', 'Consumable')],
+                          choices=[],  # Will be populated dynamically
                           validators=[DataRequired()])
     
     def __init__(self, *args, **kwargs):
@@ -48,6 +48,18 @@ class ItemForm(FlaskForm):
                 ('kg', 'Kilogram (Kg) - Weight'), 
                 ('m', 'Meter (M) - Length'),
                 ('l', 'Liter (L) - Volume')
+            ]
+        
+        # Populate Item Type choices from database
+        try:
+            ItemType.get_default_types()  # Ensure default types exist
+            self.item_type.choices = ItemType.get_choices()
+        except Exception:
+            # Fallback choices if database error
+            self.item_type.choices = [
+                ('1', 'Material'), 
+                ('2', 'Product'), 
+                ('3', 'Consumable')
             ]
 
 class SupplierForm(FlaskForm):
