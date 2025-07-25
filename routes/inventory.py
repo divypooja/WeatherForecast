@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from forms import ItemForm
-from models import Item
+from models import Item, ItemType
 from app import db
 from sqlalchemy import func
 from utils import generate_item_code
@@ -152,6 +152,7 @@ def add_item():
             flash('Item code already exists', 'danger')
             return render_template('inventory/form.html', form=form, title='Add Item')
         
+        item_type_obj = ItemType.query.get(int(form.item_type.data))
         item = Item(
             code=form.code.data,
             name=form.name.data,
@@ -163,7 +164,8 @@ def add_item():
             minimum_stock=form.minimum_stock.data,
             unit_price=form.unit_price.data,
             unit_weight=form.unit_weight.data,
-            item_type=form.item_type.data
+            item_type_id=int(form.item_type.data),
+            item_type=item_type_obj.name.lower() if item_type_obj else 'material'
         )
         db.session.add(item)
         db.session.commit()
@@ -185,6 +187,7 @@ def edit_item(id):
             flash('Item code already exists', 'danger')
             return render_template('inventory/form.html', form=form, title='Edit Item')
         
+        item_type_obj = ItemType.query.get(int(form.item_type.data))
         item.code = form.code.data
         item.name = form.name.data
         item.description = form.description.data
@@ -195,7 +198,8 @@ def edit_item(id):
         item.minimum_stock = form.minimum_stock.data
         item.unit_price = form.unit_price.data
         item.unit_weight = form.unit_weight.data
-        item.item_type = form.item_type.data
+        item.item_type_id = int(form.item_type.data)
+        item.item_type = item_type_obj.name.lower() if item_type_obj else 'material'
         
         db.session.commit()
         flash('Item updated successfully', 'success')

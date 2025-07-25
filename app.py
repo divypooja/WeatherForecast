@@ -84,6 +84,10 @@ def create_app():
     from routes.backup import backup_bp
     app.register_blueprint(backup_bp, url_prefix='/backup')
     
+    # Register Item Types blueprint
+    from routes.item_types import item_types_bp
+    app.register_blueprint(item_types_bp)
+    
     # Register placeholder routes for new dashboard modules
     from routes.module_placeholders import register_placeholder_routes
     register_placeholder_routes(app)

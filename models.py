@@ -184,6 +184,51 @@ class Supplier(db.Model):
 
 # Customer model removed - now using unified Supplier table for all business partners
 
+class ItemType(db.Model):
+    __tablename__ = 'item_types'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+    description = db.Column(db.String(200))
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    
+    @classmethod
+    def get_default_types(cls):
+        """Get or create default item types"""
+        default_types = [
+            {'name': 'Material', 'description': 'Raw materials and components'},
+            {'name': 'Product', 'description': 'Finished products'},
+            {'name': 'Consumable', 'description': 'Consumable items'},
+            {'name': 'Tool', 'description': 'Tools and equipment'},
+            {'name': 'Spare Part', 'description': 'Spare parts and accessories'},
+            {'name': 'Packaging', 'description': 'Packaging materials'}
+        ]
+        
+        existing_types = cls.query.filter_by(is_active=True).all()
+        if not existing_types:
+            for type_data in default_types:
+                item_type = cls(
+                    name=type_data['name'],
+                    description=type_data['description'],
+                    is_active=True
+                )
+                db.session.add(item_type)
+            db.session.commit()
+            existing_types = cls.query.filter_by(is_active=True).all()
+        
+        return existing_types
+    
+    @classmethod
+    def get_choices(cls):
+        """Get choices for form SelectField"""
+        types = cls.query.filter_by(is_active=True).order_by(cls.name).all()
+        return [(str(t.id), t.name) for t in types]
+    
+    def __repr__(self):
+        return f'<ItemType {self.name}>'
+
 class Item(db.Model):
     __tablename__ = 'items'
     
@@ -198,13 +243,22 @@ class Item(db.Model):
     minimum_stock = db.Column(db.Float, default=0.0)
     unit_price = db.Column(db.Float, default=0.0)
     unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
-    item_type = db.Column(db.String(20), default='material')  # material, product, consumable
+    item_type = db.Column(db.String(20), default='material')  # Legacy field for backward compatibility
+    item_type_id = db.Column(db.Integer, db.ForeignKey('item_types.id'))  # New foreign key to ItemType
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
     purchase_order_items = db.relationship('PurchaseOrderItem', backref='item', lazy=True)
     sales_order_items = db.relationship('SalesOrderItem', backref='item', lazy=True)
     bom_items = db.relationship('BOMItem', backref='item', lazy=True)
+    item_type_obj = db.relationship('ItemType', backref='items', lazy=True)
+    
+    @property
+    def display_item_type(self):
+        """Get display name for item type"""
+        if self.item_type_obj:
+            return self.item_type_obj.name
+        return self.item_type.title() if self.item_type else 'Unknown'
 
 class PurchaseOrder(db.Model):
     __tablename__ = 'purchase_orders'

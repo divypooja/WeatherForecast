@@ -173,6 +173,12 @@
                     <i class="fas fa-cog"></i>
                     Settings
                 </a>
+                <div class="nav-subsection">
+                    <a class="nav-link nav-sub-link {{ 'active' if 'item_types' in request.endpoint }}" href="{{ url_for('item_types.list_item_types') }}">
+                        <i class="fas fa-tags"></i>
+                        Item Types
+                    </a>
+                </div>
                 
                 <a class="nav-link {{ 'active' if 'admin' in request.endpoint }}" href="{{ url_for('admin.approvals_dashboard') }}">
                     <i class="fas fa-clipboard-check text-warning"></i>
