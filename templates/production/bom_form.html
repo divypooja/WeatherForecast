@@ -387,8 +387,26 @@ function previewBOM() {
     const laborCost = parseFloat(document.querySelector('[name="labor_cost_per_unit"]').value || 0);
     const overheadCost = parseFloat(document.querySelector('[name="overhead_cost_per_unit"]').value || 0);
     const overheadPercentage = parseFloat(document.querySelector('[name="overhead_percentage"]').value || 0);
-    const freightCost = parseFloat(document.querySelector('[name="freight_cost_per_unit"]').value || 0);
+    const freightCostInput = parseFloat(document.querySelector('[name="freight_cost_per_unit"]').value || 0);
+    const freightUnitType = document.querySelector('[name="freight_unit_type"]').value || 'per_piece';
     const markupPercentage = parseFloat(document.querySelector('[name="markup_percentage"]').value || 0);
+    
+    // Calculate actual freight cost based on unit type and product weight
+    let freightCost = freightCostInput;
+    if (freightUnitType === 'per_kg' && freightCostInput > 0) {
+        // Get product weight from BOM - we need to find the total weight
+        const weightElements = document.querySelectorAll('th');
+        for (let element of weightElements) {
+            if (element.textContent.includes('Total Weight per Unit')) {
+                const weightText = element.nextElementSibling?.textContent || '0 kg';
+                const weight = parseFloat(weightText.replace('kg', '').replace('g', '').trim()) || 0;
+                // If weight is in grams, convert to kg
+                const weightInKg = weightText.includes('g') && !weightText.includes('kg') ? weight / 1000 : weight;
+                freightCost = freightCostInput * weightInKg;
+                break;
+            }
+        }
+    }
     
     // Get material cost from existing BOM components (if any)
     let materialCost = 0;
@@ -437,7 +455,7 @@ function previewBOM() {
                             <tr><td><strong>Labor Cost per Unit:</strong></td><td>₹${laborCost.toFixed(2)}</td></tr>
                             <tr><td><strong>Overhead Cost per Unit:</strong></td><td>₹${calculatedOverheadCost.toFixed(2)}</td></tr>
                             <tr><td><strong>Overhead Percentage:</strong></td><td>${overheadPercentage.toFixed(1)}%</td></tr>
-                            <tr><td><strong>Freight Cost per Unit:</strong></td><td>₹${freightCost.toFixed(2)}</td></tr>
+                            <tr><td><strong>Freight Cost per Unit:</strong></td><td>₹${freightCost.toFixed(2)} ${freightUnitType !== 'per_piece' ? '(₹' + freightCostInput.toFixed(2) + ' ' + freightUnitType.replace('_', ' ').replace('per ', 'Per ') + ')' : ''}</td></tr>
                             <tr><td><strong>Markup Percentage:</strong></td><td>${markupPercentage.toFixed(1)}%</td></tr>
                         </table>
                         
