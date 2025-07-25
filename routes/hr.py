@@ -93,13 +93,9 @@ def add_employee():
         form.employee_code.data = generate_employee_code()
     
     if form.validate_on_submit():
-        print(f"DEBUG: Form validated successfully")
-        print(f"DEBUG: Form data - Code: {form.employee_code.data}, Name: {form.name.data}")
-        
         # Check if employee code already exists
         existing_employee = Employee.query.filter_by(employee_code=form.employee_code.data).first()
         if existing_employee:
-            print(f"DEBUG: Employee code already exists: {form.employee_code.data}")
             flash('Employee code already exists', 'danger')
             return render_template('hr/employee_form.html', form=form, title='Add Employee', get_documents_for_transaction=get_documents_for_transaction)
         
@@ -126,12 +122,8 @@ def add_employee():
         success_message = f'Employee added successfully'
         if documents_uploaded > 0:
             success_message += f' with {documents_uploaded} document(s) uploaded'
-        print(f"DEBUG: Employee created successfully with ID: {employee.id}")
         flash(success_message, 'success')
         return redirect(url_for('hr.list_employees'))
-    else:
-        if request.method == 'POST':
-            print(f"DEBUG: Form validation failed. Errors: {form.errors}")
     
     return render_template('hr/employee_form.html', form=form, title='Add Employee', get_documents_for_transaction=get_documents_for_transaction)
 

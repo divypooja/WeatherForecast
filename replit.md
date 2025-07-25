@@ -16,6 +16,8 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **Security & Validation**: Admin-only access with duplicate prevention, code validation (lowercase with underscores), and employee safety checks
 - **UI/UX Polish**: Fixed duplicate "Item Types Management" sections in settings dashboard, maintaining clean interface
 - **Blueprint Integration**: Registered department blueprint with proper URL routing and navigation integration
+- **Employee Creation Bug Fix**: Resolved field name mismatches (hire_date vs joining_date) and form validation issues that prevented employee saving
+- **Document Management Fix**: Fixed URL routing parameter mismatch in documents list template for download/view functionality
 
 ### Complete Job Work Rates Management System (Latest - January 25, 2025)
 - **Job Work Rates Table**: Created comprehensive rates management with fields - Item Code, Item Name, Rate Job Work as requested
