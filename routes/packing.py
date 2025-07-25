@@ -7,10 +7,14 @@ from flask_login import login_required, current_user
 from models import Item, PurchaseOrder, PurchaseOrderItem, BOM, BOMItem
 from app import db
 from services.packing_optimizer import MaterialOptimizer, ProductionLayoutOptimizer, PackingCalculator
+from services.svgnest_optimizer import SVGNestOptimizer, VectorNestingCalculator
 import json
 import tempfile
 import os
+import logging
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 packing_bp = Blueprint('packing', __name__)
 
@@ -39,6 +43,16 @@ def dashboard():
                          stats=stats, 
                          recent_items=recent_items,
                          recent_pos=recent_pos)
+
+
+@packing_bp.route('/vector-nesting')
+@login_required
+def vector_nesting():
+    """Vector nesting optimization page for irregular shapes"""
+    # Get items that might have irregular shapes
+    items = Item.query.limit(20).all()
+    
+    return render_template('packing/vector_nesting.html', items=items)
 
 
 @packing_bp.route('/material-cutting')
@@ -325,6 +339,166 @@ def export_cutting_plan():
     except Exception as e:
         flash(f'Error exporting cutting plan: {str(e)}', 'danger')
         return redirect(url_for('packing.material_cutting'))
+
+
+@packing_bp.route('/api/demo-vector-shapes')
+@login_required
+def demo_vector_shapes():
+    """API endpoint for demo vector shapes"""
+    try:
+        svgnest = SVGNestOptimizer()
+        demo_data = svgnest.create_demo_shapes()
+        
+        return jsonify({
+            'success': True,
+            'bin': demo_data['bin'],
+            'parts': demo_data['parts'],
+            'description': demo_data['description']
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@packing_bp.route('/api/optimize-vector-nesting', methods=['POST'])
+@login_required
+def optimize_vector_nesting():
+    """API endpoint for SVGNest vector nesting optimization"""
+    try:
+        data = request.get_json()
+        
+        # Extract parameters
+        bin_polygon = data.get('bin', [])
+        parts = data.get('parts', [])
+        config = data.get('config', {})
+        
+        if not bin_polygon or not parts:
+            return jsonify({
+                'success': False,
+                'error': 'Missing bin or parts data'
+            }), 400
+        
+        # Initialize SVGNest optimizer
+        svgnest = SVGNestOptimizer()
+        
+        # Run optimization
+        result = svgnest.optimize_vector_nesting(bin_polygon, parts, config)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"SVGNest optimization error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@packing_bp.route('/api/convert-svg-to-polygon', methods=['POST'])
+@login_required
+def convert_svg_to_polygon():
+    """Convert SVG file to polygon data for nesting"""
+    try:
+        # This would handle SVG file upload and conversion
+        # For now, return a placeholder response
+        return jsonify({
+            'success': True,
+            'message': 'SVG conversion feature coming soon',
+            'polygons': []
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@packing_bp.route('/export/vector-nesting-plan', methods=['POST'])
+@login_required
+def export_vector_nesting_plan():
+    """Export vector nesting plan to SVG or JSON"""
+    try:
+        data = request.get_json()
+        export_format = data.get('format', 'json')
+        
+        if export_format == 'svg':
+            # Generate SVG export
+            svg_content = generate_svg_export(data)
+            
+            temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.svg')
+            temp_file.write(svg_content)
+            temp_file.close()
+            
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f"vector_nesting_{timestamp}.svg"
+            
+            return send_file(temp_file.name, 
+                           as_attachment=True, 
+                           download_name=filename,
+                           mimetype='image/svg+xml')
+        else:
+            # Generate JSON export
+            temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json')
+            json.dump(data, temp_file, indent=2, default=str)
+            temp_file.close()
+            
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f"vector_nesting_{timestamp}.json"
+            
+            return send_file(temp_file.name, 
+                           as_attachment=True, 
+                           download_name=filename,
+                           mimetype='application/json')
+        
+    except Exception as e:
+        flash(f'Error exporting nesting plan: {str(e)}', 'danger')
+        return redirect(url_for('packing.vector_nesting'))
+
+
+def generate_svg_export(nesting_data):
+    """Generate SVG export from nesting data"""
+    bin_polygon = nesting_data.get('bin', [])
+    placed_parts = nesting_data.get('placed_parts', [])
+    
+    # Calculate SVG dimensions
+    max_x = max([p['x'] for p in bin_polygon]) if bin_polygon else 1200
+    max_y = max([p['y'] for p in bin_polygon]) if bin_polygon else 800
+    
+    svg_content = f"""<?xml version="1.0" encoding="UTF-8"?>
+<svg width="{max_x}" height="{max_y}" xmlns="http://www.w3.org/2000/svg">
+    <title>Vector Nesting Plan - {datetime.now().strftime('%Y-%m-%d %H:%M')}</title>
+    
+    <!-- Bin outline -->
+    <polygon points="{' '.join([f'{p["x"]},{p["y"]}' for p in bin_polygon])}" 
+             fill="none" stroke="#000" stroke-width="2"/>
+    
+    <!-- Placed parts -->
+"""
+    
+    for i, part in enumerate(placed_parts):
+        color = f"hsl({i * 360 / len(placed_parts)}, 70%, 60%)"
+        polygon = part.get('polygon', [])
+        position = part.get('position', {'x': 0, 'y': 0})
+        
+        # Apply position offset to polygon points
+        points = []
+        for point in polygon:
+            x = point['x'] + position['x']
+            y = point['y'] + position['y']
+            points.append(f"{x},{y}")
+        
+        svg_content += f"""    <polygon points="{' '.join(points)}" 
+             fill="{color}" stroke="#333" stroke-width="1" opacity="0.7">
+        <title>{part.get('part_id', f'Part {i+1}')}</title>
+    </polygon>
+"""
+    
+    svg_content += """</svg>"""
+    return svg_content
 
 
 # End of packing routes
