@@ -296,6 +296,7 @@ def add_bom_item(bom_id):
     
     item_id = request.form.get('item_id', type=int)
     quantity_required = request.form.get('quantity_required', type=float)
+    unit = request.form.get('unit', default='pcs')
     unit_cost = request.form.get('unit_cost', type=float, default=0.0)
     
     if not item_id or not quantity_required:
@@ -318,6 +319,7 @@ def add_bom_item(bom_id):
         bom_id=bom_id,
         item_id=item_id,
         quantity_required=quantity_required,
+        unit=unit,
         unit_cost=unit_cost
     )
     

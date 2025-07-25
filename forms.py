@@ -373,6 +373,18 @@ class BOMForm(FlaskForm):
 class BOMItemForm(FlaskForm):
     item_id = SelectField('Material/Component', validators=[DataRequired()], coerce=int)
     quantity_required = FloatField('Quantity Required', validators=[DataRequired(), NumberRange(min=0)])
+    unit = SelectField('Unit', validators=[DataRequired()], choices=[
+        ('pcs', 'Pieces (pcs)'),
+        ('kg', 'Kilograms (kg)'),
+        ('g', 'Grams (g)'),
+        ('nos', 'Numbers (nos)'),
+        ('m', 'Meters (m)'),
+        ('cm', 'Centimeters (cm)'),
+        ('l', 'Liters (l)'),
+        ('ml', 'Milliliters (ml)'),
+        ('sqft', 'Square Feet (sq.ft)'),
+        ('sqm', 'Square Meters (sq.m)')
+    ], default='pcs')
     unit_cost = FloatField('Unit Cost', validators=[NumberRange(min=0)], default=0.0)
     
     def __init__(self, *args, **kwargs):
