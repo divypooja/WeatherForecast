@@ -256,8 +256,10 @@
                                     <th>
                                         {% set total_weight = 0.0 %}
                                         {% for bom_item in bom_items %}
-                                            {% if bom_item.item.unit_weight %}
-                                                {% set total_weight = total_weight + (bom_item.item.unit_weight * bom_item.quantity_required) %}
+                                            {% if bom_item.item.unit_weight and bom_item.item.unit_weight > 0 %}
+                                                {% set item_weight = bom_item.item.unit_weight|float %}
+                                                {% set quantity = bom_item.quantity_required|float %}
+                                                {% set total_weight = total_weight + (item_weight * quantity) %}
                                             {% endif %}
                                         {% endfor %}
                                         {% if total_weight > 0 %}
@@ -267,7 +269,7 @@
                                                 {{ "%.3f"|format(total_weight) }} kg/unit
                                             {% endif %}
                                         {% else %}
-                                            <span class="text-muted">No weights defined</span>
+                                            <span class="text-muted">-</span>
                                         {% endif %}
                                     </th>
                                     <th></th>
