@@ -9,9 +9,8 @@ overtime_bp = Blueprint('overtime', __name__, url_prefix='/overtime')
 @login_required
 def overtime_dashboard():
     """Overtime rates dashboard"""
-    if not current_user.is_admin():
-        flash('Admin access required', 'danger')
-        return redirect(url_for('main.dashboard'))
+    # Allow both admins and staff to access overtime rates
+    # Staff can view and manage overtime rates for payroll purposes
     
     # Get all overtime rates
     rates = OvertimeRate.query.order_by(OvertimeRate.salary_type).all()
@@ -31,9 +30,8 @@ def overtime_dashboard():
 @login_required
 def add_overtime_rate():
     """Add new overtime rate"""
-    if not current_user.is_admin():
-        flash('Admin access required', 'danger')
-        return redirect(url_for('main.dashboard'))
+    # Allow both admins and staff to manage overtime rates
+    # Staff need this for payroll management
     
     form = OvertimeRateForm()
     
@@ -71,9 +69,7 @@ def add_overtime_rate():
 @login_required
 def edit_overtime_rate(id):
     """Edit overtime rate"""
-    if not current_user.is_admin():
-        flash('Admin access required', 'danger')
-        return redirect(url_for('main.dashboard'))
+    # Allow both admins and staff to edit overtime rates
     
     rate = OvertimeRate.query.get_or_404(id)
     form = OvertimeRateForm(obj=rate)
@@ -110,9 +106,10 @@ def edit_overtime_rate(id):
 @login_required
 def delete_overtime_rate(id):
     """Delete overtime rate"""
+    # Only admins can delete overtime rates
     if not current_user.is_admin():
-        flash('Admin access required', 'danger')
-        return redirect(url_for('main.dashboard'))
+        flash('Admin access required to delete overtime rates', 'danger')
+        return redirect(url_for('overtime.overtime_dashboard'))
     
     rate = OvertimeRate.query.get_or_404(id)
     
@@ -130,9 +127,7 @@ def delete_overtime_rate(id):
 @login_required
 def toggle_overtime_rate(id):
     """Toggle overtime rate active status"""
-    if not current_user.is_admin():
-        flash('Admin access required', 'danger')
-        return redirect(url_for('main.dashboard'))
+    # Allow both admins and staff to toggle rates
     
     rate = OvertimeRate.query.get_or_404(id)
     
