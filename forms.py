@@ -187,21 +187,34 @@ class EmployeeForm(FlaskForm):
     employee_code = StringField('Employee Code', validators=[DataRequired(), Length(max=50)])
     name = StringField('Name', validators=[DataRequired(), Length(max=100)])
     designation = StringField('Designation', validators=[Length(max=100)])
-    department = SelectField('Department', 
-                            choices=[('', 'Select Department'),
-                                   ('production', 'Production'),
-                                   ('assembly', 'Assembly'),
-                                   ('quality_control', 'Quality Control'),
-                                   ('finishing', 'Finishing'),
-                                   ('packaging', 'Packaging'),
-                                   ('maintenance', 'Maintenance'),
-                                   ('research_development', 'Research & Development'),
-                                   ('administration', 'Administration'),
-                                   ('sales_marketing', 'Sales & Marketing'),
-                                   ('accounts_finance', 'Accounts & Finance'),
-                                   ('human_resources', 'Human Resources'),
-                                   ('stores_inventory', 'Stores & Inventory')],
-                            validators=[Optional()])
+    department = SelectField('Department',
+                            validators=[Optional()],
+                            coerce=str)
+    
+    def __init__(self, *args, **kwargs):
+        super(EmployeeForm, self).__init__(*args, **kwargs)
+        # Populate department choices from database
+        try:
+            from models_department import Department
+            Department.get_default_departments()  # Ensure default departments exist
+            self.department.choices = Department.get_choices()
+        except Exception:
+            # Fallback choices if database error
+            self.department.choices = [
+                ('', 'Select Department'),
+                ('production', 'Production'),
+                ('assembly', 'Assembly'),
+                ('quality_control', 'Quality Control'),
+                ('finishing', 'Finishing'),
+                ('packaging', 'Packaging'),
+                ('maintenance', 'Maintenance'),
+                ('research_development', 'Research & Development'),
+                ('administration', 'Administration'),
+                ('sales_marketing', 'Sales & Marketing'),
+                ('accounts_finance', 'Accounts & Finance'),
+                ('human_resources', 'Human Resources'),
+                ('stores_inventory', 'Stores & Inventory')
+            ]
     salary_type = SelectField('Salary Type', 
                             choices=[('daily', 'Daily'), ('monthly', 'Monthly'), ('piece_rate', 'Piece Rate')],
                             validators=[DataRequired()])

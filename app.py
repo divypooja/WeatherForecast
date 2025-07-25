@@ -40,6 +40,7 @@ def create_app():
     # Import models
     from models import User, Item, Supplier, PurchaseOrder, SalesOrder, Employee, JobWork, Production, BOM, NotificationSettings, NotificationLog, NotificationRecipient, CompanySettings, QualityIssue, QualityControlLog, FactoryExpense, Document
     from models_uom import UnitOfMeasure, UOMConversion, ItemUOMConversion, UOMConversionLog
+    from models_department import Department
     
     @login_manager.user_loader
     def load_user(user_id):
@@ -91,6 +92,10 @@ def create_app():
     # Register Item Types blueprint
     from routes.item_types import item_types_bp
     app.register_blueprint(item_types_bp)
+    
+    # Register Department blueprint
+    from routes.department import department_bp
+    app.register_blueprint(department_bp, url_prefix='/departments')
     
     # Register placeholder routes for new dashboard modules
     from routes.module_placeholders import register_placeholder_routes
