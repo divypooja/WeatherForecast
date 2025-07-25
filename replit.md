@@ -105,7 +105,19 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **Financial Tracking**: Complete payroll management with gross/net calculations, tax deductions, and advance integration
 - **Permission System**: Role-based access with staff able to request advances, admins able to approve and manage all records
 
-### Complete Tally Integration System (Latest)
+### Enhanced BOM System with Freight Cost Integration (Latest)
+- **Freight Cost Integration**: Added optional freight/transportation cost field to BOM calculations as requested by user
+- **Comprehensive Cost Breakdown**: BOM now includes materials, labor, overhead, and freight costs with separate line items in cost breakdown table
+- **Optional Cost Display**: Freight cost section marked as "Optional" with helpful text explaining it's often not paid by company
+- **Database Enhancement**: Added freight_cost_per_unit column to boms table with proper default values
+- **Enhanced Cost Calculation**: Updated total_cost_per_unit property to include freight costs in final product costing
+- **Form Integration**: Added freight cost field to BOMForm with proper validation and user-friendly labeling
+- **Template Updates**: Enhanced BOM form template with dedicated freight cost section and professional styling
+- **Route Updates**: Updated both add_bom and edit_bom routes to handle freight cost field properly
+- **Automatic Unit Cost Population**: Maintained existing functionality for auto-populating unit costs from inventory item prices
+- **Cost Transparency**: BOM cost breakdown table now shows all cost components separately for complete transparency
+
+### Complete Tally Integration System
 - **Comprehensive XML Export System**: Created complete Tally XML export functionality for Chart of Accounts, Stock Items, and Vouchers
 - **Chart of Accounts Export**: Exports all suppliers and customers as Tally ledgers with proper parent grouping (Sundry Creditors/Debtors)
 - **Stock Items Export**: Exports inventory items with opening balances, unit prices, and GST classifications for seamless Tally integration

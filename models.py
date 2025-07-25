@@ -405,6 +405,7 @@ class BOM(db.Model):
     labor_hours_per_unit = db.Column(db.Float, default=0.0)
     labor_rate_per_hour = db.Column(db.Float, default=0.0)
     overhead_percentage = db.Column(db.Float, default=0.0)  # Percentage of material cost
+    freight_cost_per_unit = db.Column(db.Float, default=0.0)  # Transportation/freight cost per unit (optional)
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -419,16 +420,17 @@ class BOM(db.Model):
     
     @property
     def total_cost_per_unit(self):
-        """Calculate total cost per unit including materials, labor, and overhead"""
+        """Calculate total cost per unit including materials, labor, overhead, and freight"""
         material_cost = self.total_material_cost
         labor_cost = self.labor_cost_per_unit or 0
         overhead_cost = self.overhead_cost_per_unit or 0
+        freight_cost = self.freight_cost_per_unit or 0
         
         # If overhead is percentage-based, calculate from material cost
         if self.overhead_percentage and self.overhead_percentage > 0:
             overhead_cost = material_cost * (self.overhead_percentage / 100)
         
-        return material_cost + labor_cost + overhead_cost
+        return material_cost + labor_cost + overhead_cost + freight_cost
 
 class BOMItem(db.Model):
     __tablename__ = 'bom_items'
