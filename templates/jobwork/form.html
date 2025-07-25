@@ -89,6 +89,13 @@
                                     </button>
                                 </div>
                                 <div id="stock-info" class="mt-2"></div>
+                                <!-- Weight conversion display -->
+                                <div id="weight-conversion" class="mt-2" style="display: none;">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-weight"></i> <strong>Weight Calculation:</strong><br>
+                                        <span id="weight-calculation-text"></span>
+                                    </div>
+                                </div>
                                 <small class="text-muted">Available stock will be checked before sending</small>
                                 {% if form.quantity_sent.errors %}
                                     <div class="text-danger small">
@@ -489,6 +496,7 @@ document.addEventListener('DOMContentLoaded', function() {
         quantityInput.addEventListener('input', function() {
             if (itemSelect.value) {
                 checkInventoryStock();
+                updateWeightConversion();
             }
         });
     }
@@ -503,10 +511,19 @@ function updateUnitLabels() {
             .then(data => {
                 if (data.success) {
                     const unit = data.unit_of_measure || 'units';
+                    const unitWeight = data.unit_weight || 0;
+                    
                     // Update all unit labels in the form
                     document.getElementById('quantity-unit').textContent = unit;
                     document.getElementById('finished-material-unit').textContent = unit;
                     document.getElementById('scrap-unit').textContent = unit;
+                    
+                    // Store unit weight for calculations
+                    window.currentItemUnitWeight = unitWeight;
+                    window.currentItemUnit = unit;
+                    
+                    // Update weight conversion display
+                    updateWeightConversion();
                 }
             })
             .catch(error => {
@@ -517,6 +534,38 @@ function updateUnitLabels() {
         document.getElementById('quantity-unit').textContent = 'units';
         document.getElementById('finished-material-unit').textContent = 'units';
         document.getElementById('scrap-unit').textContent = 'units';
+        document.getElementById('weight-conversion').style.display = 'none';
+        window.currentItemUnitWeight = 0;
+        window.currentItemUnit = 'units';
+    }
+}
+
+// Function to update weight conversion display
+function updateWeightConversion() {
+    const quantityInput = document.getElementById('quantity_sent');
+    const weightConversionDiv = document.getElementById('weight-conversion');
+    const weightCalculationText = document.getElementById('weight-calculation-text');
+    
+    if (!quantityInput || !weightConversionDiv || !weightCalculationText) return;
+    
+    const quantity = parseFloat(quantityInput.value) || 0;
+    const unitWeight = window.currentItemUnitWeight || 0;
+    const unit = window.currentItemUnit || 'units';
+    
+    // Show weight conversion if unit is not already weight-based and unit weight is available
+    const isWeightUnit = ['kg', 'g', 'gm', 'gram', 'kilogram', 'ton', 'tonne'].includes(unit.toLowerCase());
+    
+    if (!isWeightUnit && unitWeight > 0 && quantity > 0) {
+        const totalWeight = quantity * unitWeight;
+        const weightUnit = totalWeight >= 1 ? 'kg' : 'g';
+        const displayWeight = totalWeight >= 1 ? totalWeight.toFixed(3) : (totalWeight * 1000).toFixed(1);
+        
+        weightCalculationText.innerHTML = `
+            ${quantity} ${unit} × ${unitWeight} kg/unit = <strong>${displayWeight} ${weightUnit}</strong>
+        `;
+        weightConversionDiv.style.display = 'block';
+    } else {
+        weightConversionDiv.style.display = 'none';
     }
 }
 </script>
