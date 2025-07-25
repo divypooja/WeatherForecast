@@ -158,7 +158,8 @@ def edit_job_work(id):
             # Check if there's sufficient inventory for increase
             if quantity_difference > 0 and (item.current_stock or 0) < quantity_difference:
                 flash(f'Insufficient inventory for increase. Available stock: {item.current_stock or 0} {item.unit_of_measure}', 'danger')
-                return render_template('jobwork/form.html', form=form, title='Edit Job Work', job=job)
+                from utils_documents import get_documents_for_transaction
+                return render_template('jobwork/form.html', form=form, title='Edit Job Work', job=job, get_documents_for_transaction=get_documents_for_transaction)
             
             # Adjust inventory: subtract additional sent quantity or add back if reduced
             item.current_stock = (item.current_stock or 0) - quantity_difference
@@ -189,7 +190,8 @@ def edit_job_work(id):
         
         return redirect(url_for('jobwork.dashboard'))
     
-    return render_template('jobwork/form.html', form=form, title='Edit Job Work', job=job)
+    from utils_documents import get_documents_for_transaction
+    return render_template('jobwork/form.html', form=form, title='Edit Job Work', job=job, get_documents_for_transaction=get_documents_for_transaction)
 
 @jobwork_bp.route('/update_status/<int:id>/<status>')
 @login_required
