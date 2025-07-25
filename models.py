@@ -522,6 +522,15 @@ class BOM(db.Model):
         return self.freight_cost_per_unit
     
     @property
+    def total_weight_per_unit(self):
+        """Calculate total weight per unit for this BOM"""
+        total_weight = 0.0
+        for item in self.items:
+            if item.item.unit_weight and item.item.unit_weight > 0:
+                total_weight += item.item.unit_weight * item.quantity_required
+        return total_weight
+    
+    @property
     def total_cost_per_unit(self):
         """Calculate total cost per unit including materials, labor, overhead, and freight"""
         material_cost = self.total_material_cost
