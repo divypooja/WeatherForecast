@@ -225,7 +225,7 @@ document.addEventListener('DOMContentLoaded', function() {
         itemSelect.innerHTML = '<option value="">Loading items...</option>';
         itemSelect.disabled = true;
         
-        fetch(`/material_inspection/api/po_items/${poId}`)
+        fetch(`/inspection/api/po_items/${poId}`)
             .then(response => response.json())
             .then(data => {
                 itemSelect.innerHTML = '<option value="">Select Item from Purchase Order</option>';
@@ -261,7 +261,7 @@ document.addEventListener('DOMContentLoaded', function() {
         itemSelect.innerHTML = '<option value="">Loading items...</option>';
         itemSelect.disabled = true;
         
-        fetch(`/material_inspection/api/job_items/${jobId}`)
+        fetch(`/inspection/api/job_items/${jobId}`)
             .then(response => response.json())
             .then(data => {
                 itemSelect.innerHTML = '<option value="">Select Item from Job Work</option>';
