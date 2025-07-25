@@ -258,8 +258,12 @@
                                     <th></th>
                                 </tr>
                                 <tr class="table-secondary">
-                                    <th colspan="7">Freight Cost ({{ bom.freight_unit_type.replace('_', ' ').title() if bom.freight_unit_type else 'Per Unit' }})</th>
-                                    <th>₹{{ "%.2f"|format(bom.freight_cost_per_unit or 0) }}</th>
+                                    <th colspan="7">Freight Cost per Unit</th>
+                                    <th>₹{{ "%.2f"|format(bom.freight_cost_per_unit or 0) }}
+                                        {% if bom.freight_unit_type and bom.freight_unit_type != 'per_piece' %}
+                                            <small class="text-muted d-block">({{ bom.freight_unit_type.replace('_', ' ').title() }})</small>
+                                        {% endif %}
+                                    </th>
                                     <th></th>
                                 </tr>
                                 <tr class="table-info">
