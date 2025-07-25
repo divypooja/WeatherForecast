@@ -53,7 +53,7 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 {{ form.employee_id.label(class="form-label") }}
-                                {{ form.employee_id(class="form-select") }}
+                                {{ form.employee_id(class="form-select", id="employee_id", onchange="loadEmployeeHireDate()") }}
                                 {% if form.employee_id.errors %}
                                     <div class="text-danger">
                                         {% for error in form.employee_id.errors %}
@@ -64,7 +64,7 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 {{ form.pay_period_start.label(class="form-label") }}
-                                {{ form.pay_period_start(class="form-control") }}
+                                {{ form.pay_period_start(class="form-control", id="pay_period_start") }}
                                 {% if form.pay_period_start.errors %}
                                     <div class="text-danger">
                                         {% for error in form.pay_period_start.errors %}
@@ -72,6 +72,10 @@
                                         {% endfor %}
                                     </div>
                                 {% endif %}
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle"></i> 
+                                    Auto-populated with employee's hire date when selected
+                                </small>
                             </div>
                             <div class="col-md-6 mb-3">
                                 {{ form.pay_period_end.label(class="form-label") }}
@@ -282,6 +286,52 @@ function calculateTotals() {
     document.getElementById('display_deductions').textContent = '₹' + deductions.toFixed(2);
     document.getElementById('display_advance').textContent = '₹' + advance.toFixed(2);
     document.getElementById('display_net').textContent = '₹' + netAmount.toFixed(2);
+}
+
+// Load employee hire date and set as pay period start
+function loadEmployeeHireDate() {
+    const employeeId = document.getElementById('employee_id').value;
+    
+    if (!employeeId || employeeId == '0') {
+        document.getElementById('pay_period_start').value = '';
+        return;
+    }
+    
+    // Show loading indicator
+    const payPeriodStartField = document.getElementById('pay_period_start');
+    const originalValue = payPeriodStartField.value;
+    payPeriodStartField.style.backgroundColor = '#f8f9fa';
+    payPeriodStartField.disabled = true;
+    
+    // Fetch employee hire date
+    fetch(`{{ url_for('hr.get_employee_hire_date', employee_id=0) }}`.replace('0', employeeId))
+        .then(response => response.json())
+        .then(data => {
+            payPeriodStartField.style.backgroundColor = '';
+            payPeriodStartField.disabled = false;
+            
+            if (data.success && data.hire_date) {
+                payPeriodStartField.value = data.hire_date;
+                
+                // Show success message
+                const helpText = payPeriodStartField.parentElement.querySelector('.text-muted');
+                if (helpText) {
+                    helpText.innerHTML = `<i class="fas fa-check text-success"></i> Set to ${data.name}'s hire date: ${data.hire_date}`;
+                    setTimeout(() => {
+                        helpText.innerHTML = '<i class="fas fa-info-circle"></i> Auto-populated with employee\'s hire date when selected';
+                    }, 3000);
+                }
+            } else {
+                console.warn('Could not load hire date for employee');
+                payPeriodStartField.value = originalValue;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading employee hire date:', error);
+            payPeriodStartField.style.backgroundColor = '';
+            payPeriodStartField.disabled = false;
+            payPeriodStartField.value = originalValue;
+        });
 }
 
 // Initialize calculation on page load

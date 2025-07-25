@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from forms import EmployeeForm, SalaryRecordForm, EmployeeAdvanceForm
 from models import Employee, SalaryRecord, EmployeeAdvance
@@ -248,6 +248,20 @@ def salary_list():
                          month=month,
                          total_gross=total_gross,
                          total_net=total_net)
+
+@hr_bp.route('/api/employee/<int:employee_id>/hire-date')
+@login_required
+def get_employee_hire_date(employee_id):
+    """Get employee hire date for salary form"""
+    try:
+        employee = Employee.query.get_or_404(employee_id)
+        return jsonify({
+            'success': True,
+            'hire_date': employee.hire_date.strftime('%Y-%m-%d') if employee.hire_date else None,
+            'name': employee.name
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
 
 @hr_bp.route('/salaries/add', methods=['GET', 'POST'])
 @login_required
