@@ -111,10 +111,21 @@
                                 <h6><i class="fas fa-truck"></i> Freight/Transportation Costs <span class="badge bg-secondary">Optional</span></h6>
                             </div>
                             <div class="card-body">
-                                <div class="mb-3">
-                                    {{ form.freight_cost_per_unit.label(class="form-label") }}
-                                    {{ form.freight_cost_per_unit(class="form-control", step="0.01") }}
-                                    <small class="text-muted">Transportation cost per unit (many times not paid by company, leave 0 if not applicable)</small>
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <div class="mb-3">
+                                            {{ form.freight_cost_per_unit.label(class="form-label") }}
+                                            {{ form.freight_cost_per_unit(class="form-control", step="0.01") }}
+                                            <small class="text-muted">Transportation cost (many times not paid by company, leave 0 if not applicable)</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            {{ form.freight_unit_type.label(class="form-label") }}
+                                            {{ form.freight_unit_type(class="form-select") }}
+                                            <small class="text-muted">Cost calculation basis</small>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -247,14 +258,32 @@
                                     <th></th>
                                 </tr>
                                 <tr class="table-secondary">
-                                    <th colspan="7">Freight Cost per Unit</th>
+                                    <th colspan="7">Freight Cost ({{ bom.freight_unit_type.replace('_', ' ').title() if bom.freight_unit_type else 'Per Unit' }})</th>
                                     <th>₹{{ "%.2f"|format(bom.freight_cost_per_unit or 0) }}</th>
                                     <th></th>
                                 </tr>
                                 <tr class="table-info">
                                     <th colspan="7">Total Weight per Unit</th>
                                     <th>
-                                        2.700 kg/unit
+                                        {% set total_weight = 0.0 %}
+                                        {% for bom_item in bom_items %}
+                                            {% if bom_item.item.unit_weight %}
+                                                {% set weight = bom_item.item.unit_weight|float %}
+                                                {% set qty = bom_item.quantity_required|float %}
+                                                {% if weight > 0 %}
+                                                    {% set total_weight = total_weight + (weight * qty) %}
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {% if total_weight > 0 %}
+                                            {% if total_weight < 1 %}
+                                                {{ "%.1f"|format(total_weight * 1000) }} g/unit
+                                            {% else %}
+                                                {{ "%.3f"|format(total_weight) }} kg/unit
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
                                     </th>
                                     <th></th>
                                 </tr>
