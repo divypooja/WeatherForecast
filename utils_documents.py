@@ -26,25 +26,38 @@ def save_uploaded_file(file, transaction_type, transaction_id, document_category
         Document object if successful, None if failed
     """
     if file and allowed_file(file.filename):
-        # Generate unique filename
+        # Generate meaningful filename
         file_ext = file.filename.rsplit('.', 1)[1].lower()
-        unique_filename = f"{uuid.uuid4().hex}.{file_ext}"
+        
+        # Create meaningful filename with transaction info and timestamp
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        # Format transaction type for filename
+        transaction_name = transaction_type.replace('_', '-').upper()
+        
+        # Create structured filename: TRANSACTION-TYPE_ID_CATEGORY_TIMESTAMP.ext
+        meaningful_filename = f"{transaction_name}_{transaction_id}_{document_category.upper()}_{timestamp}.{file_ext}"
+        
+        # Keep a unique ID as backup for collision prevention
+        unique_id = str(uuid.uuid4())[:8]
+        unique_filename = f"{transaction_name}_{transaction_id}_{document_category.upper()}_{timestamp}_{unique_id}.{file_ext}"
         
         # Create upload directory structure
         upload_dir = os.path.join('uploads', transaction_type, str(transaction_id))
         os.makedirs(upload_dir, exist_ok=True)
         
-        # Save file
+        # Save file with meaningful name
         file_path = os.path.join(upload_dir, unique_filename)
         file.save(file_path)
         
         # Get file info
         file_size = os.path.getsize(file_path)
         
-        # Create database record
+        # Create database record with meaningful display name
         document = Document(
             filename=unique_filename,
-            original_filename=secure_filename(file.filename),
+            original_filename=meaningful_filename,  # Store meaningful name for display
             file_size=file_size,
             file_type=file_ext,
             upload_path=os.path.join(transaction_type, str(transaction_id), unique_filename),
@@ -73,9 +86,19 @@ def get_documents_for_transaction(transaction_type, transaction_id):
 def save_uploaded_file_expense(file, expense_id, document_category, description=None):
     """Save uploaded file for Factory Expense and create Document record"""
     if file and allowed_file(file.filename):
-        # Generate unique filename
+        # Generate meaningful filename for expenses
         file_ext = file.filename.rsplit('.', 1)[1].lower()
-        unique_filename = f"{uuid.uuid4().hex}.{file_ext}"
+        
+        # Create meaningful filename with expense info and timestamp
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        # Create structured filename: EXPENSE_ID_CATEGORY_TIMESTAMP.ext
+        meaningful_filename = f"EXPENSE_{expense_id}_{document_category.upper()}_{timestamp}.{file_ext}"
+        
+        # Keep a unique ID as backup for collision prevention
+        unique_id = str(uuid.uuid4())[:8]
+        unique_filename = f"EXPENSE_{expense_id}_{document_category.upper()}_{timestamp}_{unique_id}.{file_ext}"
         
         # Create upload directory structure
         upload_dir = os.path.join('uploads', 'factory_expense', str(expense_id))
@@ -88,10 +111,10 @@ def save_uploaded_file_expense(file, expense_id, document_category, description=
         # Get file info
         file_size = os.path.getsize(file_path)
         
-        # Create database record
+        # Create database record with meaningful display name
         document = Document(
             filename=unique_filename,
-            original_filename=secure_filename(file.filename),
+            original_filename=meaningful_filename,  # Store meaningful name for display
             file_size=file_size,
             file_type=file_ext,
             upload_path=os.path.join('factory_expense', str(expense_id), unique_filename),
