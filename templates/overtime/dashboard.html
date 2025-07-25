@@ -115,10 +115,10 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <small class="text-muted">{{ rate.created_at.strftime('%d %b %Y') }}</small>
+                                    <small class="text-muted">{{ rate.created_at.strftime('%d %b %Y') if rate.created_at else 'N/A' }}</small>
                                 </td>
                                 <td>
-                                    <small class="text-muted">{{ rate.updated_at.strftime('%d %b %Y') }}</small>
+                                    <small class="text-muted">{{ rate.updated_at.strftime('%d %b %Y') if rate.updated_at else 'N/A' }}</small>
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
