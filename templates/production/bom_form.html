@@ -383,6 +383,37 @@ function updateUnitCost() {
 }
 
 function previewBOM() {
+    // Calculate total costs from form values
+    const laborCost = parseFloat(document.querySelector('[name="labor_cost_per_unit"]').value || 0);
+    const overheadCost = parseFloat(document.querySelector('[name="overhead_cost_per_unit"]').value || 0);
+    const overheadPercentage = parseFloat(document.querySelector('[name="overhead_percentage"]').value || 0);
+    const freightCost = parseFloat(document.querySelector('[name="freight_cost_per_unit"]').value || 0);
+    const markupPercentage = parseFloat(document.querySelector('[name="markup_percentage"]').value || 0);
+    
+    // Get material cost from existing BOM components (if any)
+    let materialCost = 0;
+    const materialCostElements = document.querySelectorAll('th');
+    for (let element of materialCostElements) {
+        if (element.textContent.includes('Material Cost Subtotal')) {
+            const materialCostText = element.nextElementSibling?.textContent || '₹0.00';
+            materialCost = parseFloat(materialCostText.replace('₹', '').replace(',', '')) || 0;
+            break;
+        }
+    }
+    
+    // Calculate overhead from percentage if specified
+    let calculatedOverheadCost = overheadCost;
+    if (overheadPercentage > 0 && materialCost > 0) {
+        calculatedOverheadCost = materialCost * (overheadPercentage / 100);
+    }
+    
+    // Calculate subtotal before markup
+    const subtotal = materialCost + laborCost + calculatedOverheadCost + freightCost;
+    
+    // Calculate markup amount and total cost
+    const markupAmount = subtotal * (markupPercentage / 100);
+    const totalCost = subtotal + markupAmount;
+    
     // Show a modal with current BOM configuration
     const modalHtml = `
         <div class="modal fade" id="bomPreviewModal" tabindex="-1" aria-labelledby="bomPreviewModalLabel" aria-hidden="true">
@@ -403,14 +434,25 @@ function previewBOM() {
                         <table class="table table-sm">
                             <tr><td><strong>Product:</strong></td><td>${document.querySelector('[name="product_id"] option:checked').text}</td></tr>
                             <tr><td><strong>Version:</strong></td><td>${document.querySelector('[name="version"]').value}</td></tr>
-                            <tr><td><strong>Labor Cost per Unit:</strong></td><td>₹${parseFloat(document.querySelector('[name="labor_cost_per_unit"]').value || 0).toFixed(2)}</td></tr>
-                            <tr><td><strong>Overhead Cost per Unit:</strong></td><td>₹${parseFloat(document.querySelector('[name="overhead_cost_per_unit"]').value || 0).toFixed(2)}</td></tr>
-                            <tr><td><strong>Overhead Percentage:</strong></td><td>${parseFloat(document.querySelector('[name="overhead_percentage"]').value || 0).toFixed(1)}%</td></tr>
-                            <tr><td><strong>Freight Cost per Unit:</strong></td><td>₹${parseFloat(document.querySelector('[name="freight_cost_per_unit"]').value || 0).toFixed(2)}</td></tr>
-                            <tr><td><strong>Markup Percentage:</strong></td><td>${parseFloat(document.querySelector('[name="markup_percentage"]').value || 0).toFixed(1)}%</td></tr>
+                            <tr><td><strong>Labor Cost per Unit:</strong></td><td>₹${laborCost.toFixed(2)}</td></tr>
+                            <tr><td><strong>Overhead Cost per Unit:</strong></td><td>₹${calculatedOverheadCost.toFixed(2)}</td></tr>
+                            <tr><td><strong>Overhead Percentage:</strong></td><td>${overheadPercentage.toFixed(1)}%</td></tr>
+                            <tr><td><strong>Freight Cost per Unit:</strong></td><td>₹${freightCost.toFixed(2)}</td></tr>
+                            <tr><td><strong>Markup Percentage:</strong></td><td>${markupPercentage.toFixed(1)}%</td></tr>
                         </table>
                         
-                        <p class="text-muted"><i class="fas fa-info-circle"></i> Add components to see complete BOM preview with cost calculations.</p>
+                        <h6><i class="fas fa-calculator"></i> Cost Breakdown</h6>
+                        <table class="table table-sm table-bordered">
+                            <tr><td><strong>Material Cost:</strong></td><td class="text-end">₹${materialCost.toFixed(2)}</td></tr>
+                            <tr><td><strong>Labor Cost:</strong></td><td class="text-end">₹${laborCost.toFixed(2)}</td></tr>
+                            <tr><td><strong>Overhead Cost:</strong></td><td class="text-end">₹${calculatedOverheadCost.toFixed(2)}</td></tr>
+                            <tr><td><strong>Freight Cost:</strong></td><td class="text-end">₹${freightCost.toFixed(2)}</td></tr>
+                            <tr class="table-secondary"><td><strong>Subtotal:</strong></td><td class="text-end">₹${subtotal.toFixed(2)}</td></tr>
+                            <tr><td><strong>Markup (${markupPercentage.toFixed(1)}%):</strong></td><td class="text-end">₹${markupAmount.toFixed(2)}</td></tr>
+                            <tr class="table-success"><td><strong>Total Cost per Unit:</strong></td><td class="text-end"><strong>₹${totalCost.toFixed(2)}</strong></td></tr>
+                        </table>
+                        
+                        ${materialCost === 0 ? '<p class="text-muted"><i class="fas fa-info-circle"></i> Add components to see complete material costs.</p>' : ''}
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
