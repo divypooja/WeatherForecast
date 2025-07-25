@@ -275,16 +275,27 @@ fs.readFile(inputFile, 'utf8', (err, data) => {
             
             if 'placements' in nest_result:
                 for placement in nest_result['placements']:
+                    part_id = placement.get('id', 'unknown')
+                    
+                    # Find original part data to preserve polygon
+                    original_part = None
+                    for part in parts:
+                        if part.get('part_id') == part_id or part.get('id') == part_id:
+                            original_part = part
+                            break
+                    
+                    polygon = original_part.get('polygon', []) if original_part else []
+                    
                     placed_parts.append({
-                        'part_id': placement.get('id', 'unknown'),
-                        'position': placement.get('translation', {'x': 0, 'y': 0}),
+                        'part_id': part_id,
+                        'position': {'x': placement.get('x', 0), 'y': placement.get('y', 0)},
                         'rotation': placement.get('rotation', 0),
-                        'polygon': placement.get('polygon', [])
+                        'polygon': polygon
                     })
                     
-                    # Calculate part area
-                    if 'polygon' in placement:
-                        part_area = self._calculate_polygon_area(placement['polygon'])
+                    # Calculate part area using original polygon
+                    if polygon:
+                        part_area = self._calculate_polygon_area(polygon)
                         total_part_area += part_area
             
             # Calculate efficiency
