@@ -178,20 +178,29 @@
                                 <td>{{ "%.2f"|format(item.minimum_stock or 0) }}</td>
                                 <td>
                                     {% if (item.unit_weight or 0) > 0 %}
+                                        {% set weight_val = item.unit_weight %}
+                                        {% set display_unit = 'kg' %}
+                                        {% set display_weight = weight_val %}
+                                        
+                                        {% if weight_val < 1 %}
+                                            {% set display_unit = 'g' %}
+                                            {% set display_weight = weight_val * 1000 %}
+                                        {% endif %}
+                                        
                                         {% if item.unit_of_measure %}
                                             {% if 'Square' in item.unit_of_measure or 'sq' in item.unit_of_measure %}
-                                                {{ "%.3f"|format(item.unit_weight) }} kg/sq.ft
+                                                {{ "%.1f"|format(display_weight) if display_unit == 'g' else "%.3f"|format(display_weight) }} {{ display_unit }}/sq.ft
                                             {% elif 'Meter' in item.unit_of_measure or 'Length' in item.unit_of_measure %}
-                                                {{ "%.3f"|format(item.unit_weight) }} kg/m
+                                                {{ "%.1f"|format(display_weight) if display_unit == 'g' else "%.3f"|format(display_weight) }} {{ display_unit }}/m
                                             {% elif 'Kilogram' in item.unit_of_measure %}
-                                                {{ "%.3f"|format(item.unit_weight) }} kg/kg
+                                                {{ "%.1f"|format(display_weight) if display_unit == 'g' else "%.3f"|format(display_weight) }} {{ display_unit }}/kg
                                             {% elif 'Liter' in item.unit_of_measure or 'Volume' in item.unit_of_measure %}
-                                                {{ "%.3f"|format(item.unit_weight) }} kg/L
+                                                {{ "%.1f"|format(display_weight) if display_unit == 'g' else "%.3f"|format(display_weight) }} {{ display_unit }}/L
                                             {% else %}
-                                                {{ "%.3f"|format(item.unit_weight) }} kg/unit
+                                                {{ "%.1f"|format(display_weight) if display_unit == 'g' else "%.3f"|format(display_weight) }} {{ display_unit }}/unit
                                             {% endif %}
                                         {% else %}
-                                            {{ "%.3f"|format(item.unit_weight) }} kg
+                                            {{ "%.1f"|format(display_weight) if display_unit == 'g' else "%.3f"|format(display_weight) }} {{ display_unit }}
                                         {% endif %}
                                     {% else %}
                                         <span class="text-muted">-</span>
