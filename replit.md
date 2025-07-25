@@ -6,7 +6,19 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 25, 2025)
 
-### Job Work Preview Functionality Removed (Latest - January 25, 2025)
+### Complete Job Work Rates Management System (Latest - January 25, 2025)
+- **Job Work Rates Table**: Created comprehensive rates management with fields - Item Code, Item Name, Rate Job Work as requested
+- **Complete CRUD Operations**: Full add, edit, list, and delete functionality for job work rates
+- **Professional Dashboard**: Statistics showing total rates, items with rates, average rate, and inactive rates
+- **Advanced Filtering**: Search by item name/code and filter by process type with pagination support
+- **Auto-Rate Loading**: Job Work form automatically loads rates from rates table when item/process is selected
+- **Process-Specific Rates**: Support for different rates per manufacturing process (optional general rates)
+- **Smart Rate Lookup**: Finds process-specific rates first, falls back to general rates for flexibility
+- **Navigation Integration**: Accessible from Job Work dashboard quick actions (removed from main sidebar to avoid duplication)
+- **Real-time Feedback**: Shows "Rate loaded from rates table" notification when rates auto-populate in job work form
+- **Duplicate Prevention**: System prevents duplicate rates for same item/process combination
+
+### Job Work Preview Functionality Removed (January 25, 2025)
 - **Preview Button Removed**: Removed preview button from Job Work form as requested by user for simplified interface
 - **Preview Modal Removed**: Deleted entire preview modal structure and associated HTML elements
 - **JavaScript Cleanup**: Removed all preview-related JavaScript functions (previewJobWork, createPreviewContent, showPreviewModal, loadStockAnalysis)
