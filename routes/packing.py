@@ -8,6 +8,7 @@ from models import Item, PurchaseOrder, PurchaseOrderItem, BOM, BOMItem
 from app import db
 from services.packing_optimizer import MaterialOptimizer, ProductionLayoutOptimizer, PackingCalculator
 from services.svgnest_optimizer import SVGNestOptimizer, VectorNestingCalculator
+from services.opencv_optimizer import OpenCVPackingIntegrator, ComputerVisionAnalyzer
 import json
 import tempfile
 import os
@@ -43,6 +44,13 @@ def dashboard():
                          stats=stats, 
                          recent_items=recent_items,
                          recent_pos=recent_pos)
+
+
+@packing_bp.route('/opencv-analysis')
+@login_required
+def opencv_analysis():
+    """OpenCV computer vision analysis page"""
+    return render_template('packing/opencv_analysis.html')
 
 
 @packing_bp.route('/vector-nesting')
@@ -499,6 +507,108 @@ def generate_svg_export(nesting_data):
     
     svg_content += """</svg>"""
     return svg_content
+
+
+@packing_bp.route('/api/opencv-process-image', methods=['POST'])
+@login_required
+def opencv_process_image():
+    """API endpoint for OpenCV image processing"""
+    try:
+        if 'image' not in request.files:
+            return jsonify({'success': False, 'error': 'No image file provided'}), 400
+        
+        file = request.files['image']
+        if file.filename == '':
+            return jsonify({'success': False, 'error': 'No file selected'}), 400
+        
+        # Save uploaded file temporarily
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
+        file.save(temp_file.name)
+        
+        # Get processing parameters
+        processing_type = request.form.get('processing_type', 'auto')
+        
+        # Process image with OpenCV
+        cv_integrator = OpenCVPackingIntegrator()
+        result = cv_integrator.process_image_for_packing(temp_file.name, processing_type)
+        
+        # Cleanup
+        os.unlink(temp_file.name)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"OpenCV image processing error: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@packing_bp.route('/api/opencv-optimize', methods=['POST'])
+@login_required
+def opencv_optimize():
+    """API endpoint for OpenCV-enhanced optimization"""
+    try:
+        if 'image' not in request.files:
+            return jsonify({'success': False, 'error': 'No image file provided'}), 400
+        
+        file = request.files['image']
+        data = json.loads(request.form.get('config', '{}'))
+        
+        # Save uploaded file temporarily
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
+        file.save(temp_file.name)
+        
+        # Get configuration
+        bin_config = data.get('bin_config', {'width': 1200, 'height': 800})
+        optimization_config = data.get('optimization_config', {})
+        
+        # Run OpenCV-enhanced optimization
+        cv_integrator = OpenCVPackingIntegrator()
+        result = cv_integrator.optimize_with_opencv_analysis(temp_file.name, bin_config, optimization_config)
+        
+        # Cleanup
+        os.unlink(temp_file.name)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"OpenCV optimization error: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@packing_bp.route('/api/opencv-analyze-material', methods=['POST'])
+@login_required  
+def opencv_analyze_material():
+    """API endpoint for material texture and defect analysis"""
+    try:
+        if 'image' not in request.files:
+            return jsonify({'success': False, 'error': 'No image file provided'}), 400
+        
+        file = request.files['image']
+        
+        # Save uploaded file temporarily
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
+        file.save(temp_file.name)
+        
+        # Analyze material properties
+        analyzer = ComputerVisionAnalyzer()
+        texture_analysis = analyzer.analyze_material_texture(temp_file.name)
+        defect_analysis = analyzer.detect_defects_and_holes(temp_file.name)
+        
+        # Cleanup
+        os.unlink(temp_file.name)
+        
+        result = {
+            'success': True,
+            'texture_analysis': texture_analysis,
+            'defect_analysis': defect_analysis,
+            'cutting_recommendations': analyzer.calculate_cutting_kerf_compensation('steel', 3.0)
+        }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"Material analysis error: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 # End of packing routes
