@@ -17,7 +17,16 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **Status Management**: Active/inactive toggle functionality with immediate UI feedback
 - **Navigation Integration**: Added Item Types section to Settings subsection in sidebar navigation
 
-### Enhanced Weight System with Gram Support (Latest)
+### Complete UOM Integration Across Purchase Orders and Material Inspection (Latest)
+- **Purchase Order UOM Calculations**: Fixed critical UOM conversion rate calculations where Wheel revit now correctly shows ₹100/kg (calculated from ₹1/piece × 100 pieces/kg conversion factor) instead of incorrect ₹1/piece display
+- **Material Inspection UOM Consistency**: Enhanced Material Inspection system to display correct purchase units (Kg) based on Purchase Order UOM instead of inventory units (Pcs), maintaining consistency throughout purchase → inspection workflow
+- **Dynamic Unit Labels**: Added comprehensive unit labeling system to Material Inspection form with input group addons showing proper units (Kg, Pcs, etc.) for all quantity fields (Received, Inspected, Passed, Rejected)
+- **JavaScript Integration**: Implemented dynamic unit label updates that automatically change when items are selected, ensuring all quantity inputs and summary display consistent units matching the purchase order
+- **API Endpoint Fixes**: Updated Material Inspection API endpoints to return correct purchase units from PO items using simplified approach that reads UOM directly from purchase order item records
+- **Template Enhancements**: Enhanced both Purchase Order and Material Inspection templates with proper unit display and JavaScript functionality for seamless UOM handling
+- **Database Integration**: System now properly reads purchase units from purchase_order_items.uom field and displays them consistently across forms and API responses
+
+### Enhanced Weight System with Gram Support
 - **Dual Unit Support**: Complete weight input system supporting both kilograms and grams with intelligent conversion and display
 - **Smart Unit Selector**: Added dropdown in inventory form allowing users to enter weights in preferred unit (kg or g)
 - **Automatic Conversion**: System stores all weights in kg internally but displays in most appropriate unit (<1kg shows as grams, ≥1kg shows as kilograms)
