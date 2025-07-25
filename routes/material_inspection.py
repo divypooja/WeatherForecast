@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for,
 from flask_login import login_required, current_user
 from app import db
 from models import MaterialInspection, PurchaseOrder, JobWork, Item, User, PurchaseOrderItem
+from models_uom import ItemUOMConversion, UnitOfMeasure
 from forms import MaterialInspectionForm
 from datetime import datetime
 from utils import generate_next_number
@@ -145,8 +146,10 @@ def log_inspection():
             if target_po:
                 print(f"DEBUG: Target PO found: {target_po.po_number}, status: {target_po.status}, inspection_status: {target_po.inspection_status}")
                 # Add the specific PO to choices if it's not already there
-                if po_id not in [choice[0] for choice in form.purchase_order_id.choices]:
-                    form.purchase_order_id.choices.append((target_po.id, f"{target_po.po_number} - {target_po.supplier.name}"))
+                current_choices = list(form.purchase_order_id.choices)
+                if po_id not in [choice[0] for choice in current_choices]:
+                    current_choices.append((target_po.id, f"{target_po.po_number} - {target_po.supplier.name}"))
+                    form.purchase_order_id.choices = current_choices
                     print(f"DEBUG: Added PO to choices")
             
             # Verify the PO exists in the choices
@@ -162,8 +165,10 @@ def log_inspection():
             if target_job:
                 print(f"DEBUG: Target Job found: {target_job.job_number}, inspection_status: {target_job.inspection_status}")
                 # Add the specific Job Work to choices if it's not already there
-                if job_id not in [choice[0] for choice in form.job_work_id.choices]:
-                    form.job_work_id.choices.append((target_job.id, f"{target_job.job_number} - {target_job.customer_name}"))
+                current_choices = list(form.job_work_id.choices)
+                if job_id not in [choice[0] for choice in current_choices]:
+                    current_choices.append((target_job.id, f"{target_job.job_number} - {target_job.customer_name}"))
+                    form.job_work_id.choices = current_choices
                     print(f"DEBUG: Added Job Work to choices")
             
             form.job_work_id.data = job_id
@@ -174,7 +179,9 @@ def log_inspection():
         inspection_number = generate_next_number('INSPECT', 'material_inspections', 'inspection_number')
         
         # Calculate acceptance rate
-        acceptance_rate = (form.passed_quantity.data / form.inspected_quantity.data * 100) if form.inspected_quantity.data > 0 else 0
+        passed_qty = form.passed_quantity.data or 0.0
+        inspected_qty = form.inspected_quantity.data or 0.0
+        acceptance_rate = (passed_qty / inspected_qty * 100) if inspected_qty > 0 else 0
         
         inspection = MaterialInspection(
             inspection_number=inspection_number,
@@ -198,37 +205,44 @@ def log_inspection():
         # Update related PO or Job Work
         if form.purchase_order_id.data:
             po = PurchaseOrder.query.get(form.purchase_order_id.data)
-            po.inspection_status = 'completed'
-            po.inspected_at = datetime.utcnow()
+            if po:
+                po.inspection_status = 'completed'
+                po.inspected_at = datetime.utcnow()
             
-            # Automatically update PO status based on completion
-            if po.status in ['draft', 'open']:
-                # Check if all materials are inspected and received
-                total_ordered = sum(item.qty for item in po.items)
-                total_received = sum(inspection.passed_quantity for inspection in po.material_inspections) + form.passed_quantity.data
-                
-                if total_received >= total_ordered:
-                    po.status = 'closed'  # All materials received
-                elif total_received > 0:
-                    po.status = 'partial'  # Some materials received
-                # else status remains 'open' if nothing received yet
+                # Automatically update PO status based on completion
+                if po.status in ['draft', 'open']:
+                    # Check if all materials are inspected and received
+                    total_ordered = sum((item.qty or 0.0) for item in po.items if item.qty)
+                    passed_quantity = form.passed_quantity.data or 0.0
+                    total_received = sum((inspection.passed_quantity or 0.0) for inspection in po.material_inspections if inspection.passed_quantity) + passed_quantity
+                    
+                    if total_received >= total_ordered:
+                        po.status = 'closed'  # All materials received
+                    elif total_received > 0:
+                        po.status = 'partial'  # Some materials received
+                    # else status remains 'open' if nothing received yet
             
-            # Update inventory only with passed quantity for the specific item
-            item = Item.query.get(form.item_id.data)
-            if item.current_stock is None:
-                item.current_stock = 0.0
-            item.current_stock += form.passed_quantity.data
+                # Update inventory only with passed quantity for the specific item
+                item = Item.query.get(form.item_id.data)
+                if item:
+                    if item.current_stock is None:
+                        item.current_stock = 0.0
+                    passed_quantity = form.passed_quantity.data or 0.0
+                    item.current_stock += passed_quantity
                 
         elif form.job_work_id.data:
             job_work = JobWork.query.get(form.job_work_id.data)
-            job_work.inspection_status = 'completed'
-            job_work.inspected_at = datetime.utcnow()
+            if job_work:
+                job_work.inspection_status = 'completed'
+                job_work.inspected_at = datetime.utcnow()
             
-            # Update inventory only with passed quantity
-            item = Item.query.get(job_work.item_id)
-            if item.current_stock is None:
-                item.current_stock = 0.0
-            item.current_stock += form.passed_quantity.data
+                # Update inventory only with passed quantity
+                item = Item.query.get(job_work.item_id)
+                if item:
+                    if item.current_stock is None:
+                        item.current_stock = 0.0
+                    passed_quantity = form.passed_quantity.data or 0.0
+                    item.current_stock += passed_quantity
         
         db.session.commit()
         flash(f'Material inspection {inspection_number} logged successfully!', 'success')
@@ -269,19 +283,14 @@ def get_po_items(po_id):
         items = []
         
         for po_item in po.items:
-            # Get correct purchase unit from UOM conversion
-            uom_conversion = ItemUOMConversion.query.filter_by(item_id=po_item.item.id).first()
-            if uom_conversion:
-                purchase_unit = UnitOfMeasure.query.get(uom_conversion.purchase_unit_id)
-                unit_display = purchase_unit.symbol if purchase_unit else po_item.item.unit_of_measure
-            else:
-                unit_display = po_item.item.unit_of_measure
+            # Use the UOM from the purchase order item directly (already converted during PO creation)
+            unit_display = po_item.uom if po_item.uom else po_item.item.unit_of_measure
                 
             items.append({
                 'item_id': po_item.item.id,
                 'item_code': po_item.item.code,
                 'item_name': po_item.item.name,
-                'quantity': float(po_item.quantity_ordered),
+                'quantity': float(po_item.qty if po_item.qty else po_item.quantity_ordered),
                 'unit': unit_display
             })
         
