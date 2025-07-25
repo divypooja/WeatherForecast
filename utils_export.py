@@ -153,6 +153,7 @@ def export_inventory_items(items):
             'Current Stock': float(item.current_stock) if item.current_stock else 0,
             'Unit': item.unit_of_measure or '',
             'Unit Weight (kg)': float(item.unit_weight) if item.unit_weight else 0,
+            'Total Weight (kg)': float((item.unit_weight or 0) * (item.current_stock or 0)) if item.unit_weight and item.current_stock else 0,
             'Unit Price (₹)': float(item.unit_price) if item.unit_price else 0,
             'Reorder Level': float(item.reorder_level) if item.reorder_level else 0,
             'HSN Code': item.hsn_code or '',
