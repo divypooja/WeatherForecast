@@ -46,13 +46,15 @@ class ItemUOMConversionForm(FlaskForm):
     # Unit selections
     purchase_unit = SelectField('Purchase Unit (What you buy in)', validators=[DataRequired()], coerce=int)
     inventory_unit = SelectField('Inventory Unit (What you track in)', validators=[DataRequired()], coerce=int)
-    # Sale unit will automatically be set to inventory unit
+    sale_unit = SelectField('Sale Unit (What you sell in)', validators=[DataRequired()], coerce=int)
     
     # Conversion factors
     purchase_to_inventory = DecimalField('Purchase to Inventory Factor', 
                                        validators=[DataRequired(), NumberRange(min=0.000001)],
                                        render_kw={"step": "0.000001", "placeholder": "1 purchase unit = ? inventory units"})
-    # Inventory to sale factor will always be 1.0 since they use the same unit
+    inventory_to_sale = DecimalField('Inventory to Sale Factor', 
+                                   validators=[DataRequired(), NumberRange(min=0.000001)],
+                                   render_kw={"step": "0.000001", "placeholder": "1 inventory unit = ? sale units"})
     
     # Optional metadata
     weight_per_piece = DecimalField('Weight per Piece (Kg)', validators=[Optional(), NumberRange(min=0.0001)],
@@ -78,7 +80,7 @@ class ItemUOMConversionForm(FlaskForm):
         
         self.purchase_unit.choices = unit_choices
         self.inventory_unit.choices = unit_choices
-        # Sale unit choices removed - will use inventory unit automatically
+        self.sale_unit.choices = unit_choices
 
 class UOMCalculatorForm(FlaskForm):
     """Form for quick UOM calculations"""
