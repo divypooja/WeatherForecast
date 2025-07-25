@@ -83,17 +83,20 @@
                                     <td>{{ assignment.employee.employee_code }}</td>
                                     <td>{{ assignment.assigned_quantity }} {{ job.item.unit_of_measure }}</td>
                                     <td>
-                                        <input type="number" 
-                                               class="form-control form-control-sm" 
-                                               value="{{ assignment.completed_quantity }}" 
-                                               min="0" 
-                                               max="{{ assignment.assigned_quantity }}"
-                                               step="0.01"
-                                               id="completed-{{ assignment.id }}"
-                                               onchange="updateAssignment({{ assignment.id }})">
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" 
+                                                   class="form-control" 
+                                                   value="{{ (assignment.completion_percentage * assignment.assigned_quantity / 100) | round(2) }}" 
+                                                   min="0" 
+                                                   max="{{ assignment.assigned_quantity }}"
+                                                   step="0.01"
+                                                   id="completed-{{ assignment.id }}"
+                                                   onchange="updateAssignment({{ assignment.id }})">
+                                            <span class="input-group-text">{{ job.item.unit_of_measure }}</span>
+                                        </div>
                                     </td>
                                     <td>
-                                        {% set progress = (assignment.completed_quantity / assignment.assigned_quantity * 100) if assignment.assigned_quantity > 0 else 0 %}
+                                        {% set progress = assignment.completion_percentage %}
                                         <div class="progress" style="height: 20px;">
                                             <div class="progress-bar" 
                                                  style="width: {{ progress }}%"
@@ -112,7 +115,7 @@
                                             <option value="on_hold" {% if assignment.status == 'on_hold' %}selected{% endif %}>On Hold</option>
                                         </select>
                                     </td>
-                                    <td>{{ assignment.assigned_date.strftime('%d %b %Y') }}</td>
+                                    <td>{{ assignment.assigned_at.strftime('%d %b %Y') }}</td>
                                     <td>
                                         <button class="btn btn-danger btn-sm" 
                                                 onclick="confirmRemoveAssignment({{ assignment.id }}, '{{ assignment.employee.name }}')">

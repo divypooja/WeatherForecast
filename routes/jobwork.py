@@ -4,6 +4,7 @@ from forms import JobWorkForm, JobWorkQuantityUpdateForm, DailyJobWorkForm, JobW
 from models import JobWork, Supplier, Item, BOM, BOMItem, CompanySettings, DailyJobWorkEntry, JobWorkTeamAssignment, Employee
 from app import db
 from sqlalchemy import func
+from datetime import datetime
 from utils import generate_job_number  
 from services.notification_helpers import send_email_notification, send_whatsapp_notification, send_email_with_attachment
 from utils_documents import get_documents_for_transaction
@@ -526,13 +527,13 @@ def update_team_assignment(assignment_id):
     try:
         data = request.get_json()
         if 'completed_quantity' in data:
-            assignment.completed_quantity = float(data['completed_quantity'])
+            completed_qty = float(data['completed_quantity'])
+            # Calculate completion percentage based on completed quantity
+            assignment.completion_percentage = (completed_qty / assignment.assigned_quantity * 100) if assignment.assigned_quantity > 0 else 0
         if 'status' in data:
             assignment.status = data['status']
-        if 'progress_notes' in data:
-            assignment.progress_notes = data['progress_notes']
         
-        assignment.last_updated = db.func.now()
+        assignment.updated_at = datetime.utcnow()
         db.session.commit()
         
         return jsonify({'success': True, 'message': 'Assignment updated successfully'})
