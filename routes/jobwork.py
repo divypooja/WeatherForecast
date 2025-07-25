@@ -104,8 +104,14 @@ def add_job_work():
         
         db.session.add(job)
         db.session.commit()
-        flash(f'Job Work created successfully. {form.quantity_sent.data} {item.unit_of_measure} deducted from inventory.', 'success')
-        return redirect(url_for('jobwork.list_job_works'))
+        
+        # Create appropriate success message based on work type
+        if form.work_type.data == 'in_house':
+            flash(f'Job Work {form.job_number.data} created successfully for in-house processing in {form.department.data} department. {form.quantity_sent.data} {item.unit_of_measure} allocated from inventory.', 'success')
+        else:
+            flash(f'Job Work {form.job_number.data} created successfully for {form.customer_name.data}. {form.quantity_sent.data} {item.unit_of_measure} sent for processing at ₹{form.rate_per_unit.data}/unit.', 'success')
+        
+        return redirect(url_for('jobwork.dashboard'))
     
     return render_template('jobwork/form.html', form=form, title='Add Job Work')
 
@@ -156,8 +162,14 @@ def edit_job_work(id):
         job.notes = form.notes.data
         
         db.session.commit()
-        flash('Job Work updated successfully', 'success')
-        return redirect(url_for('jobwork.list_job_works'))
+        
+        # Create appropriate success message based on work type
+        if form.work_type.data == 'in_house':
+            flash(f'Job Work {form.job_number.data} updated successfully for in-house processing in {form.department.data} department.', 'success')
+        else:
+            flash(f'Job Work {form.job_number.data} updated successfully for {form.customer_name.data}.', 'success')
+        
+        return redirect(url_for('jobwork.dashboard'))
     
     return render_template('jobwork/form.html', form=form, title='Edit Job Work', job=job)
 
