@@ -244,6 +244,7 @@ def get_item_stock(item_id):
             'minimum_stock': item.minimum_stock or 0,
             'unit_of_measure': item.unit_of_measure or 'units',
             'unit_price': float(item.unit_price or 0),
+            'unit_weight': float(item.unit_weight or 0),
             'low_stock': (item.current_stock or 0) <= (item.minimum_stock or 0)
         })
     except Exception as e:
