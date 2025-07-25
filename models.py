@@ -1016,6 +1016,78 @@ class EmployeeAdvance(db.Model):
     def __repr__(self):
         return f'<EmployeeAdvance {self.advance_number}>'
 
+class EmployeeAttendance(db.Model):
+    __tablename__ = 'employee_attendance'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=False)
+    attendance_date = db.Column(db.Date, nullable=False)
+    check_in_time = db.Column(db.Time)
+    check_out_time = db.Column(db.Time)
+    status = db.Column(db.String(20), nullable=False, default='present')  # present, absent, late, half_day, leave
+    hours_worked = db.Column(db.Float, default=0.0)  # Calculated working hours
+    overtime_hours = db.Column(db.Float, default=0.0)  # Extra hours beyond standard
+    leave_type = db.Column(db.String(50))  # sick, casual, personal, vacation (when status = leave)
+    notes = db.Column(db.Text)
+    
+    # Record keeping
+    marked_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    employee = db.relationship('Employee', backref='attendance_records')
+    marker = db.relationship('User', backref='marked_attendance')
+    
+    # Unique constraint to prevent duplicate attendance for same day
+    __table_args__ = (db.UniqueConstraint('employee_id', 'attendance_date', name='unique_employee_date'),)
+    
+    @property
+    def status_badge_class(self):
+        """Return Bootstrap badge class for attendance status"""
+        status_classes = {
+            'present': 'bg-success',
+            'absent': 'bg-danger',
+            'late': 'bg-warning',
+            'half_day': 'bg-info',
+            'leave': 'bg-secondary'
+        }
+        return status_classes.get(self.status, 'bg-light')
+    
+    def calculate_hours_worked(self):
+        """Calculate hours worked from check-in and check-out times"""
+        if self.check_in_time and self.check_out_time:
+            from datetime import datetime, timedelta
+            
+            # Convert times to datetime for calculation
+            today = datetime.today().date()
+            check_in = datetime.combine(today, self.check_in_time)
+            check_out = datetime.combine(today, self.check_out_time)
+            
+            # Handle overnight shifts
+            if check_out < check_in:
+                check_out += timedelta(days=1)
+            
+            # Calculate total hours
+            total_seconds = (check_out - check_in).total_seconds()
+            hours = total_seconds / 3600
+            
+            # Standard working hours (8 hours)
+            standard_hours = 8.0
+            
+            if hours > standard_hours:
+                self.hours_worked = standard_hours
+                self.overtime_hours = round(hours - standard_hours, 2)
+            else:
+                self.hours_worked = round(hours, 2)
+                self.overtime_hours = 0.0
+        else:
+            self.hours_worked = 0.0
+            self.overtime_hours = 0.0
+    
+    def __repr__(self):
+        return f'<EmployeeAttendance {self.employee.full_name} - {self.attendance_date}>'
+
 class Document(db.Model):
     __tablename__ = 'documents'
     

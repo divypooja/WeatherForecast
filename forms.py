@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
-from wtforms import StringField, PasswordField, SubmitField, SelectField, TextAreaField, FloatField, IntegerField, DateField, BooleanField, SelectMultipleField, ValidationError, DateTimeField
+from wtforms import StringField, PasswordField, SubmitField, SelectField, TextAreaField, FloatField, IntegerField, DateField, TimeField, BooleanField, SelectMultipleField, ValidationError, DateTimeField
 from wtforms.validators import DataRequired, Length, Email, NumberRange, Optional
 from wtforms.widgets import CheckboxInput, ListWidget
 from models import User, Item, Supplier, QualityIssue, Production, PurchaseOrder, JobWork, ItemType
@@ -620,6 +620,36 @@ class EmployeeAdvanceForm(FlaskForm):
     
     def __init__(self, *args, **kwargs):
         super(EmployeeAdvanceForm, self).__init__(*args, **kwargs)
+        from models import Employee
+        self.employee_id.choices = [(0, 'Select Employee')] + [
+            (e.id, f"{e.name} ({e.employee_code})") 
+            for e in Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
+        ]
+
+class AttendanceForm(FlaskForm):
+    employee_id = SelectField('Employee', coerce=int, validators=[DataRequired()])
+    attendance_date = DateField('Attendance Date', validators=[DataRequired()], default=datetime.utcnow().date())
+    check_in_time = TimeField('Check-in Time')
+    check_out_time = TimeField('Check-out Time') 
+    status = SelectField('Attendance Status', 
+                        choices=[('present', 'Present'), 
+                                ('absent', 'Absent'), 
+                                ('late', 'Late'), 
+                                ('half_day', 'Half Day'),
+                                ('leave', 'On Leave')],
+                        validators=[DataRequired()], default='present')
+    leave_type = SelectField('Leave Type (if applicable)', 
+                            choices=[('', 'Not Applicable'),
+                                    ('sick', 'Sick Leave'), 
+                                    ('casual', 'Casual Leave'), 
+                                    ('personal', 'Personal Leave'),
+                                    ('vacation', 'Vacation')],
+                            validators=[Optional()])
+    notes = TextAreaField('Notes', render_kw={'rows': 3})
+    submit = SubmitField('Mark Attendance')
+    
+    def __init__(self, *args, **kwargs):
+        super(AttendanceForm, self).__init__(*args, **kwargs)
         from models import Employee
         self.employee_id.choices = [(0, 'Select Employee')] + [
             (e.id, f"{e.name} ({e.employee_code})") 

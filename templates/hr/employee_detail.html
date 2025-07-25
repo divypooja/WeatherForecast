@@ -55,6 +55,24 @@
                                 </a>
                             </div>
                         </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-grid">
+                                <a href="{{ url_for('hr.add_attendance') }}?employee_id={{ employee.id }}" 
+                                   class="btn btn-outline-info btn-lg">
+                                    <i class="fas fa-calendar-check"></i> Mark Attendance
+                                    <br><small class="text-muted">Record attendance for this employee</small>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-grid">
+                                <a href="{{ url_for('hr.attendance_list') }}?employee_id={{ employee.id }}" 
+                                   class="btn btn-outline-secondary btn-lg">
+                                    <i class="fas fa-history"></i> View Attendance History
+                                    <br><small class="text-muted">See all attendance records</small>
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

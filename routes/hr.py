@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
-from forms import EmployeeForm, SalaryRecordForm, EmployeeAdvanceForm
-from models import Employee, SalaryRecord, EmployeeAdvance, FactoryExpense
+from forms import EmployeeForm, SalaryRecordForm, EmployeeAdvanceForm, AttendanceForm
+from models import Employee, SalaryRecord, EmployeeAdvance, EmployeeAttendance, FactoryExpense
 from app import db
 from sqlalchemy import func, desc
 from utils import generate_employee_code
@@ -16,6 +16,9 @@ hr_bp = Blueprint('hr', __name__)
 @login_required
 def dashboard():
     # HR statistics
+    from datetime import date
+    today = date.today()
+    
     stats = {
         'total_employees': Employee.query.count(),
         'active_employees': Employee.query.filter_by(is_active=True).count(),
@@ -24,7 +27,11 @@ def dashboard():
         'piece_rate_employees': Employee.query.filter_by(salary_type='piece_rate', is_active=True).count(),
         'pending_salaries': SalaryRecord.query.filter_by(status='pending').count(),
         'pending_advances': EmployeeAdvance.query.filter_by(status='pending').count(),
-        'total_monthly_advances': db.session.query(func.sum(EmployeeAdvance.remaining_amount)).filter_by(status='active').scalar() or 0
+        'total_monthly_advances': db.session.query(func.sum(EmployeeAdvance.remaining_amount)).filter_by(status='active').scalar() or 0,
+        'today_attendance': EmployeeAttendance.query.filter_by(attendance_date=today).count(),
+        'today_present': EmployeeAttendance.query.filter_by(attendance_date=today, status='present').count(),
+        'today_absent': EmployeeAttendance.query.filter_by(attendance_date=today, status='absent').count(),
+        'today_on_leave': EmployeeAttendance.query.filter_by(attendance_date=today, status='leave').count()
     }
     
     # Recent employees
@@ -543,3 +550,199 @@ def mark_advance_paid(id):
         db.session.rollback()
         flash(f'Error processing advance payment: {str(e)}', 'danger')
         return redirect(url_for('hr.advance_detail', id=id))
+
+# ===== ATTENDANCE MANAGEMENT ROUTES =====
+
+@hr_bp.route('/attendance')
+@login_required
+def attendance_list():
+    page = request.args.get('page', 1, type=int)
+    employee_id = request.args.get('employee_id', None, type=int)
+    date_from = request.args.get('date_from', '', type=str)
+    date_to = request.args.get('date_to', '', type=str)
+    status = request.args.get('status', '', type=str)
+    
+    # Build query
+    query = EmployeeAttendance.query.join(Employee)
+    
+    if employee_id:
+        query = query.filter(EmployeeAttendance.employee_id == employee_id)
+    
+    if date_from:
+        try:
+            from_date = datetime.strptime(date_from, '%Y-%m-%d').date()
+            query = query.filter(EmployeeAttendance.attendance_date >= from_date)
+        except ValueError:
+            pass
+    
+    if date_to:
+        try:
+            to_date = datetime.strptime(date_to, '%Y-%m-%d').date()
+            query = query.filter(EmployeeAttendance.attendance_date <= to_date)
+        except ValueError:
+            pass
+    
+    if status:
+        query = query.filter(EmployeeAttendance.status == status)
+    
+    attendance_records = query.order_by(EmployeeAttendance.attendance_date.desc()).paginate(
+        page=page, per_page=20, error_out=False)
+    
+    # Get all employees for filter dropdown
+    employees = Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
+    
+    return render_template('hr/attendance_list.html', 
+                         attendance_records=attendance_records,
+                         employees=employees,
+                         employee_id=employee_id,
+                         date_from=date_from,
+                         date_to=date_to,
+                         status=status)
+
+@hr_bp.route('/attendance/add', methods=['GET', 'POST'])
+@login_required
+def add_attendance():
+    form = AttendanceForm()
+    
+    # Pre-select employee if coming from employee detail page
+    employee_id = request.args.get('employee_id', type=int)
+    if employee_id and request.method == 'GET':
+        form.employee_id.data = employee_id
+    
+    if form.validate_on_submit():
+        # Check if attendance already exists for this employee and date
+        existing = EmployeeAttendance.query.filter_by(
+            employee_id=form.employee_id.data,
+            attendance_date=form.attendance_date.data
+        ).first()
+        
+        if existing:
+            flash('Attendance already marked for this employee on this date!', 'warning')
+            return render_template('hr/attendance_form.html', form=form, title='Mark Attendance')
+        
+        attendance = EmployeeAttendance(
+            employee_id=form.employee_id.data,
+            attendance_date=form.attendance_date.data,
+            check_in_time=form.check_in_time.data,
+            check_out_time=form.check_out_time.data,
+            status=form.status.data,
+            leave_type=form.leave_type.data if form.leave_type.data else None,
+            notes=form.notes.data,
+            marked_by=current_user.id
+        )
+        
+        # Calculate hours worked if check-in and check-out times are provided
+        attendance.calculate_hours_worked()
+        
+        db.session.add(attendance)
+        db.session.commit()
+        
+        flash(f'Attendance marked successfully for {attendance.employee.name}!', 'success')
+        return redirect(url_for('hr.attendance_list'))
+    
+    return render_template('hr/attendance_form.html', form=form, title='Mark Attendance')
+
+@hr_bp.route('/attendance/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_attendance(id):
+    attendance = EmployeeAttendance.query.get_or_404(id)
+    form = AttendanceForm(obj=attendance)
+    
+    if form.validate_on_submit():
+        # Check if changing date and attendance already exists for new date
+        if (form.attendance_date.data != attendance.attendance_date or 
+            form.employee_id.data != attendance.employee_id):
+            existing = EmployeeAttendance.query.filter_by(
+                employee_id=form.employee_id.data,
+                attendance_date=form.attendance_date.data
+            ).filter(EmployeeAttendance.id != id).first()
+            
+            if existing:
+                flash('Attendance already exists for this employee on this date!', 'warning')
+                return render_template('hr/attendance_form.html', form=form, title='Edit Attendance', attendance=attendance)
+        
+        form.populate_obj(attendance)
+        attendance.leave_type = form.leave_type.data if form.leave_type.data else None
+        
+        # Recalculate hours worked
+        attendance.calculate_hours_worked()
+        
+        db.session.commit()
+        flash('Attendance updated successfully!', 'success')
+        return redirect(url_for('hr.attendance_list'))
+    
+    return render_template('hr/attendance_form.html', form=form, title='Edit Attendance', attendance=attendance)
+
+@hr_bp.route('/attendance/detail/<int:id>')
+@login_required
+def attendance_detail(id):
+    attendance = EmployeeAttendance.query.get_or_404(id)
+    return render_template('hr/attendance_detail.html', attendance=attendance)
+
+@hr_bp.route('/attendance/delete/<int:id>')
+@login_required
+def delete_attendance(id):
+    if not current_user.is_admin():
+        flash('Only administrators can delete attendance records.', 'danger')
+        return redirect(url_for('hr.attendance_list'))
+        
+    attendance = EmployeeAttendance.query.get_or_404(id)
+    employee_name = attendance.employee.name
+    attendance_date = attendance.attendance_date
+    
+    db.session.delete(attendance)
+    db.session.commit()
+    
+    flash(f'Attendance record for {employee_name} on {attendance_date} deleted successfully!', 'success')
+    return redirect(url_for('hr.attendance_list'))
+
+@hr_bp.route('/attendance/bulk', methods=['GET', 'POST'])
+@login_required
+def bulk_attendance():
+    form = BulkAttendanceForm()
+    
+    if form.validate_on_submit():
+        try:
+            attendance_date = form.attendance_date.data
+            marked_count = 0
+            skipped_count = 0
+            
+            # Get all active employees
+            employees = Employee.query.filter_by(is_active=True).all()
+            
+            for employee in employees:
+                # Check if attendance already exists for this employee and date
+                existing = EmployeeAttendance.query.filter_by(
+                    employee_id=employee.id,
+                    attendance_date=attendance_date
+                ).first()
+                
+                if existing:
+                    skipped_count += 1
+                    continue
+                
+                # Create attendance record with default present status
+                attendance = EmployeeAttendance(
+                    employee_id=employee.id,
+                    attendance_date=attendance_date,
+                    status='present',
+                    marked_by=current_user.id
+                )
+                
+                db.session.add(attendance)
+                marked_count += 1
+            
+            db.session.commit()
+            
+            if marked_count > 0:
+                flash(f'Bulk attendance marked successfully! {marked_count} employees marked as present. {skipped_count} employees skipped (already marked).', 'success')
+            else:
+                flash('No new attendance records created. All employees already have attendance marked for this date.', 'info')
+                
+            return redirect(url_for('hr.attendance_list'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error marking bulk attendance: {str(e)}', 'danger')
+    
+    return render_template('hr/bulk_attendance_form.html', form=form)
