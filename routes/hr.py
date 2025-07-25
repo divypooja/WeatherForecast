@@ -755,4 +755,6 @@ def bulk_attendance():
             db.session.rollback()
             flash(f'Error marking bulk attendance: {str(e)}', 'danger')
     
-    return render_template('hr/bulk_attendance_form.html', form=form)
+    # Get active employees for preview
+    active_employees = Employee.query.filter_by(is_active=True).all()
+    return render_template('hr/bulk_attendance_form.html', form=form, active_employees=active_employees)
