@@ -188,6 +188,7 @@
                                     <th>Type</th>
                                     <th>Quantity Required</th>
                                     <th>Unit</th>
+                                    <th>Unit Weight</th>
                                     <th>Unit Cost</th>
                                     <th>Total Cost</th>
                                     <th>Actions</th>
@@ -200,11 +201,23 @@
                                     <td>{{ bom_item.item.name }}</td>
                                     <td>
                                         <span class="badge bg-{{ 'primary' if bom_item.item.item_type == 'material' else 'info' }}">
-                                            {{ bom_item.item.item_type.title() }}
+                                            {{ bom_item.item.display_item_type }}
                                         </span>
                                     </td>
                                     <td>{{ "%.2f"|format(bom_item.quantity_required) }}</td>
                                     <td>{{ bom_item.item.unit_of_measure }}</td>
+                                    <td>
+                                        {% if (bom_item.item.unit_weight or 0) > 0 %}
+                                            {% set weight_val = bom_item.item.unit_weight %}
+                                            {% if weight_val < 1 %}
+                                                {{ "%.1f"|format(weight_val * 1000) }} g/unit
+                                            {% else %}
+                                                {{ "%.3f"|format(weight_val) }} kg/unit
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
                                     <td>₹{{ "%.2f"|format(bom_item.unit_cost) }}</td>
                                     <td>₹{{ "%.2f"|format(bom_item.quantity_required * bom_item.unit_cost) }}</td>
                                     <td>
@@ -219,27 +232,27 @@
                             </tbody>
                             <tfoot>
                                 <tr class="table-secondary">
-                                    <th colspan="6">Material Cost Subtotal</th>
+                                    <th colspan="7">Material Cost Subtotal</th>
                                     <th>₹{{ "%.2f"|format(material_cost or 0) }}</th>
                                     <th></th>
                                 </tr>
                                 <tr class="table-secondary">
-                                    <th colspan="6">Labor Cost per Unit</th>
+                                    <th colspan="7">Labor Cost per Unit</th>
                                     <th>₹{{ "%.2f"|format(bom.labor_cost_per_unit or 0) }}</th>
                                     <th></th>
                                 </tr>
                                 <tr class="table-secondary">
-                                    <th colspan="6">Overhead Cost per Unit</th>
+                                    <th colspan="7">Overhead Cost per Unit</th>
                                     <th>₹{{ "%.2f"|format(bom.overhead_cost_per_unit or (material_cost * (bom.overhead_percentage or 0) / 100)) }}</th>
                                     <th></th>
                                 </tr>
                                 <tr class="table-secondary">
-                                    <th colspan="6">Freight Cost per Unit</th>
+                                    <th colspan="7">Freight Cost per Unit</th>
                                     <th>₹{{ "%.2f"|format(bom.freight_cost_per_unit or 0) }}</th>
                                     <th></th>
                                 </tr>
                                 <tr class="table-dark">
-                                    <th colspan="6">Total BOM Cost per Unit</th>
+                                    <th colspan="7">Total BOM Cost per Unit</th>
                                     <th>₹{{ "%.2f"|format(total_cost_per_unit or 0) }}</th>
                                     <th></th>
                                 </tr>
