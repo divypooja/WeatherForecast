@@ -58,6 +58,9 @@
                                     <div class="d-flex flex-column">
                                         <small>{{ job.quantity_received }}/{{ job.quantity_sent }} {{ job.item.unit_of_measure }}</small>
                                         <small class="text-primary fw-bold">{{ job.total_cost_display }}</small>
+                                        {% if job.work_type == 'in_house' and job.department %}
+                                        <small class="text-muted">Dept: {{ job.department.replace('_', ' ').title() }}</small>
+                                        {% endif %}
                                         <div class="progress" style="height: 8px;">
                                             <div class="progress-bar bg-{{ 'success' if job.status == 'completed' else 'warning' if job.status == 'partial_received' else 'primary' }}" 
                                                  style="width: {{ (job.quantity_received / job.quantity_sent * 100) if job.quantity_sent > 0 else 0 }}%"></div>

@@ -107,6 +107,37 @@
                         </div>
                         
                         <div class="row">
+                            <div class="col-md-6 mb-3" id="rate_field">
+                                {{ form.rate_per_unit.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.rate_per_unit(class="form-control", id="rate_per_unit") }}
+                                    <span class="input-group-text">₹</span>
+                                </div>
+                                <small class="text-muted">Rate per unit for this job work</small>
+                                {% if form.rate_per_unit.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.rate_per_unit.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3" id="department_field" style="display: none;">
+                                {{ form.department.label(class="form-label") }}
+                                {{ form.department(class="form-select", id="department") }}
+                                <small class="text-muted">Select department for in-house work</small>
+                                {% if form.department.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.department.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
                             <div class="col-md-6 mb-3">
                                 {{ form.quantity_sent.label(class="form-label") }}
                                 <div class="input-group">
@@ -233,9 +264,13 @@
                                         <label class="form-label small fw-bold">Quantity Sent:</label>
                                         <div id="cost-quantity">0.00 units</div>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-4" id="cost-rate-section">
                                         <label class="form-label small fw-bold">Rate per Unit:</label>
                                         <div id="cost-rate">₹0.00</div>
+                                    </div>
+                                    <div class="col-md-4" id="cost-department-section" style="display: none;">
+                                        <label class="form-label small fw-bold">Department:</label>
+                                        <div id="cost-department">Not Selected</div>
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label small fw-bold">Total Job Cost:</label>
@@ -370,6 +405,101 @@ function loadJobWorkRate() {
 
 
 
+// Function to toggle between rate and department fields based on work type
+function toggleWorkTypeFields() {
+    const workTypeSelect = document.getElementById('work_type');
+    const rateField = document.getElementById('rate_field');
+    const departmentField = document.getElementById('department_field');
+    const costRateSection = document.getElementById('cost-rate-section');
+    const costDepartmentSection = document.getElementById('cost-department-section');
+    
+    if (workTypeSelect.value === 'in_house') {
+        // Show department field, hide rate field
+        rateField.style.display = 'none';
+        departmentField.style.display = 'block';
+        costRateSection.style.display = 'none';
+        costDepartmentSection.style.display = 'block';
+        
+        // Clear rate validation requirement
+        const rateInput = document.getElementById('rate_per_unit');
+        if (rateInput) {
+            rateInput.removeAttribute('required');
+            rateInput.value = '0'; // Set to 0 for in-house work
+        }
+        
+        // Add department validation requirement
+        const departmentSelect = document.getElementById('department');
+        if (departmentSelect) {
+            departmentSelect.setAttribute('required', 'required');
+        }
+    } else {
+        // Show rate field, hide department field
+        rateField.style.display = 'block';
+        departmentField.style.display = 'none';
+        costRateSection.style.display = 'block';
+        costDepartmentSection.style.display = 'none';
+        
+        // Add rate validation requirement
+        const rateInput = document.getElementById('rate_per_unit');
+        if (rateInput) {
+            rateInput.setAttribute('required', 'required');
+        }
+        
+        // Clear department validation requirement
+        const departmentSelect = document.getElementById('department');
+        if (departmentSelect) {
+            departmentSelect.removeAttribute('required');
+            departmentSelect.value = '';
+        }
+    }
+    
+    // Update cost calculation
+    updateCostCalculation();
+}
+
+// Function to update cost calculation based on work type
+function updateCostCalculation() {
+    const workTypeSelect = document.getElementById('work_type');
+    const quantityInput = document.getElementById('quantity_sent');
+    const rateInput = document.getElementById('rate_per_unit');
+    const departmentSelect = document.getElementById('department');
+    const itemSelect = document.getElementById('item_id');
+    
+    const costQuantity = document.getElementById('cost-quantity');
+    const costRate = document.getElementById('cost-rate');
+    const costDepartment = document.getElementById('cost-department');
+    const costTotal = document.getElementById('cost-total');
+    
+    const quantity = parseFloat(quantityInput.value) || 0;
+    const rate = parseFloat(rateInput.value) || 0;
+    
+    // Get unit from selected item
+    let unit = 'units';
+    if (itemSelect && itemSelect.selectedOptions.length > 0) {
+        const itemText = itemSelect.selectedOptions[0].text;
+        // Try to extract unit from item text if available
+        unit = 'units'; // Default fallback
+    }
+    
+    // Update quantity display
+    costQuantity.textContent = `${quantity.toFixed(2)} ${unit}`;
+    
+    if (workTypeSelect.value === 'in_house') {
+        // For in-house work, show department and no cost calculation
+        const selectedDepartment = departmentSelect.value;
+        costDepartment.textContent = selectedDepartment ? 
+            departmentSelect.selectedOptions[0].text : 'Not Selected';
+        costTotal.textContent = 'Internal Cost';
+        costTotal.className = 'fs-5 fw-bold text-success';
+    } else {
+        // For outsourced work, calculate total cost
+        costRate.textContent = `₹${rate.toFixed(2)}`;
+        const totalCost = quantity * rate;
+        costTotal.textContent = `₹${totalCost.toFixed(2)}`;
+        costTotal.className = 'fs-5 fw-bold text-primary';
+    }
+}
+
 // Auto-check stock when item or quantity changes
 document.addEventListener('DOMContentLoaded', function() {
     const itemSelect = document.getElementById('item_id');
@@ -387,6 +517,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateWeightConversion();
             }
         });
+    }
+    
+    // Add work type change listener
+    const workTypeSelect = document.getElementById('work_type');
+    if (workTypeSelect) {
+        workTypeSelect.addEventListener('change', toggleWorkTypeFields);
+        // Initialize on page load
+        toggleWorkTypeFields();
+    }
+    
+    // Add rate and department change listeners for cost calculation
+    const rateInput = document.getElementById('rate_per_unit');
+    const departmentSelect = document.getElementById('department');
+    if (rateInput) {
+        rateInput.addEventListener('input', updateCostCalculation);
+    }
+    if (departmentSelect) {
+        departmentSelect.addEventListener('change', updateCostCalculation);
     }
     
     // Add process change listener for rate loading

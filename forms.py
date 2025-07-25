@@ -219,6 +219,16 @@ class JobWorkForm(FlaskForm):
                           choices=[('outsourced', 'Outsourced'),
                                  ('in_house', 'In-House')],
                           default='outsourced')
+    department = SelectField('Department',
+                           coerce=str,
+                           choices=[('', 'Select Department'),
+                                  ('production', 'Production'),
+                                  ('assembly', 'Assembly'),
+                                  ('quality_control', 'Quality Control'),
+                                  ('finishing', 'Finishing'),
+                                  ('packaging', 'Packaging'),
+                                  ('maintenance', 'Maintenance'),
+                                  ('research_development', 'Research & Development')])
     quantity_sent = FloatField('Quantity Sent', validators=[DataRequired(), NumberRange(min=0)])
     expected_finished_material = FloatField('Expected Finished Material', validators=[NumberRange(min=0)], default=0.0)
     expected_scrap = FloatField('Expected Scrap', validators=[NumberRange(min=0)], default=0.0)
