@@ -7,7 +7,7 @@
     <div class="row mb-4">
         <div class="col">
             <h1><i class="fas fa-clock"></i> {{ title }}</h1>
-            <p class="text-muted">Quick daily entry for job work progress tracking</p>
+            <p class="text-muted">Quick daily entry for in-house job work progress tracking</p>
         </div>
         <div class="col-auto">
             <a href="{{ url_for('jobwork.daily_entries_list') }}" class="btn btn-secondary">
@@ -70,7 +70,7 @@
                             <div class="col-md-12 mb-3">
                                 {{ form.job_work_id.label(class="form-label") }}
                                 {{ form.job_work_id(class="form-select") }}
-                                <small class="text-muted">Select the job work order you worked on today</small>
+                                <small class="text-muted">Select the in-house job work order you worked on today</small>
                                 {% if form.job_work_id.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.job_work_id.errors %}
