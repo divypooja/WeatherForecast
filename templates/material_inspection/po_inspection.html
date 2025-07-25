@@ -86,7 +86,7 @@
                                             <strong>{{ item.item.name }}</strong>
                                             <br><small class="text-muted">{{ item.item.code }}</small>
                                         </td>
-                                        <td>{{ "%.2f"|format(item.quantity_ordered) }} {{ item.item.unit_of_measure }}</td>
+                                        <td>{{ "%.2f"|format(item.quantity_ordered) }} {{ item.purchase_unit if item.purchase_unit else item.item.unit_of_measure }}</td>
                                         <td>₹{{ "%.2f"|format(item.unit_price) }}</td>
                                         <td>₹{{ "%.2f"|format(item.quantity_ordered * item.unit_price) }}</td>
                                         <td>
