@@ -79,6 +79,20 @@ def inspect_purchase_order(po_id):
     po.inspected_by = current_user.id
     db.session.commit()
     
+    # Enhance PO items with correct purchase unit information from UOM conversions
+    for po_item in po.items:
+        # Get UOM conversion for this item
+        uom_conversion = ItemUOMConversion.query.filter_by(item_id=po_item.item.id).first()
+        if uom_conversion:
+            # Get purchase unit symbol
+            purchase_unit = UnitOfMeasure.query.get(uom_conversion.purchase_unit_id)
+            if purchase_unit:
+                po_item.purchase_unit = purchase_unit.symbol
+            else:
+                po_item.purchase_unit = po_item.item.unit_of_measure
+        else:
+            po_item.purchase_unit = po_item.item.unit_of_measure
+    
     return render_template('material_inspection/po_inspection.html',
                          title=f'Inspect Purchase Order {po.po_number}',
                          po=po)
@@ -255,12 +269,20 @@ def get_po_items(po_id):
         items = []
         
         for po_item in po.items:
+            # Get correct purchase unit from UOM conversion
+            uom_conversion = ItemUOMConversion.query.filter_by(item_id=po_item.item.id).first()
+            if uom_conversion:
+                purchase_unit = UnitOfMeasure.query.get(uom_conversion.purchase_unit_id)
+                unit_display = purchase_unit.symbol if purchase_unit else po_item.item.unit_of_measure
+            else:
+                unit_display = po_item.item.unit_of_measure
+                
             items.append({
                 'item_id': po_item.item.id,
                 'item_code': po_item.item.code,
                 'item_name': po_item.item.name,
                 'quantity': float(po_item.quantity_ordered),
-                'unit': po_item.item.unit_of_measure
+                'unit': unit_display
             })
         
         return jsonify({
