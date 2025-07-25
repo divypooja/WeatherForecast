@@ -137,7 +137,15 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **Financial Tracking**: Complete payroll management with gross/net calculations, tax deductions, and advance integration
 - **Permission System**: Role-based access with staff able to request advances, admins able to approve and manage all records
 
-### Enhanced BOM System with Freight Cost Integration (Latest)
+### Enhanced BOM System with Advanced Freight Cost Units & Weight Calculation (Latest)
+- **Advanced Freight Unit Types**: Enhanced freight cost system with 5 unit options (Per Piece/Unit, Per Kilogram, Per Box, Per Carton, Per Ton) for flexible real-world pricing models
+- **Intelligent Weight-Based Calculations**: Implemented automatic freight cost calculation based on product total weight (e.g., ₹7.00 per kg × 2.7 kg total weight = ₹18.90 per unit)
+- **Backend Weight Calculation**: Added reliable `total_weight_per_unit` property to BOM model ensuring consistent weight calculations across freight costing and display
+- **Enhanced Display Logic**: Freight cost shows calculated per-unit amount with source unit type notation (e.g., "₹18.90 (₹7.00 Per Kg)")
+- **Database Schema Updates**: Added `freight_unit_type` column to BOMs table with proper migration and form integration
+- **Improved User Workflow**: Fixed Purchase Order creation redirect to return to PO list instead of edit page for better navigation flow
+
+### Enhanced BOM System with Freight Cost Integration
 - **Freight Cost Integration**: Added optional freight/transportation cost field to BOM calculations as requested by user
 - **Comprehensive Cost Breakdown**: BOM now includes materials, labor, overhead, and freight costs with separate line items in cost breakdown table
 - **Optional Cost Display**: Freight cost section marked as "Optional" with helpful text explaining it's often not paid by company

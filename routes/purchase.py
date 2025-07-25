@@ -159,7 +159,7 @@ def add_purchase_order():
         
         db.session.commit()
         flash('Purchase Order created successfully', 'success')
-        return redirect(url_for('purchase.edit_purchase_order', id=po.id))
+        return redirect(url_for('purchase.list_purchase_orders'))
     
     # Get items with BOM rates where available
     items_data = db.session.query(Item, BOMItem.unit_cost).outerjoin(BOMItem, Item.id == BOMItem.item_id).all()
