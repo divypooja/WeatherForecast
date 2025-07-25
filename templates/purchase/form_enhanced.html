@@ -133,15 +133,30 @@
             <div class="card-body">
                 <div class="table-responsive" style="overflow-x: auto;">
                     <style>
-                        #poItemsTable { min-width: 1200px; table-layout: auto; }
+                        #poItemsTable { 
+                            min-width: 1200px; 
+                            table-layout: fixed; 
+                            width: 100%;
+                        }
+                        #poItemsTable td {
+                            position: relative;
+                            overflow: hidden;
+                            white-space: nowrap;
+                        }
                         #poItemsTable input, #poItemsTable select, #poItemsTable textarea { 
-                            min-width: 100%; 
                             box-sizing: border-box; 
                         }
                         #poItemsTable .input-group { min-width: 120px; white-space: nowrap; }
                         .table-responsive { 
                             max-height: 600px; 
                             overflow-y: auto; 
+                        }
+                        /* Unit Weight Column Specific Styling */
+                        #poItemsTable td:nth-child(4) {
+                            width: 120px !important;
+                            max-width: 120px !important;
+                            min-width: 120px !important;
+                            padding: 4px !important;
                         }
                     </style>
                     <table class="table table-bordered" id="poItemsTable">
@@ -189,11 +204,13 @@
                                         <textarea class="form-control form-control-sm mt-1" name="description_{{ item.id }}" 
                                                   rows="2" placeholder="Item description">{{ item.item_description or item.item.description }}</textarea>
                                     </td>
-                                    <td class="align-middle" style="min-width: 120px;">
-                                        <div class="d-flex gap-1" style="width: 100%; max-width: 120px;">
+                                    <td class="align-middle" style="min-width: 120px; max-width: 120px; overflow: hidden; position: relative;">
+                                        <div style="display: flex; gap: 2px; width: 115px; position: relative;">
                                             <input type="number" class="form-control form-control-sm" name="unit_weight_{{ item.id }}" 
-                                                   value="{{ item.item.unit_weight or '' }}" step="0.001" min="0" placeholder="0.000" style="width: 70px; flex-shrink: 0;">
-                                            <select class="form-select form-select-sm" name="weight_unit_{{ item.id }}" style="width: 45px; flex-shrink: 0;">
+                                                   value="{{ item.item.unit_weight or '' }}" step="0.001" min="0" placeholder="0.000" 
+                                                   style="width: 70px; font-size: 12px; padding: 2px 4px;">
+                                            <select class="form-select form-select-sm" name="weight_unit_{{ item.id }}" 
+                                                    style="width: 43px; font-size: 11px; padding: 2px 2px; position: relative; z-index: 1;">
                                                 <option value="kg" selected>kg</option>
                                                 <option value="g">g</option>
                                                 <option value="lbs">lbs</option>
@@ -367,11 +384,13 @@ function addPOItem() {
             <textarea class="form-control form-control-sm mt-1" name="description_new_${itemCounter}" 
                       rows="2" placeholder="Item description"></textarea>
         </td>
-        <td class="align-middle" style="min-width: 120px;">
-            <div class="d-flex gap-1" style="width: 100%; max-width: 120px;">
+        <td class="align-middle" style="min-width: 120px; max-width: 120px; overflow: hidden; position: relative;">
+            <div style="display: flex; gap: 2px; width: 115px; position: relative;">
                 <input type="number" class="form-control form-control-sm" name="unit_weight_new_${itemCounter}" 
-                       step="0.001" min="0" placeholder="0.000" style="width: 70px; flex-shrink: 0;">
-                <select class="form-select form-select-sm" name="weight_unit_new_${itemCounter}" style="width: 45px; flex-shrink: 0;">
+                       step="0.001" min="0" placeholder="0.000" 
+                       style="width: 70px; font-size: 12px; padding: 2px 4px;">
+                <select class="form-select form-select-sm" name="weight_unit_new_${itemCounter}" 
+                        style="width: 43px; font-size: 11px; padding: 2px 2px; position: relative; z-index: 1;">
                     <option value="kg" selected>kg</option>
                     <option value="g">g</option>
                     <option value="lbs">lbs</option>
