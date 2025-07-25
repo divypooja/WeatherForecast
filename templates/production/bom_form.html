@@ -259,9 +259,9 @@
                                 </tr>
                                 <tr class="table-secondary">
                                     <th colspan="7">Freight Cost per Unit</th>
-                                    <th>₹{{ "%.2f"|format(bom.freight_cost_per_unit or 0) }}
+                                    <th>₹{{ "%.2f"|format(bom.calculated_freight_cost_per_unit or 0) }}
                                         {% if bom.freight_unit_type and bom.freight_unit_type != 'per_piece' %}
-                                            <small class="text-muted d-block">({{ bom.freight_unit_type.replace('_', ' ').title() }})</small>
+                                            <small class="text-muted d-block">(₹{{ "%.2f"|format(bom.freight_cost_per_unit or 0) }} {{ bom.freight_unit_type.replace('_', ' ').title() }})</small>
                                         {% endif %}
                                     </th>
                                     <th></th>

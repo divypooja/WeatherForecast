@@ -492,12 +492,42 @@ class BOM(db.Model):
         return sum(item.quantity_required * item.unit_cost for item in self.items)
     
     @property
+    def calculated_freight_cost_per_unit(self):
+        """Calculate actual freight cost per unit based on freight unit type"""
+        if not self.freight_cost_per_unit or self.freight_cost_per_unit == 0:
+            return 0.0
+            
+        # If freight is per piece/unit, return as-is
+        if not self.freight_unit_type or self.freight_unit_type == 'per_piece':
+            return self.freight_cost_per_unit
+        
+        # Calculate total weight per unit for weight-based freight
+        total_weight = 0.0
+        for item in self.items:
+            if item.item.unit_weight and item.item.unit_weight > 0:
+                total_weight += item.item.unit_weight * item.quantity_required
+        
+        if total_weight == 0:
+            return 0.0
+            
+        # Calculate freight cost based on unit type
+        if self.freight_unit_type == 'per_kg':
+            return self.freight_cost_per_unit * total_weight
+        elif self.freight_unit_type == 'per_ton':
+            return self.freight_cost_per_unit * (total_weight / 1000)  # Convert kg to tons
+        elif self.freight_unit_type in ['per_box', 'per_carton']:
+            # For box/carton, assume 1 unit = 1 box/carton (user can adjust freight cost accordingly)
+            return self.freight_cost_per_unit
+        
+        return self.freight_cost_per_unit
+    
+    @property
     def total_cost_per_unit(self):
         """Calculate total cost per unit including materials, labor, overhead, and freight"""
         material_cost = self.total_material_cost
         labor_cost = self.labor_cost_per_unit or 0
         overhead_cost = self.overhead_cost_per_unit or 0
-        freight_cost = self.freight_cost_per_unit or 0
+        freight_cost = self.calculated_freight_cost_per_unit
         
         # If overhead is percentage-based, calculate from material cost
         if self.overhead_percentage and self.overhead_percentage > 0:
