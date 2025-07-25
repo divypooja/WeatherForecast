@@ -220,17 +220,58 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function loadOpenCVShapes() {
         if (!opencvData || !opencvData.shapes) {
-            alert('No OpenCV shape data available');
+            console.error('No OpenCV shape data available:', opencvData);
+            alert('No OpenCV shape data available. Please run OpenCV analysis first.');
             return;
         }
         
+        console.log('OpenCV data received:', opencvData);
+        
         // Convert OpenCV shapes to SVGNest format
-        currentParts = opencvData.shapes.map((shape, index) => ({
-            name: `${shape.type}_${index + 1}`,
-            part_id: shape.id,
-            polygon: shape.polygon || convertContourToPolygon(shape.contour),
-            quantity: 1
-        }));
+        currentParts = opencvData.shapes.map((shape, index) => {
+            console.log(`Processing shape ${index}:`, shape);
+            
+            let polygon = [];
+            
+            // Try different polygon formats
+            if (shape.polygon && Array.isArray(shape.polygon)) {
+                polygon = shape.polygon;
+            } else if (shape.contour && Array.isArray(shape.contour)) {
+                polygon = convertContourToPolygon(shape.contour);
+            } else {
+                // Create a simple rectangle if no polygon data
+                const width = shape.dimensions?.width || 100;
+                const height = shape.dimensions?.height || 100;
+                const x = shape.position?.x || 0;
+                const y = shape.position?.y || 0;
+                
+                polygon = [
+                    {x: x, y: y},
+                    {x: x + width, y: y},
+                    {x: x + width, y: y + height},
+                    {x: x, y: y + height}
+                ];
+            }
+            
+            console.log(`Shape ${index} polygon:`, polygon);
+            
+            return {
+                name: `${shape.type || 'shape'}_${index + 1}`,
+                part_id: shape.id || `shape_${index}`,
+                polygon: polygon,
+                quantity: 1
+            };
+        });
+        
+        console.log('Converted parts:', currentParts);
+        
+        // Filter out parts with empty polygons
+        currentParts = currentParts.filter(part => part.polygon && part.polygon.length > 2);
+        
+        if (currentParts.length === 0) {
+            alert('No valid polygon data found from OpenCV analysis. Please check your image analysis.');
+            return;
+        }
         
         // Set up default bin
         currentBin = [
@@ -251,7 +292,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('exploreConcave').checked = true;
         }
         
-        // Show success message
+        // Show success message with debug info
         const partsContainer = document.getElementById('partsContainer');
         partsContainer.insertAdjacentHTML('afterbegin', `
             <div class="alert alert-success mb-3">
@@ -259,6 +300,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 <strong>OpenCV Integration Complete!</strong> 
                 Loaded ${currentParts.length} shapes detected from computer vision analysis.
                 Recommended algorithm: ${opencvData.processing_type?.toUpperCase() || 'IRREGULAR'}
+            </div>
+            <div class="alert alert-info mb-3">
+                <i class="fas fa-info-circle"></i>
+                <strong>Debug Info:</strong> 
+                Total shapes processed: ${opencvData.shapes.length}, 
+                Valid polygons: ${currentParts.length}
             </div>
         `);
     }

@@ -405,6 +405,40 @@ def optimize_vector_nesting():
         }), 500
 
 
+@packing_bp.route('/api/svgnest-optimize', methods=['POST'])
+@login_required
+def svgnest_optimize():
+    """API endpoint for SVGNest vector nesting optimization (alternative endpoint)"""
+    try:
+        data = request.get_json()
+        
+        # Extract parameters
+        bin_polygon = data.get('bin', [])
+        parts = data.get('parts', [])
+        config = data.get('config', {})
+        
+        if not bin_polygon or not parts:
+            return jsonify({
+                'success': False,
+                'error': 'Missing bin or parts data'
+            }), 400
+        
+        # Initialize SVGNest optimizer
+        svgnest = SVGNestOptimizer()
+        
+        # Run optimization
+        result = svgnest.optimize_vector_nesting(bin_polygon, parts, config)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"SVGNest optimization error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
 @packing_bp.route('/api/convert-svg-to-polygon', methods=['POST'])
 @login_required
 def convert_svg_to_polygon():
