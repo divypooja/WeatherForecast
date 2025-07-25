@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
-from forms import JobWorkForm, JobWorkQuantityUpdateForm
-from models import JobWork, Supplier, Item, BOM, BOMItem, CompanySettings
+from forms import JobWorkForm, JobWorkQuantityUpdateForm, DailyJobWorkForm
+from models import JobWork, Supplier, Item, BOM, BOMItem, CompanySettings, DailyJobWorkEntry
 from app import db
 from sqlalchemy import func
 from utils import generate_job_number  
@@ -308,3 +308,92 @@ Expected Return: {job.expected_return or 'Not specified'}
     return render_template('jobwork/send.html', job=job, title=f'Send Job Work {job.job_number}')
 
 # BOM rate auto-filling API removed as requested - users will manually enter rates
+
+@jobwork_bp.route('/daily-entry', methods=['GET', 'POST'])
+@login_required
+def daily_job_work_entry():
+    """Streamlined daily job work entry for workers"""
+    form = DailyJobWorkForm()
+    
+    if form.validate_on_submit():
+        # Check if entry already exists for this worker/job/date
+        existing_entry = DailyJobWorkEntry.query.filter_by(
+            job_work_id=form.job_work_id.data,
+            worker_name=form.worker_name.data,
+            work_date=form.work_date.data
+        ).first()
+        
+        if existing_entry:
+            flash(f'Daily entry already exists for {form.worker_name.data} on {form.work_date.data}. Please edit the existing entry or use a different date.', 'warning')
+            return render_template('jobwork/daily_entry_form.html', form=form, title='Daily Job Work Entry')
+        
+        # Create new daily entry
+        daily_entry = DailyJobWorkEntry(
+            job_work_id=form.job_work_id.data,
+            worker_name=form.worker_name.data,
+            work_date=form.work_date.data,
+            hours_worked=form.hours_worked.data,
+            quantity_completed=form.quantity_completed.data,
+            quality_status=form.quality_status.data,
+            process_stage=form.process_stage.data,
+            notes=form.notes.data,
+            logged_by=current_user.id
+        )
+        
+        db.session.add(daily_entry)
+        db.session.commit()
+        
+        job_work = JobWork.query.get(form.job_work_id.data)
+        flash(f'Daily work logged successfully for {form.worker_name.data} on {job_work.job_number}!', 'success')
+        return redirect(url_for('jobwork.daily_entries_list'))
+    
+    return render_template('jobwork/daily_entry_form.html', form=form, title='Daily Job Work Entry')
+
+@jobwork_bp.route('/daily-entries')
+@login_required
+def daily_entries_list():
+    """List all daily job work entries with filtering"""
+    page = request.args.get('page', 1, type=int)
+    worker_name = request.args.get('worker_name', '', type=str)
+    job_work_id = request.args.get('job_work_id', None, type=int)
+    date_from = request.args.get('date_from', '', type=str)
+    date_to = request.args.get('date_to', '', type=str)
+    
+    # Build query
+    query = DailyJobWorkEntry.query.join(JobWork)
+    
+    if worker_name:
+        query = query.filter(DailyJobWorkEntry.worker_name.ilike(f'%{worker_name}%'))
+    
+    if job_work_id:
+        query = query.filter(DailyJobWorkEntry.job_work_id == job_work_id)
+    
+    if date_from:
+        try:
+            from datetime import datetime
+            from_date = datetime.strptime(date_from, '%Y-%m-%d').date()
+            query = query.filter(DailyJobWorkEntry.work_date >= from_date)
+        except ValueError:
+            pass
+    
+    if date_to:
+        try:
+            from datetime import datetime
+            to_date = datetime.strptime(date_to, '%Y-%m-%d').date()
+            query = query.filter(DailyJobWorkEntry.work_date <= to_date)
+        except ValueError:
+            pass
+    
+    entries = query.order_by(DailyJobWorkEntry.work_date.desc(), DailyJobWorkEntry.created_at.desc()).paginate(
+        page=page, per_page=20, error_out=False)
+    
+    # Get active job works for filter dropdown
+    active_jobs = JobWork.query.filter(JobWork.status.in_(['sent', 'partial_received'])).order_by(JobWork.job_number).all()
+    
+    return render_template('jobwork/daily_entries_list.html', 
+                         entries=entries,
+                         active_jobs=active_jobs,
+                         worker_name=worker_name,
+                         job_work_id=job_work_id,
+                         date_from=date_from,
+                         date_to=date_to)
