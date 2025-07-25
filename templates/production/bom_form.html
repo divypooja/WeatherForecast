@@ -176,7 +176,7 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header">
-                    <h5><i class="fas fa-list"></i> BOM Components</h5>
+                    <h5><i class="fas fa-list"></i> BOM Components (Updated)</h5>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -254,16 +254,20 @@
                                 <tr class="table-info">
                                     <th colspan="7">Total Weight per Unit</th>
                                     <th>
-                                        {% set total_weight = 0 %}
+                                        {% set total_weight = 0.0 %}
                                         {% for bom_item in bom_items %}
                                             {% if bom_item.item.unit_weight %}
                                                 {% set total_weight = total_weight + (bom_item.item.unit_weight * bom_item.quantity_required) %}
                                             {% endif %}
                                         {% endfor %}
-                                        {% if total_weight < 1 %}
-                                            {{ "%.1f"|format(total_weight * 1000) }} g/unit
+                                        {% if total_weight > 0 %}
+                                            {% if total_weight < 1 %}
+                                                {{ "%.1f"|format(total_weight * 1000) }} g/unit
+                                            {% else %}
+                                                {{ "%.3f"|format(total_weight) }} kg/unit
+                                            {% endif %}
                                         {% else %}
-                                            {{ "%.3f"|format(total_weight) }} kg/unit
+                                            <span class="text-muted">No weights defined</span>
                                         {% endif %}
                                     </th>
                                     <th></th>
