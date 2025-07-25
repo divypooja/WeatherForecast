@@ -162,7 +162,8 @@ class Supplier(db.Model):
     ifsc_code = db.Column(db.String(20))
     
     # Transportation Specific (for transporters)
-    freight_rate_per_km = db.Column(db.Float, default=0.0)  # Rate per kilometer for transportation
+    freight_rate_per_unit = db.Column(db.Float, default=0.0)  # Freight rate amount
+    freight_unit_type = db.Column(db.String(20), default='per_km')  # per_km, per_kg, per_box, per_carton, per_ton
     
     # Partner Type - can be 'supplier', 'customer', 'vendor', 'transporter', or 'both'
     partner_type = db.Column(db.String(20), default='supplier')  # supplier, customer, vendor, transporter, both

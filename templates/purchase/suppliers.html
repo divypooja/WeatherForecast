@@ -100,6 +100,18 @@
                                             <span class="badge bg-success">Both</span>
                                         {% endif %}
                                     </div>
+                                    {% if supplier.partner_type in ['transporter', 'both'] and supplier.freight_rate_per_unit and supplier.freight_rate_per_unit > 0 %}
+                                        <div class="small text-info">
+                                            <i class="fas fa-truck"></i> ₹{{ "%.2f"|format(supplier.freight_rate_per_unit) }} 
+                                            {{ {
+                                                'per_km': '/KM',
+                                                'per_kg': '/Kg',
+                                                'per_box': '/Box',
+                                                'per_carton': '/Carton',
+                                                'per_ton': '/Ton'
+                                            }[supplier.freight_unit_type] }}
+                                        </div>
+                                    {% endif %}
                                     {% if supplier.is_active %}
                                         <span class="badge bg-success"><i class="fas fa-check"></i> Active</span>
                                     {% else %}
