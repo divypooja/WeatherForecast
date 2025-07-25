@@ -86,6 +86,8 @@ def add_job_work():
             item_id=form.item_id.data,
             process=form.process_type.data,
             quantity_sent=form.quantity_sent.data,
+            expected_finished_material=form.expected_finished_material.data or 0.0,
+            expected_scrap=form.expected_scrap.data or 0.0,
             rate_per_unit=form.rate_per_unit.data,
             sent_date=form.sent_date.data,
             expected_return=form.expected_return.data,
@@ -140,6 +142,8 @@ def edit_job_work(id):
         job.item_id = form.item_id.data
         job.process = form.process_type.data
         job.quantity_sent = form.quantity_sent.data
+        job.expected_finished_material = form.expected_finished_material.data or 0.0
+        job.expected_scrap = form.expected_scrap.data or 0.0
         job.rate_per_unit = form.rate_per_unit.data
         job.sent_date = form.sent_date.data
         job.expected_return = form.expected_return.data
