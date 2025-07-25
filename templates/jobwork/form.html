@@ -316,13 +316,18 @@
                 </div>
             </div>
             
-            <!-- Document Management Section -->
+            <!-- Document Management Section - Coming Soon -->
             {% if job %}
             <div class="col-md-4">
-                {% set documents = get_documents_for_transaction('job_work', job.id) %}
-                {% set transaction_type = 'job_work' %}
-                {% set transaction_id = job.id %}
-                {% include 'documents/_document_card.html' %}
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="fas fa-file"></i> Documents</h6>
+                    </div>
+                    <div class="card-body text-center">
+                        <i class="fas fa-file-alt text-muted" style="font-size: 2rem;"></i>
+                        <p class="text-muted mt-2">Document management available in full version</p>
+                    </div>
+                </div>
             </div>
             {% endif %}
         </div>
