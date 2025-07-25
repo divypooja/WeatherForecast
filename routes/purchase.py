@@ -176,18 +176,20 @@ def add_purchase_order():
         
         # Calculate purchase unit rate if UOM conversion exists
         if uom_conversion:
-            # If purchasing in a different unit than inventory unit, adjust the rate
-            if (uom_conversion.purchase_unit_id != uom_conversion.inventory_unit_id and 
-                uom_conversion.inventory_to_sale and uom_conversion.inventory_to_sale > 0):
-                # Convert inventory unit price to purchase unit price
-                # Example: If inventory is ₹1/piece and 1kg = 100 pieces, then purchase rate = ₹100/kg
+            # Get unit symbols for better understanding
+            purchase_unit = UnitOfMeasure.query.get(uom_conversion.purchase_unit_id)
+            sale_unit = UnitOfMeasure.query.get(uom_conversion.sale_unit_id)
+            
+            # Check if we have a weight-to-count conversion (Kg to Pcs)
+            if (uom_conversion.inventory_to_sale and uom_conversion.inventory_to_sale > 0 and 
+                purchase_unit and sale_unit and purchase_unit.symbol == 'Kg' and sale_unit.symbol == 'Pcs'):
+                # Convert piece price to kg price: ₹1/piece × 100 pieces/kg = ₹100/kg
                 purchase_rate = base_rate * float(uom_conversion.inventory_to_sale)
                 item.purchase_rate = purchase_rate
             else:
                 item.purchase_rate = base_rate
                 
             # Get purchase unit symbol for display
-            purchase_unit = UnitOfMeasure.query.get(uom_conversion.purchase_unit_id)
             item.purchase_unit = purchase_unit.symbol if purchase_unit else item.unit_of_measure
         else:
             item.purchase_rate = base_rate
@@ -276,18 +278,20 @@ def edit_purchase_order(id):
         
         # Calculate purchase unit rate if UOM conversion exists
         if uom_conversion:
-            # If purchasing in a different unit than inventory unit, adjust the rate
-            if (uom_conversion.purchase_unit_id != uom_conversion.inventory_unit_id and 
-                uom_conversion.inventory_to_sale and uom_conversion.inventory_to_sale > 0):
-                # Convert inventory unit price to purchase unit price
-                # Example: If inventory is ₹1/piece and 1kg = 100 pieces, then purchase rate = ₹100/kg
+            # Get unit symbols for better understanding
+            purchase_unit = UnitOfMeasure.query.get(uom_conversion.purchase_unit_id)
+            sale_unit = UnitOfMeasure.query.get(uom_conversion.sale_unit_id)
+            
+            # Check if we have a weight-to-count conversion (Kg to Pcs)
+            if (uom_conversion.inventory_to_sale and uom_conversion.inventory_to_sale > 0 and 
+                purchase_unit and sale_unit and purchase_unit.symbol == 'Kg' and sale_unit.symbol == 'Pcs'):
+                # Convert piece price to kg price: ₹1/piece × 100 pieces/kg = ₹100/kg
                 purchase_rate = base_rate * float(uom_conversion.inventory_to_sale)
                 item.purchase_rate = purchase_rate
             else:
                 item.purchase_rate = base_rate
                 
             # Get purchase unit symbol for display
-            purchase_unit = UnitOfMeasure.query.get(uom_conversion.purchase_unit_id)
             item.purchase_unit = purchase_unit.symbol if purchase_unit else item.unit_of_measure
         else:
             item.purchase_rate = base_rate
