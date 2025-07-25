@@ -272,6 +272,45 @@ function checkInventoryStock() {
         });
 }
 
+// Function to load job work rate from rates table
+function loadJobWorkRate() {
+    const itemSelect = document.getElementById('item_id');
+    const processSelect = document.getElementById('process_type');
+    const rateInput = document.getElementById('rate_per_unit');
+    
+    if (!itemSelect.value || !rateInput) return;
+    
+    const processType = processSelect ? processSelect.value : '';
+    
+    fetch(`/jobwork-rates/api/get-rate/${itemSelect.value}?process_type=${processType}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                rateInput.value = data.rate.toFixed(2);
+                
+                // Show a small notification that rate was loaded
+                const rateGroup = rateInput.closest('.mb-3');
+                if (rateGroup) {
+                    const existingNote = rateGroup.querySelector('.rate-loaded-note');
+                    if (existingNote) existingNote.remove();
+                    
+                    const note = document.createElement('small');
+                    note.className = 'text-success rate-loaded-note';
+                    note.innerHTML = '<i class="fas fa-check-circle"></i> Rate loaded from rates table';
+                    rateGroup.appendChild(note);
+                    
+                    // Remove note after 3 seconds
+                    setTimeout(() => {
+                        if (note.parentNode) note.remove();
+                    }, 3000);
+                }
+            }
+        })
+        .catch(error => {
+            console.log('No rate found for this item/process combination');
+        });
+}
+
 
 
 // Auto-check stock when item or quantity changes
@@ -283,12 +322,21 @@ document.addEventListener('DOMContentLoaded', function() {
         itemSelect.addEventListener('change', function() {
             checkInventoryStock();
             updateUnitLabels();
+            loadJobWorkRate(); // Auto-load rate from rates table
         });
         quantityInput.addEventListener('input', function() {
             if (itemSelect.value) {
                 checkInventoryStock();
                 updateWeightConversion();
             }
+        });
+    }
+    
+    // Add process change listener for rate loading
+    const processSelect = document.getElementById('process_type');
+    if (processSelect) {
+        processSelect.addEventListener('change', function() {
+            loadJobWorkRate(); // Reload rate when process changes
         });
     }
 });
