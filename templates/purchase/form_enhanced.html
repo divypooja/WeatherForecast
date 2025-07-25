@@ -196,7 +196,9 @@
                                                     data-hsn="{{ available_item.hsn_code or '' }}"
                                                     data-gst="{{ available_item.gst_rate or 18.0 }}"
                                                     data-uom="{{ available_item.unit_of_measure }}"
-                                                    data-price="{{ available_item.unit_price or 0.0 }}">
+                                                    data-price="{{ available_item.unit_price or 0.0 }}"
+                                                    data-unit-weight="{{ available_item.unit_weight or 0.0 }}"
+                                                    data-weight-unit="{{ available_item.weight_unit or 'kg' }}">
                                                 {{ available_item.code }} - {{ available_item.name }}
                                             </option>
                                             {% endfor %}
@@ -211,11 +213,11 @@
                                                    style="width: 70px; font-size: 12px; padding: 2px 4px;">
                                             <select class="form-select form-select-sm" name="weight_unit_{{ item.id }}" 
                                                     style="width: 43px; font-size: 11px; padding: 2px 2px; position: relative; z-index: 1;">
-                                                <option value="kg" selected>kg</option>
-                                                <option value="g">g</option>
-                                                <option value="lbs">lbs</option>
-                                                <option value="oz">oz</option>
-                                                <option value="ton">ton</option>
+                                                <option value="kg" {% if item.item.weight_unit == 'kg' or not item.item.weight_unit %}selected{% endif %}>kg</option>
+                                                <option value="g" {% if item.item.weight_unit == 'g' %}selected{% endif %}>g</option>
+                                                <option value="lbs" {% if item.item.weight_unit == 'lbs' %}selected{% endif %}>lbs</option>
+                                                <option value="oz" {% if item.item.weight_unit == 'oz' %}selected{% endif %}>oz</option>
+                                                <option value="ton" {% if item.item.weight_unit == 'ton' %}selected{% endif %}>ton</option>
                                             </select>
                                         </div>
                                     </td>
@@ -354,6 +356,7 @@ const itemsData = [
         unit_of_measure: "{{ item.purchase_unit if item.purchase_unit else item.unit_of_measure }}",
         unit_price: {{ item.unit_price or 0.0 }},
         unit_weight: {{ item.unit_weight or 0.0 }},
+        weight_unit: "{{ item.weight_unit or 'kg' }}",
         bom_rate: {{ item.purchase_rate if item.purchase_rate else (item.bom_rate or item.unit_price or 0.0) }}
     }{% if not loop.last %},{% endif %}
     {% endfor %}
@@ -444,6 +447,7 @@ function addPOItem() {
         option.dataset.gst = item.gst_rate;  // This should be GST percentage like 18%
         option.dataset.uom = item.unit_of_measure;
         option.dataset.unitWeight = item.unit_weight;
+        option.dataset.weightUnit = item.weight_unit;
         option.dataset.price = item.bom_rate;  // This should be the BOM unit cost like 42.94
         
         console.log(`=== DATASET MAPPING FOR ${item.code} ===`);
@@ -534,8 +538,8 @@ function populateItemDetails(selectElement) {
             console.log('✓ Unit Weight set to:', unitWeightInput.value);
         }
         if (weightUnitSelect) {
-            weightUnitSelect.value = 'kg'; // Default weight unit
-            console.log('✓ Weight Unit set to: kg');
+            weightUnitSelect.value = selectedOption.dataset.weightUnit || 'kg';
+            console.log('✓ Weight Unit set to:', selectedOption.dataset.weightUnit || 'kg');
         }
         if (hsnInput) {
             hsnInput.value = selectedOption.dataset.hsn || '';
