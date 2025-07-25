@@ -213,6 +213,12 @@ class JobWorkForm(FlaskForm):
                                 ('Assembly', 'Assembly'),
                                 ('Machining', 'Machining'),
                                 ('Polishing', 'Polishing')])
+    work_type = SelectField('Work Type',
+                          validators=[DataRequired()],
+                          coerce=str,
+                          choices=[('outsourced', 'Outsourced'),
+                                 ('in_house', 'In-House')],
+                          default='outsourced')
     quantity_sent = FloatField('Quantity Sent', validators=[DataRequired(), NumberRange(min=0)])
     expected_finished_material = FloatField('Expected Finished Material', validators=[NumberRange(min=0)], default=0.0)
     expected_scrap = FloatField('Expected Scrap', validators=[NumberRange(min=0)], default=0.0)

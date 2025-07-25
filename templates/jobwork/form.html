@@ -80,6 +80,34 @@
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
+                                {{ form.work_type.label(class="form-label") }}
+                                {{ form.work_type(class="form-select", id="work_type") }}
+                                <small class="text-muted">Choose whether this is in-house work or outsourced to vendors</small>
+                                {% if form.work_type.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.work_type.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.customer_name.label(class="form-label") }}
+                                {{ form.customer_name(class="form-select") }}
+                                <small class="text-muted">Select vendor/customer for this job work</small>
+                                {% if form.customer_name.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.customer_name.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
                                 {{ form.quantity_sent.label(class="form-label") }}
                                 <div class="input-group">
                                     {{ form.quantity_sent(class="form-control", step="0.01", id="quantity_sent") }}
