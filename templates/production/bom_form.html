@@ -393,18 +393,33 @@ function previewBOM() {
     
     // Calculate actual freight cost based on unit type and product weight
     let freightCost = freightCostInput;
-    if (freightUnitType === 'per_kg' && freightCostInput > 0) {
-        // Get product weight from BOM - we need to find the total weight
-        const weightElements = document.querySelectorAll('th');
-        for (let element of weightElements) {
-            if (element.textContent.includes('Total Weight per Unit')) {
-                const weightText = element.nextElementSibling?.textContent || '0 kg';
-                const weight = parseFloat(weightText.replace('kg', '').replace('g', '').trim()) || 0;
-                // If weight is in grams, convert to kg
-                const weightInKg = weightText.includes('g') && !weightText.includes('kg') ? weight / 1000 : weight;
-                freightCost = freightCostInput * weightInKg;
-                break;
+    if (freightCostInput > 0 && freightUnitType !== 'per_piece') {
+        // Calculate total weight from BOM components
+        let totalWeight = 0;
+        const bomTableRows = document.querySelectorAll('#bom-components-table tbody tr');
+        bomTableRows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length >= 6) {
+                const quantity = parseFloat(cells[3]?.textContent || '0'); // Quantity Required
+                const unitWeightText = cells[5]?.textContent || '0'; // Unit Weight column
+                let unitWeight = parseFloat(unitWeightText.replace('g/unit', '').replace('kg/unit', '').trim()) || 0;
+                
+                // Convert grams to kg if needed
+                if (unitWeightText.includes('g/unit') && !unitWeightText.includes('kg/unit')) {
+                    unitWeight = unitWeight / 1000;
+                }
+                
+                totalWeight += quantity * unitWeight;
             }
+        });
+        
+        // Calculate freight cost based on unit type
+        if (freightUnitType === 'per_kg' && totalWeight > 0) {
+            freightCost = freightCostInput * totalWeight;
+        } else if (freightUnitType === 'per_ton' && totalWeight > 0) {
+            freightCost = freightCostInput * (totalWeight / 1000);
+        } else if (freightUnitType === 'per_box' || freightUnitType === 'per_carton') {
+            freightCost = freightCostInput; // Assume 1 unit = 1 box/carton
         }
     }
     
