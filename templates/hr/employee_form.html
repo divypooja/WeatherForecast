@@ -63,7 +63,7 @@
                             
                             <div class="col-md-6 mb-3">
                                 {{ form.department.label(class="form-label") }}
-                                {{ form.department(class="form-control") }}
+                                {{ form.department(class="form-select") }}
                                 {% if form.department.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.department.errors %}
