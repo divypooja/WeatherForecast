@@ -227,7 +227,8 @@ def add_bom():
             labor_hours_per_unit=form.labor_hours_per_unit.data or 0.0,
             labor_rate_per_hour=form.labor_rate_per_hour.data or 0.0,
             overhead_cost_per_unit=form.overhead_cost_per_unit.data or 0.0,
-            overhead_percentage=form.overhead_percentage.data or 0.0
+            overhead_percentage=form.overhead_percentage.data or 0.0,
+            freight_cost_per_unit=form.freight_cost_per_unit.data or 0.0
         )
         db.session.add(bom)
         db.session.commit()
@@ -261,6 +262,7 @@ def edit_bom(id):
         bom.labor_rate_per_hour = form.labor_rate_per_hour.data or 0.0
         bom.overhead_cost_per_unit = form.overhead_cost_per_unit.data or 0.0
         bom.overhead_percentage = form.overhead_percentage.data or 0.0
+        bom.freight_cost_per_unit = form.freight_cost_per_unit.data or 0.0
         
         db.session.commit()
         flash('BOM updated successfully', 'success')

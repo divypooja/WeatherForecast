@@ -105,6 +105,20 @@
                             </div>
                         </div>
 
+                        <!-- Freight Cost Section (Optional) -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6><i class="fas fa-truck"></i> Freight/Transportation Costs <span class="badge bg-secondary">Optional</span></h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    {{ form.freight_cost_per_unit.label(class="form-label") }}
+                                    {{ form.freight_cost_per_unit(class="form-control", step="0.01") }}
+                                    <small class="text-muted">Transportation cost per unit (many times not paid by company, leave 0 if not applicable)</small>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="d-flex gap-2 mt-3">
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-save"></i> Save BOM
@@ -217,6 +231,11 @@
                                 <tr class="table-secondary">
                                     <th colspan="6">Overhead Cost per Unit</th>
                                     <th>₹{{ "%.2f"|format(bom.overhead_cost_per_unit or (material_cost * (bom.overhead_percentage or 0) / 100)) }}</th>
+                                    <th></th>
+                                </tr>
+                                <tr class="table-secondary">
+                                    <th colspan="6">Freight Cost per Unit</th>
+                                    <th>₹{{ "%.2f"|format(bom.freight_cost_per_unit or 0) }}</th>
                                     <th></th>
                                 </tr>
                                 <tr class="table-dark">
