@@ -244,8 +244,7 @@ function approveExpense(expenseId) {
         fetch(`/expenses/approve/${expenseId}`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token() }}'
+                'Content-Type': 'application/json'
             }
         })
         .then(response => response.json())
@@ -267,8 +266,7 @@ function rejectExpense(expenseId) {
         fetch(`/expenses/reject/${expenseId}`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token() }}'
+                'Content-Type': 'application/json'
             }
         })
         .then(response => response.json())

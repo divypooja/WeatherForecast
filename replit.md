@@ -6,7 +6,16 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 25, 2025)
 
-### Complete OCR Receipt Processing System Implementation (Latest - January 25, 2025)
+### Complete Salary and Advance Payment Integration with Factory Expenses (Latest - January 25, 2025)
+- **Pay Period Auto-Population**: Implemented API endpoint `/api/employee/<id>/hire-date` and JavaScript functionality to automatically populate Pay Period Start with employee's hire date when creating salary records
+- **Salary Payment Workflow**: Enhanced salary detail pages with "Mark as Paid" functionality that automatically creates corresponding Factory Expense records in "Salaries & Benefits" category with complete financial details
+- **Advance Payment Integration**: Added advance payment processing that creates Factory Expense records when advances are marked as paid, including employee details, reason, and repayment information
+- **Enhanced Employee Detail Page**: Created comprehensive employee detail template with quick action buttons for creating salary records and advances directly from employee management interface
+- **Automated Expense Generation**: When salaries or advances are marked as paid, system automatically generates expense records with proper categorization, descriptions, and financial tracking
+- **Workflow Streamlining**: Complete integration allows Employee Management → Salary/Advance Creation → Admin Approval → Mark as Paid → Automatic Factory Expense Record Creation workflow
+- **CSRF Token Fix**: Resolved template error in expenses list page by removing undefined CSRF token references, ensuring smooth expense management functionality
+
+### Complete OCR Receipt Processing System Implementation (January 25, 2025)
 - **Smart Receipt Processing Section**: Added comprehensive OCR section to Factory Expenses form with professional "NEW" badge and success color scheme
 - **Image Upload with Camera Support**: File input with camera capture capability accepting images (PNG, JPG, JPEG, GIF, BMP, TIFF, WEBP) and PDF files
 - **OCR Backend Endpoint**: Created `/process_ocr` endpoint in expenses routes for processing uploaded receipt/invoice images with proper file validation and error handling
