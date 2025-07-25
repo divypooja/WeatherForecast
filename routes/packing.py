@@ -532,6 +532,48 @@ def opencv_process_image():
         cv_integrator = OpenCVPackingIntegrator()
         result = cv_integrator.process_image_for_packing(temp_file.name, processing_type)
         
+        # Enhanced result with complete dimensions and statistics
+        if result.get('success') and 'shapes' in result:
+            total_area = 0
+            shape_details = []
+            
+            for shape in result['shapes']:
+                bbox = shape.get('bounding_box', {})
+                area = shape.get('area', 0)
+                total_area += area
+                
+                shape_details.append({
+                    'id': shape.get('id', 'unknown'),
+                    'type': shape.get('type', 'unknown'),
+                    'dimensions': {
+                        'width': bbox.get('width', 0),
+                        'height': bbox.get('height', 0),
+                        'area': round(area, 2)
+                    },
+                    'position': {
+                        'x': bbox.get('x', 0),
+                        'y': bbox.get('y', 0)
+                    },
+                    'complexity': round(shape.get('complexity_score', 0), 3),
+                    'vertices': shape.get('vertices', 0)
+                })
+            
+            # Calculate meaningful material efficiency based on shape coverage
+            image_dimensions = result.get('image_analysis', {}).get('original_size', [800, 600])
+            image_area = image_dimensions[0] * image_dimensions[1] if len(image_dimensions) >= 2 else 480000
+            material_efficiency = min(100, max(0, (total_area / image_area) * 100))
+            
+            # Enhanced statistics
+            result['enhanced_stats'] = {
+                'total_shapes': len(result['shapes']),
+                'total_area': round(total_area, 2),
+                'image_area': round(image_area, 2),
+                'material_efficiency': round(material_efficiency, 1),
+                'average_complexity': round(result.get('image_analysis', {}).get('complexity_score', 0), 3),
+                'shape_details': shape_details,
+                'estimated_savings': f"{15 if result.get('recommendation', {}).get('algorithm') == 'svgnest' else 8}-{30 if result.get('recommendation', {}).get('algorithm') == 'svgnest' else 15}%"
+            }
+        
         # Cleanup
         os.unlink(temp_file.name)
         
