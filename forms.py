@@ -585,25 +585,78 @@ class FactoryExpenseForm(FlaskForm):
 class SalaryRecordForm(FlaskForm):
     salary_number = StringField('Salary Number', validators=[DataRequired()], render_kw={'readonly': True})
     employee_id = SelectField('Employee', coerce=int, validators=[DataRequired()])
+    department_id = SelectField('Department', coerce=int, validators=[Optional()])
     pay_period_start = DateField('Pay Period Start', validators=[DataRequired()])
     pay_period_end = DateField('Pay Period End', validators=[DataRequired()])
+    
+    # Basic Salary Components
     basic_amount = FloatField('Basic Amount', validators=[DataRequired(), NumberRange(min=0.01)])
+    hra_amount = FloatField('HRA Amount', validators=[Optional(), NumberRange(min=0)], default=0)
+    transport_allowance = FloatField('Transport Allowance', validators=[Optional(), NumberRange(min=0)], default=0)
+    special_allowance = FloatField('Special Allowance', validators=[Optional(), NumberRange(min=0)], default=0)
+    
+    # Overtime & Bonus
     overtime_hours = FloatField('Overtime Hours', validators=[Optional(), NumberRange(min=0)], default=0)
     overtime_rate = FloatField('Overtime Rate per Hour', validators=[Optional(), NumberRange(min=0)], default=0)
-    bonus_amount = FloatField('Bonus Amount', validators=[Optional(), NumberRange(min=0)], default=0)
-    deduction_amount = FloatField('Other Deductions', validators=[Optional(), NumberRange(min=0)], default=0)
+    bonus_amount = FloatField('Performance Bonus', validators=[Optional(), NumberRange(min=0)], default=0)
+    incentive_amount = FloatField('Production Incentive', validators=[Optional(), NumberRange(min=0)], default=0)
+    
+    # Deductions
+    pf_deduction = FloatField('PF Deduction', validators=[Optional(), NumberRange(min=0)], default=0)
+    esi_deduction = FloatField('ESI Deduction', validators=[Optional(), NumberRange(min=0)], default=0)
+    tax_deduction = FloatField('Tax Deduction (TDS)', validators=[Optional(), NumberRange(min=0)], default=0)
+    loan_deduction = FloatField('Loan Deduction', validators=[Optional(), NumberRange(min=0)], default=0)
     advance_deduction = FloatField('Advance Deduction', validators=[Optional(), NumberRange(min=0)], default=0)
+    other_deductions = FloatField('Other Deductions', validators=[Optional(), NumberRange(min=0)], default=0)
+    
+    # Payment Details
     payment_method = SelectField('Payment Method', 
-                                choices=[('cash', 'Cash'), ('bank_transfer', 'Bank Transfer'), ('cheque', 'Cheque')])
-    notes = TextAreaField('Notes', render_kw={'rows': 3})
+                                choices=[('cash', 'Cash'), ('bank_transfer', 'Bank Transfer'), 
+                                        ('cheque', 'Cheque'), ('upi', 'UPI'), ('neft', 'NEFT')])
+    bank_account = StringField('Bank Account Number', validators=[Optional(), Length(max=20)])
+    ifsc_code = StringField('IFSC Code', validators=[Optional(), Length(max=11)])
+    
+    # Additional Information
+    attendance_days = IntegerField('Attendance Days', validators=[Optional(), NumberRange(min=0, max=31)])
+    working_days = IntegerField('Total Working Days', validators=[Optional(), NumberRange(min=0, max=31)])
+    leave_days = IntegerField('Leave Days', validators=[Optional(), NumberRange(min=0, max=31)], default=0)
+    
+    # Status & Approval
+    salary_status = SelectField('Status', 
+                               choices=[('draft', 'Draft'), ('pending_approval', 'Pending Approval'), 
+                                       ('approved', 'Approved'), ('paid', 'Paid'), ('cancelled', 'Cancelled')], 
+                               default='draft')
+    approved_by = SelectField('Approved By', coerce=int, validators=[Optional()])
+    paid_date = DateField('Paid Date', validators=[Optional()])
+    
+    notes = TextAreaField('Notes & Remarks', render_kw={'rows': 4})
     submit = SubmitField('Save Salary Record')
     
     def __init__(self, *args, **kwargs):
         super(SalaryRecordForm, self).__init__(*args, **kwargs)
         from models import Employee
+        from models_department import Department
+        from models import User
+        
+        # Load employees
         self.employee_id.choices = [(0, 'Select Employee')] + [
-            (e.id, f"{e.name} ({e.employee_code})") 
+            (e.id, f"{e.name} ({e.employee_code}) - {e.department}") 
             for e in Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
+        ]
+        
+        # Load departments
+        try:
+            departments = Department.query.filter_by(is_active=True).order_by(Department.name).all()
+            self.department_id.choices = [(0, 'Select Department')] + [
+                (d.id, d.name) for d in departments
+            ]
+        except:
+            self.department_id.choices = [(0, 'Select Department')]
+            
+        # Load approvers (admin users)
+        self.approved_by.choices = [(0, 'Select Approver')] + [
+            (u.id, u.username) 
+            for u in User.query.filter_by(role='admin', is_active=True).order_by(User.username).all()
         ]
 
 class EmployeeAdvanceForm(FlaskForm):
