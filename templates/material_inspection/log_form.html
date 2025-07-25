@@ -176,9 +176,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const inspected = parseFloat(inspectedQty.value) || 0;
         const passed = parseFloat(passedQty.value) || 0;
         
-        // Auto-calculate rejected quantity
-        const rejected = Math.max(0, inspected - passed);
-        rejectedQty.value = rejected.toFixed(2);
+        // Only auto-calculate rejected quantity if both inspected AND passed quantities are provided
+        let rejected = 0;
+        if (inspected > 0 && passedQty.value !== '') {
+            rejected = Math.max(0, inspected - passed);
+            rejectedQty.value = rejected.toFixed(2);
+        } else if (passedQty.value === '') {
+            // Clear rejected quantity if passed quantity is not yet entered
+            rejectedQty.value = '';
+        } else {
+            rejected = parseFloat(rejectedQty.value) || 0;
+        }
 
         const totalAccounted = passed + rejected;
         const acceptanceRate = inspected > 0 ? (passed / inspected * 100) : 0;
