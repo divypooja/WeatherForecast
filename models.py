@@ -420,6 +420,24 @@ class Employee(db.Model):
             next_num = 1
         return f"EMP-{next_num:04d}"
 
+class JobWorkRate(db.Model):
+    __tablename__ = 'job_work_rates'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
+    rate_per_unit = db.Column(db.Float, nullable=False, default=0.0)
+    process_type = db.Column(db.String(50), nullable=True)  # Optional process-specific rate
+    notes = db.Column(db.Text, nullable=True)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    
+    # Relationship
+    item = db.relationship('Item', backref='job_work_rates')
+    
+    def __repr__(self):
+        return f'<JobWorkRate {self.item.name}: ₹{self.rate_per_unit}>'
+
 class JobWork(db.Model):
     __tablename__ = 'job_works'
     
