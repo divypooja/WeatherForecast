@@ -25,4 +25,7 @@ dependencies = [
     "openpyxl>=3.1.5",
     "pandas>=2.3.1",
     "rectpack>=0.2.2",
+    "pillow>=11.3.0",
+    "numpy>=2.3.1",
+    "opencv-python-headless>=4.11.0.86",
 ]
