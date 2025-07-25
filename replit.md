@@ -96,6 +96,7 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **Dashboard Redirect**: Changed form submission redirect from job list to Job Work dashboard for better workflow
 - **Rate Field Optimization**: Made rate per unit optional in form definition with custom validation handling based on work type
 - **Professional User Experience**: Clean form interface with appropriate field hiding/showing and contextual help text
+- **Daily Work Entry Filter**: Updated Daily Work Entry form to only display in-house job works, filtering out outsourced work from worker daily logging system
 
 ### Complete Job Work Enhancement with Process Types and Scrap Management
 - **Process Type Selection**: Successfully implemented process field in JobWork forms allowing selection from 8 manufacturing processes (Zinc, Cutting, Bending, Welding, Painting, Assembly, Machining, Polishing)

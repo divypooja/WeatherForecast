@@ -327,10 +327,13 @@ class DailyJobWorkForm(FlaskForm):
     
     def __init__(self, *args, **kwargs):
         super(DailyJobWorkForm, self).__init__(*args, **kwargs)
-        # Only show active job works that are in progress
-        active_jobs = JobWork.query.filter(JobWork.status.in_(['sent', 'partial_received'])).order_by(JobWork.job_number).all()
-        self.job_work_id.choices = [(0, 'Select Job Work')] + [
-            (job.id, f"{job.job_number} - {job.item.name} ({job.process})") 
+        # Only show active in-house job works that are in progress
+        active_jobs = JobWork.query.filter(
+            JobWork.status.in_(['sent', 'partial_received']),
+            JobWork.work_type == 'in_house'
+        ).order_by(JobWork.job_number).all()
+        self.job_work_id.choices = [(0, 'Select In-House Job Work')] + [
+            (job.id, f"{job.job_number} - {job.item.name} ({job.process}) - {job.department.replace('_', ' ').title()}") 
             for job in active_jobs
         ]
 
