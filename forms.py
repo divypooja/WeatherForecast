@@ -77,7 +77,7 @@ class SupplierForm(FlaskForm):
     
     # Partner Type
     partner_type = SelectField('Partner Type', 
-                              choices=[('supplier', 'Supplier'), ('customer', 'Customer'), ('both', 'Both Supplier & Customer')],
+                              choices=[('supplier', 'Supplier'), ('customer', 'Customer'), ('vendor', 'Vendor'), ('transporter', 'Transporter'), ('both', 'Both Supplier & Customer')],
                               validators=[DataRequired()], default='supplier')
     
     # Compliance Information
@@ -127,7 +127,9 @@ class PurchaseOrderForm(FlaskForm):
     
     def __init__(self, *args, **kwargs):
         super(PurchaseOrderForm, self).__init__(*args, **kwargs)
-        self.supplier_id.choices = [(0, 'Select Supplier')] + [(s.id, s.name) for s in Supplier.query.all()]
+        # Include suppliers and vendors for purchase orders
+        suppliers = Supplier.query.filter(Supplier.partner_type.in_(['supplier', 'vendor', 'both'])).all()
+        self.supplier_id.choices = [(0, 'Select Supplier')] + [(s.id, s.name) for s in suppliers]
 
 class PurchaseOrderItemForm(FlaskForm):
     item_id = SelectField('Item', validators=[DataRequired()], coerce=int)

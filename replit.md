@@ -6,6 +6,15 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 25, 2025)
 
+### Extended Business Partner Types with Vendor and Transporter Support (Latest)
+- **Extended Partner Types**: Added "Vendor" and "Transporter" to business partner system expanding from 3 to 5 partner types (Supplier, Customer, Vendor, Transporter, Both)
+- **Enhanced Form Integration**: Updated SupplierForm with new partner type choices and comprehensive dropdown options
+- **Visual Differentiation**: Added color-coded badges for new partner types (Vendor: warning/orange, Transporter: secondary/gray)
+- **Model Property Updates**: Extended Supplier model with new is_vendor and is_transporter properties for type checking
+- **Purchase Order Integration**: Updated PO form to include vendors in supplier selection dropdown since vendors can supply materials
+- **Database Schema Support**: Enhanced partner_type column to support vendor and transporter values with proper model constraints
+- **Unified Business Logic**: Maintained unified business partner architecture while expanding type flexibility for diverse business relationships
+
 ### Enhanced BOM System with Unit Selection and Markup (Latest)
 - **BOM Unit Selection**: Added unit field to BOMItem model allowing selection of different units (pcs, kg, g, nos, m, cm, l, ml, sqft, sqm) for each material in BOM independent of inventory item's default unit
 - **Database Schema Updates**: Added unit column to bom_items table with default 'pcs' value for flexible unit specification per BOM material
