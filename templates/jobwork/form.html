@@ -298,94 +298,94 @@ function previewJobWork() {
     }
     
     const previewContent = `
-        <div class="alert alert-info">
-            <i class="fas fa-info-circle"></i> <strong>Review your Job Work configuration before saving.</strong>
-        </div>
-        
-        <div class="card mb-3">
-            <div class="card-header">
-                <h6><i class="fas fa-cog"></i> Job Work Configuration</h6>
-            </div>
-            <div class="card-body">
-                <table class="table table-borderless">
-                    <tr>
-                        <td><strong>Job Number:</strong></td>
-                        <td>${previewData.job_number || 'Auto-generated'}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Customer:</strong></td>
-                        <td>${previewData.customer_name || 'Not selected'}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Item:</strong></td>
-                        <td>${previewData.item_name || 'Not selected'}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Quantity Sent:</strong></td>
-                        <td>${previewData.quantity_sent}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Rate per Unit:</strong></td>
-                        <td>₹${previewData.rate_per_unit.toFixed(2)}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Sent Date:</strong></td>
-                        <td>${previewData.sent_date || 'Not set'}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Expected Return:</strong></td>
-                        <td>${previewData.expected_return || 'Not set'}</td>
-                    </tr>
-                </table>
-            </div>
-        </div>
-        
-        <div class="card mb-3">
-            <div class="card-header">
-                <h6><i class="fas fa-boxes"></i> Inventory Impact</h6>
-            </div>
-            <div class="card-body">
-                <div id="stock-analysis">
-                    <div class="text-muted">
-                        <i class="fas fa-spinner fa-spin"></i> Checking inventory impact...
-                    </div>
-                </div>
+<div class="alert alert-info">
+    <i class="fas fa-info-circle"></i> <strong>Review your Job Work configuration before saving.</strong>
+</div>
+
+<div class="card mb-3">
+    <div class="card-header">
+        <h6><i class="fas fa-cog"></i> Job Work Configuration</h6>
+    </div>
+    <div class="card-body">
+        <table class="table table-borderless">
+            <tr>
+                <td><strong>Job Number:</strong></td>
+                <td>${previewData.job_number || 'Auto-generated'}</td>
+            </tr>
+            <tr>
+                <td><strong>Customer:</strong></td>
+                <td>${previewData.customer_name || 'Not selected'}</td>
+            </tr>
+            <tr>
+                <td><strong>Item:</strong></td>
+                <td>${previewData.item_name || 'Not selected'}</td>
+            </tr>
+            <tr>
+                <td><strong>Quantity Sent:</strong></td>
+                <td>${previewData.quantity_sent}</td>
+            </tr>
+            <tr>
+                <td><strong>Rate per Unit:</strong></td>
+                <td>₹${previewData.rate_per_unit.toFixed(2)}</td>
+            </tr>
+            <tr>
+                <td><strong>Sent Date:</strong></td>
+                <td>${previewData.sent_date || 'Not set'}</td>
+            </tr>
+            <tr>
+                <td><strong>Expected Return:</strong></td>
+                <td>${previewData.expected_return || 'Not set'}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-header">
+        <h6><i class="fas fa-boxes"></i> Inventory Impact</h6>
+    </div>
+    <div class="card-body">
+        <div id="stock-analysis">
+            <div class="text-muted">
+                <i class="fas fa-spinner fa-spin"></i> Checking inventory impact...
             </div>
         </div>
-        
-        <div class="card mb-3">
-            <div class="card-header">
-                <h6><i class="fas fa-calculator"></i> Value Breakdown</h6>
-            </div>
-            <div class="card-body">
-                <table class="table table-borderless">
-                    <tr>
-                        <td><strong>Quantity:</strong></td>
-                        <td class="text-end">${previewData.quantity_sent}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Rate per Unit:</strong></td>
-                        <td class="text-end">₹${previewData.rate_per_unit.toFixed(2)}</td>
-                    </tr>
-                    <tr class="table-dark">
-                        <td><strong>Total Value:</strong></td>
-                        <td class="text-end"><strong>₹${totalValue.toFixed(2)}</strong></td>
-                    </tr>
-                </table>
-            </div>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-header">
+        <h6><i class="fas fa-calculator"></i> Value Breakdown</h6>
+    </div>
+    <div class="card-body">
+        <table class="table table-borderless">
+            <tr>
+                <td><strong>Quantity:</strong></td>
+                <td class="text-end">${previewData.quantity_sent}</td>
+            </tr>
+            <tr>
+                <td><strong>Rate per Unit:</strong></td>
+                <td class="text-end">₹${previewData.rate_per_unit.toFixed(2)}</td>
+            </tr>
+            <tr class="table-dark">
+                <td><strong>Total Value:</strong></td>
+                <td class="text-end"><strong>₹${totalValue.toFixed(2)}</strong></td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h6><i class="fas fa-sticky-note"></i> Notes</h6>
+    </div>
+    <div class="card-body">
+        <div class="bg-light p-3 rounded" style="min-height: 60px;">
+            ${previewData.notes || '<em class="text-muted">No notes added</em>'}
         </div>
-        
-        <div class="card">
-            <div class="card-header">
-                <h6><i class="fas fa-sticky-note"></i> Notes</h6>
-            </div>
-            <div class="card-body">
-                <div class="bg-light p-3 rounded" style="min-height: 60px;">
-                    ${previewData.notes || '<em class="text-muted">No notes added</em>'}
-                </div>
-            </div>
-        </div>
-    `;
+    </div>
+</div>
+`;
     
     document.getElementById('preview-content').innerHTML = previewContent;
     const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
