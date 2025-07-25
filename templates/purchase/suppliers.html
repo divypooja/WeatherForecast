@@ -92,6 +92,10 @@
                                             <span class="badge bg-primary">Supplier</span>
                                         {% elif supplier.partner_type == 'customer' %}
                                             <span class="badge bg-info">Customer</span>
+                                        {% elif supplier.partner_type == 'vendor' %}
+                                            <span class="badge bg-warning">Vendor</span>
+                                        {% elif supplier.partner_type == 'transporter' %}
+                                            <span class="badge bg-secondary">Transporter</span>
                                         {% elif supplier.partner_type == 'both' %}
                                             <span class="badge bg-success">Both</span>
                                         {% endif %}

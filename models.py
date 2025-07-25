@@ -161,8 +161,8 @@ class Supplier(db.Model):
     bank_name = db.Column(db.String(200))
     ifsc_code = db.Column(db.String(20))
     
-    # Partner Type - can be 'supplier', 'customer', or 'both'
-    partner_type = db.Column(db.String(20), default='supplier')  # supplier, customer, both
+    # Partner Type - can be 'supplier', 'customer', 'vendor', 'transporter', or 'both'
+    partner_type = db.Column(db.String(20), default='supplier')  # supplier, customer, vendor, transporter, both
     
     # Additional Information
     remarks = db.Column(db.Text)  # Any notes
@@ -176,11 +176,19 @@ class Supplier(db.Model):
     
     @property
     def is_supplier(self):
-        return self.partner_type in ['supplier', 'both']
+        return self.partner_type in ['supplier', 'vendor', 'both']
     
     @property
     def is_customer(self):
         return self.partner_type in ['customer', 'both']
+    
+    @property
+    def is_vendor(self):
+        return self.partner_type in ['vendor', 'both']
+    
+    @property
+    def is_transporter(self):
+        return self.partner_type in ['transporter', 'both']
 
 # Customer model removed - now using unified Supplier table for all business partners
 
