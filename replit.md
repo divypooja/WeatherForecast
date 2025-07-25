@@ -19,6 +19,7 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **Real-time Feedback**: Shows "Rate loaded from rates table" notification when rates auto-populate in job work form
 - **Duplicate Prevention**: System prevents duplicate rates for same item/process combination
 - **Total Job Cost Calculation**: Real-time calculation and display of total job cost (Quantity × Rate) in job work forms and lists
+- **Work Type Classification**: Added in-house vs outsourced categorization for job work operations with visual badges and dashboard statistics
 
 ### Job Work Preview Functionality Removed (January 25, 2025)
 - **Preview Button Removed**: Removed preview button from Job Work form as requested by user for simplified interface

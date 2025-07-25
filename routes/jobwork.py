@@ -18,7 +18,9 @@ def dashboard():
         'total_jobs': JobWork.query.count(),
         'sent_jobs': JobWork.query.filter_by(status='sent').count(),
         'partial_received': JobWork.query.filter_by(status='partial_received').count(),
-        'completed_jobs': JobWork.query.filter_by(status='completed').count()
+        'completed_jobs': JobWork.query.filter_by(status='completed').count(),
+        'in_house_jobs': JobWork.query.filter_by(work_type='in_house').count(),
+        'outsourced_jobs': JobWork.query.filter_by(work_type='outsourced').count()
     }
     
     # Recent job works
@@ -85,6 +87,7 @@ def add_job_work():
             customer_name=form.customer_name.data,
             item_id=form.item_id.data,
             process=form.process_type.data,
+            work_type=form.work_type.data,
             quantity_sent=form.quantity_sent.data,
             expected_finished_material=form.expected_finished_material.data or 0.0,
             expected_scrap=form.expected_scrap.data or 0.0,
@@ -141,6 +144,7 @@ def edit_job_work(id):
         job.customer_name = form.customer_name.data
         job.item_id = form.item_id.data
         job.process = form.process_type.data
+        job.work_type = form.work_type.data
         job.quantity_sent = form.quantity_sent.data
         job.expected_finished_material = form.expected_finished_material.data or 0.0
         job.expected_scrap = form.expected_scrap.data or 0.0

@@ -65,9 +65,14 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="badge bg-{{ 'success' if job.status == 'completed' else 'warning' if job.status == 'partial_received' else 'primary' }}">
-                                        {{ job.status.replace('_', ' ').title() }}
-                                    </span>
+                                    <div class="d-flex flex-column gap-1">
+                                        <span class="badge bg-{{ 'success' if job.status == 'completed' else 'warning' if job.status == 'partial_received' else 'primary' }}">
+                                            {{ job.status.replace('_', ' ').title() }}
+                                        </span>
+                                        <span class="badge {{ job.work_type_badge_class }} badge-sm">
+                                            {{ job.work_type_display }}
+                                        </span>
+                                    </div>
                                 </td>
                                 <td>{{ job.creator.username }}</td>
                                 <td>

@@ -446,6 +446,7 @@ class JobWork(db.Model):
     customer_name = db.Column(db.String(100), nullable=False)
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     process = db.Column(db.String(100), nullable=False)  # Process type: Zinc, Cutting, Bending, etc.
+    work_type = db.Column(db.String(20), nullable=False, default='outsourced')  # in_house or outsourced
     quantity_sent = db.Column(db.Float, nullable=False)
     quantity_received = db.Column(db.Float, default=0.0)
     expected_finished_material = db.Column(db.Float, default=0.0)  # Expected finished material quantity
@@ -492,6 +493,16 @@ class JobWork(db.Model):
     def total_cost_display(self):
         """Return formatted total cost for display"""
         return f"₹{self.total_cost:.2f}"
+    
+    @property
+    def work_type_display(self):
+        """Return user-friendly work type display"""
+        return "In-House" if self.work_type == 'in_house' else "Outsourced"
+    
+    @property
+    def work_type_badge_class(self):
+        """Return Bootstrap badge class for work type"""
+        return 'bg-success' if self.work_type == 'in_house' else 'bg-primary'
 
 class Production(db.Model):
     __tablename__ = 'productions'
