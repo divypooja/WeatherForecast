@@ -156,6 +156,7 @@
                                 <th>Current Stock</th>
                                 <th>Unit</th>
                                 <th>Min Stock</th>
+                                <th>Unit Weight</th>
                                 <th>Unit Price</th>
                                 <th>Total Value</th>
                                 <th>Status</th>
@@ -174,6 +175,13 @@
                                 <td>{{ "%.2f"|format(item.current_stock or 0) }}</td>
                                 <td>{{ item.unit_of_measure or 'N/A' }}</td>
                                 <td>{{ "%.2f"|format(item.minimum_stock or 0) }}</td>
+                                <td>
+                                    {% if (item.unit_weight or 0) > 0 %}
+                                        {{ "%.3f"|format(item.unit_weight) }} kg
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
                                 <td>₹{{ "%.2f"|format(item.unit_price or 0) }}</td>
                                 <td>₹{{ "%.2f"|format((item.current_stock or 0) * (item.unit_price or 0)) }}</td>
                                 <td>
