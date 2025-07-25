@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from forms import PurchaseOrderForm, SupplierForm
 from models import PurchaseOrder, PurchaseOrderItem, Supplier, Item, DeliverySchedule, CompanySettings, BOMItem
+from models_uom import ItemUOMConversion, UnitOfMeasure
 from app import db
 from utils_documents import get_documents_for_transaction
 from sqlalchemy import func
@@ -161,12 +162,39 @@ def add_purchase_order():
         flash('Purchase Order created successfully', 'success')
         return redirect(url_for('purchase.list_purchase_orders'))
     
-    # Get items with BOM rates where available
-    items_data = db.session.query(Item, BOMItem.unit_cost).outerjoin(BOMItem, Item.id == BOMItem.item_id).all()
+    # Get items with BOM rates and UOM conversion data
+    items_data = db.session.query(Item, BOMItem.unit_cost, ItemUOMConversion).outerjoin(
+        BOMItem, Item.id == BOMItem.item_id
+    ).outerjoin(
+        ItemUOMConversion, Item.id == ItemUOMConversion.item_id
+    ).all()
+    
     items = []
-    for item, bom_rate in items_data:
-        # Use BOM rate if available, otherwise fall back to item unit_price
-        item.bom_rate = bom_rate if bom_rate is not None else item.unit_price
+    for item, bom_rate, uom_conversion in items_data:
+        # Set BOM rate as base rate
+        base_rate = bom_rate if bom_rate is not None else item.unit_price
+        
+        # Calculate purchase unit rate if UOM conversion exists
+        if uom_conversion:
+            # If purchasing in a different unit than inventory unit, adjust the rate
+            if (uom_conversion.purchase_unit_id != uom_conversion.inventory_unit_id and 
+                uom_conversion.inventory_to_sale and uom_conversion.inventory_to_sale > 0):
+                # Convert inventory unit price to purchase unit price
+                # Example: If inventory is ₹1/piece and 1kg = 100 pieces, then purchase rate = ₹100/kg
+                purchase_rate = base_rate * float(uom_conversion.inventory_to_sale)
+                item.purchase_rate = purchase_rate
+            else:
+                item.purchase_rate = base_rate
+                
+            # Get purchase unit symbol for display
+            purchase_unit = UnitOfMeasure.query.get(uom_conversion.purchase_unit_id)
+            item.purchase_unit = purchase_unit.symbol if purchase_unit else item.unit_of_measure
+        else:
+            item.purchase_rate = base_rate
+            item.purchase_unit = item.unit_of_measure
+            
+        # Keep original fields for backward compatibility
+        item.bom_rate = item.purchase_rate
         items.append(item)
     
     return render_template('purchase/form_enhanced.html', form=form, title='Add Purchase Order', items=items)
@@ -234,11 +262,39 @@ def edit_purchase_order(id):
     
     # Get PO items for display
     po_items = PurchaseOrderItem.query.filter_by(purchase_order_id=id).all()
-    # Get items with BOM rates where available
-    items_data = db.session.query(Item, BOMItem.unit_cost).outerjoin(BOMItem, Item.id == BOMItem.item_id).all()
+    # Get items with BOM rates and UOM conversion data
+    items_data = db.session.query(Item, BOMItem.unit_cost, ItemUOMConversion).outerjoin(
+        BOMItem, Item.id == BOMItem.item_id
+    ).outerjoin(
+        ItemUOMConversion, Item.id == ItemUOMConversion.item_id
+    ).all()
+    
     items = []
-    for item, bom_rate in items_data:
-        item.bom_rate = bom_rate if bom_rate is not None else item.unit_price
+    for item, bom_rate, uom_conversion in items_data:
+        # Set BOM rate as base rate
+        base_rate = bom_rate if bom_rate is not None else item.unit_price
+        
+        # Calculate purchase unit rate if UOM conversion exists
+        if uom_conversion:
+            # If purchasing in a different unit than inventory unit, adjust the rate
+            if (uom_conversion.purchase_unit_id != uom_conversion.inventory_unit_id and 
+                uom_conversion.inventory_to_sale and uom_conversion.inventory_to_sale > 0):
+                # Convert inventory unit price to purchase unit price
+                # Example: If inventory is ₹1/piece and 1kg = 100 pieces, then purchase rate = ₹100/kg
+                purchase_rate = base_rate * float(uom_conversion.inventory_to_sale)
+                item.purchase_rate = purchase_rate
+            else:
+                item.purchase_rate = base_rate
+                
+            # Get purchase unit symbol for display
+            purchase_unit = UnitOfMeasure.query.get(uom_conversion.purchase_unit_id)
+            item.purchase_unit = purchase_unit.symbol if purchase_unit else item.unit_of_measure
+        else:
+            item.purchase_rate = base_rate
+            item.purchase_unit = item.unit_of_measure
+            
+        # Keep original fields for backward compatibility
+        item.bom_rate = item.purchase_rate
         items.append(item)
     
     return render_template('purchase/form_enhanced.html', 

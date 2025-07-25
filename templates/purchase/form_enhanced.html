@@ -325,9 +325,9 @@ const itemsData = [
         description: "{{ item.description or '' }}",
         hsn_code: "{{ item.hsn_code or '' }}",
         gst_rate: {{ item.gst_rate or 0.0 }},
-        unit_of_measure: "{{ item.unit_of_measure }}",
+        unit_of_measure: "{{ item.purchase_unit if item.purchase_unit else item.unit_of_measure }}",
         unit_price: {{ item.unit_price or 0.0 }},
-        bom_rate: {{ item.bom_rate or item.unit_price or 0.0 }}
+        bom_rate: {{ item.purchase_rate if item.purchase_rate else (item.bom_rate or item.unit_price or 0.0) }}
     }{% if not loop.last %},{% endif %}
     {% endfor %}
 ];
