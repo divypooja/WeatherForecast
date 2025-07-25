@@ -171,11 +171,11 @@ def add_item_conversion():
         item_conversion = ItemUOMConversion(
             item_id=form.item.data,
             purchase_unit_id=form.purchase_unit.data,
-            sale_unit_id=form.sale_unit.data,
+            sale_unit_id=form.inventory_unit.data,  # Sale unit = Inventory unit
             inventory_unit_id=form.inventory_unit.data,
             purchase_to_inventory=form.purchase_to_inventory.data,
-            inventory_to_sale=form.inventory_to_sale.data,
-            purchase_to_sale=purchase_to_sale,
+            inventory_to_sale=1.0,  # Always 1.0 since sale unit = inventory unit
+            purchase_to_sale=form.purchase_to_inventory.data,  # Same as purchase to inventory
             weight_per_piece=form.weight_per_piece.data,
             pieces_per_kg=form.pieces_per_kg.data,
             notes=form.notes.data
@@ -200,11 +200,19 @@ def edit_item_conversion(conversion_id):
     form = ItemUOMConversionForm(obj=conversion)
     
     if form.validate_on_submit():
-        # Update all fields
-        form.populate_obj(conversion)
+        # Update fields manually since sale unit fields were removed from form
+        conversion.item_id = form.item.data
+        conversion.purchase_unit_id = form.purchase_unit.data
+        conversion.inventory_unit_id = form.inventory_unit.data
+        conversion.sale_unit_id = form.inventory_unit.data  # Sale unit = Inventory unit
+        conversion.purchase_to_inventory = form.purchase_to_inventory.data
+        conversion.inventory_to_sale = 1.0  # Always 1.0 since sale unit = inventory unit
+        conversion.weight_per_piece = form.weight_per_piece.data
+        conversion.pieces_per_kg = form.pieces_per_kg.data
+        conversion.notes = form.notes.data
         
-        # Recalculate purchase to sale conversion
-        conversion.purchase_to_sale = float(conversion.purchase_to_inventory) * float(conversion.inventory_to_sale)
+        # Set purchase to sale conversion
+        conversion.purchase_to_sale = float(conversion.purchase_to_inventory)
         
         try:
             db.session.commit()

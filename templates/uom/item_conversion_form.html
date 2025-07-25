@@ -79,14 +79,9 @@
                                     </div>
                                     <div class="col-md-4">
                                         <div class="mb-3">
-                                            {{ form.sale_unit.label(class="form-label") }}
-                                            {{ form.sale_unit(class="form-select") }}
-                                            {% if form.sale_unit.errors %}
-                                                {% for error in form.sale_unit.errors %}
-                                                    <div class="text-danger small">{{ error }}</div>
-                                                {% endfor %}
-                                            {% endif %}
-                                            <div class="form-text">What unit you sell this item in</div>
+                                            <label class="form-label">Sale Unit (Automatic)</label>
+                                            <input type="text" class="form-control" value="Same as Inventory Unit" readonly>
+                                            <div class="form-text">Sale unit automatically matches inventory unit</div>
                                         </div>
                                     </div>
                                 </div>
@@ -114,14 +109,9 @@
                                     </div>
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            {{ form.inventory_to_sale.label(class="form-label") }}
-                                            {{ form.inventory_to_sale(class="form-control", **{"onchange": "calculateDerived()"}) }}
-                                            {% if form.inventory_to_sale.errors %}
-                                                {% for error in form.inventory_to_sale.errors %}
-                                                    <div class="text-danger small">{{ error }}</div>
-                                                {% endfor %}
-                                            {% endif %}
-                                            <div class="form-text">Example: 1 Kg = 40 pieces (factor = 40.0)</div>
+                                            <label class="form-label">Inventory to Sale Factor (Automatic)</label>
+                                            <input type="text" class="form-control" value="1.0 (Same Unit)" readonly>
+                                            <div class="form-text">Always 1.0 since sale unit = inventory unit</div>
                                         </div>
                                     </div>
                                 </div>
