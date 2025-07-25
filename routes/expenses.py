@@ -195,6 +195,7 @@ def add_expense():
                 expense_date=form.expense_date.data,
                 category=form.category.data,
                 subcategory=form.subcategory.data,
+                department_code=form.department.data if form.department.data else None,
                 description=form.description.data,
                 amount=form.amount.data,
                 tax_amount=tax_amt,
@@ -259,6 +260,8 @@ def edit_expense(id):
         return redirect(url_for('expenses.expense_detail', id=id))
     
     form = FactoryExpenseForm(obj=expense)
+    # Set department field from department_code
+    form.department.data = expense.department_code
     
     if form.validate_on_submit():
         try:
@@ -269,6 +272,7 @@ def edit_expense(id):
             expense.expense_date = form.expense_date.data
             expense.category = form.category.data
             expense.subcategory = form.subcategory.data
+            expense.department_code = form.department.data if form.department.data else None
             expense.description = form.description.data
             expense.amount = form.amount.data
             expense.tax_amount = tax_amt
@@ -473,7 +477,8 @@ def process_ocr():
                 "tax_amount": round(random.uniform(15, 500), 2),
                 "vendor": f"Sample Vendor {random.randint(1, 10)}",
                 "invoice_number": f"INV-{random.randint(1000, 9999)}",
-                "category": random.choice(["Utilities", "Materials", "Transport", "Maintenance"]),
+                "category": random.choice(["utilities", "materials", "transport", "maintenance"]),
+                "department": random.choice(["production", "maintenance", "administration", "accounts_finance"]),
                 "gst_rate": random.choice([5, 12, 18, 28]),
                 "gstin": f"22AAAAA0000A1Z{random.randint(1, 9)}",
                 "confidence": random.randint(75, 95)

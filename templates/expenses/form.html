@@ -127,6 +127,20 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
+                                        {{ form.department.label(class="form-label") }}
+                                        {{ form.department(class="form-select") }}
+                                        {% if form.department.errors %}
+                                            {% for error in form.department.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                        <small class="text-muted">Optional: Department responsible for this expense</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
                                         {{ form.payment_method.label(class="form-label") }}
                                         {{ form.payment_method(class="form-select") }}
                                         {% if form.payment_method.errors %}
@@ -136,8 +150,6 @@
                                         {% endif %}
                                     </div>
                                 </div>
-                            </div>
-                            <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         {{ form.paid_by.label(class="form-label") }}
@@ -551,6 +563,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 categorySelect.value = categoryOption.value;
             }
         }
+        if (ocrData.department) {
+            document.getElementById('department').value = ocrData.department;
+        }
         
         // Trigger total calculation
         calculateTotal();
@@ -602,6 +617,7 @@ function displayOCRResults(data) {
         <strong>Document Data:</strong><br>
         ${data.date ? `<span class="badge bg-primary">Date: ${data.date}</span><br>` : ''}
         ${data.category ? `<span class="badge bg-dark">Category: ${data.category}</span><br>` : ''}
+        ${data.department ? `<span class="badge bg-warning">Department: ${data.department.replace('_', ' ').toUpperCase()}</span><br>` : ''}
         ${data.gstin ? `<span class="text-muted">GSTIN: ${data.gstin}</span><br>` : ''}
         <br>
         <strong>Confidence:</strong><br>

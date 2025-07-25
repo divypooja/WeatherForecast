@@ -515,6 +515,7 @@ class FactoryExpenseForm(FlaskForm):
                           ])
     subcategory = StringField('Subcategory', validators=[Optional(), Length(max=100)], 
                              render_kw={"placeholder": "e.g., Electricity, Water, Equipment Repair"})
+    department = SelectField('Department', validators=[Optional()], coerce=str)
     description = TextAreaField('Description', validators=[DataRequired(), Length(max=500)], 
                                render_kw={"placeholder": "Detailed description of the expense"})
     
@@ -559,6 +560,27 @@ class FactoryExpenseForm(FlaskForm):
                          render_kw={"placeholder": "Additional notes or comments"})
     
     submit = SubmitField('Save Expense')
+    
+    def __init__(self, *args, **kwargs):
+        super(FactoryExpenseForm, self).__init__(*args, **kwargs)
+        # Populate department choices from database
+        try:
+            from models_department import Department
+            Department.get_default_departments()  # Ensure default departments exist
+            self.department.choices = Department.get_choices()
+        except Exception:
+            # Fallback choices if database error
+            self.department.choices = [
+                ('', 'Select Department'),
+                ('production', 'Production'),
+                ('assembly', 'Assembly'),
+                ('quality_control', 'Quality Control'),
+                ('finishing', 'Finishing'),
+                ('packaging', 'Packaging'),
+                ('maintenance', 'Maintenance'),
+                ('administration', 'Administration'),
+                ('accounts_finance', 'Accounts & Finance')
+            ]
 
 class SalaryRecordForm(FlaskForm):
     salary_number = StringField('Salary Number', validators=[DataRequired()], render_kw={'readonly': True})
