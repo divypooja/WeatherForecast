@@ -264,7 +264,7 @@ class JobWorkForm(FlaskForm):
     quantity_sent = FloatField('Quantity Sent', validators=[DataRequired(), NumberRange(min=0)])
     expected_finished_material = FloatField('Expected Finished Material', validators=[NumberRange(min=0)], default=0.0)
     expected_scrap = FloatField('Expected Scrap', validators=[NumberRange(min=0)], default=0.0)
-    rate_per_unit = FloatField('Rate per Unit', validators=[DataRequired(), NumberRange(min=0)])
+    rate_per_unit = FloatField('Rate per Unit', validators=[NumberRange(min=0)], default=0.0)
     sent_date = DateField('Sent Date', validators=[DataRequired()])
     expected_return = DateField('Expected Return Date')
     notes = TextAreaField('Notes')
@@ -273,6 +273,29 @@ class JobWorkForm(FlaskForm):
         super(JobWorkForm, self).__init__(*args, **kwargs)
         self.item_id.choices = [(0, 'Select Item')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.all()]
         self.customer_name.choices = [('', 'Select Customer')] + [(s.name, s.name) for s in Supplier.query.order_by(Supplier.name).all()]
+    
+    def validate(self, extra_validators=None):
+        if not super().validate(extra_validators):
+            return False
+        
+        # Custom validation based on work type
+        if self.work_type.data == 'outsourced':
+            # For outsourced work, customer_name and rate_per_unit are required
+            if not self.customer_name.data:
+                self.customer_name.errors.append('Customer name is required for outsourced work.')
+                return False
+            if not self.rate_per_unit.data or self.rate_per_unit.data <= 0:
+                self.rate_per_unit.errors.append('Rate per unit is required for outsourced work.')
+                return False
+        elif self.work_type.data == 'in_house':
+            # For in-house work, department is required, set rate to 0
+            if not self.department.data:
+                self.department.errors.append('Department is required for in-house work.')
+                return False
+            # Set rate to 0 for in-house work
+            self.rate_per_unit.data = 0.0
+        
+        return True
 
 class DailyJobWorkForm(FlaskForm):
     """Simplified form for daily job work entry by workers"""

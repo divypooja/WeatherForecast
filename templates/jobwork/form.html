@@ -141,13 +141,14 @@
                                 {% endif %}
                             </div>
                             
-                            <div class="col-md-6 mb-3">
+                            <!-- Rate per Unit - Only for Outsourced Work --> 
+                            <div class="col-md-6 mb-3" id="rate-row" style="display: none;">
                                 {{ form.rate_per_unit.label(class="form-label") }}
                                 <div class="input-group">
                                     {{ form.rate_per_unit(class="form-control", step="0.01", id="rate_per_unit") }}
                                     <span class="input-group-text">₹</span>
                                 </div>
-                                <small class="text-muted">Enter the rate per unit for this job work</small>
+                                <small class="text-muted">Enter the rate per unit for outsourced job work</small>
                                 {% if form.rate_per_unit.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.rate_per_unit.errors %}
@@ -389,18 +390,25 @@ function toggleCustomerFields() {
     const workTypeSelect = document.getElementById('work_type');
     const customerRow = document.getElementById('customer-row');
     const departmentRow = document.getElementById('department-row');
+    const rateRow = document.getElementById('rate-row');
     const customerNameSelect = document.getElementById('customer_name');
     const departmentSelect = document.getElementById('department');
+    const rateInput = document.getElementById('rate_per_unit');
     
     if (workTypeSelect.value === 'in_house') {
-        // Hide customer fields, show department fields
+        // Hide customer and rate fields, show department fields
         customerRow.style.display = 'none';
         departmentRow.style.display = 'block';
+        rateRow.style.display = 'none';
         
-        // Clear customer validation requirement
+        // Clear customer and rate validation requirements
         if (customerNameSelect) {
             customerNameSelect.removeAttribute('required');
             customerNameSelect.value = '';
+        }
+        if (rateInput) {
+            rateInput.removeAttribute('required');
+            rateInput.value = '0'; // Set to 0 for in-house work
         }
         
         // Add department validation requirement
@@ -408,13 +416,20 @@ function toggleCustomerFields() {
             departmentSelect.setAttribute('required', 'required');
         }
     } else if (workTypeSelect.value === 'outsourced') {
-        // Show customer fields, hide department fields
+        // Show customer and rate fields, hide department fields
         customerRow.style.display = 'block';
         departmentRow.style.display = 'none';
+        rateRow.style.display = 'block';
         
-        // Add customer validation requirement
+        // Add customer and rate validation requirements
         if (customerNameSelect) {
             customerNameSelect.setAttribute('required', 'required');
+        }
+        if (rateInput) {
+            rateInput.setAttribute('required', 'required');
+            if (rateInput.value === '0') {
+                rateInput.value = ''; // Clear the 0 value when switching to outsourced
+            }
         }
         
         // Clear department validation requirement
@@ -423,9 +438,10 @@ function toggleCustomerFields() {
             departmentSelect.value = '';
         }
     } else {
-        // Hide both if no work type selected
+        // Hide all if no work type selected
         customerRow.style.display = 'none';
         departmentRow.style.display = 'none';
+        rateRow.style.display = 'none';
         
         // Clear all requirements
         if (customerNameSelect) {
@@ -433,6 +449,9 @@ function toggleCustomerFields() {
         }
         if (departmentSelect) {
             departmentSelect.removeAttribute('required');
+        }
+        if (rateInput) {
+            rateInput.removeAttribute('required');
         }
     }
 }
