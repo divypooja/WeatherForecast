@@ -465,6 +465,10 @@ class JobWork(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
+    # Team work settings
+    is_team_work = db.Column(db.Boolean, default=False)  # Whether this job can be divided among team members
+    max_team_members = db.Column(db.Integer, default=1)  # Maximum team members allowed
+    
     # Inspection workflow fields
     inspection_required = db.Column(db.Boolean, default=True)
     inspection_status = db.Column(db.String(20), default='pending')  # pending, in_progress, completed, failed
@@ -509,6 +513,105 @@ class JobWork(db.Model):
     def work_type_badge_class(self):
         """Return Bootstrap badge class for work type"""
         return 'bg-success' if self.work_type == 'in_house' else 'bg-primary'
+    
+    @property
+    def assigned_team_members(self):
+        """Get list of assigned team members"""
+        return [assignment.member_name for assignment in self.team_assignments]
+    
+    @property
+    def team_member_count(self):
+        """Get count of assigned team members"""
+        return len(self.team_assignments)
+    
+    @property
+    def remaining_team_slots(self):
+        """Get remaining team member slots available"""
+        return max(0, self.max_team_members - self.team_member_count)
+    
+    @property
+    def is_team_full(self):
+        """Check if team is at maximum capacity"""
+        return self.team_member_count >= self.max_team_members
+    
+    @property
+    def total_assigned_quantity(self):
+        """Get total quantity assigned to all team members"""
+        return sum(assignment.assigned_quantity for assignment in self.team_assignments)
+    
+    @property
+    def unassigned_quantity(self):
+        """Get quantity not yet assigned to team members"""
+        return max(0, self.quantity_sent - self.total_assigned_quantity)
+    
+    @staticmethod
+    def generate_job_number():
+        """Generate unique job work number"""
+        current_year = datetime.now().year
+        # Find last job work number for current year
+        last_job = JobWork.query.filter(JobWork.job_number.like(f'JOB-{current_year}-%')).order_by(JobWork.id.desc()).first()
+        if last_job:
+            # Extract sequence number from job number like "JOB-2024-0001"
+            try:
+                last_sequence = int(last_job.job_number.split('-')[-1])
+                next_sequence = last_sequence + 1
+            except (ValueError, IndexError):
+                next_sequence = 1
+        else:
+            next_sequence = 1
+        return f"JOB-{current_year}-{next_sequence:04d}"
+
+class JobWorkTeamAssignment(db.Model):
+    """Model for assigning job work to multiple team members"""
+    __tablename__ = 'job_work_team_assignments'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    job_work_id = db.Column(db.Integer, db.ForeignKey('job_works.id'), nullable=False)
+    member_name = db.Column(db.String(100), nullable=False)
+    assigned_quantity = db.Column(db.Float, nullable=False)  # Quantity assigned to this member
+    completion_percentage = db.Column(db.Float, default=0.0)  # Progress percentage (0-100)
+    estimated_hours = db.Column(db.Float, nullable=True)  # Estimated hours for this assignment
+    actual_hours_worked = db.Column(db.Float, default=0.0)  # Actual hours worked so far
+    member_role = db.Column(db.String(50), nullable=True)  # Role/responsibility of this member
+    start_date = db.Column(db.Date, nullable=True)
+    target_completion = db.Column(db.Date, nullable=True)
+    status = db.Column(db.String(20), default='assigned')  # assigned, in_progress, completed, paused
+    notes = db.Column(db.Text)
+    
+    # Audit fields
+    assigned_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    assigned_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    job_work = db.relationship('JobWork', backref='team_assignments')
+    assigner = db.relationship('User', backref='team_assignments_created')
+    
+    # Unique constraint to prevent duplicate assignments
+    __table_args__ = (db.UniqueConstraint('job_work_id', 'member_name', name='unique_job_member'),)
+    
+    @property
+    def status_badge_class(self):
+        """Return Bootstrap badge class for status"""
+        status_classes = {
+            'assigned': 'bg-info',
+            'in_progress': 'bg-warning',
+            'completed': 'bg-success',
+            'paused': 'bg-secondary'
+        }
+        return status_classes.get(self.status, 'bg-secondary')
+    
+    @property
+    def completion_progress_class(self):
+        """Return Bootstrap progress bar class based on completion"""
+        if self.completion_percentage >= 100:
+            return 'bg-success'
+        elif self.completion_percentage >= 75:
+            return 'bg-info'
+        elif self.completion_percentage >= 50:
+            return 'bg-warning'
+        else:
+            return 'bg-danger'
 
 class Production(db.Model):
     __tablename__ = 'productions'

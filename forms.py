@@ -269,6 +269,14 @@ class JobWorkForm(FlaskForm):
     expected_return = DateField('Expected Return Date')
     notes = TextAreaField('Notes')
     
+    # Team work fields
+    is_team_work = BooleanField('Enable Team Work', 
+                               render_kw={'id': 'is_team_work'})
+    max_team_members = IntegerField('Maximum Team Members', 
+                                   validators=[Optional(), NumberRange(min=1, max=10)],
+                                   default=1,
+                                   render_kw={'id': 'max_team_members'})
+    
     def __init__(self, *args, **kwargs):
         super(JobWorkForm, self).__init__(*args, **kwargs)
         self.item_id.choices = [(0, 'Select Item')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.all()]
@@ -341,6 +349,29 @@ class JobWorkQuantityUpdateForm(FlaskForm):
     quantity_received = FloatField('Quantity Received', validators=[DataRequired(), NumberRange(min=0)])
     received_date = DateField('Received Date', validators=[DataRequired()])
     notes = TextAreaField('Notes')
+
+class JobWorkTeamAssignmentForm(FlaskForm):
+    """Form for assigning job work to team members"""
+    member_name = StringField('Team Member Name', 
+                             validators=[DataRequired(), Length(max=100)],
+                             render_kw={'placeholder': 'Enter team member name'})
+    assigned_quantity = FloatField('Assigned Quantity', 
+                                  validators=[DataRequired(), NumberRange(min=0.1)],
+                                  render_kw={'placeholder': 'Quantity to assign to this member'})
+    estimated_hours = FloatField('Estimated Hours', 
+                                validators=[Optional(), NumberRange(min=0)],
+                                render_kw={'placeholder': 'Expected hours for this assignment'})
+    member_role = StringField('Role/Responsibility', 
+                             validators=[Optional(), Length(max=50)],
+                             render_kw={'placeholder': 'e.g., Lead, Helper, Quality Check'})
+    start_date = DateField('Start Date', 
+                          validators=[Optional()],
+                          default=datetime.utcnow().date())
+    target_completion = DateField('Target Completion', 
+                                 validators=[Optional()])
+    notes = TextAreaField('Assignment Notes',
+                         render_kw={'rows': 3, 'placeholder': 'Any specific instructions or notes for this team member'})
+    submit = SubmitField('Assign to Team')
 
 class ProductionForm(FlaskForm):
     production_number = StringField('Production Number', validators=[DataRequired(), Length(max=50)])
