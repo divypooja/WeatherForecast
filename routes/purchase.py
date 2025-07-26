@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from forms import PurchaseOrderForm, SupplierForm
-from models import PurchaseOrder, PurchaseOrderItem, Supplier, Item, DeliverySchedule, CompanySettings, BOMItem
+from models import PurchaseOrder, PurchaseOrderItem, Supplier, Item, DeliverySchedule, CompanySettings, BOMItem, MaterialInspection
 from models_uom import ItemUOMConversion, UnitOfMeasure
 from app import db
 from utils_documents import get_documents_for_transaction
@@ -63,6 +63,44 @@ def dashboard():
                          stats=stats, 
                          recent_pos=recent_pos,
                          top_suppliers=top_suppliers)
+
+@purchase_bp.route('/status-report')
+@login_required
+def status_report():
+    """Purchase Order Delivery & Inspection Status Report"""
+    # Get detailed PO status with inspection summary
+    query = """
+    SELECT 
+        po.po_number,
+        po.status,
+        po.inspection_status,
+        s.name as supplier_name,
+        poi.item_id,
+        i.name as item_name,
+        poi.quantity_ordered,
+        COALESCE(SUM(mi.received_quantity), 0) as total_received,
+        COALESCE(SUM(mi.inspected_quantity), 0) as total_inspected,
+        COALESCE(SUM(mi.passed_quantity), 0) as total_passed,
+        COALESCE(SUM(mi.rejected_quantity), 0) as total_rejected,
+        (poi.quantity_ordered - COALESCE(SUM(mi.received_quantity), 0)) as pending_quantity,
+        ROUND((COALESCE(SUM(mi.received_quantity), 0) * 100.0 / poi.quantity_ordered)::numeric, 1) as delivery_percentage,
+        ROUND((COALESCE(SUM(mi.passed_quantity), 0) * 100.0 / NULLIF(COALESCE(SUM(mi.inspected_quantity), 0), 0))::numeric, 1) as pass_percentage
+    FROM purchase_orders po
+    JOIN suppliers s ON po.supplier_id = s.id
+    JOIN purchase_order_items poi ON po.id = poi.purchase_order_id
+    JOIN items i ON poi.item_id = i.id
+    LEFT JOIN material_inspections mi ON po.id = mi.purchase_order_id AND poi.item_id = mi.item_id
+    WHERE po.status != 'cancelled'
+    GROUP BY po.po_number, po.status, po.inspection_status, s.name, poi.item_id, i.name, poi.quantity_ordered
+    ORDER BY po.po_number
+    """
+    
+    result = db.session.execute(db.text(query))
+    po_details = [dict(row._mapping) for row in result]
+    
+    return render_template('purchase/status_report.html',
+                         title='PO Delivery & Inspection Status',
+                         po_details=po_details)
 
 @purchase_bp.route('/list')
 @login_required
