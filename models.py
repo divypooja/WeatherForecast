@@ -1371,6 +1371,7 @@ class DailyJobWorkEntry(db.Model):
     work_date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date())
     hours_worked = db.Column(db.Float, nullable=False)
     quantity_completed = db.Column(db.Float, nullable=False)
+    scrap_quantity = db.Column(db.Float, default=0.0)  # Scrap/waste quantity produced
     quality_status = db.Column(db.String(20), nullable=False, default='good')  # good, needs_rework, defective
     process_stage = db.Column(db.String(20), nullable=False, default='in_progress')  # started, in_progress, completed, on_hold
     notes = db.Column(db.Text)

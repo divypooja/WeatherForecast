@@ -552,6 +552,7 @@ def daily_job_work_entry():
             work_date=form.work_date.data,
             hours_worked=form.hours_worked.data,
             quantity_completed=form.quantity_completed.data,
+            scrap_quantity=form.scrap_quantity.data or 0.0,
             quality_status=form.quality_status.data,
             process_stage=form.process_stage.data,
             notes=form.notes.data,
