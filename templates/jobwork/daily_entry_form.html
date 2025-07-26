@@ -37,40 +37,13 @@
                                 </h6>
                             </div>
                             
-                            <!-- Worker Type Selection -->
-                            <div class="col-md-4 mb-3">
-                                {{ form.worker_type.label(class="form-label") }}
-                                {{ form.worker_type(class="form-select") }}
-                                <small class="text-muted">Optional: Choose if worker is employee or contractor</small>
-                                {% if form.worker_type.errors %}
+                            <!-- Worker Name -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.worker_name.label(class="form-label") }}
+                                {{ form.worker_name(class="form-control") }}
+                                {% if form.worker_name.errors %}
                                     <div class="text-danger small">
-                                        {% for error in form.worker_type.errors %}
-                                            <div>{{ error }}</div>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                            
-                            <!-- Employee Selection (shown for employees) -->
-                            <div class="col-md-4 mb-3" id="employee_selection">
-                                {{ form.employee_id.label(class="form-label") }}
-                                {{ form.employee_id(class="form-select") }}
-                                {% if form.employee_id.errors %}
-                                    <div class="text-danger small">
-                                        {% for error in form.employee_id.errors %}
-                                            <div>{{ error }}</div>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                            
-                            <!-- Contractor Name (shown for contractors) -->
-                            <div class="col-md-4 mb-3" id="contractor_selection" style="display: none;">
-                                {{ form.contractor_name.label(class="form-label") }}
-                                {{ form.contractor_name(class="form-control") }}
-                                {% if form.contractor_name.errors %}
-                                    <div class="text-danger small">
-                                        {% for error in form.contractor_name.errors %}
+                                        {% for error in form.worker_name.errors %}
                                             <div>{{ error }}</div>
                                         {% endfor %}
                                     </div>
@@ -78,7 +51,7 @@
                             </div>
                             
                             <!-- Work Date -->
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-6 mb-3">
                                 {{ form.work_date.label(class="form-label") }}
                                 {{ form.work_date(class="form-control") }}
                                 {% if form.work_date.errors %}
@@ -239,46 +212,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const workerTypeSelect = document.getElementById('worker_type');
-    const employeeSelection = document.getElementById('employee_selection');
-    const contractorSelection = document.getElementById('contractor_selection');
-    
-    // Toggle worker selection fields based on worker type
-    function toggleWorkerFields() {
-        const workerType = workerTypeSelect.value;
-        
-        if (workerType === 'employee') {
-            employeeSelection.style.display = 'block';
-            contractorSelection.style.display = 'none';
-            // Clear contractor field
-            document.getElementById('contractor_name').value = '';
-        } else if (workerType === 'contractor') {
-            employeeSelection.style.display = 'none';
-            contractorSelection.style.display = 'block';
-            // Reset employee selection
-            document.getElementById('employee_id').value = '0';
-        } else {
-            // No worker type selected, hide both
-            employeeSelection.style.display = 'none';
-            contractorSelection.style.display = 'none';
-            // Clear both fields
-            document.getElementById('contractor_name').value = '';
-            document.getElementById('employee_id').value = '0';
-        }
-    }
-    
-    // Initialize fields on page load
-    toggleWorkerFields();
-    
-    // Listen for worker type changes
-    workerTypeSelect.addEventListener('change', function() {
-        toggleWorkerFields();
-        refreshTeamAssignments();
-    });
-    
-    // Listen for employee selection changes
-    document.getElementById('employee_id').addEventListener('change', refreshTeamAssignments);
-    document.getElementById('contractor_name').addEventListener('input', refreshTeamAssignments);
+    const workerNameInput = document.getElementById('worker_name');
     
     // Job work selection and team assignments
     const jobWorkSelect = document.getElementById('job_work_select');
@@ -318,9 +252,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function displayTeamAssignments(data) {
         // Get currently selected worker
-        const currentWorkerType = workerTypeSelect.value;
-        const currentEmployeeId = document.getElementById('employee_id').value;
-        const currentContractorName = document.getElementById('contractor_name').value;
+        const currentWorkerName = workerNameInput.value;
         
         let html = `
             <div class="alert alert-info">
@@ -353,7 +285,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                   assignment.status === 'in_progress' ? 'bg-primary' : 'bg-secondary';
                 
                 // Check if this worker is currently selected
-                const isSelected = currentWorkerType === 'employee' && currentEmployeeId == assignment.employee_id;
+                const isSelected = currentWorkerName === assignment.member_name;
                 const selectButtonClass = isSelected ? 'btn btn-sm btn-success' : 'btn btn-sm btn-primary';
                 const selectButtonText = isSelected ? '<i class="fas fa-check"></i> Selected' : '<i class="fas fa-user-check"></i> Select';
                 const rowClass = isSelected ? 'table-success' : '';
@@ -374,7 +306,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <span class="badge ${statusClass}">${assignment.status.replace('_', ' ').toUpperCase()}</span>
                         </td>
                         <td>
-                            <button type="button" class="${selectButtonClass}" onclick="selectWorkerFromAssignment('${assignment.employee_id}', '${assignment.member_name}')" ${isSelected ? 'disabled' : ''}>
+                            <button type="button" class="${selectButtonClass}" onclick="selectWorkerFromAssignment('${assignment.member_name}')" ${isSelected ? 'disabled' : ''}>
                                 ${selectButtonText}
                             </button>
                         </td>
@@ -412,14 +344,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // Listen for worker name changes
+    workerNameInput.addEventListener('input', refreshTeamAssignments);
+    
     // Function to select worker from team assignments
-    window.selectWorkerFromAssignment = function(employeeId, memberName) {
-        // Set worker type to employee
-        workerTypeSelect.value = 'employee';
-        toggleWorkerFields();
+    window.selectWorkerFromAssignment = function(memberName) {
+        // Set the worker name
+        workerNameInput.value = memberName;
         
-        // Select the employee
-        document.getElementById('employee_id').value = employeeId;
+        // Refresh team assignments to show updated selection
+        refreshTeamAssignments();
         
         // Show confirmation
         alert(`Selected worker: ${memberName}`);
