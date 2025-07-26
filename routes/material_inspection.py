@@ -13,10 +13,12 @@ material_inspection = Blueprint('material_inspection', __name__)
 @login_required
 def dashboard():
     """Material Inspection Dashboard"""
-    # Get all POs that could need inspection - exclude only cancelled and closed without inspection needs  
+    # Get all POs that need inspection - exclude cancelled POs and completed inspections
+    # Include POs with partial status if inspection is not completed (for partial deliveries that need inspection)
     all_pos_with_items = PurchaseOrder.query.filter(
-        ~PurchaseOrder.status.in_(['cancelled']),
-        ~PurchaseOrder.inspection_status.in_(['completed'])
+        PurchaseOrder.status != 'cancelled',
+        PurchaseOrder.inspection_required == True,
+        PurchaseOrder.inspection_status.in_(['pending', 'in_progress', 'failed'])
     ).all()
     
     # Filter to only show POs that have items and could need inspection
