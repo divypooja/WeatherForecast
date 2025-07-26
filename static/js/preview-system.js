@@ -236,6 +236,7 @@ const FORM_CONFIGS = {
             name: { label: 'Item Name', icon: 'fa-box' },
             description: { label: 'Description', icon: 'fa-info' },
             unit_of_measure: { label: 'Unit of Measure', icon: 'fa-balance-scale' },
+            material_classification: { label: 'Material Classification', icon: 'fa-tag', type: 'select' },
             current_stock: { label: 'Current Stock', icon: 'fa-cubes' },
             unit_price: { label: 'Unit Price', icon: 'fa-rupee-sign', format: 'currency' },
             hsn_code: { label: 'HSN Code', icon: 'fa-code' },

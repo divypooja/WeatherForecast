@@ -24,6 +24,12 @@ class ItemForm(FlaskForm):
     minimum_stock = FloatField('Minimum Stock', validators=[NumberRange(min=0)], default=0.0)
     unit_price = FloatField('Unit Price', validators=[NumberRange(min=0)], default=0.0)
     unit_weight = FloatField('Unit Weight (kg)', validators=[NumberRange(min=0)], default=0.0)
+    material_classification = SelectField('Material Classification', 
+                                        choices=[('raw_material', 'Raw Material'), 
+                                               ('production_use', 'Production Use'), 
+                                               ('finished_goods', 'Finished Goods')],
+                                        validators=[DataRequired()],
+                                        default='raw_material')
     item_type = SelectField('Item Type', 
                           choices=[],  # Will be populated dynamically
                           validators=[DataRequired()])

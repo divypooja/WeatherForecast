@@ -6,7 +6,18 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 26, 2025)
 
-### Complete Custom Report Builder System Implementation (Latest - January 26, 2025)
+### Complete Material Classification Integration Across Inventory System (Latest - January 26, 2025)
+- **Inventory Material Classification**: Extended material classification system from inspections to complete inventory management with material_classification field in Item model
+- **Enhanced Database Schema**: Added material_classification column to items table with proper PostgreSQL migration and default 'raw_material' classification
+- **Form Integration**: Updated ItemForm with Material Classification dropdown selection (Raw Material, Production Use, Finished Goods) with proper form validation
+- **Professional UI Enhancement**: Enhanced inventory form template with color-coded material classification field including helpful icons and contextual guidance
+- **Inventory Display System**: Updated inventory list template with dedicated Classification column showing color-coded badges with appropriate icons for each material state
+- **Route Processing**: Enhanced inventory add/edit routes to properly handle material classification data during item creation and modification
+- **Preview System Integration**: Updated inventory preview system to include material classification field for comprehensive form preview functionality
+- **Visual Design Consistency**: Maintained consistent badge styling across inspection forms and inventory management with blue (Raw Material), yellow (Production Use), and green (Finished Goods) color coding
+- **Complete Workflow Integration**: Material classification now spans entire system from inspections through inventory management, providing comprehensive material state tracking throughout factory operations
+
+### Complete Custom Report Builder System Implementation (January 26, 2025)
 - **Comprehensive Report Builder**: Created advanced custom report generation system allowing users to build personalized reports with flexible field selection, filtering, and export capabilities
 - **Multi-Data Source Support**: Full support for inventory, purchase orders, sales orders, job work, production orders, employee records, and factory expenses data sources
 - **Interactive Report Builder Interface**: Professional drag-and-drop style interface with real-time preview functionality, field selection checkboxes, and dynamic filter creation
