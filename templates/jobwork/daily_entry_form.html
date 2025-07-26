@@ -195,6 +195,101 @@
                             </div>
                         </div>
 
+                        <!-- Inspection Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-info border-bottom pb-2 mb-3">
+                                    <i class="fas fa-clipboard-check"></i> Inspection Details
+                                </h6>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.inspected_quantity.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.inspected_quantity(class="form-control", id="inspected_quantity") }}
+                                    <span class="input-group-text" id="inspected_unit">Unit</span>
+                                </div>
+                                <small class="text-muted">Quantity inspected for quality</small>
+                                {% if form.inspected_quantity.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.inspected_quantity.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.passed_quantity.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.passed_quantity(class="form-control", id="passed_quantity") }}
+                                    <span class="input-group-text" id="passed_unit">Unit</span>
+                                </div>
+                                <small class="text-muted">Quantity that passed inspection</small>
+                                {% if form.passed_quantity.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.passed_quantity.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.rejected_quantity.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.rejected_quantity(class="form-control", id="rejected_quantity", readonly=true) }}
+                                    <span class="input-group-text" id="rejected_unit">Unit</span>
+                                </div>
+                                <small class="text-muted">Auto-calculated: Inspected Quantity - Passed Quantity</small>
+                                {% if form.rejected_quantity.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.rejected_quantity.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Inspection Summary -->
+                        <div class="row mb-4" id="inspection_summary" style="display: none;">
+                            <div class="col-12">
+                                <div class="alert alert-light">
+                                    <h6 class="mb-2"><i class="fas fa-chart-pie"></i> Inspection Summary:</h6>
+                                    <div class="row text-center">
+                                        <div class="col-md-4">
+                                            <strong>Acceptance Rate:</strong> <span id="acceptance_rate" class="text-success">0.0%</span>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <strong>Rejection Rate:</strong> <span id="rejection_rate" class="text-danger">0.0%</span>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <strong>Total Accounted:</strong> <span id="total_accounted" class="text-info">0.00</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Rejection Reasons -->
+                        <div class="row mb-4" id="rejection_reasons_section" style="display: none;">
+                            <div class="col-12">
+                                <h6 class="text-warning border-bottom pb-2 mb-3">
+                                    <i class="fas fa-exclamation-triangle"></i> Rejection Reasons
+                                </h6>
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                {{ form.rejection_reasons.label(class="form-label") }}
+                                {{ form.rejection_reasons(class="form-control") }}
+                                <small class="text-muted">Describe reasons for rejecting materials (scratches, dents, corrosion, quality issues, etc.)</small>
+                                {% if form.rejection_reasons.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.rejection_reasons.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
                         <!-- Notes Section -->
                         <div class="row mb-4">
                             <div class="col-12">
@@ -264,11 +359,24 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Update the quantity unit in the form
                     const quantityUnitSpan = document.getElementById('quantity_unit');
                     const scrapUnitSpan = document.getElementById('scrap_unit');
+                    const inspectedUnitSpan = document.getElementById('inspected_unit');
+                    const passedUnitSpan = document.getElementById('passed_unit');
+                    const rejectedUnitSpan = document.getElementById('rejected_unit');
+                    
                     if (quantityUnitSpan && data.unit_of_measure) {
                         quantityUnitSpan.textContent = data.unit_of_measure;
                     }
                     if (scrapUnitSpan && data.unit_of_measure) {
                         scrapUnitSpan.textContent = data.unit_of_measure;
+                    }
+                    if (inspectedUnitSpan && data.unit_of_measure) {
+                        inspectedUnitSpan.textContent = data.unit_of_measure;
+                    }
+                    if (passedUnitSpan && data.unit_of_measure) {
+                        passedUnitSpan.textContent = data.unit_of_measure;
+                    }
+                    if (rejectedUnitSpan && data.unit_of_measure) {
+                        rejectedUnitSpan.textContent = data.unit_of_measure;
                     }
                 } else {
                     teamAssignmentsContent.innerHTML = '<div class="alert alert-warning">No team assignments found for this job work.</div>';
@@ -505,6 +613,58 @@ document.addEventListener('DOMContentLoaded', function() {
             assignButton.disabled = false;
         });
     };
+    
+    // Inspection calculation functionality
+    const inspectedQuantity = document.getElementById('inspected_quantity');
+    const passedQuantity = document.getElementById('passed_quantity');
+    const rejectedQuantity = document.getElementById('rejected_quantity');
+    const inspectionSummary = document.getElementById('inspection_summary');
+    const rejectionReasonsSection = document.getElementById('rejection_reasons_section');
+    
+    function calculateInspectionValues() {
+        const inspected = parseFloat(inspectedQuantity.value) || 0;
+        const passed = parseFloat(passedQuantity.value) || 0;
+        const rejected = Math.max(0, inspected - passed);
+        
+        // Update rejected quantity (auto-calculated)
+        rejectedQuantity.value = rejected.toFixed(2);
+        
+        // Show/hide rejection reasons section
+        if (rejected > 0) {
+            rejectionReasonsSection.style.display = 'block';
+        } else {
+            rejectionReasonsSection.style.display = 'none';
+        }
+        
+        // Calculate and display inspection summary
+        if (inspected > 0) {
+            const acceptanceRate = (passed / inspected * 100);
+            const rejectionRate = (rejected / inspected * 100);
+            
+            document.getElementById('acceptance_rate').textContent = acceptanceRate.toFixed(1) + '%';
+            document.getElementById('rejection_rate').textContent = rejectionRate.toFixed(1) + '%';
+            document.getElementById('total_accounted').textContent = inspected.toFixed(2);
+            
+            // Color coding for rates
+            const acceptanceElement = document.getElementById('acceptance_rate');
+            const rejectionElement = document.getElementById('rejection_rate');
+            
+            acceptanceElement.className = acceptanceRate >= 95 ? 'text-success' : 
+                                        acceptanceRate >= 85 ? 'text-warning' : 'text-danger';
+            rejectionElement.className = rejectionRate <= 5 ? 'text-success' : 
+                                       rejectionRate <= 15 ? 'text-warning' : 'text-danger';
+            
+            inspectionSummary.style.display = 'block';
+        } else {
+            inspectionSummary.style.display = 'none';
+        }
+    }
+    
+    // Add event listeners for inspection calculations
+    if (inspectedQuantity && passedQuantity) {
+        inspectedQuantity.addEventListener('input', calculateInspectionValues);
+        passedQuantity.addEventListener('input', calculateInspectionValues);
+    }
 });
 </script>
 {% endblock %}

@@ -286,9 +286,15 @@ def edit_daily_entry(entry_id):
         entry.work_date = form.work_date.data
         entry.hours_worked = form.hours_worked.data
         entry.quantity_completed = form.quantity_completed.data
+        entry.scrap_quantity = form.scrap_quantity.data or 0.0
         entry.quality_status = form.quality_status.data
         entry.process_stage = form.process_stage.data
         entry.notes = form.notes.data
+        # Update inspection fields
+        entry.inspected_quantity = form.inspected_quantity.data or 0.0
+        entry.passed_quantity = form.passed_quantity.data or 0.0
+        entry.rejected_quantity = form.rejected_quantity.data or 0.0
+        entry.rejection_reasons = form.rejection_reasons.data
         
         # Update team assignment progress if this is team work
         if entry.job_work.is_team_work:
@@ -327,9 +333,15 @@ def edit_daily_entry(entry_id):
         form.work_date.data = entry.work_date
         form.hours_worked.data = entry.hours_worked
         form.quantity_completed.data = entry.quantity_completed
+        form.scrap_quantity.data = entry.scrap_quantity
         form.quality_status.data = entry.quality_status
         form.process_stage.data = entry.process_stage
         form.notes.data = entry.notes
+        # Pre-populate inspection fields
+        form.inspected_quantity.data = entry.inspected_quantity
+        form.passed_quantity.data = entry.passed_quantity
+        form.rejected_quantity.data = entry.rejected_quantity
+        form.rejection_reasons.data = entry.rejection_reasons
     
     return render_template('jobwork/edit_daily_entry_form.html', form=form, entry=entry)
 
@@ -556,7 +568,12 @@ def daily_job_work_entry():
             quality_status=form.quality_status.data,
             process_stage=form.process_stage.data,
             notes=form.notes.data,
-            logged_by=current_user.id
+            logged_by=current_user.id,
+            # Add inspection fields
+            inspected_quantity=form.inspected_quantity.data or 0.0,
+            passed_quantity=form.passed_quantity.data or 0.0,
+            rejected_quantity=form.rejected_quantity.data or 0.0,
+            rejection_reasons=form.rejection_reasons.data
         )
         
         db.session.add(daily_entry)
