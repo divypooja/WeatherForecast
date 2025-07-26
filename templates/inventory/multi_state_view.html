@@ -105,10 +105,6 @@
                                     <td>{{ item.unit_of_measure }}</td>
                                     <td>
                                         <div class="btn-group btn-group-sm">
-                                            <a href="{{ url_for('inventory.view_item', id=item.id) }}" 
-                                               class="btn btn-outline-info" title="View Details">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
                                             <a href="{{ url_for('inventory.edit_item', id=item.id) }}" 
                                                class="btn btn-outline-primary" title="Edit">
                                                 <i class="fas fa-edit"></i>
