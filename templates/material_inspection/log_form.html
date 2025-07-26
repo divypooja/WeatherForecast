@@ -21,7 +21,8 @@
 
                         <!-- Source Selection -->
                         <div class="row mb-4">
-                            <div class="col-md-6">
+                            <!-- Purchase Order Selection - Hidden when job_id is in URL -->
+                            <div class="col-md-6" id="poSection" {% if request.args.get('job_id') %}style="display: none;"{% endif %}>
                                 <div class="mb-3">
                                     {{ form.purchase_order_id.label(class="form-label") }}
                                     {{ form.purchase_order_id(class="form-select", id="poSelect") }}
@@ -30,7 +31,9 @@
                                     {% endfor %}
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            
+                            <!-- Job Work Selection - Hidden when po_id is in URL -->
+                            <div class="col-md-6" id="jobSection" {% if request.args.get('po_id') %}style="display: none;"{% endif %}>
                                 <div class="mb-3">
                                     {{ form.job_work_id.label(class="form-label") }}
                                     {{ form.job_work_id(class="form-select", id="jobSelect") }}
@@ -39,6 +42,16 @@
                                     {% endfor %}
                                 </div>
                             </div>
+                            
+                            <!-- Show both when neither is specified -->
+                            {% if not request.args.get('po_id') and not request.args.get('job_id') %}
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>Inspection Source:</strong> Select either a Purchase Order or Job Work to inspect materials from.
+                                </div>
+                            </div>
+                            {% endif %}
                         </div>
 
                         <!-- Item Selection -->
@@ -52,7 +65,13 @@
                                     {% endfor %}
                                     <div class="form-text" id="itemHelp">
                                         <i class="fas fa-info-circle me-1"></i>
-                                        Select a Purchase Order or Job Work above to automatically load available items.
+                                        {% if request.args.get('job_id') %}
+                                            Items loaded from selected Job Work. Select the item to inspect.
+                                        {% elif request.args.get('po_id') %}
+                                            Items loaded from selected Purchase Order. Select the item to inspect.
+                                        {% else %}
+                                            Select a Purchase Order or Job Work above to automatically load available items.
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>

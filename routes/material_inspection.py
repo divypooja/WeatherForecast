@@ -326,8 +326,24 @@ def log_inspection():
         flash(f'Material inspection {inspection_number} logged successfully!', 'success')
         return redirect(url_for('material_inspection.dashboard'))
     
+    # Set appropriate title based on context
+    if job_id:
+        target_job = JobWork.query.get(job_id)
+        if target_job:
+            title = f'Log Inspection - Job Work {target_job.job_number}'
+        else:
+            title = 'Log Job Work Inspection'
+    elif po_id:
+        target_po = PurchaseOrder.query.get(po_id)
+        if target_po:
+            title = f'Log Inspection - Purchase Order {target_po.po_number}'
+        else:
+            title = 'Log Purchase Order Inspection'
+    else:
+        title = 'Log Material Inspection'
+    
     return render_template('material_inspection/log_form.html',
-                         title='Log Material Inspection',
+                         title=title,
                          form=form)
 
 @material_inspection.route('/list')
