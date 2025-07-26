@@ -685,3 +685,94 @@ def worker_productivity():
                          date_to=date_to or end_date.strftime('%Y-%m-%d'),
                          worker_filter=worker_filter,
                          total_workers=len(sorted_workers))
+
+@jobwork_bp.route('/api/job-work/<int:job_id>/team-assignments')
+@login_required
+def get_job_team_assignments(job_id):
+    """API endpoint to get team assignments for a job work"""
+    job = JobWork.query.get_or_404(job_id)
+    
+    # Get team assignments for this job
+    assignments = JobWorkTeamAssignment.query.filter_by(job_work_id=job_id).all()
+    
+    team_data = []
+    for assignment in assignments:
+        team_data.append({
+            'id': assignment.id,
+            'employee_id': assignment.employee_id,
+            'member_name': assignment.member_name,
+            'assigned_quantity': float(assignment.assigned_quantity),
+            'completion_percentage': float(assignment.completion_percentage),
+            'status': assignment.status,
+            'member_role': assignment.member_role,
+            'employee_code': assignment.employee.employee_code if assignment.employee else 'N/A'
+        })
+    
+    return jsonify({
+        'success': True,
+        'job_number': job.job_number,
+        'item_name': job.item.name,
+        'is_team_work': job.is_team_work,
+        'team_assignments': team_data,
+        'job_id': job_id
+    })
+
+@jobwork_bp.route('/api/quick-assign-worker', methods=['POST'])
+@login_required
+def quick_assign_worker():
+    """Quick API to assign a worker to a job work from daily entry form"""
+    try:
+        data = request.get_json()
+        job_id = data.get('job_id')
+        worker_name = data.get('worker_name')
+        worker_role = data.get('worker_role', 'Worker')
+        assigned_quantity = data.get('assigned_quantity', 1.0)
+        
+        if not job_id or not worker_name:
+            return jsonify({'success': False, 'message': 'Job ID and worker name are required'}), 400
+        
+        job = JobWork.query.get_or_404(job_id)
+        
+        # Check if worker is already assigned
+        existing_assignment = JobWorkTeamAssignment.query.filter_by(
+            job_work_id=job_id,
+            member_name=worker_name
+        ).first()
+        
+        if existing_assignment:
+            return jsonify({'success': False, 'message': f'{worker_name} is already assigned to this job'}), 400
+        
+        # Find employee by name if exists
+        employee = Employee.query.filter(Employee.name.ilike(f'%{worker_name}%')).first()
+        
+        # Create new assignment
+        assignment = JobWorkTeamAssignment(
+            job_work_id=job_id,
+            employee_id=employee.id if employee else None,
+            member_name=worker_name,
+            assigned_quantity=assigned_quantity,
+            estimated_hours=8.0,  # Default 8 hours
+            member_role=worker_role,
+            start_date=datetime.utcnow().date(),
+            target_completion=job.expected_return,
+            status='assigned',
+            notes=f'Quick assignment from daily entry form',
+            assigned_by=current_user.id
+        )
+        
+        # Mark job as team work if not already
+        if not job.is_team_work:
+            job.is_team_work = True
+            job.max_team_members = max(job.max_team_members or 1, 2)
+        
+        db.session.add(assignment)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'{worker_name} assigned successfully to {job.job_number}',
+            'assignment_id': assignment.id
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
