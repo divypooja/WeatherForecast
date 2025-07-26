@@ -6,7 +6,20 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 26, 2025)
 
-### Automated In-House Job Work Inventory Management via Daily Entries (Latest - January 26, 2025)
+### Complete Custom Report Builder System Implementation (Latest - January 26, 2025)
+- **Comprehensive Report Builder**: Created advanced custom report generation system allowing users to build personalized reports with flexible field selection, filtering, and export capabilities
+- **Multi-Data Source Support**: Full support for inventory, purchase orders, sales orders, job work, production orders, employee records, and factory expenses data sources
+- **Interactive Report Builder Interface**: Professional drag-and-drop style interface with real-time preview functionality, field selection checkboxes, and dynamic filter creation
+- **Advanced Filtering System**: Comprehensive filtering options including equals, contains, greater than, less than, between operations with support for multiple simultaneous filters
+- **Sorting and Export Options**: Complete sorting by any field with ascending/descending options, plus CSV export with automatic timestamped filenames
+- **Report Sharing and Access Control**: User-created reports with optional sharing capabilities allowing reports to be shared across team members with proper permission controls
+- **Report Execution Tracking**: Complete audit trail logging all report executions including row counts, export formats, and execution timestamps for analytics
+- **Professional Templates**: Enhanced report dashboard with NEW badge highlighting custom reports, comprehensive list views, and detailed report viewing interface
+- **Database Architecture**: Added CustomReport and CustomReportExecution models with JSON configuration storage for flexible report definitions
+- **Live Preview System**: Real-time AJAX preview showing first 10 rows of report data before saving, allowing users to validate configuration before committing
+- **Integration with Reports Dashboard**: Seamlessly integrated into existing reports section with prominent placement and easy access from main reports dashboard
+
+### Automated In-House Job Work Inventory Management via Daily Entries (January 26, 2025)
 - **Workflow Transformation**: Revolutionized in-house job work inventory management by eliminating separate inspection requirements and integrating inventory updates directly into Daily Work Entry process
 - **Automatic Inventory Updates**: When workers log daily progress for in-house job works, completed quantities are automatically added back to inventory stock levels, streamlining the workflow from manual inspection to real-time inventory management
 - **Scrap Quantity Tracking**: Added comprehensive scrap quantity field to Daily Job Work Entry forms with proper unit of measure integration, allowing workers to track both completion and waste quantities

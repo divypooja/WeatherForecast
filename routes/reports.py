@@ -1,13 +1,16 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, make_response
+from flask import Blueprint, render_template, redirect, url_for, flash, request, make_response, jsonify
 from flask_login import login_required, current_user
 from models import Item, PurchaseOrder, SalesOrder, Employee, JobWork, Production
 from models_uom import ItemUOMConversion
+from models_custom_reports import CustomReport, CustomReportExecution
+from forms_custom_reports import CustomReportForm
 from app import db
-from sqlalchemy import func, and_
+from sqlalchemy import func, and_, or_, desc, asc
 from sqlalchemy.orm import joinedload
 from datetime import datetime, date, timedelta
 import csv
 import io
+import json
 
 reports_bp = Blueprint('reports', __name__)
 
@@ -269,3 +272,404 @@ def production_report():
                          start_date=start_date,
                          end_date=end_date,
                          status_filter=status_filter)
+
+# Custom Report Builder Routes
+
+@reports_bp.route('/custom')
+@login_required 
+def custom_reports_list():
+    """List all custom reports for the current user"""
+    # Get user's own reports
+    my_reports = CustomReport.query.filter_by(created_by=current_user.id).order_by(CustomReport.created_at.desc()).all()
+    
+    # Get shared reports from other users
+    shared_reports = CustomReport.query.filter(
+        and_(CustomReport.is_shared == True, CustomReport.created_by != current_user.id)
+    ).order_by(CustomReport.created_at.desc()).all()
+    
+    return render_template('reports/custom_reports_list.html', 
+                         my_reports=my_reports, 
+                         shared_reports=shared_reports)
+
+@reports_bp.route('/custom/new', methods=['GET', 'POST'])
+@login_required
+def create_custom_report():
+    """Create a new custom report"""
+    form = CustomReportForm()
+    
+    if form.validate_on_submit():
+        # Parse configuration from hidden field
+        config_json = request.form.get('config', '{}')
+        
+        try:
+            config = json.loads(config_json)
+        except:
+            config = {}
+        
+        # Create new custom report
+        custom_report = CustomReport(
+            name=form.name.data,
+            description=form.description.data,
+            report_type=form.report_type.data,
+            config=config_json,
+            created_by=current_user.id,
+            is_shared=form.is_shared.data
+        )
+        
+        db.session.add(custom_report)
+        db.session.commit()
+        
+        flash(f'Custom report "{form.name.data}" created successfully!', 'success')
+        return redirect(url_for('reports.custom_reports_list'))
+    
+    return render_template('reports/custom_report_builder.html', form=form)
+
+@reports_bp.route('/custom/<int:report_id>')
+@login_required
+def view_custom_report(report_id):
+    """View/run a custom report"""
+    custom_report = CustomReport.query.get_or_404(report_id)
+    
+    # Check access permissions
+    if custom_report.created_by != current_user.id and not custom_report.is_shared:
+        flash('You do not have permission to view this report.', 'error')
+        return redirect(url_for('reports.custom_reports_list'))
+    
+    # Get report configuration
+    config = custom_report.get_config()
+    
+    # Execute the report
+    try:
+        data, headers = execute_custom_report(custom_report)
+        
+        # Log execution
+        execution = CustomReportExecution(
+            custom_report_id=custom_report.id,
+            executed_by=current_user.id,
+            row_count=len(data)
+        )
+        db.session.add(execution)
+        db.session.commit()
+        
+    except Exception as e:
+        flash(f'Error executing report: {str(e)}', 'error')
+        data, headers = [], []
+    
+    return render_template('reports/custom_report_view.html', 
+                         custom_report=custom_report,
+                         data=data,
+                         headers=headers,
+                         config=config)
+
+@reports_bp.route('/custom/<int:report_id>/export')
+@login_required
+def export_custom_report(report_id):
+    """Export custom report to CSV"""
+    custom_report = CustomReport.query.get_or_404(report_id)
+    
+    # Check access permissions
+    if custom_report.created_by != current_user.id and not custom_report.is_shared:
+        flash('You do not have permission to export this report.', 'error')
+        return redirect(url_for('reports.custom_reports_list'))
+    
+    try:
+        # Execute the report
+        data, headers = execute_custom_report(custom_report)
+        
+        # Create CSV
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Write headers
+        writer.writerow(headers)
+        
+        # Write data
+        for row in data:
+            writer.writerow(row)
+        
+        # Log export
+        execution = CustomReportExecution(
+            custom_report_id=custom_report.id,
+            executed_by=current_user.id,
+            row_count=len(data),
+            export_format='csv'
+        )
+        db.session.add(execution)
+        db.session.commit()
+        
+        # Create response
+        response = make_response(output.getvalue())
+        response.headers['Content-Type'] = 'text/csv'
+        response.headers['Content-Disposition'] = f'attachment; filename={custom_report.name}_{date.today()}.csv'
+        
+        return response
+        
+    except Exception as e:
+        flash(f'Error exporting report: {str(e)}', 'error')
+        return redirect(url_for('reports.view_custom_report', report_id=report_id))
+
+@reports_bp.route('/custom/<int:report_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_custom_report(report_id):
+    """Edit an existing custom report"""
+    custom_report = CustomReport.query.get_or_404(report_id)
+    
+    # Check ownership
+    if custom_report.created_by != current_user.id:
+        flash('You can only edit your own reports.', 'error')
+        return redirect(url_for('reports.custom_reports_list'))
+    
+    form = CustomReportForm(obj=custom_report)
+    
+    if form.validate_on_submit():
+        # Update report
+        custom_report.name = form.name.data
+        custom_report.description = form.description.data
+        custom_report.report_type = form.report_type.data
+        custom_report.is_shared = form.is_shared.data
+        
+        # Update configuration
+        config_json = request.form.get('config', '{}')
+        custom_report.config = config_json
+        
+        db.session.commit()
+        
+        flash(f'Custom report "{form.name.data}" updated successfully!', 'success')
+        return redirect(url_for('reports.view_custom_report', report_id=report_id))
+    
+    return render_template('reports/custom_report_builder.html', form=form, report=custom_report)
+
+@reports_bp.route('/custom/<int:report_id>/delete', methods=['POST'])
+@login_required
+def delete_custom_report(report_id):
+    """Delete a custom report"""
+    custom_report = CustomReport.query.get_or_404(report_id)
+    
+    # Check ownership
+    if custom_report.created_by != current_user.id:
+        flash('You can only delete your own reports.', 'error')
+        return redirect(url_for('reports.custom_reports_list'))
+    
+    # Delete related executions first
+    CustomReportExecution.query.filter_by(custom_report_id=report_id).delete()
+    
+    # Delete the report
+    db.session.delete(custom_report)
+    db.session.commit()
+    
+    flash(f'Custom report "{custom_report.name}" deleted successfully!', 'success')
+    return redirect(url_for('reports.custom_reports_list'))
+
+@reports_bp.route('/custom/preview', methods=['POST'])
+@login_required
+def preview_custom_report():
+    """AJAX endpoint to preview custom report"""
+    try:
+        data = request.get_json()
+        
+        # Create temporary custom report object
+        temp_report = CustomReport(
+            report_type=data.get('report_type'),
+            config=json.dumps(data)
+        )
+        
+        # Execute and get first 10 rows for preview
+        preview_data, headers = execute_custom_report(temp_report, limit=10)
+        
+        # Generate HTML table
+        html = '<div class="table-responsive">'
+        html += '<table class="table table-sm table-striped">'
+        html += '<thead class="table-dark"><tr>'
+        
+        for header in headers:
+            html += f'<th>{header}</th>'
+        html += '</tr></thead><tbody>'
+        
+        for row in preview_data:
+            html += '<tr>'
+            for cell in row:
+                html += f'<td>{cell or ""}</td>'
+            html += '</tr>'
+        
+        html += '</tbody></table></div>'
+        
+        if len(preview_data) == 10:
+            html += '<p class="text-muted small mt-2"><i class="fas fa-info-circle"></i> Showing first 10 rows. Full report may contain more data.</p>'
+        
+        return jsonify({
+            'success': True,
+            'preview_html': html,
+            'row_count': len(preview_data)
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
+def execute_custom_report(custom_report, limit=None):
+    """Execute a custom report and return data"""
+    config = custom_report.get_config()
+    report_type = custom_report.report_type
+    fields = config.get('fields', [])
+    filters = config.get('filters', [])
+    sort_field = config.get('sort_field')
+    sort_order = config.get('sort_order', 'asc')
+    
+    # Map report types to models and field mappings
+    model_mapping = {
+        'inventory': {
+            'model': Item,
+            'field_mapping': {
+                'name': 'name',
+                'code': 'code', 
+                'description': 'description',
+                'current_stock': 'current_stock',
+                'minimum_stock': 'minimum_stock',
+                'unit_price': 'unit_price',
+                'unit_of_measure': 'unit_of_measure',
+                'item_type': 'item_type',
+                'gst_rate': 'gst_rate',
+                'hsn_code': 'hsn_code'
+            }
+        },
+        'purchase': {
+            'model': PurchaseOrder,
+            'field_mapping': {
+                'po_number': 'po_number',
+                'supplier_name': 'supplier_name',
+                'order_date': 'order_date',
+                'expected_delivery_date': 'expected_delivery_date',
+                'status': 'status',
+                'total_amount': 'total_amount',
+                'payment_terms': 'payment_terms'
+            }
+        },
+        'sales': {
+            'model': SalesOrder,
+            'field_mapping': {
+                'so_number': 'so_number',
+                'customer_name': 'customer_name',
+                'order_date': 'order_date',
+                'delivery_date': 'delivery_date',
+                'status': 'status',
+                'total_amount': 'total_amount'
+            }
+        },
+        'jobwork': {
+            'model': JobWork,
+            'field_mapping': {
+                'job_number': 'job_number',
+                'customer_name': 'customer_name',
+                'item_name': 'item.name',
+                'quantity_sent': 'quantity_sent',
+                'quantity_received': 'quantity_received',
+                'rate_per_unit': 'rate_per_unit',
+                'work_type': 'work_type',
+                'status': 'status'
+            }
+        },
+        'production': {
+            'model': Production,
+            'field_mapping': {
+                'production_number': 'production_number',
+                'item_name': 'item.name',
+                'planned_quantity': 'planned_quantity',
+                'produced_quantity': 'produced_quantity',
+                'production_date': 'production_date',
+                'status': 'status'
+            }
+        },
+        'employee': {
+            'model': Employee,
+            'field_mapping': {
+                'employee_code': 'employee_code',
+                'name': 'name',
+                'department': 'department',
+                'designation': 'designation',
+                'hire_date': 'hire_date',
+                'status': 'status',
+                'contact_number': 'contact_number'
+            }
+        }
+    }
+    
+    if report_type not in model_mapping:
+        raise ValueError(f'Unsupported report type: {report_type}')
+    
+    model_info = model_mapping[report_type]
+    model = model_info['model']
+    field_mapping = model_info['field_mapping']
+    
+    # Build query
+    query = model.query
+    
+    # Apply filters
+    for filter_config in filters:
+        field_name = filter_config.get('field')
+        operator = filter_config.get('operator')
+        value = filter_config.get('value')
+        
+        if not field_name or not operator or not value:
+            continue
+            
+        if field_name not in field_mapping:
+            continue
+            
+        model_field = getattr(model, field_mapping[field_name].split('.')[0])
+        
+        # Apply different operators
+        if operator == 'equals':
+            query = query.filter(model_field == value)
+        elif operator == 'contains':
+            query = query.filter(model_field.ilike(f'%{value}%'))
+        elif operator == 'greater_than':
+            query = query.filter(model_field > value)
+        elif operator == 'less_than':
+            query = query.filter(model_field < value)
+    
+    # Apply sorting
+    if sort_field and sort_field in field_mapping:
+        sort_column = getattr(model, field_mapping[sort_field].split('.')[0])
+        if sort_order == 'desc':
+            query = query.order_by(desc(sort_column))
+        else:
+            query = query.order_by(asc(sort_column))
+    
+    # Apply limit for preview
+    if limit:
+        query = query.limit(limit)
+    
+    # Execute query
+    results = query.all()
+    
+    # Extract data based on selected fields
+    headers = []
+    data = []
+    
+    # Build headers
+    for field in fields:
+        if field in field_mapping:
+            headers.append(field.replace('_', ' ').title())
+    
+    # Extract data
+    for result in results:
+        row = []
+        for field in fields:
+            if field in field_mapping:
+                field_path = field_mapping[field]
+                
+                # Handle nested fields (e.g., item.name)
+                if '.' in field_path:
+                    parts = field_path.split('.')
+                    value = result
+                    for part in parts:
+                        value = getattr(value, part, None) if value else None
+                else:
+                    value = getattr(result, field_path, None)
+                
+                row.append(value)
+        data.append(row)
+    
+    return data, headers

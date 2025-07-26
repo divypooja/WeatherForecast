@@ -11,6 +11,9 @@ from models_uom import UnitOfMeasure, UOMConversion, ItemUOMConversion, UOMConve
 # Import permission models
 from models_permissions import Permission, UserPermission
 
+# Import custom report models
+from models_custom_reports import CustomReport, CustomReportExecution
+
 class CompanySettings(db.Model):
     __tablename__ = 'company_settings'
     
