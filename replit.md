@@ -12,6 +12,8 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **Real-world Scenario Support**: System now handles partial delivery scenarios where a PO (e.g., 10,000 wheels ordered, only 500 delivered and inspected) remains available for inspection when additional materials arrive
 - **Enhanced Query Logic**: Modified dashboard filtering to include both incomplete inspections AND partial status POs, providing comprehensive coverage for ongoing inspection needs
 - **User Workflow Continuity**: Partial POs now remain visible in Material Inspection Dashboard until all ordered quantities are delivered and inspected
+- **PO Status Report**: Added comprehensive PO Delivery & Inspection Status report showing ordered vs received vs pending quantities, delivery percentages, inspection results, and pass rates for all purchase orders
+- **Enhanced Action Buttons**: Partial POs with completed inspections now show "Inspect More" button instead of "Completed" to allow additional inspections for future deliveries
 
 ## Recent Changes (January 26, 2025)
 

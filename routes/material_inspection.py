@@ -75,6 +75,44 @@ def dashboard():
                          recent_inspections=recent_inspections,
                          stats=stats)
 
+@material_inspection.route('/po-status-report')
+@login_required
+def po_status_report():
+    """Purchase Order Status Report - shows delivery and inspection details"""
+    # Get detailed PO status with inspection summary
+    query = """
+    SELECT 
+        po.po_number,
+        po.status,
+        po.inspection_status,
+        s.name as supplier_name,
+        poi.item_id,
+        i.name as item_name,
+        poi.quantity_ordered,
+        COALESCE(SUM(mi.received_quantity), 0) as total_received,
+        COALESCE(SUM(mi.inspected_quantity), 0) as total_inspected,
+        COALESCE(SUM(mi.passed_quantity), 0) as total_passed,
+        COALESCE(SUM(mi.rejected_quantity), 0) as total_rejected,
+        (poi.quantity_ordered - COALESCE(SUM(mi.received_quantity), 0)) as pending_quantity,
+        ROUND((COALESCE(SUM(mi.received_quantity), 0) * 100.0 / poi.quantity_ordered), 1) as delivery_percentage,
+        ROUND((COALESCE(SUM(mi.passed_quantity), 0) * 100.0 / NULLIF(COALESCE(SUM(mi.inspected_quantity), 0), 0)), 1) as pass_percentage
+    FROM purchase_orders po
+    JOIN suppliers s ON po.supplier_id = s.id
+    JOIN purchase_order_items poi ON po.id = poi.purchase_order_id
+    JOIN items i ON poi.item_id = i.id
+    LEFT JOIN material_inspections mi ON po.id = mi.purchase_order_id AND poi.item_id = mi.item_id
+    WHERE po.status != 'cancelled'
+    GROUP BY po.po_number, po.status, po.inspection_status, s.name, poi.item_id, i.name, poi.quantity_ordered
+    ORDER BY po.po_number
+    """
+    
+    result = db.session.execute(db.text(query))
+    po_details = [dict(row._mapping) for row in result]
+    
+    return render_template('material_inspection/po_status_report.html',
+                         title='PO Delivery & Inspection Status',
+                         po_details=po_details)
+
 @material_inspection.route('/inspect/daily-entry/<int:entry_id>')
 @login_required
 def inspect_daily_entry(entry_id):
