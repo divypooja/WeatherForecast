@@ -38,8 +38,8 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 {{ form.worker_name.label(class="form-label") }}
-                                {{ form.worker_name(class="form-control", id="worker_name_input") }}
-                                <small class="text-muted">Select a job work to see assigned team members</small>
+                                {{ form.worker_name(class="form-select", id="worker_name_input") }}
+                                <small class="text-muted">Select your name from the employee database</small>
                                 {% if form.worker_name.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.worker_name.errors %}
