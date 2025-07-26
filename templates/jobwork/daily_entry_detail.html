@@ -133,7 +133,7 @@
                                     <i class="fas fa-eye"></i> View Job Work Details
                                 </a>
                                 {% if entry.job_work.is_team_work %}
-                                <a href="{{ url_for('jobwork.team_assignments', id=entry.job_work.id) }}" class="btn btn-info">
+                                <a href="{{ url_for('jobwork.team_assignments', job_id=entry.job_work.id) }}" class="btn btn-info">
                                     <i class="fas fa-users"></i> View Team Assignments
                                 </a>
                                 {% endif %}
