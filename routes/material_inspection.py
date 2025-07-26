@@ -312,6 +312,8 @@ def log_inspection():
                         item.current_stock = 0.0
                     passed_quantity = form.passed_quantity.data or 0.0
                     item.current_stock += passed_quantity
+                    # Preserve the item's original material classification - don't override it
+                    # The inspection classification is saved in the MaterialInspection record only
                 
         elif form.job_work_id.data:
             job_work = JobWork.query.get(form.job_work_id.data)
@@ -326,6 +328,8 @@ def log_inspection():
                         item.current_stock = 0.0
                     passed_quantity = form.passed_quantity.data or 0.0
                     item.current_stock += passed_quantity
+                    # Preserve the item's original material classification - don't override it
+                    # The inspection classification is saved in the MaterialInspection record only
         
         db.session.commit()
         flash(f'Material inspection {inspection_number} logged successfully!', 'success')
