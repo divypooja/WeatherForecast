@@ -235,7 +235,13 @@ def add_bom():
         db.session.add(bom)
         db.session.commit()
         flash('BOM created successfully', 'success')
-        return redirect(url_for('production.edit_bom', id=bom.id))
+        
+        # Check which action was clicked
+        action = request.form.get('action', 'save_and_continue')
+        if action == 'save_and_close':
+            return redirect(url_for('production.list_bom'))
+        else:
+            return redirect(url_for('production.edit_bom', id=bom.id))
     
     return render_template('production/bom_form.html', form=form, title='Add BOM')
 
