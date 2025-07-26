@@ -255,8 +255,15 @@ class Item(db.Model):
     unit_of_measure = db.Column(db.String(20), nullable=False)  # kg, pcs, meter, etc.
     hsn_code = db.Column(db.String(20))  # HSN Code for GST
     gst_rate = db.Column(db.Float, default=0.0)  # GST rate (can be 0%, 5%, 12%, 18%, 28% etc.)
-    current_stock = db.Column(db.Float, default=0.0)
+    current_stock = db.Column(db.Float, default=0.0)  # Legacy total stock field
     minimum_stock = db.Column(db.Float, default=0.0)
+    
+    # Multi-state inventory tracking
+    qty_raw = db.Column(db.Float, default=0.0)      # Raw material stock
+    qty_wip = db.Column(db.Float, default=0.0)      # Work in Progress (sent for job work)
+    qty_finished = db.Column(db.Float, default=0.0) # Finished goods (completed job work)
+    qty_scrap = db.Column(db.Float, default=0.0)    # Scrap/rejected material
+    
     unit_price = db.Column(db.Float, default=0.0)
     unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
     weight_unit = db.Column(db.String(10), default='kg')  # Weight unit (kg, g, lbs, oz, ton)
@@ -271,6 +278,52 @@ class Item(db.Model):
     bom_items = db.relationship('BOMItem', backref='item', lazy=True)
     item_type_obj = db.relationship('ItemType', backref='items', lazy=True)
     
+    @property
+    def total_stock(self):
+        """Calculate total stock across all states"""
+        return (self.qty_raw or 0) + (self.qty_wip or 0) + (self.qty_finished or 0)
+    
+    @property
+    def available_stock(self):
+        """Stock available for use (raw + finished, excluding WIP)"""
+        return (self.qty_raw or 0) + (self.qty_finished or 0)
+    
+    def move_to_wip(self, quantity):
+        """Move raw material to Work in Progress (job work sent)"""
+        if self.qty_raw >= quantity:
+            self.qty_raw -= quantity
+            self.qty_wip += quantity
+            return True
+        return False
+    
+    def receive_from_wip(self, finished_qty, scrap_qty=0):
+        """Receive finished goods and scrap from WIP (job work completed)"""
+        total_received = finished_qty + scrap_qty
+        if self.qty_wip >= total_received:
+            self.qty_wip -= total_received
+            self.qty_finished += finished_qty
+            self.qty_scrap += scrap_qty
+            # Update legacy current_stock for compatibility
+            self.current_stock = self.available_stock
+            return True
+        return False
+    
+    def sync_legacy_stock(self):
+        """Sync legacy current_stock field with new multi-state system"""
+        self.current_stock = self.available_stock
+    
+    @property
+    def stock_breakdown(self):
+        """Return stock breakdown as dictionary"""
+        return {
+            'raw': self.qty_raw or 0,
+            'wip': self.qty_wip or 0,
+            'finished': self.qty_finished or 0,
+            'scrap': self.qty_scrap or 0,
+            'total': self.total_stock,
+            'available': self.available_stock
+        }
+
     @property
     def display_item_type(self):
         """Get display name for item type"""

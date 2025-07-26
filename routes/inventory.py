@@ -39,6 +39,37 @@ def dashboard():
                          low_stock_items=low_stock_items,
                          uom_stats=uom_stats)
 
+@inventory_bp.route('/multi-state')
+@login_required
+def multi_state_view():
+    """View multi-state inventory breakdown"""
+    # Get all items and ensure multi-state fields are initialized
+    items = Item.query.all()
+    
+    # Initialize multi-state inventory for items that haven't been set up
+    for item in items:
+        if item.qty_raw is None:
+            item.qty_raw = item.current_stock or 0.0
+            item.qty_wip = 0.0
+            item.qty_finished = 0.0
+            item.qty_scrap = 0.0
+    
+    db.session.commit()
+    
+    # Calculate totals
+    total_raw = sum(item.qty_raw or 0 for item in items)
+    total_wip = sum(item.qty_wip or 0 for item in items)
+    total_finished = sum(item.qty_finished or 0 for item in items)
+    total_scrap = sum(item.qty_scrap or 0 for item in items)
+    
+    return render_template('inventory/multi_state_view.html',
+                         title='Multi-State Inventory Tracking',
+                         items=items,
+                         total_raw=total_raw,
+                         total_wip=total_wip,
+                         total_finished=total_finished,
+                         total_scrap=total_scrap)
+
 @inventory_bp.route('/list')
 @login_required
 def list_items():
