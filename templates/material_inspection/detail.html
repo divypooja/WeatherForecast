@@ -60,6 +60,26 @@
                             </td>
                         </tr>
                         <tr>
+                            <td><strong>Material Classification:</strong></td>
+                            <td>
+                                {% if inspection.material_classification == 'raw_material' %}
+                                    <span class="badge bg-info">
+                                        <i class="fas fa-cubes me-1"></i>Raw Material
+                                    </span>
+                                {% elif inspection.material_classification == 'production_use' %}
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-cogs me-1"></i>Production Use
+                                    </span>
+                                {% elif inspection.material_classification == 'finished_goods' %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-box me-1"></i>Finished Goods
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ inspection.material_classification|title }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
                             <td><strong>Inspector:</strong></td>
                             <td>{{ inspection.inspector.username }}</td>
                         </tr>
