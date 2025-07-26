@@ -117,7 +117,11 @@
                             <div class="col-md-6 mb-3">
                                 {{ form.quantity_sent.label(class="form-label") }}
                                 <div class="input-group">
-                                    {{ form.quantity_sent(class="form-control", step="0.01", id="quantity_sent") }}
+                                    {% if job %}
+                                        {{ form.quantity_sent(class="form-control", step="0.01", id="quantity_sent", **{"data-original-value": job.quantity_sent}) }}
+                                    {% else %}
+                                        {{ form.quantity_sent(class="form-control", step="0.01", id="quantity_sent") }}
+                                    {% endif %}
                                     <span class="input-group-text" id="quantity-unit">units</span>
                                     <button type="button" class="btn btn-outline-info" id="check-stock-btn" onclick="checkInventoryStock()">
                                         <i class="fas fa-search"></i> Check Stock
@@ -340,6 +344,10 @@ function checkInventoryStock() {
     
     const quantity = parseFloat(quantityInput.value) || 0;
     
+    // Check if we're in edit mode by looking for original quantity
+    const isEditMode = window.location.pathname.includes('/edit/');
+    const originalQuantity = parseFloat(document.getElementById('quantity_sent').getAttribute('data-original-value')) || 0;
+    
     // Fetch item stock information
     fetch(`/inventory/api/item-stock/${itemSelect.value}`)
         .then(response => response.json())
@@ -348,17 +356,28 @@ function checkInventoryStock() {
                 const availableStock = data.current_stock || 0;
                 const unit = data.unit_of_measure || 'units';
                 
+                let effectiveAvailableStock = availableStock;
+                
+                // For edit mode, add back the originally allocated quantity
+                if (isEditMode && originalQuantity > 0) {
+                    effectiveAvailableStock = availableStock + originalQuantity;
+                }
+                
                 let stockClass = 'alert-success';
                 let stockMessage = `Available Stock: ${availableStock} ${unit}`;
                 let stockIcon = 'fa-check-circle';
                 
-                if (quantity > availableStock) {
+                if (isEditMode && originalQuantity > 0) {
+                    stockMessage = `Current Stock: ${availableStock} ${unit} (+ ${originalQuantity} ${unit} currently allocated) = ${effectiveAvailableStock} ${unit} available`;
+                }
+                
+                if (quantity > effectiveAvailableStock) {
                     stockClass = 'alert-danger';
-                    stockMessage = `Insufficient Stock! Available: ${availableStock} ${unit}, Required: ${quantity} ${unit}`;
+                    stockMessage = `Insufficient Stock! Available: ${effectiveAvailableStock} ${unit}, Required: ${quantity} ${unit}`;
                     stockIcon = 'fa-exclamation-triangle';
                 } else if (availableStock < 10) { // Low stock warning
                     stockClass = 'alert-warning';
-                    stockMessage = `Low Stock Warning: ${availableStock} ${unit} available`;
+                    stockMessage = `Low Stock Warning: ${effectiveAvailableStock} ${unit} available`;
                     stockIcon = 'fa-exclamation-circle';
                 }
                 
