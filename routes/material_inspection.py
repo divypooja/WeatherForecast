@@ -305,15 +305,15 @@ def log_inspection():
                         po.status = 'partial'  # Some materials received
                     # else status remains 'open' if nothing received yet
             
-                # Update inventory only with passed quantity for the specific item
+                # Update inventory with passed quantity and material classification
                 item = Item.query.get(form.item_id.data)
                 if item:
                     if item.current_stock is None:
                         item.current_stock = 0.0
                     passed_quantity = form.passed_quantity.data or 0.0
                     item.current_stock += passed_quantity
-                    # Preserve the item's original material classification - don't override it
-                    # The inspection classification is saved in the MaterialInspection record only
+                    # Update the item's material classification based on inspection
+                    item.material_classification = form.material_classification.data
                 
         elif form.job_work_id.data:
             job_work = JobWork.query.get(form.job_work_id.data)
@@ -321,15 +321,15 @@ def log_inspection():
                 job_work.inspection_status = 'completed'
                 job_work.inspected_at = datetime.utcnow()
             
-                # Update inventory only with passed quantity
+                # Update inventory with passed quantity and material classification
                 item = Item.query.get(job_work.item_id)
                 if item:
                     if item.current_stock is None:
                         item.current_stock = 0.0
                     passed_quantity = form.passed_quantity.data or 0.0
                     item.current_stock += passed_quantity
-                    # Preserve the item's original material classification - don't override it
-                    # The inspection classification is saved in the MaterialInspection record only
+                    # Update the item's material classification based on inspection
+                    item.material_classification = form.material_classification.data
         
         db.session.commit()
         flash(f'Material inspection {inspection_number} logged successfully!', 'success')
