@@ -1073,3 +1073,26 @@ def quick_assign_worker():
         
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
+
+@jobwork_bp.route('/sync-quantities')
+@login_required
+def sync_all_quantities():
+    """Admin utility to sync all job work quantities with inspection data"""
+    if not current_user.is_admin():
+        flash('Access denied. Admin privileges required.', 'error')
+        return redirect(url_for('jobwork.dashboard'))
+    
+    corrected_jobs = []
+    total_jobs = JobWork.query.count()
+    
+    for job in JobWork.query.all():
+        if job.sync_quantity_received():
+            corrected_jobs.append(job.job_number)
+    
+    if corrected_jobs:
+        db.session.commit()
+        flash(f'Corrected quantity mismatches for {len(corrected_jobs)} jobs: {", ".join(corrected_jobs)}', 'success')
+    else:
+        flash(f'All {total_jobs} job work quantities are accurate. No corrections needed.', 'info')
+    
+    return redirect(url_for('jobwork.dashboard'))

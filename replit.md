@@ -6,7 +6,7 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (July 26, 2025)
 
-### Material Inspection Dashboard Enhancement for Partial Status POs (Latest - July 26, 2025)
+### Material Inspection Dashboard Enhancement & Data Integrity Fixes (Latest - July 26, 2025)
 - **Fixed Partial PO Visibility**: Enhanced Material Inspection Dashboard to properly display Purchase Orders with "partial" status that may need additional inspections
 - **Business Logic Improvement**: Updated query logic to include POs with partial status even when previous deliveries have been inspected, allowing for inspection of subsequent deliveries
 - **Real-world Scenario Support**: System now handles partial delivery scenarios where a PO (e.g., 10,000 wheels ordered, only 500 delivered and inspected) remains available for inspection when additional materials arrive
@@ -22,6 +22,12 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **Job Work Inspection Progress Display**: Enhanced Material Inspection form to show inspection progress for Job Works including total sent, already inspected, remaining to inspect quantities, and visual progress bar with color coding
 - **Inspection Progress API**: Added API endpoint for real-time Job Work inspection progress data with percentage calculations and remaining quantity tracking
 - **Organizational Improvement**: Moved PO Status Report from Material Inspection section to Purchase Orders section for better logical organization and user workflow
+- **Critical Data Integrity Fix**: Resolved JOB-2025-0006 quantity discrepancy where stored quantity_received (110) didn't match actual inspection records (90), corrected database to show accurate 90 pieces
+- **Data Integrity Monitoring**: Added calculated_quantity_received property to JobWork model that dynamically calculates quantities from material inspections as source of truth
+- **Mismatch Detection System**: Implemented has_quantity_mismatch property and sync_quantity_received() method to detect and automatically correct data inconsistencies
+- **Admin Utility Function**: Added sync-quantities route for admins to detect and fix quantity mismatches across all Job Works with comprehensive logging
+- **Visual Data Integrity Alerts**: Enhanced Job Work detail pages to show warning messages when quantity mismatches are detected between stored and calculated values
+- **Preventive Architecture**: Created system to prevent future data inconsistencies by using inspection records as single source of truth for quantity tracking
 
 ## Recent Changes (January 26, 2025)
 
