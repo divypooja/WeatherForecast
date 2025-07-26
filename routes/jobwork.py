@@ -952,6 +952,7 @@ def get_job_team_assignments(job_id):
         'success': True,
         'job_number': job.job_number,
         'item_name': job.item.name,
+        'unit_of_measure': job.item.unit_of_measure,
         'is_team_work': job.is_team_work,
         'team_assignments': team_data,
         'job_id': job_id

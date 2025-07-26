@@ -130,7 +130,7 @@
                                 {{ form.quantity_completed.label(class="form-label") }}
                                 <div class="input-group">
                                     {{ form.quantity_completed(class="form-control") }}
-                                    <span class="input-group-text">units</span>
+                                    <span class="input-group-text" id="quantity_unit">units</span>
                                 </div>
                                 <small class="text-muted">Number of units completed today</small>
                                 {% if form.quantity_completed.errors %}
@@ -242,6 +242,11 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 if (data.success) {
                     displayTeamAssignments(data);
+                    // Update the quantity unit in the form
+                    const quantityUnitSpan = document.getElementById('quantity_unit');
+                    if (quantityUnitSpan && data.unit_of_measure) {
+                        quantityUnitSpan.textContent = data.unit_of_measure;
+                    }
                 } else {
                     teamAssignmentsContent.innerHTML = '<div class="alert alert-warning">No team assignments found for this job work.</div>';
                 }
@@ -290,7 +295,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <small class="text-muted">${assignment.employee_code}</small>
                         </td>
                         <td><span class="badge bg-info">${assignment.member_role}</span></td>
-                        <td>${assignment.assigned_quantity} units</td>
+                        <td>${assignment.assigned_quantity} ${data.unit_of_measure || 'units'}</td>
                         <td>
                             <span class="badge ${progressClass}">${assignment.completion_percentage.toFixed(1)}%</span>
                         </td>
