@@ -241,6 +241,11 @@ def update_status(id, status):
     db.session.commit()
     return redirect(url_for('jobwork.list_job_works'))
 
+@jobwork_bp.route('/clear-modal-fix')
+def clear_modal_fix():
+    """Simple route to clear any stuck modals by redirecting"""
+    return render_template('clear_modal.html')
+
 @jobwork_bp.route('/update-team-progress/<int:job_id>')
 @login_required
 def update_team_progress(job_id):
