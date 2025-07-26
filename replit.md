@@ -17,6 +17,8 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **Job Work Inspection Fix**: Applied same partial status logic to Job Work inspections - Job Works with "partial_received" status now appear in Material Inspection Dashboard even when inspection_status is "completed", allowing additional inspections for subsequent material returns
 - **Job Work Status Update Logic**: Fixed Material Inspection route to properly update Job Work status to "partial_received" when materials are partially received and inspected, and to "completed" when all materials are received
 - **Enhanced Job Work Display**: Added Status column to Job Work inspection table showing color-coded badges for job status (Sent, Partial Received, Completed) for better visibility
+- **Job Work Quantity Tracking**: Enhanced Job Work detail page to display Quantity Received, Pending Quantity, and Completion percentage with visual progress bars, providing comprehensive tracking like Purchase Orders
+- **Dashboard Quantity Display**: Updated Job Work dashboard to show received and pending quantities with color-coded indicators for better progress visibility
 - **Organizational Improvement**: Moved PO Status Report from Material Inspection section to Purchase Orders section for better logical organization and user workflow
 
 ## Recent Changes (January 26, 2025)
