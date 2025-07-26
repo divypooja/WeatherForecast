@@ -153,6 +153,7 @@
                                 <th style="min-width: 90px;">Item Code</th>
                                 <th style="min-width: 120px;">Item Name</th>
                                 <th style="min-width: 80px;">Type</th>
+                                <th style="min-width: 120px;">Classification</th>
                                 <th style="min-width: 90px;">Current Stock</th>
                                 <th style="min-width: 60px;">Unit</th>
                                 <th style="min-width: 100px;">Current Stock (pcs)</th>
@@ -173,6 +174,25 @@
                                     <span class="badge bg-{{ 'primary' if item.item_type == 'material' else 'success' if item.item_type == 'product' else 'info' }}">
                                         {{ item.item_type.title() }}
                                     </span>
+                                </td>
+                                <td>
+                                    {% if item.material_classification == 'raw_material' %}
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-cubes me-1"></i>Raw Material
+                                        </span>
+                                    {% elif item.material_classification == 'production_use' %}
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-cogs me-1"></i>Production Use
+                                        </span>
+                                    {% elif item.material_classification == 'finished_goods' %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-box me-1"></i>Finished Goods
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark">
+                                            <i class="fas fa-question me-1"></i>Unclassified
+                                        </span>
+                                    {% endif %}
                                 </td>
                                 <td>{{ "%.2f"|format(item.current_stock or 0) }}</td>
                                 <td>{{ item.unit_of_measure or 'N/A' }}</td>
