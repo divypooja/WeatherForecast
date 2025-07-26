@@ -411,21 +411,27 @@ def daily_job_work_entry():
     form = DailyJobWorkForm()
     
     if form.validate_on_submit():
+        # Determine worker name for unique constraint check
+        if form.worker_type.data == 'employee':
+            employee = Employee.query.get(form.employee_id.data)
+            worker_name = employee.name if employee else ''
+        else:
+            worker_name = f"{form.contractor_name.data} (Contractor)"
+        
         # Check if entry already exists for this worker/job/date
         existing_entry = DailyJobWorkEntry.query.filter_by(
             job_work_id=form.job_work_id.data,
-            worker_name=form.worker_name.data,
+            worker_name=worker_name,
             work_date=form.work_date.data
         ).first()
         
         if existing_entry:
-            flash(f'Daily entry already exists for {form.worker_name.data} on {form.work_date.data}. Please edit the existing entry or use a different date.', 'warning')
+            flash(f'Daily entry already exists for {worker_name} on {form.work_date.data}. Please edit the existing entry or use a different date.', 'warning')
             return render_template('jobwork/daily_entry_form.html', form=form, title='Daily Job Work Entry')
         
         # Create new daily entry
         daily_entry = DailyJobWorkEntry(
             job_work_id=form.job_work_id.data,
-            worker_name=form.worker_name.data,
             work_date=form.work_date.data,
             hours_worked=form.hours_worked.data,
             quantity_completed=form.quantity_completed.data,
@@ -435,11 +441,18 @@ def daily_job_work_entry():
             logged_by=current_user.id
         )
         
+        # Set worker information using the helper method
+        daily_entry.set_worker_info(
+            worker_type=form.worker_type.data,
+            employee_id=form.employee_id.data if form.worker_type.data == 'employee' else None,
+            contractor_name=form.contractor_name.data if form.worker_type.data == 'contractor' else None
+        )
+        
         db.session.add(daily_entry)
         db.session.commit()
         
         job_work = JobWork.query.get(form.job_work_id.data)
-        flash(f'Daily work logged successfully for {form.worker_name.data} on {job_work.job_number}!', 'success')
+        flash(f'Daily work logged successfully for {worker_name} on {job_work.job_number}!', 'success')
         return redirect(url_for('jobwork.daily_entries_list'))
     
     return render_template('jobwork/daily_entry_form.html', form=form, title='Daily Job Work Entry')
