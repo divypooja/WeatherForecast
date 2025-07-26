@@ -150,9 +150,22 @@
                                 <a href="{{ url_for('production.list_bom') }}" class="btn btn-secondary">
                                     <i class="fas fa-times"></i> Cancel
                                 </a>
-                                <button type="submit" class="btn btn-success btn-lg">
-                                    <i class="fas fa-save"></i> {{ 'Update BOM' if bom else 'Create BOM' }}
-                                </button>
+                                <div class="d-flex gap-2">
+                                    {% if not bom %}
+                                    <!-- For new BOM creation -->
+                                    <button type="submit" name="action" value="save_and_close" class="btn btn-success btn-lg">
+                                        <i class="fas fa-save"></i> Create BOM & Close
+                                    </button>
+                                    <button type="submit" name="action" value="save_and_continue" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-plus"></i> Create BOM & Add Components
+                                    </button>
+                                    {% else %}
+                                    <!-- For existing BOM update -->
+                                    <button type="submit" class="btn btn-success btn-lg">
+                                        <i class="fas fa-save"></i> Update BOM
+                                    </button>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
 
