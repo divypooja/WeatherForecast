@@ -25,7 +25,17 @@
                             <div class="col-md-6" id="poSection" {% if request.args.get('job_id') %}style="display: none;"{% endif %}>
                                 <div class="mb-3">
                                     {{ form.purchase_order_id.label(class="form-label") }}
-                                    {{ form.purchase_order_id(class="form-select", id="poSelect") }}
+                                    {% if request.args.get('po_id') %}
+                                        {{ form.purchase_order_id(class="form-select", id="poSelect", disabled=True) }}
+                                        <!-- Hidden field to preserve the value when disabled -->
+                                        <input type="hidden" name="purchase_order_id" value="{{ form.purchase_order_id.data }}">
+                                        <div class="form-text">
+                                            <i class="fas fa-lock me-1 text-success"></i>
+                                            Purchase Order pre-selected from detail page. Items will be auto-loaded.
+                                        </div>
+                                    {% else %}
+                                        {{ form.purchase_order_id(class="form-select", id="poSelect") }}
+                                    {% endif %}
                                     {% for error in form.purchase_order_id.errors %}
                                         <div class="text-danger">{{ error }}</div>
                                     {% endfor %}
@@ -36,7 +46,17 @@
                             <div class="col-md-6" id="jobSection" {% if request.args.get('po_id') %}style="display: none;"{% endif %}>
                                 <div class="mb-3">
                                     {{ form.job_work_id.label(class="form-label") }}
-                                    {{ form.job_work_id(class="form-select", id="jobSelect") }}
+                                    {% if request.args.get('job_id') %}
+                                        {{ form.job_work_id(class="form-select", id="jobSelect", disabled=True) }}
+                                        <!-- Hidden field to preserve the value when disabled -->
+                                        <input type="hidden" name="job_work_id" value="{{ form.job_work_id.data }}">
+                                        <div class="form-text">
+                                            <i class="fas fa-lock me-1 text-success"></i>
+                                            Job Work pre-selected from detail page. Item will be auto-loaded.
+                                        </div>
+                                    {% else %}
+                                        {{ form.job_work_id(class="form-select", id="jobSelect") }}
+                                    {% endif %}
                                     {% for error in form.job_work_id.errors %}
                                         <div class="text-danger">{{ error }}</div>
                                     {% endfor %}
