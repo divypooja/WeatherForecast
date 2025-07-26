@@ -95,18 +95,20 @@ def approve_daily_entry(entry_id):
     """Approve a Daily Job Work Entry inspection"""
     daily_entry = DailyJobWorkEntry.query.get_or_404(entry_id)
     
-    # Get inspection notes from form
+    # Get inspection notes and material classification from form
     inspection_notes = request.form.get('inspection_notes', '')
+    material_classification = request.form.get('material_classification', 'production_use')
     
     # Update inspection status
     daily_entry.inspection_status = 'passed'
     daily_entry.inspection_notes = inspection_notes
+    daily_entry.material_classification = material_classification
     daily_entry.inspected_by = current_user.id
     daily_entry.inspected_at = datetime.utcnow()
     
     db.session.commit()
     
-    flash(f'Daily entry for {daily_entry.worker_name} on {daily_entry.work_date.strftime("%d/%m/%Y")} has been approved!', 'success')
+    flash(f'Daily entry for {daily_entry.worker_name} on {daily_entry.work_date.strftime("%d/%m/%Y")} has been approved with classification: {material_classification.replace("_", " ").title()}!', 'success')
     return redirect(url_for('material_inspection.dashboard'))
 
 @material_inspection.route('/reject-daily-entry/<int:entry_id>', methods=['POST'])
@@ -115,18 +117,20 @@ def reject_daily_entry(entry_id):
     """Reject a Daily Job Work Entry inspection"""
     daily_entry = DailyJobWorkEntry.query.get_or_404(entry_id)
     
-    # Get inspection notes from form
+    # Get inspection notes and material classification from form
     inspection_notes = request.form.get('inspection_notes', '')
+    material_classification = request.form.get('material_classification', 'production_use')
     
     # Update inspection status
     daily_entry.inspection_status = 'failed'
     daily_entry.inspection_notes = inspection_notes
+    daily_entry.material_classification = material_classification
     daily_entry.inspected_by = current_user.id
     daily_entry.inspected_at = datetime.utcnow()
     
     db.session.commit()
     
-    flash(f'Daily entry for {daily_entry.worker_name} has been rejected. Inspection notes: {inspection_notes}', 'warning')
+    flash(f'Daily entry for {daily_entry.worker_name} has been rejected. Classification: {material_classification.replace("_", " ").title()}. Inspection notes: {inspection_notes}', 'warning')
     return redirect(url_for('material_inspection.dashboard'))
 
 @material_inspection.route('/inspect/po/<int:po_id>')
@@ -266,6 +270,7 @@ def log_inspection():
             purchase_order_id=form.purchase_order_id.data if form.purchase_order_id.data else None,
             job_work_id=form.job_work_id.data if form.job_work_id.data else None,
             item_id=form.item_id.data,
+            material_classification=form.material_classification.data,
             received_quantity=form.received_quantity.data,
             inspected_quantity=form.inspected_quantity.data,
             passed_quantity=form.passed_quantity.data,

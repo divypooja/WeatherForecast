@@ -32,10 +32,10 @@
                                         <th>Inspection #</th>
                                         <th>Source</th>
                                         <th>Item</th>
+                                        <th>Classification</th>
                                         <th>Received</th>
                                         <th>Inspected</th>
                                         <th>Passed</th>
-                                        <th>Damaged</th>
                                         <th>Rejected</th>
                                         <th>Acceptance Rate</th>
                                         <th>Inspector</th>
@@ -68,15 +68,28 @@
                                             <strong>{{ inspection.item.name }}</strong>
                                             <br><small class="text-muted">{{ inspection.item.code }}</small>
                                         </td>
+                                        <td>
+                                            {% if inspection.material_classification == 'raw_material' %}
+                                                <span class="badge bg-info">
+                                                    <i class="fas fa-cubes me-1"></i>Raw Material
+                                                </span>
+                                            {% elif inspection.material_classification == 'production_use' %}
+                                                <span class="badge bg-warning">
+                                                    <i class="fas fa-cogs me-1"></i>Production Use
+                                                </span>
+                                            {% elif inspection.material_classification == 'finished_goods' %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-box me-1"></i>Finished Goods
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ inspection.material_classification|title }}</span>
+                                            {% endif %}
+                                        </td>
                                         <td>{{ "%.2f"|format(inspection.received_quantity) }}</td>
                                         <td>{{ "%.2f"|format(inspection.inspected_quantity) }}</td>
                                         <td class="text-success">
                                             <i class="fas fa-check-circle me-1"></i>
                                             {{ "%.2f"|format(inspection.passed_quantity) }}
-                                        </td>
-                                        <td class="text-warning">
-                                            <i class="fas fa-exclamation-triangle me-1"></i>
-                                            {{ "%.2f"|format(inspection.damaged_quantity) }}
                                         </td>
                                         <td class="text-danger">
                                             <i class="fas fa-times-circle me-1"></i>

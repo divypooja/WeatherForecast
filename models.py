@@ -956,6 +956,7 @@ class MaterialInspection(db.Model):
     purchase_order_id = db.Column(db.Integer, db.ForeignKey('purchase_orders.id'), nullable=True)
     job_work_id = db.Column(db.Integer, db.ForeignKey('job_works.id'), nullable=True)
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
+    material_classification = db.Column(db.String(50), nullable=False, default='raw_material')  # raw_material, production_use, finished_goods
     received_quantity = db.Column(db.Float, nullable=False)
     inspected_quantity = db.Column(db.Float, nullable=False)
     passed_quantity = db.Column(db.Float, nullable=False)
@@ -1384,6 +1385,7 @@ class DailyJobWorkEntry(db.Model):
     inspection_notes = db.Column(db.Text)  # Inspection notes
     inspected_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     inspected_at = db.Column(db.DateTime, nullable=True)
+    material_classification = db.Column(db.String(50), nullable=False, default='production_use')  # raw_material, production_use, finished_goods
     
     # Quality inspection quantity fields
     inspected_quantity = db.Column(db.Float, default=0.0)  # Total quantity inspected

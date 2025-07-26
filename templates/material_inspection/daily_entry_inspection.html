@@ -111,6 +111,19 @@
                     
                     <form id="inspectionForm">
                         <div class="mb-3">
+                            <label for="material_classification" class="form-label">Material Classification</label>
+                            <select class="form-select" id="material_classification" name="material_classification" required>
+                                <option value="raw_material" {% if daily_entry.material_classification == 'raw_material' %}selected{% endif %}>Raw Material</option>
+                                <option value="production_use" {% if daily_entry.material_classification == 'production_use' %}selected{% endif %}>Production Use</option>
+                                <option value="finished_goods" {% if daily_entry.material_classification == 'finished_goods' %}selected{% endif %}>Finished Goods</option>
+                            </select>
+                            <div class="form-text">
+                                <i class="fas fa-tag me-1"></i>
+                                Categorize this material for tracking purposes
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
                             <label for="inspection_notes" class="form-label">Inspection Notes</label>
                             <textarea class="form-control" id="inspection_notes" name="inspection_notes" rows="4" 
                                       placeholder="Add any inspection observations, quality checks, or feedback..."></textarea>
@@ -182,6 +195,7 @@
 <script>
 function approveEntry() {
     const notes = document.getElementById('inspection_notes').value;
+    const classification = document.getElementById('material_classification').value;
     
     if (confirm('Are you sure you want to approve this daily entry?')) {
         const form = document.createElement('form');
@@ -194,6 +208,12 @@ function approveEntry() {
         notesInput.value = notes;
         form.appendChild(notesInput);
         
+        const classificationInput = document.createElement('input');
+        classificationInput.type = 'hidden';
+        classificationInput.name = 'material_classification';
+        classificationInput.value = classification;
+        form.appendChild(classificationInput);
+        
         document.body.appendChild(form);
         form.submit();
     }
@@ -201,6 +221,7 @@ function approveEntry() {
 
 function rejectEntry() {
     const notes = document.getElementById('inspection_notes').value;
+    const classification = document.getElementById('material_classification').value;
     
     if (!notes.trim()) {
         alert('Please provide inspection notes when rejecting an entry.');
@@ -217,6 +238,12 @@ function rejectEntry() {
         notesInput.name = 'inspection_notes';
         notesInput.value = notes;
         form.appendChild(notesInput);
+        
+        const classificationInput = document.createElement('input');
+        classificationInput.type = 'hidden';
+        classificationInput.name = 'material_classification';
+        classificationInput.value = classification;
+        form.appendChild(classificationInput);
         
         document.body.appendChild(form);
         form.submit();
