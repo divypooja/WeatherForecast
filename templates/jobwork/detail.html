@@ -80,6 +80,36 @@
                                             <td>{{ job.quantity_sent }} {{ job.item.unit_of_measure }}</td>
                                         </tr>
                                         <tr>
+                                            <td><strong>Quantity Received:</strong></td>
+                                            <td>
+                                                <span class="{% if job.quantity_received > 0 %}text-success fw-bold{% else %}text-muted{% endif %}">
+                                                    {{ job.quantity_received or 0 }} {{ job.item.unit_of_measure }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Pending Quantity:</strong></td>
+                                            <td>
+                                                {% set pending_qty = job.quantity_sent - (job.quantity_received or 0) %}
+                                                <span class="{% if pending_qty > 0 %}text-warning fw-bold{% else %}text-muted{% endif %}">
+                                                    {{ pending_qty }} {{ job.item.unit_of_measure }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Completion:</strong></td>
+                                            <td>
+                                                {% set completion_percentage = ((job.quantity_received or 0) / job.quantity_sent * 100) if job.quantity_sent > 0 else 0 %}
+                                                <div class="progress" style="height: 20px; width: 200px;">
+                                                    <div class="progress-bar {% if completion_percentage == 100 %}bg-success{% elif completion_percentage >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                         role="progressbar" 
+                                                         style="width: {{ completion_percentage }}%">
+                                                        {{ "%.1f"|format(completion_percentage) }}%
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
                                             <td><strong>Expected Finished:</strong></td>
                                             <td>{{ job.expected_finished_material or 'Not specified' }} {{ job.item.unit_of_measure if job.expected_finished_material else '' }}</td>
                                         </tr>
