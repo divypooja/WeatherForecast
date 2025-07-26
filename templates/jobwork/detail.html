@@ -44,6 +44,9 @@
                                                 <span class="badge {% if job.work_type == 'in_house' %}bg-success{% else %}bg-primary{% endif %}">
                                                     {{ job.work_type.replace('_', ' ').title() }}
                                                 </span>
+                                                {% if job.work_type == 'in_house' %}
+                                                <br><small class="text-success"><i class="fas fa-info-circle"></i> Inventory updated automatically via Daily Work Entries</small>
+                                                {% endif %}
                                             </td>
                                         </tr>
                                         {% if job.work_type == 'in_house' %}
