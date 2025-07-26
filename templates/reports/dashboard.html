@@ -20,6 +20,26 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
+                        <!-- Custom Reports Card -->
+                        <div class="col-md-4 mb-3">
+                            <div class="card bg-primary text-white h-100">
+                                <div class="card-body d-flex flex-column">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-magic"></i>
+                                        Custom Reports <span class="badge bg-warning text-dark">NEW</span>
+                                    </h6>
+                                    <p class="card-text small flex-grow-1">
+                                        Create personalized reports with your own field selection, filters, and criteria for any data source.
+                                    </p>
+                                    <div class="mt-auto">
+                                        <a href="{{ url_for('reports.custom_reports_list') }}" class="btn btn-light btn-sm w-100">
+                                            <i class="fas fa-magic"></i> Custom Reports
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         {% for report in report_types %}
                         <div class="col-md-4 mb-3">
                             <div class="card bg-light h-100">

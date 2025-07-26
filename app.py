@@ -112,6 +112,7 @@ def create_app():
         # Import all models to ensure tables are created
         import models  # Main models (already imported)
         import models_dashboard  # Dashboard preference models
+        import models_custom_reports  # Custom report models
         
         db.create_all()
         
