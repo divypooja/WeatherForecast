@@ -1376,6 +1376,12 @@ class DailyJobWorkEntry(db.Model):
     process_stage = db.Column(db.String(20), nullable=False, default='in_progress')  # started, in_progress, completed, on_hold
     notes = db.Column(db.Text)
     
+    # Inspection fields for in-house job work entries
+    inspection_status = db.Column(db.String(20), default='pending')  # pending, passed, failed
+    inspection_notes = db.Column(db.Text)  # Inspection notes
+    inspected_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    inspected_at = db.Column(db.DateTime, nullable=True)
+    
     # Audit fields
     logged_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -1383,7 +1389,8 @@ class DailyJobWorkEntry(db.Model):
     
     # Relationships
     job_work = db.relationship('JobWork', backref='daily_entries')
-    logger = db.relationship('User', backref='logged_daily_work')
+    logger = db.relationship('User', foreign_keys='DailyJobWorkEntry.logged_by', backref='logged_daily_work')
+    inspector = db.relationship('User', foreign_keys='DailyJobWorkEntry.inspected_by', backref='inspected_daily_entries')
     
     # Unique constraint to prevent duplicate entries for same worker/job/date
     __table_args__ = (db.UniqueConstraint('job_work_id', 'worker_name', 'work_date', name='unique_worker_job_date'),)
