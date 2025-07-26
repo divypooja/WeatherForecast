@@ -330,6 +330,17 @@ class DailyJobWorkForm(FlaskForm):
                                       ('completed', 'Completed'),
                                       ('on_hold', 'On Hold')],
                                default='in_progress')
+    
+    # Inspection fields
+    inspected_quantity = FloatField('Inspected Quantity', validators=[Optional(), NumberRange(min=0)],
+                                   render_kw={'placeholder': 'Quantity inspected for quality'})
+    passed_quantity = FloatField('Passed/Good Quantity', validators=[Optional(), NumberRange(min=0)],
+                                render_kw={'placeholder': 'Quantity that passed inspection'})
+    rejected_quantity = FloatField('Rejected Quantity', validators=[Optional(), NumberRange(min=0)],
+                                  render_kw={'placeholder': 'Quantity rejected in inspection', 'readonly': True})
+    rejection_reasons = TextAreaField('Rejection Reasons', 
+                                     render_kw={'rows': 3, 'placeholder': 'e.g., Scratches, Dents, Corrosion, Quality issues, etc.'})
+    
     notes = TextAreaField('Work Notes', 
                          render_kw={'rows': 3, 'placeholder': 'Any issues, observations, or comments about today\'s work'})
     submit = SubmitField('Log Daily Work')
