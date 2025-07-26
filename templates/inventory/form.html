@@ -112,7 +112,7 @@
                         </div>
                         
                         <div class="row">
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
                                 {{ form.minimum_stock.label(class="form-label") }}
                                 {{ form.minimum_stock(class="form-control") }}
                                 <div class="form-text">Alert will be shown when stock falls below this level</div>
@@ -125,7 +125,7 @@
                                 {% endif %}
                             </div>
                             
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label class="form-label">Unit Weight</label>
                                 <div class="input-group">
                                     {{ form.unit_weight(class="form-control", step="0.001", id="unit_weight_field") }}
@@ -143,6 +143,22 @@
                                         {% endfor %}
                                     </div>
                                 {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                {{ form.material_classification.label(class="form-label") }}
+                                {{ form.material_classification(class="form-select") }}
+                                {% if form.material_classification.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.material_classification.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    <i class="fas fa-tag me-1"></i>
+                                    Track material state and usage purpose
+                                </div>
                             </div>
                         </div>
                         

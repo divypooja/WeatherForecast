@@ -164,6 +164,7 @@ def add_item():
             minimum_stock=form.minimum_stock.data,
             unit_price=form.unit_price.data,
             unit_weight=form.unit_weight.data,
+            material_classification=form.material_classification.data,
             item_type_id=int(form.item_type.data),
             item_type=item_type_obj.name.lower() if item_type_obj else 'material'
         )
@@ -198,6 +199,7 @@ def edit_item(id):
         item.minimum_stock = form.minimum_stock.data
         item.unit_price = form.unit_price.data
         item.unit_weight = form.unit_weight.data
+        item.material_classification = form.material_classification.data
         item.item_type_id = int(form.item_type.data)
         item.item_type = item_type_obj.name.lower() if item_type_obj else 'material'
         

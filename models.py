@@ -260,6 +260,7 @@ class Item(db.Model):
     unit_price = db.Column(db.Float, default=0.0)
     unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
     weight_unit = db.Column(db.String(10), default='kg')  # Weight unit (kg, g, lbs, oz, ton)
+    material_classification = db.Column(db.String(50), nullable=False, default='raw_material')  # raw_material, production_use, finished_goods
     item_type = db.Column(db.String(20), default='material')  # Legacy field for backward compatibility
     item_type_id = db.Column(db.Integer, db.ForeignKey('item_types.id'))  # New foreign key to ItemType
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
