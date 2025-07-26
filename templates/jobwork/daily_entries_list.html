@@ -268,3 +268,56 @@
 {% endfor %}
 
 {% endblock %}
+
+{% block extra_js %}
+<script>
+// Fix for stuck modal backdrops
+document.addEventListener('DOMContentLoaded', function() {
+    // Remove any existing modal backdrops on page load
+    const existingBackdrops = document.querySelectorAll('.modal-backdrop');
+    existingBackdrops.forEach(backdrop => backdrop.remove());
+    
+    // Remove modal-open class from body if present
+    document.body.classList.remove('modal-open');
+    
+    // Ensure proper modal cleanup when closed
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('hidden.bs.modal', function() {
+            // Remove any stuck backdrops
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(backdrop => backdrop.remove());
+            
+            // Remove modal-open class from body
+            document.body.classList.remove('modal-open');
+            
+            // Reset body styles
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        });
+    });
+    
+    // Add escape key handler to close any stuck modals
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            // Close all open modals
+            const openModals = document.querySelectorAll('.modal.show');
+            openModals.forEach(modal => {
+                const modalInstance = bootstrap.Modal.getInstance(modal);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+            });
+            
+            // Force remove any stuck backdrops
+            setTimeout(() => {
+                const backdrops = document.querySelectorAll('.modal-backdrop');
+                backdrops.forEach(backdrop => backdrop.remove());
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+            }, 300);
+        }
+    });
+});
+</script>
+{% endblock %}
