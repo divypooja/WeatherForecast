@@ -91,9 +91,16 @@ def add_job_work():
         if not item:
             flash('Selected item not found', 'danger')
             return render_template('jobwork/form.html', form=form, title='Add Job Work')
+        
+        # Initialize multi-state inventory if not set
+        if item.qty_raw is None:
+            item.qty_raw = item.current_stock or 0.0
+            item.qty_wip = 0.0
+            item.qty_finished = 0.0
+            item.qty_scrap = 0.0
             
-        if (item.current_stock or 0) < form.quantity_sent.data:
-            flash(f'Insufficient inventory. Available stock: {item.current_stock or 0} {item.unit_of_measure}', 'danger')
+        if (item.qty_raw or 0) < form.quantity_sent.data:
+            flash(f'Insufficient raw material inventory. Available: {item.qty_raw or 0} {item.unit_of_measure}', 'danger')
             return render_template('jobwork/form.html', form=form, title='Add Job Work')
 
         job = JobWork(
@@ -115,8 +122,14 @@ def add_job_work():
             created_by=current_user.id
         )
         
-        # Deduct from inventory when sending to vendor
-        item.current_stock = (item.current_stock or 0) - form.quantity_sent.data
+        # Move materials from raw to WIP (Work in Progress) for job work
+        if item.move_to_wip(form.quantity_sent.data):
+            # Add inventory movement note
+            movement_note = f"[{datetime.utcnow().strftime('%d/%m/%Y %H:%M')}] {form.quantity_sent.data} {item.unit_of_measure} moved to WIP for {job.job_number}"
+            job.notes = (job.notes or '') + f"\n{movement_note}"
+        else:
+            # Fallback to legacy method
+            item.current_stock = (item.current_stock or 0) - form.quantity_sent.data
         
         db.session.add(job)
         db.session.commit()
@@ -172,14 +185,30 @@ def edit_job_work(id):
             item = job.item
             quantity_difference = new_quantity_sent - old_quantity_sent
             
-            # Check if there's sufficient inventory for increase
-            if quantity_difference > 0 and (item.current_stock or 0) < quantity_difference:
-                flash(f'Insufficient inventory for increase. Available stock: {item.current_stock or 0} {item.unit_of_measure}', 'danger')
-                from utils_documents import get_documents_for_transaction
-                return render_template('jobwork/form.html', form=form, title='Edit Job Work', job=job, get_documents_for_transaction=get_documents_for_transaction)
+            # Initialize multi-state inventory if not set
+            if item.qty_raw is None:
+                item.qty_raw = item.current_stock or 0.0
+                item.qty_wip = 0.0
+                item.qty_finished = 0.0
+                item.qty_scrap = 0.0
             
-            # Adjust inventory: subtract additional sent quantity or add back if reduced
-            item.current_stock = (item.current_stock or 0) - quantity_difference
+            if quantity_difference > 0:
+                # Increasing quantity - need more raw materials
+                if (item.qty_raw or 0) < quantity_difference:
+                    flash(f'Insufficient raw material for increase. Available: {item.qty_raw or 0} {item.unit_of_measure}', 'danger')
+                    from utils_documents import get_documents_for_transaction
+                    return render_template('jobwork/form.html', form=form, title='Edit Job Work', job=job, get_documents_for_transaction=get_documents_for_transaction)
+                # Move additional materials to WIP
+                item.qty_raw -= quantity_difference
+                item.qty_wip += quantity_difference
+            else:
+                # Decreasing quantity - return materials to raw from WIP
+                return_quantity = abs(quantity_difference)
+                item.qty_wip -= return_quantity
+                item.qty_raw += return_quantity
+            
+            # Update legacy stock
+            item.sync_legacy_stock()
         
         job.job_number = form.job_number.data
         job.customer_name = form.customer_name.data

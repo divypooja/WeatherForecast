@@ -370,14 +370,24 @@ def log_inspection():
                     job_work.status = 'partial_received'  # Some materials received
                 # else status remains 'sent' if nothing received yet
             
-                # Update inventory with passed quantity and material classification
+                # Update inventory with multi-state tracking for job work completion
                 item = Item.query.get(job_work.item_id)
                 if item:
-                    if item.current_stock is None:
-                        item.current_stock = 0.0
-                    item.current_stock += passed_quantity
-                    # Update the item's material classification based on inspection
-                    item.material_classification = form.material_classification.data
+                    # Calculate scrap from inspection (received - passed = scrap)
+                    scrap_quantity = (form.received_quantity.data or 0.0) - passed_quantity
+                    
+                    # Receive materials back from WIP to finished/scrap
+                    if item.receive_from_wip(passed_quantity, scrap_quantity):
+                        # Update the item's material classification based on inspection
+                        item.material_classification = form.material_classification.data
+                        # Log the inventory movement
+                        job_work.notes = (job_work.notes or '') + f"\n[{datetime.utcnow().strftime('%d/%m/%Y %H:%M')}] Inspection completed: {passed_quantity} finished, {scrap_quantity} scrap returned from WIP"
+                    else:
+                        # Fallback to legacy method if WIP tracking fails
+                        if item.current_stock is None:
+                            item.current_stock = 0.0
+                        item.current_stock += passed_quantity
+                        item.material_classification = form.material_classification.data
         
         db.session.commit()
         flash(f'Material inspection {inspection_number} logged successfully!', 'success')

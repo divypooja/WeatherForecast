@@ -6,7 +6,19 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (July 26, 2025)
 
-### Material Inspection Dashboard Enhancement & Data Integrity Fixes (Latest - July 26, 2025)
+### Complete Multi-State Inventory Tracking System Implementation (Latest - July 26, 2025)
+- **Multi-State Inventory Architecture**: Implemented comprehensive inventory tracking with Raw Material, WIP (Work in Progress), Finished Goods, and Scrap states for complete manufacturing workflow visibility
+- **Database Schema Enhancement**: Added qty_raw, qty_wip, qty_finished, and qty_scrap columns to items table supporting your workflow requirements (Raw: 50 → WIP: 50 → Finished: 48 + Scrap: 2)
+- **Smart Inventory Methods**: Created move_to_wip() and receive_from_wip() methods for seamless material state transitions with automatic validation and error handling
+- **Job Work Integration**: Enhanced job work creation to move materials from Raw to WIP state, and material inspection to return Finished goods and Scrap from WIP
+- **Professional Multi-State Dashboard**: Created comprehensive inventory view showing breakdown across all states with color-coded indicators and workflow guidance
+- **Automated State Management**: System automatically handles inventory transitions: Job Work Send (Raw→WIP), Material Inspection (WIP→Finished+Scrap) matching your CSV example workflow
+- **Legacy Compatibility**: Maintained backward compatibility with existing current_stock field while enabling new multi-state functionality
+- **Real-time Calculations**: Added total_stock and available_stock properties for dynamic inventory calculations across all states
+- **Visual Progress Tracking**: Enhanced inventory display with state-specific badges, progress indicators, and workflow status visualization
+- **Data Integrity Foundation**: Built robust foundation preventing inventory inconsistencies through proper state management and validation
+
+### Material Inspection Dashboard Enhancement & Data Integrity Fixes (July 26, 2025)
 - **Fixed Partial PO Visibility**: Enhanced Material Inspection Dashboard to properly display Purchase Orders with "partial" status that may need additional inspections
 - **Business Logic Improvement**: Updated query logic to include POs with partial status even when previous deliveries have been inspected, allowing for inspection of subsequent deliveries
 - **Real-world Scenario Support**: System now handles partial delivery scenarios where a PO (e.g., 10,000 wheels ordered, only 500 delivered and inspected) remains available for inspection when additional materials arrive
