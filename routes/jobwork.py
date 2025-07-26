@@ -208,7 +208,7 @@ def edit_job_work(id):
         return redirect(url_for('jobwork.dashboard'))
     
     from utils_documents import get_documents_for_transaction
-    return render_template('jobwork/form.html', form=form, title='Edit Job Work', job=job, get_documents_for_transaction=get_documents_for_transaction)
+    return render_template('jobwork/form.html', form=form, title='Edit Job Work', job=job, get_documents_for_transaction=get_documents_for_transaction, original_quantity=job.quantity_sent)
 
 @jobwork_bp.route('/update_status/<int:id>/<status>')
 @login_required
