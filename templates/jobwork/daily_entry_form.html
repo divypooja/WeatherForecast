@@ -26,6 +26,14 @@
                     <h5 class="mb-0"><i class="fas fa-user-hard-hat"></i> Daily Work Entry</h5>
                 </div>
                 <div class="card-body">
+                    <!-- Progress Tracking Info -->
+                    <div class="alert alert-info" role="alert">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Automatic Progress Tracking:</strong> 
+                        Your daily work entries will automatically update team assignment progress percentages. 
+                        When you complete assigned quantities, your job work progress will be tracked automatically.
+                    </div>
+                    
                     <form method="POST">
                         {{ form.hidden_tag() }}
                         

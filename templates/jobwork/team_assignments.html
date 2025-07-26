@@ -53,8 +53,11 @@
             <!-- Team Assignments -->
             {% if assignments %}
             <div class="card">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-users"></i> Team Members ({{ assignments|length }})</h5>
+                    <a href="{{ url_for('jobwork.update_team_progress', job_id=job.id) }}" class="btn btn-info btn-sm">
+                        <i class="fas fa-sync-alt"></i> Update Progress from Daily Work
+                    </a>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">

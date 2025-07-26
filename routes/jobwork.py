@@ -241,6 +241,37 @@ def update_status(id, status):
     db.session.commit()
     return redirect(url_for('jobwork.list_job_works'))
 
+@jobwork_bp.route('/update-team-progress/<int:job_id>')
+@login_required
+def update_team_progress(job_id):
+    """Update progress for all team assignments based on daily work entries"""
+    job_work = JobWork.query.get_or_404(job_id)
+    
+    if not job_work.is_team_work:
+        flash('This job work is not configured for team assignments.', 'warning')
+        return redirect(url_for('jobwork.detail', id=job_id))
+    
+    assignments = JobWorkTeamAssignment.query.filter_by(job_work_id=job_id).all()
+    updated_count = 0
+    
+    for assignment in assignments:
+        old_percentage = assignment.completion_percentage
+        assignment.update_progress_from_daily_entries()
+        
+        if assignment.completion_percentage != old_percentage:
+            updated_count += 1
+    
+    # Check if job work can be completed
+    job_work.check_and_update_completion_status()
+    db.session.commit()
+    
+    if updated_count > 0:
+        flash(f'Progress updated for {updated_count} team assignments based on daily work entries.', 'success')
+    else:
+        flash('No progress updates were needed. All assignments are up to date.', 'info')
+    
+    return redirect(url_for('jobwork.team_assignments', id=job_id))
+
 @jobwork_bp.route('/validate-and-fix-completion/<int:job_id>')
 @login_required
 def validate_and_fix_completion(job_id):
@@ -437,6 +468,24 @@ def daily_job_work_entry():
         
         db.session.add(daily_entry)
         db.session.commit()
+        
+        # Update team assignment progress automatically
+        job_work = JobWork.query.get(form.job_work_id.data)
+        if job_work and job_work.is_team_work:
+            # Find the team assignment for this worker
+            employee = Employee.query.filter_by(name=form.worker_name.data).first()
+            if employee:
+                assignment = JobWorkTeamAssignment.query.filter_by(
+                    job_work_id=job_work.id,
+                    employee_id=employee.id
+                ).first()
+                if assignment:
+                    assignment.update_progress_from_daily_entries()
+                    db.session.commit()
+                    
+                    # Check if job work can be marked as completed
+                    job_work.check_and_update_completion_status()
+                    db.session.commit()
         
         job_work = JobWork.query.get(form.job_work_id.data)
         flash(f'Daily work logged successfully for {form.worker_name.data} on {job_work.job_number}!', 'success')
