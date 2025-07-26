@@ -617,7 +617,7 @@ def process_po_items(po, form_data):
     # Update PO total amount
     po.total_amount = total_amount
 
-@purchase_bp.route('/quantity-details/<int:po_id>')
+@purchase_bp.route('/quantity_details/<int:po_id>')
 @login_required
 def quantity_details_page(po_id):
     """Dedicated page showing detailed quantity information for a purchase order"""
