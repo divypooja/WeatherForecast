@@ -524,6 +524,28 @@ class JobWork(db.Model):
         """Get count of assigned team members"""
         return len(self.team_assignments)
     
+    def check_and_update_completion_status(self):
+        """Check if all team members are completed and update job work status"""
+        if not self.is_team_work:
+            return
+            
+        # Get all team assignments for this job
+        assignments = JobWorkTeamAssignment.query.filter_by(job_work_id=self.id).all()
+        
+        if not assignments:
+            return
+            
+        # Check if all assignments are at 100% completion
+        all_completed = all(assignment.completion_percentage >= 100.0 for assignment in assignments)
+        
+        if all_completed and self.status != 'completed':
+            self.status = 'completed'
+            self.received_date = datetime.utcnow().date()
+            
+            # Calculate total received quantity as sum of completed quantities
+            total_completed = sum(assignment.completed_quantity for assignment in assignments)
+            self.quantity_received = total_completed
+    
     @property
     def remaining_team_slots(self):
         """Get remaining team member slots available"""
@@ -619,6 +641,42 @@ class JobWorkTeamAssignment(db.Model):
     def completed_quantity(self):
         """Calculate completed quantity based on completion percentage"""
         return (self.completion_percentage * self.assigned_quantity / 100) if self.assigned_quantity > 0 else 0
+    
+    def update_progress_from_daily_entries(self):
+        """Update progress based on cumulative daily work entries"""
+        from sqlalchemy import func
+        
+        # Find the employee's daily entries for this job work
+        employee = Employee.query.get(self.employee_id)
+        if not employee:
+            return
+            
+        # Get all daily entries for this employee on this job work
+        total_completed = db.session.query(func.sum(DailyJobWorkEntry.quantity_completed)).filter(
+            DailyJobWorkEntry.job_work_id == self.job_work_id,
+            DailyJobWorkEntry.worker_name == employee.name
+        ).scalar() or 0
+        
+        # Calculate completion percentage
+        if self.assigned_quantity > 0:
+            completion_percentage = min(100.0, (total_completed / self.assigned_quantity) * 100)
+            self.completion_percentage = round(completion_percentage, 2)
+            
+            # Update status based on completion
+            if completion_percentage >= 100:
+                self.status = 'completed'
+            elif completion_percentage > 0:
+                self.status = 'in_progress'
+            else:
+                self.status = 'assigned'
+        
+        # Update actual hours worked
+        total_hours = db.session.query(func.sum(DailyJobWorkEntry.hours_worked)).filter(
+            DailyJobWorkEntry.job_work_id == self.job_work_id,
+            DailyJobWorkEntry.worker_name == employee.name
+        ).scalar() or 0
+        
+        self.actual_hours_worked = total_hours
 
 class Production(db.Model):
     __tablename__ = 'productions'
