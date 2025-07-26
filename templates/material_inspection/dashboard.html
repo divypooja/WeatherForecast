@@ -133,12 +133,12 @@
                                         <td>
                                             {% if po.status in ['draft'] %}
                                                 <span class="text-muted small">Send PO first</span>
-                                            {% elif po.inspection_status == 'completed' %}
+                                            {% elif po.inspection_status == 'completed' and po.status != 'partial' %}
                                                 <span class="badge bg-success">Completed</span>
                                             {% else %}
                                                 <a href="{{ url_for('material_inspection.log_inspection') }}?po_id={{ po.id }}" 
                                                    class="btn btn-sm btn-warning">
-                                                    <i class="fas fa-search me-1"></i>Inspect
+                                                    <i class="fas fa-search me-1"></i>{% if po.status == 'partial' and po.inspection_status == 'completed' %}Inspect More{% else %}Inspect{% endif %}
                                                 </a>
                                             {% endif %}
                                         </td>
