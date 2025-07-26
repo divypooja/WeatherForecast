@@ -83,8 +83,34 @@ def list_items():
     items = query.order_by(Item.name).paginate(
         page=page, per_page=20, error_out=False)
     
+    # Get items separated by material classification
+    raw_materials = Item.query.filter(
+        Item.material_classification == 'raw_material'
+    ).order_by(Item.name).all()
+    
+    production_use_items = Item.query.filter(
+        Item.material_classification == 'production_use'
+    ).order_by(Item.name).all()
+    
+    finished_goods = Item.query.filter(
+        Item.material_classification == 'finished_goods'
+    ).order_by(Item.name).all()
+    
+    # Get counts for tabs
+    raw_material_count = len(raw_materials)
+    production_use_count = len(production_use_items)
+    finished_goods_count = len(finished_goods)
+    total_items = Item.query.count()
+    
     return render_template('inventory/list.html', 
                          items=items, 
+                         raw_materials=raw_materials,
+                         production_use_items=production_use_items,
+                         finished_goods=finished_goods,
+                         raw_material_count=raw_material_count,
+                         production_use_count=production_use_count,
+                         finished_goods_count=finished_goods_count,
+                         total_items=total_items,
                          search=search,
                          item_type_filter=item_type_filter,
                          stock_status_filter=stock_status_filter,
