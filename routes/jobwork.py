@@ -762,6 +762,59 @@ def update_team_assignment(assignment_id):
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 400
 
+@jobwork_bp.route('/update-assigned-quantity/<int:assignment_id>', methods=['POST'])
+@login_required
+def update_assigned_quantity(assignment_id):
+    """Update the assigned quantity for a team member"""
+    assignment = JobWorkTeamAssignment.query.get_or_404(assignment_id)
+    
+    try:
+        data = request.get_json()
+        new_assigned_qty = float(data['assigned_quantity'])
+        
+        if new_assigned_qty <= 0:
+            return jsonify({'success': False, 'message': 'Assigned quantity must be greater than 0'}), 400
+        
+        old_assigned_qty = assignment.assigned_quantity
+        assignment.assigned_quantity = new_assigned_qty
+        
+        # Recalculate completion percentage based on new assigned quantity
+        # Get total completed quantity from daily entries for this worker
+        total_completed = db.session.query(func.sum(DailyJobWorkEntry.quantity_completed)).filter_by(
+            job_work_id=assignment.job_work_id,
+            worker_name=assignment.member_name
+        ).scalar() or 0
+        
+        # Update progress percentage based on new assigned quantity
+        if new_assigned_qty > 0:
+            assignment.progress_percentage = min(100, (total_completed / new_assigned_qty) * 100)
+            assignment.completion_percentage = assignment.progress_percentage
+            
+            # Update status based on new progress
+            if assignment.progress_percentage >= 100:
+                assignment.status = 'completed'
+                assignment.completion_date = datetime.utcnow()
+            elif assignment.progress_percentage > 0:
+                assignment.status = 'in_progress'
+            else:
+                assignment.status = 'assigned'
+        
+        assignment.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        # Check if job work completion status needs updating
+        job_work = assignment.job_work
+        job_work.check_and_update_completion_status()
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Assigned quantity updated from {old_assigned_qty} to {new_assigned_qty}',
+            'new_progress': assignment.progress_percentage
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 400
+
 @jobwork_bp.route('/remove-team-assignment/<int:assignment_id>')
 @login_required
 def remove_team_assignment(assignment_id):
