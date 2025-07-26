@@ -536,7 +536,7 @@ def assign_team_member(job_id):
 @jobwork_bp.route('/update-team-assignment/<int:assignment_id>', methods=['POST'])
 @login_required
 def update_team_assignment(assignment_id):
-    """Update team assignment progress"""
+    """Update team assignment progress with automatic completion"""
     assignment = JobWorkTeamAssignment.query.get_or_404(assignment_id)
     
     try:
@@ -545,11 +545,31 @@ def update_team_assignment(assignment_id):
             completed_qty = float(data['completed_quantity'])
             # Calculate completion percentage based on completed quantity
             assignment.completion_percentage = (completed_qty / assignment.assigned_quantity * 100) if assignment.assigned_quantity > 0 else 0
+            
+            # Auto-complete when reaching 100%
+            if assignment.completion_percentage >= 100:
+                assignment.status = 'completed'
+                assignment.completion_date = datetime.utcnow()
+                flash(f'{assignment.member_name} has completed their assignment (100%)!', 'success')
+            
         if 'status' in data:
             assignment.status = data['status']
+            if data['status'] == 'completed':
+                assignment.completion_date = datetime.utcnow()
         
         assignment.updated_at = datetime.utcnow()
         db.session.commit()
+        
+        # Check if all team members are completed
+        job_work = assignment.job_work
+        all_assignments = JobWorkTeamAssignment.query.filter_by(job_work_id=job_work.id).all()
+        all_completed = all(a.status == 'completed' for a in all_assignments)
+        
+        if all_completed and job_work.status != 'completed':
+            job_work.status = 'completed'
+            job_work.actual_return = datetime.utcnow()
+            db.session.commit()
+            flash(f'Job Work {job_work.job_number} automatically completed - all team members finished!', 'info')
         
         return jsonify({'success': True, 'message': 'Assignment updated successfully'})
     except Exception as e:
@@ -568,3 +588,100 @@ def remove_team_assignment(assignment_id):
     
     flash(f'Removed {employee_name} from team assignment.', 'success')
     return redirect(url_for('jobwork.team_assignments', job_id=job_id))
+
+@jobwork_bp.route('/worker-productivity')
+@login_required
+def worker_productivity():
+    """Daily worker productivity tracking dashboard"""
+    from sqlalchemy import desc, and_
+    from datetime import date, timedelta
+    
+    # Get date filter parameters
+    date_from = request.args.get('date_from', '', type=str)
+    date_to = request.args.get('date_to', '', type=str)
+    worker_filter = request.args.get('worker_name', '', type=str)
+    
+    # Set default date range (last 30 days)
+    end_date = date.today()
+    start_date = end_date - timedelta(days=30)
+    
+    if date_from:
+        try:
+            start_date = datetime.strptime(date_from, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+    
+    if date_to:
+        try:
+            end_date = datetime.strptime(date_to, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+    
+    # Build query for daily entries within date range
+    query = DailyJobWorkEntry.query.filter(
+        and_(
+            DailyJobWorkEntry.work_date >= start_date,
+            DailyJobWorkEntry.work_date <= end_date
+        )
+    )
+    
+    if worker_filter:
+        query = query.filter(DailyJobWorkEntry.worker_name.ilike(f'%{worker_filter}%'))
+    
+    daily_entries = query.all()
+    
+    # Calculate productivity metrics per worker
+    worker_productivity = {}
+    for entry in daily_entries:
+        worker = entry.worker_name
+        if worker not in worker_productivity:
+            worker_productivity[worker] = {
+                'total_hours': 0,
+                'total_quantity': 0,
+                'total_days': 0,
+                'job_works': set(),
+                'entries': [],
+                'avg_quality_score': 0,
+                'good_quality_count': 0,
+                'needs_rework_count': 0,
+                'defective_count': 0
+            }
+        
+        worker_productivity[worker]['total_hours'] += entry.hours_worked
+        worker_productivity[worker]['total_quantity'] += entry.quantity_completed
+        worker_productivity[worker]['job_works'].add(entry.job_work.job_number)
+        worker_productivity[worker]['entries'].append(entry)
+        
+        # Track quality metrics
+        if entry.quality_status == 'good':
+            worker_productivity[worker]['good_quality_count'] += 1
+        elif entry.quality_status == 'needs_rework':
+            worker_productivity[worker]['needs_rework_count'] += 1
+        elif entry.quality_status == 'defective':
+            worker_productivity[worker]['defective_count'] += 1
+    
+    # Calculate derived metrics
+    for worker, data in worker_productivity.items():
+        data['total_days'] = len(set(entry.work_date for entry in data['entries']))
+        data['avg_hours_per_day'] = data['total_hours'] / data['total_days'] if data['total_days'] > 0 else 0
+        data['productivity_rate'] = data['total_quantity'] / data['total_hours'] if data['total_hours'] > 0 else 0
+        data['job_works'] = list(data['job_works'])
+        
+        # Calculate quality score (percentage of good quality work)
+        total_entries = len(data['entries'])
+        data['quality_score'] = (data['good_quality_count'] / total_entries * 100) if total_entries > 0 else 0
+    
+    # Sort workers by productivity rate
+    sorted_workers = sorted(worker_productivity.items(), key=lambda x: x[1]['productivity_rate'], reverse=True)
+    
+    # Get unique worker names for filter
+    all_workers = db.session.query(DailyJobWorkEntry.worker_name).distinct().all()
+    worker_names = [w[0] for w in all_workers]
+    
+    return render_template('jobwork/worker_productivity.html', 
+                         worker_productivity=sorted_workers,
+                         worker_names=worker_names,
+                         date_from=date_from or start_date.strftime('%Y-%m-%d'),
+                         date_to=date_to or end_date.strftime('%Y-%m-%d'),
+                         worker_filter=worker_filter,
+                         total_workers=len(sorted_workers))
