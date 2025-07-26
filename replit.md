@@ -6,7 +6,18 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (January 26, 2025)
 
-### Job Work Completion Logic and Employee Integration (Latest - January 26, 2025)
+### Automated In-House Job Work Inventory Management via Daily Entries (Latest - January 26, 2025)
+- **Workflow Transformation**: Revolutionized in-house job work inventory management by eliminating separate inspection requirements and integrating inventory updates directly into Daily Work Entry process
+- **Automatic Inventory Updates**: When workers log daily progress for in-house job works, completed quantities are automatically added back to inventory stock levels, streamlining the workflow from manual inspection to real-time inventory management
+- **Scrap Quantity Tracking**: Added comprehensive scrap quantity field to Daily Job Work Entry forms with proper unit of measure integration, allowing workers to track both completion and waste quantities
+- **Smart Workflow Logic**: System distinguishes between in-house and outsourced job works - in-house jobs update inventory through daily entries while outsourced jobs still require traditional material inspection
+- **Enhanced Database Schema**: Added scrap_quantity column to daily_job_work_entries table with proper migration and form integration for comprehensive production tracking
+- **Visual Workflow Indicators**: Added clear notifications in job work detail pages showing "Inventory updated automatically via Daily Work Entries" for in-house work types
+- **Material Inspection Clarity**: Enhanced Material Inspection dashboard with informational alerts explaining that in-house job works use daily entries instead of separate inspection process
+- **Comprehensive Logging**: Automatic generation of inventory movement notes and scrap tracking logs within job work records for complete audit trail
+- **Real-time Success Feedback**: Enhanced success messages to inform users when inventory has been automatically updated following daily work entry submissions
+
+### Job Work Completion Logic and Employee Integration (January 26, 2025)
 - **Job Completion Validation System**: Implemented comprehensive validation preventing job work from being marked "Completed" unless ALL team members reach 100% individual completion
 - **Status Correction Functionality**: Added `validate_and_fix_completion` route to automatically detect and correct incorrectly completed jobs when team assignments are still in progress
 - **Enhanced Daily Work Entry**: Replaced manual worker name entry with employee database dropdown selection, integrating with Employee management system for accurate worker identification

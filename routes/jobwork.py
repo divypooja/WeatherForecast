@@ -562,8 +562,39 @@ def daily_job_work_entry():
         db.session.add(daily_entry)
         db.session.commit()
         
-        # Update team assignment progress automatically
+        # Get job work details for further processing
         job_work = JobWork.query.get(form.job_work_id.data)
+        
+        # For in-house job works, automatically update inventory based on daily entries
+        if job_work and job_work.work_type == 'in_house':
+            try:
+                # Update inventory with completed quantity (add finished goods back to stock)
+                if form.quantity_completed.data > 0:
+                    job_work.item.current_stock += form.quantity_completed.data
+                    
+                    # Log inventory movement
+                    inventory_note = f"In-house job work completion: {form.quantity_completed.data} {job_work.item.unit_of_measure} added from {job_work.job_number} by {form.worker_name.data}"
+                    if job_work.notes:
+                        job_work.notes += f"\n{inventory_note}"
+                    else:
+                        job_work.notes = inventory_note
+                
+                # Handle scrap quantity (if any) - could be logged for reporting but not added to inventory
+                if form.scrap_quantity.data and form.scrap_quantity.data > 0:
+                    scrap_note = f"Scrap generated: {form.scrap_quantity.data} {job_work.item.unit_of_measure} on {form.work_date.data} by {form.worker_name.data}"
+                    if job_work.notes:
+                        job_work.notes += f"\n{scrap_note}"
+                    else:
+                        job_work.notes = scrap_note
+                
+                db.session.commit()
+                
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Error updating inventory: {str(e)}', 'danger')
+                return render_template('jobwork/daily_entry_form.html', form=form, title='Daily Job Work Entry')
+        
+        # Update team assignment progress automatically
         if job_work and job_work.is_team_work:
             # Find the team assignment for this worker
             employee = Employee.query.filter_by(name=form.worker_name.data).first()
@@ -580,8 +611,11 @@ def daily_job_work_entry():
                     job_work.check_and_update_completion_status()
                     db.session.commit()
         
-        job_work = JobWork.query.get(form.job_work_id.data)
-        flash(f'Daily work logged successfully for {form.worker_name.data} on {job_work.job_number}!', 'success')
+        success_message = f'Daily work logged successfully for {form.worker_name.data} on {job_work.job_number}!'
+        if job_work.work_type == 'in_house' and form.quantity_completed.data > 0:
+            success_message += f' Inventory updated: +{form.quantity_completed.data} {job_work.item.unit_of_measure} added to stock.'
+        
+        flash(success_message, 'success')
         return redirect(url_for('jobwork.daily_entries_list'))
     
     return render_template('jobwork/daily_entry_form.html', form=form, title='Daily Job Work Entry')
