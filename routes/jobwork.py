@@ -79,6 +79,10 @@ def add_job_work():
     if not form.job_number.data:
         form.job_number.data = generate_job_number()
     
+    # Set default sent_date to today if not provided (for GET requests)
+    if request.method == 'GET' and not form.sent_date.data:
+        form.sent_date.data = datetime.now().date()
+    
     if form.validate_on_submit():
         # Check if job number already exists
         existing_job = JobWork.query.filter_by(job_number=form.job_number.data).first()
@@ -141,6 +145,12 @@ def add_job_work():
             flash(f'Job Work {form.job_number.data} created successfully for {form.customer_name.data}. {form.quantity_sent.data} {item.unit_of_measure} sent for processing at ₹{form.rate_per_unit.data}/unit.', 'success')
         
         return redirect(url_for('jobwork.dashboard'))
+    elif request.method == 'POST':
+        # Debug form validation errors
+        print("Form validation failed:")
+        for field, errors in form.errors.items():
+            print(f"  {field}: {errors}")
+            flash(f'{field}: {", ".join(errors)}', 'danger')
     
     return render_template('jobwork/form.html', form=form, title='Add Job Work')
 

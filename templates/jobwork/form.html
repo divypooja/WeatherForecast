@@ -199,8 +199,9 @@
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                {{ form.sent_date.label(class="form-label") }}
-                                {{ form.sent_date(class="form-control") }}
+                                {{ form.sent_date.label(class="form-label") }} <span class="text-danger">*</span>
+                                {{ form.sent_date(class="form-control", required="required") }}
+                                <small class="text-muted">Date when materials are sent for job work</small>
                                 {% if form.sent_date.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.sent_date.errors %}
