@@ -94,8 +94,8 @@ def po_status_report():
         COALESCE(SUM(mi.passed_quantity), 0) as total_passed,
         COALESCE(SUM(mi.rejected_quantity), 0) as total_rejected,
         (poi.quantity_ordered - COALESCE(SUM(mi.received_quantity), 0)) as pending_quantity,
-        ROUND((COALESCE(SUM(mi.received_quantity), 0) * 100.0 / poi.quantity_ordered), 1) as delivery_percentage,
-        ROUND((COALESCE(SUM(mi.passed_quantity), 0) * 100.0 / NULLIF(COALESCE(SUM(mi.inspected_quantity), 0), 0)), 1) as pass_percentage
+        ROUND((COALESCE(SUM(mi.received_quantity), 0) * 100.0 / poi.quantity_ordered)::numeric, 1) as delivery_percentage,
+        ROUND((COALESCE(SUM(mi.passed_quantity), 0) * 100.0 / NULLIF(COALESCE(SUM(mi.inspected_quantity), 0), 0))::numeric, 1) as pass_percentage
     FROM purchase_orders po
     JOIN suppliers s ON po.supplier_id = s.id
     JOIN purchase_order_items poi ON po.id = poi.purchase_order_id
