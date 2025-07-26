@@ -4,6 +4,15 @@
 
 This is a comprehensive Flask-based Factory Management System designed for small to medium manufacturing companies. The application provides modular dashboards for managing various aspects of factory operations including inventory, purchase orders, sales, HR, job work, production, and reporting.
 
+## Recent Changes (July 26, 2025)
+
+### Material Inspection Dashboard Enhancement for Partial Status POs (Latest - July 26, 2025)
+- **Fixed Partial PO Visibility**: Enhanced Material Inspection Dashboard to properly display Purchase Orders with "partial" status that may need additional inspections
+- **Business Logic Improvement**: Updated query logic to include POs with partial status even when previous deliveries have been inspected, allowing for inspection of subsequent deliveries
+- **Real-world Scenario Support**: System now handles partial delivery scenarios where a PO (e.g., 10,000 wheels ordered, only 500 delivered and inspected) remains available for inspection when additional materials arrive
+- **Enhanced Query Logic**: Modified dashboard filtering to include both incomplete inspections AND partial status POs, providing comprehensive coverage for ongoing inspection needs
+- **User Workflow Continuity**: Partial POs now remain visible in Material Inspection Dashboard until all ordered quantities are delivered and inspected
+
 ## Recent Changes (January 26, 2025)
 
 ### Complete Material Classification Integration Across Inventory System (Latest - January 26, 2025)
