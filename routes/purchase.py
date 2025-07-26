@@ -619,12 +619,10 @@ def process_po_items(po, form_data):
 
 @purchase_bp.route('/quantity_details/<int:po_id>')
 @login_required
-def quantity_details_page(po_id):
-    """Dedicated page showing detailed quantity information for a purchase order"""
-    print(f"DEBUG: Accessing quantity details for PO ID: {po_id}")
+def quantity_details(po_id):
+    """API endpoint to get detailed quantity information for a purchase order"""
     try:
         po = PurchaseOrder.query.get_or_404(po_id)
-        print(f"DEBUG: Found PO: {po.po_number}")
         
         # Prepare item details
         items = []
@@ -632,35 +630,38 @@ def quantity_details_page(po_id):
         total_received = 0
         
         for item in po.items:
-            progress_percent = (item.quantity_received / item.quantity_ordered * 100) if item.quantity_ordered > 0 else 0
-            pending = item.quantity_ordered - item.quantity_received
-            
             items.append({
-                'item': item.item,
                 'item_code': item.item.item_code if item.item else 'N/A',
                 'item_name': item.item.name if item.item else item.item_description or 'N/A',
                 'uom': item.uom or 'Pcs',
                 'quantity_ordered': item.quantity_ordered,
                 'quantity_received': item.quantity_received,
-                'pending': pending,
-                'progress_percent': progress_percent
+                'progress_percent': (item.quantity_received / item.quantity_ordered * 100) if item.quantity_ordered > 0 else 0
             })
             total_ordered += item.quantity_ordered
             total_received += item.quantity_received
         
-        # Calculate overall progress
-        overall_progress = (total_received / total_ordered * 100) if total_ordered > 0 else 0
-        print(f"DEBUG: Rendering template with {len(items)} items")
+        # Prepare response data
+        response_data = {
+            'po_number': po.po_number,
+            'supplier_name': po.supplier.name,
+            'status': po.status,
+            'items': items,
+            'summary': {
+                'total_ordered': total_ordered,
+                'total_received': total_received,
+                'total_pending': total_ordered - total_received,
+                'overall_progress': (total_received / total_ordered * 100) if total_ordered > 0 else 0
+            }
+        }
         
-        return render_template('purchase/quantity_details.html', 
-                             po=po,
-                             items=items,
-                             total_ordered=total_ordered,
-                             total_received=total_received,
-                             total_pending=total_ordered - total_received,
-                             overall_progress=overall_progress)
+        return jsonify({
+            'success': True,
+            'data': response_data
+        })
         
     except Exception as e:
-        print(f"DEBUG: Error in quantity_details_page: {str(e)}")
-        flash(f'Error loading quantity details: {str(e)}', 'error')
-        return redirect(url_for('purchase.list_purchase_orders'))
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 400
