@@ -617,12 +617,14 @@ def process_po_items(po, form_data):
     # Update PO total amount
     po.total_amount = total_amount
 
-@purchase_bp.route('/quantity_details/<int:po_id>')
+@purchase_bp.route('/quantity-details/<int:po_id>')
 @login_required
 def quantity_details_page(po_id):
     """Dedicated page showing detailed quantity information for a purchase order"""
+    print(f"DEBUG: Accessing quantity details for PO ID: {po_id}")
     try:
         po = PurchaseOrder.query.get_or_404(po_id)
+        print(f"DEBUG: Found PO: {po.po_number}")
         
         # Prepare item details
         items = []
@@ -648,6 +650,7 @@ def quantity_details_page(po_id):
         
         # Calculate overall progress
         overall_progress = (total_received / total_ordered * 100) if total_ordered > 0 else 0
+        print(f"DEBUG: Rendering template with {len(items)} items")
         
         return render_template('purchase/quantity_details.html', 
                              po=po,
@@ -658,5 +661,6 @@ def quantity_details_page(po_id):
                              overall_progress=overall_progress)
         
     except Exception as e:
+        print(f"DEBUG: Error in quantity_details_page: {str(e)}")
         flash(f'Error loading quantity details: {str(e)}', 'error')
         return redirect(url_for('purchase.list_purchase_orders'))
