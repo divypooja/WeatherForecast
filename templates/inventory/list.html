@@ -2,145 +2,6 @@
 
 {% block title %}Items List - Factory Management System{% endblock %}
 
-{% block content %}
-<div class="container">
-    <div class="row mb-4">
-        <div class="col">
-            <h1><i class="fas fa-boxes"></i> Items List</h1>
-        </div>
-        <div class="col-auto">
-            <a href="{{ url_for('inventory.export_items') }}{% if search or item_type_filter or stock_status_filter or min_price or max_price %}?{% endif %}{% if search %}search={{ search }}&{% endif %}{% if item_type_filter %}item_type={{ item_type_filter }}&{% endif %}{% if stock_status_filter %}stock_status={{ stock_status_filter }}&{% endif %}{% if min_price %}min_price={{ min_price }}&{% endif %}{% if max_price %}max_price={{ max_price }}{% endif %}" class="btn btn-outline-success me-2">
-                <i class="fas fa-file-excel"></i> Export Excel
-            </a>
-            <a href="{{ url_for('inventory.add_item') }}" class="btn btn-primary">
-                <i class="fas fa-plus"></i> Add New Item
-            </a>
-        </div>
-    </div>
-
-    <!-- Enhanced Filters -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h6><i class="fas fa-filter"></i> Search & Filters</h6>
-                </div>
-                <div class="card-body">
-                    <form method="GET" class="row g-3">
-                        <div class="col-md-3">
-                            <label class="form-label">Search</label>
-                            <input type="text" name="search" class="form-control" placeholder="Item name or code..." value="{{ search }}">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Item Type</label>
-                            <select name="item_type" class="form-select">
-                                <option value="">All Types</option>
-                                <option value="material" {{ 'selected' if item_type_filter == 'material' }}>Raw Material</option>
-                                <option value="product" {{ 'selected' if item_type_filter == 'product' }}>Finished Product</option>
-                                <option value="consumable" {{ 'selected' if item_type_filter == 'consumable' }}>Consumable</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Stock Status</label>
-                            <select name="stock_status" class="form-select">
-                                <option value="">All Items</option>
-                                <option value="low_stock" {{ 'selected' if stock_status_filter == 'low_stock' }}>Low Stock</option>
-                                <option value="in_stock" {{ 'selected' if stock_status_filter == 'in_stock' }}>In Stock</option>
-                                <option value="out_of_stock" {{ 'selected' if stock_status_filter == 'out_of_stock' }}>Out of Stock</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Min Price</label>
-                            <input type="number" name="min_price" class="form-control" placeholder="0" step="0.01" value="{{ min_price }}">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Max Price</label>
-                            <input type="number" name="max_price" class="form-control" placeholder="Any amount" step="0.01" value="{{ max_price }}">
-                        </div>
-                        <div class="col-md-1">
-                            <label class="form-label">&nbsp;</label>
-                            <div class="d-flex gap-1">
-                                <button type="submit" class="btn btn-primary btn-sm">
-                                    <i class="fas fa-search"></i>
-                                </button>
-                                <a href="{{ url_for('inventory.list_items') }}" class="btn btn-secondary btn-sm" title="Clear All Filters">
-                                    <i class="fas fa-times"></i> Clear
-                                </a>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Material Classification Tabs -->
-    <div class="card">
-        <div class="card-header p-0">
-            <ul class="nav nav-tabs card-header-tabs" id="materialTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="raw-material-tab" data-bs-toggle="tab" data-bs-target="#raw-material" type="button" role="tab">
-                        <i class="fas fa-cubes me-2 text-info"></i>Raw Material
-                        <span class="badge bg-info ms-2" id="raw-count">{{ raw_material_count or 0 }}</span>
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="production-use-tab" data-bs-toggle="tab" data-bs-target="#production-use" type="button" role="tab">
-                        <i class="fas fa-cogs me-2 text-warning"></i>Production Use
-                        <span class="badge bg-warning ms-2" id="production-count">{{ production_use_count or 0 }}</span>
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="finished-goods-tab" data-bs-toggle="tab" data-bs-target="#finished-goods" type="button" role="tab">
-                        <i class="fas fa-box me-2 text-success"></i>Finished Goods
-                        <span class="badge bg-success ms-2" id="finished-count">{{ finished_goods_count or 0 }}</span>
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="all-items-tab" data-bs-toggle="tab" data-bs-target="#all-items" type="button" role="tab">
-                        <i class="fas fa-list me-2"></i>All Items
-                        <span class="badge bg-secondary ms-2" id="all-count">{{ total_items or 0 }}</span>
-                    </button>
-                </li>
-            </ul>
-        </div>
-        <div class="card-body">
-            <div class="tab-content" id="materialTabsContent">
-                
-                <!-- Raw Material Tab -->
-                <div class="tab-pane fade show active" id="raw-material" role="tabpanel" aria-labelledby="raw-material-tab">
-                    {{ render_material_table(raw_materials, 'raw_material') }}
-                </div>
-                
-                <!-- Production Use Tab -->
-                <div class="tab-pane fade" id="production-use" role="tabpanel" aria-labelledby="production-use-tab">
-                    {{ render_material_table(production_use_items, 'production_use') }}
-                </div>
-                
-                <!-- Finished Goods Tab -->
-                <div class="tab-pane fade" id="finished-goods" role="tabpanel" aria-labelledby="finished-goods-tab">
-                    {{ render_material_table(finished_goods, 'finished_goods') }}
-                </div>
-                
-                <!-- All Items Tab -->
-                <div class="tab-pane fade" id="all-items" role="tabpanel" aria-labelledby="all-items-tab">
-                    {{ render_material_table(items.items if items else [], 'all') }}
-                </div>
-                
-            </div>
-        </div>
-    </div>
-    
-    <!-- Pagination -->
-    {% if items and items.pages > 1 %}
-    <div class="row mt-4">
-        <div class="col">
-            {{ pagination_links(items, 'inventory.list_items', **request.args) }}
-        </div>
-    </div>
-    {% endif %}
-</div>
-
 <!-- Macro to render material table -->
 {% macro render_material_table(material_items, classification_type) %}
     {% if material_items %}
@@ -284,4 +145,137 @@
         </div>
     {% endif %}
 {% endmacro %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-boxes"></i> Items List</h1>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('inventory.export_items') }}{% if search or item_type_filter or stock_status_filter or min_price or max_price %}?{% endif %}{% if search %}search={{ search }}&{% endif %}{% if item_type_filter %}item_type={{ item_type_filter }}&{% endif %}{% if stock_status_filter %}stock_status={{ stock_status_filter }}&{% endif %}{% if min_price %}min_price={{ min_price }}&{% endif %}{% if max_price %}max_price={{ max_price }}{% endif %}" class="btn btn-outline-success me-2">
+                <i class="fas fa-file-excel"></i> Export Excel
+            </a>
+            <a href="{{ url_for('inventory.add_item') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add New Item
+            </a>
+        </div>
+    </div>
+
+    <!-- Enhanced Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-filter"></i> Search & Filters</h6>
+                </div>
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Search</label>
+                            <input type="text" name="search" class="form-control" placeholder="Item name or code..." value="{{ search }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Item Type</label>
+                            <select name="item_type" class="form-select">
+                                <option value="">All Types</option>
+                                <option value="material" {{ 'selected' if item_type_filter == 'material' }}>Material</option>
+                                <option value="product" {{ 'selected' if item_type_filter == 'product' }}>Product</option>
+                                <option value="consumable" {{ 'selected' if item_type_filter == 'consumable' }}>Consumable</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Stock Status</label>
+                            <select name="stock_status" class="form-select">
+                                <option value="">All Status</option>
+                                <option value="low_stock" {{ 'selected' if stock_status_filter == 'low_stock' }}>Low Stock</option>
+                                <option value="in_stock" {{ 'selected' if stock_status_filter == 'in_stock' }}>In Stock</option>
+                                <option value="out_of_stock" {{ 'selected' if stock_status_filter == 'out_of_stock' }}>Out of Stock</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Min Price</label>
+                            <input type="number" step="0.01" name="min_price" class="form-control" value="{{ min_price }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Max Price</label>
+                            <input type="number" step="0.01" name="max_price" class="form-control" value="{{ max_price }}">
+                        </div>
+                        <div class="col-md-1 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary me-2">Filter</button>
+                            <a href="{{ url_for('inventory.list_items') }}" class="btn btn-outline-secondary">Clear</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Material Classification Tabs -->
+    <div class="card">
+        <div class="card-header bg-light">
+            <ul class="nav nav-tabs nav-justified card-header-tabs" id="materialTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-bold" id="raw-material-tab" data-bs-toggle="tab" data-bs-target="#raw-material" type="button" role="tab" aria-controls="raw-material" aria-selected="true">
+                        <i class="fas fa-cubes me-2 text-info"></i>Raw Material
+                        <span class="badge bg-info ms-2">{{ raw_material_count or 0 }}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-bold" id="production-use-tab" data-bs-toggle="tab" data-bs-target="#production-use" type="button" role="tab" aria-controls="production-use" aria-selected="false">
+                        <i class="fas fa-cogs me-2 text-warning"></i>Production Use
+                        <span class="badge bg-warning ms-2">{{ production_use_count or 0 }}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-bold" id="finished-goods-tab" data-bs-toggle="tab" data-bs-target="#finished-goods" type="button" role="tab" aria-controls="finished-goods" aria-selected="false">
+                        <i class="fas fa-box me-2 text-success"></i>Finished Goods
+                        <span class="badge bg-success ms-2">{{ finished_goods_count or 0 }}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-bold" id="all-items-tab" data-bs-toggle="tab" data-bs-target="#all-items" type="button" role="tab" aria-controls="all-items" aria-selected="false">
+                        <i class="fas fa-list me-2"></i>All Items
+                        <span class="badge bg-secondary ms-2" id="all-count">{{ total_items or 0 }}</span>
+                    </button>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <div class="tab-content" id="materialTabsContent">
+                
+                <!-- Raw Material Tab -->
+                <div class="tab-pane fade show active" id="raw-material" role="tabpanel" aria-labelledby="raw-material-tab">
+                    {{ render_material_table(raw_materials, 'raw_material') }}
+                </div>
+                
+                <!-- Production Use Tab -->
+                <div class="tab-pane fade" id="production-use" role="tabpanel" aria-labelledby="production-use-tab">
+                    {{ render_material_table(production_use_items, 'production_use') }}
+                </div>
+                
+                <!-- Finished Goods Tab -->
+                <div class="tab-pane fade" id="finished-goods" role="tabpanel" aria-labelledby="finished-goods-tab">
+                    {{ render_material_table(finished_goods, 'finished_goods') }}
+                </div>
+                
+                <!-- All Items Tab -->
+                <div class="tab-pane fade" id="all-items" role="tabpanel" aria-labelledby="all-items-tab">
+                    {{ render_material_table(items.items if items else [], 'all') }}
+                </div>
+                
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pagination -->
+    {% if items and items.pages > 1 %}
+    <div class="row mt-4">
+        <div class="col">
+            {{ pagination_links(items, 'inventory.list_items', **request.args) }}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
 {% endblock %}
