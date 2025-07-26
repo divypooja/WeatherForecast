@@ -119,6 +119,18 @@ def approve_daily_entry(entry_id):
     daily_entry.inspected_by = current_user.id
     daily_entry.inspected_at = datetime.utcnow()
     
+    # Update item's material classification and code suffix
+    item = daily_entry.job_work.item
+    if item:
+        old_classification = item.material_classification
+        item.material_classification = material_classification
+        
+        # Update item code with classification suffix
+        from utils import update_item_code_with_classification
+        code_updated = update_item_code_with_classification(item, material_classification)
+        if code_updated:
+            print(f"Updated item code to {item.code} for daily entry classification {material_classification}")
+    
     db.session.commit()
     
     flash(f'Daily entry for {daily_entry.worker_name} on {daily_entry.work_date.strftime("%d/%m/%Y")} has been approved with classification: {material_classification.replace("_", " ").title()}!', 'success')
@@ -351,7 +363,14 @@ def log_inspection():
                     passed_quantity = form.passed_quantity.data or 0.0
                     item.current_stock += passed_quantity
                     # Update the item's material classification based on inspection
+                    old_classification = item.material_classification
                     item.material_classification = form.material_classification.data
+                    
+                    # Update item code with classification suffix
+                    from utils import update_item_code_with_classification
+                    code_updated = update_item_code_with_classification(item, form.material_classification.data)
+                    if code_updated:
+                        print(f"Updated item code from base to {item.code} for classification {form.material_classification.data}")
                 
         elif form.job_work_id.data:
             job_work = JobWork.query.get(form.job_work_id.data)
@@ -377,7 +396,14 @@ def log_inspection():
                         item.current_stock = 0.0
                     item.current_stock += passed_quantity
                     # Update the item's material classification based on inspection
+                    old_classification = item.material_classification
                     item.material_classification = form.material_classification.data
+                    
+                    # Update item code with classification suffix
+                    from utils import update_item_code_with_classification
+                    code_updated = update_item_code_with_classification(item, form.material_classification.data)
+                    if code_updated:
+                        print(f"Updated item code from base to {item.code} for classification {form.material_classification.data}")
         
         db.session.commit()
         flash(f'Material inspection {inspection_number} logged successfully!', 'success')
