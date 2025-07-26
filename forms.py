@@ -308,8 +308,20 @@ class JobWorkForm(FlaskForm):
 
 class DailyJobWorkForm(FlaskForm):
     """Simplified form for daily job work entry by workers"""
-    worker_name = StringField('Worker Name', validators=[DataRequired(), Length(max=100)], 
-                             render_kw={'placeholder': 'Enter your name'})
+    # Worker selection with employee and contractor support
+    worker_type = SelectField('Worker Type', 
+                             validators=[DataRequired()],
+                             choices=[('employee', 'Employee'), ('contractor', 'Contractor')],
+                             default='employee',
+                             render_kw={'id': 'worker_type'})
+    employee_id = SelectField('Select Employee', 
+                             validators=[Optional()], 
+                             coerce=int,
+                             render_kw={'id': 'employee_id'})
+    contractor_name = StringField('Contractor Name', 
+                                 validators=[Optional(), Length(max=100)], 
+                                 render_kw={'placeholder': 'Enter contractor name', 'id': 'contractor_name'})
+    
     job_work_id = SelectField('Job Work Order', validators=[DataRequired()], coerce=int)
     work_date = DateField('Work Date', validators=[DataRequired()], default=datetime.utcnow().date())
     hours_worked = FloatField('Hours Worked', validators=[DataRequired(), NumberRange(min=0.1, max=24)],
@@ -335,6 +347,14 @@ class DailyJobWorkForm(FlaskForm):
     
     def __init__(self, *args, **kwargs):
         super(DailyJobWorkForm, self).__init__(*args, **kwargs)
+        
+        # Populate employee choices
+        from models import Employee
+        employees = Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
+        self.employee_id.choices = [(0, 'Select Employee')] + [
+            (emp.id, f"{emp.name} ({emp.employee_code})") for emp in employees
+        ]
+        
         # Only show active in-house job works that are in progress
         active_jobs = JobWork.query.filter(
             JobWork.status.in_(['sent', 'partial_received']),
@@ -344,6 +364,26 @@ class DailyJobWorkForm(FlaskForm):
             (job.id, f"{job.job_number} - {job.item.name} ({job.process}) - {job.department.replace('_', ' ').title()}") 
             for job in active_jobs
         ]
+    
+    def validate(self, extra_validators=None):
+        """Custom validation based on worker type"""
+        if not super().validate(extra_validators):
+            return False
+        
+        if self.worker_type.data == 'employee':
+            if not self.employee_id.data or self.employee_id.data == 0:
+                self.employee_id.errors.append('Please select an employee.')
+                return False
+            # Clear contractor name if employee is selected
+            self.contractor_name.data = ''
+        elif self.worker_type.data == 'contractor':
+            if not self.contractor_name.data or self.contractor_name.data.strip() == '':
+                self.contractor_name.errors.append('Please enter contractor name.')
+                return False
+            # Clear employee selection if contractor is selected
+            self.employee_id.data = 0
+        
+        return True
 
 class JobWorkQuantityUpdateForm(FlaskForm):
     quantity_received = FloatField('Quantity Received', validators=[DataRequired(), NumberRange(min=0)])

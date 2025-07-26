@@ -36,19 +36,48 @@
                                     <i class="fas fa-user"></i> Worker Information
                                 </h6>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                {{ form.worker_name.label(class="form-label") }}
-                                {{ form.worker_name(class="form-control", id="worker_name_input") }}
-                                <small class="text-muted">Select a job work to see assigned team members</small>
-                                {% if form.worker_name.errors %}
+                            
+                            <!-- Worker Type Selection -->
+                            <div class="col-md-4 mb-3">
+                                {{ form.worker_type.label(class="form-label") }}
+                                {{ form.worker_type(class="form-select") }}
+                                {% if form.worker_type.errors %}
                                     <div class="text-danger small">
-                                        {% for error in form.worker_name.errors %}
+                                        {% for error in form.worker_type.errors %}
                                             <div>{{ error }}</div>
                                         {% endfor %}
                                     </div>
                                 {% endif %}
                             </div>
-                            <div class="col-md-6 mb-3">
+                            
+                            <!-- Employee Selection (shown for employees) -->
+                            <div class="col-md-4 mb-3" id="employee_selection">
+                                {{ form.employee_id.label(class="form-label") }}
+                                {{ form.employee_id(class="form-select") }}
+                                {% if form.employee_id.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.employee_id.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Contractor Name (shown for contractors) -->
+                            <div class="col-md-4 mb-3" id="contractor_selection" style="display: none;">
+                                {{ form.contractor_name.label(class="form-label") }}
+                                {{ form.contractor_name(class="form-control") }}
+                                {% if form.contractor_name.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.contractor_name.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Work Date -->
+                            <div class="col-md-4 mb-3">
                                 {{ form.work_date.label(class="form-label") }}
                                 {{ form.work_date(class="form-control") }}
                                 {% if form.work_date.errors %}
@@ -82,19 +111,7 @@
                             </div>
                         </div>
 
-                        <!-- Team Assignments Section (Shows when job is selected) -->
-                        <div id="team_assignments_section" class="row mb-4" style="display: none;">
-                            <div class="col-12">
-                                <h6 class="text-primary border-bottom pb-2 mb-3">
-                                    <i class="fas fa-users"></i> Team Assignments for Selected Job
-                                </h6>
-                            </div>
-                            <div class="col-12">
-                                <div id="team_assignments_content">
-                                    <!-- Team assignments will be loaded here via JavaScript -->
-                                </div>
-                            </div>
-                        </div>
+
 
                         <!-- Work Progress Section -->
                         <div class="row mb-4">
@@ -209,91 +226,34 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const jobWorkSelect = document.getElementById('job_work_select');
-    const teamAssignmentsSection = document.getElementById('team_assignments_section');
-    const teamAssignmentsContent = document.getElementById('team_assignments_content');
-    const workerNameInput = document.getElementById('worker_name_input');
+    const workerTypeSelect = document.getElementById('worker_type');
+    const employeeSelection = document.getElementById('employee_selection');
+    const contractorSelection = document.getElementById('contractor_selection');
     
-    // Load team assignments when job work is selected
-    jobWorkSelect.addEventListener('change', function() {
-        const jobId = this.value;
+    // Toggle worker selection fields based on worker type
+    function toggleWorkerFields() {
+        const workerType = workerTypeSelect.value;
         
-        if (!jobId) {
-            teamAssignmentsSection.style.display = 'none';
-            workerNameInput.value = '';
-            return;
+        if (workerType === 'employee') {
+            employeeSelection.style.display = 'block';
+            contractorSelection.style.display = 'none';
+            // Clear contractor field
+            document.getElementById('contractor_name').value = '';
+        } else if (workerType === 'contractor') {
+            employeeSelection.style.display = 'none';
+            contractorSelection.style.display = 'block';
+            // Reset employee selection
+            document.getElementById('employee_id').value = '0';
         }
-        
-        // Show loading state
-        teamAssignmentsContent.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading team assignments...</div>';
-        teamAssignmentsSection.style.display = 'block';
-        
-        // Fetch team assignments
-        fetch(`/jobwork/api/job-work/${jobId}/team-assignments`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    displayTeamAssignments(data);
-                } else {
-                    teamAssignmentsContent.innerHTML = '<div class="alert alert-warning">No team assignments found for this job work.</div>';
-                }
-            })
-            .catch(error => {
-                console.error('Error loading team assignments:', error);
-                teamAssignmentsContent.innerHTML = '<div class="alert alert-danger">Error loading team assignments.</div>';
-            });
-    });
+    }
     
-    function displayTeamAssignments(data) {
-        let html = `
-            <div class="alert alert-info">
-                <strong>Job Work:</strong> ${data.job_number} - ${data.item_name}
-                ${data.is_team_work ? '<span class="badge bg-success ms-2">Team Work</span>' : '<span class="badge bg-warning ms-2">Individual Work</span>'}
-            </div>
-        `;
-        
-        if (data.team_assignments && data.team_assignments.length > 0) {
-            html += `
-                <div class="table-responsive">
-                    <table class="table table-sm table-striped">
-                        <thead class="table-dark">
-                            <tr>
-                                <th>Employee</th>
-                                <th>Role</th>
-                                <th>Assigned Qty</th>
-                                <th>Progress</th>
-                                <th>Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
-            
-            data.team_assignments.forEach(assignment => {
-                const progressClass = assignment.completion_percentage >= 100 ? 'bg-success' : 
-                                    assignment.completion_percentage >= 50 ? 'bg-warning' : 'bg-danger';
-                const statusClass = assignment.status === 'completed' ? 'bg-success' : 
-                                  assignment.status === 'in_progress' ? 'bg-primary' : 'bg-secondary';
-                
-                html += `
-                    <tr>
-                        <td>
-                            <strong>${assignment.member_name}</strong><br>
-                            <small class="text-muted">${assignment.employee_code}</small>
-                        </td>
-                        <td><span class="badge bg-info">${assignment.member_role}</span></td>
-                        <td>${assignment.assigned_quantity} units</td>
-                        <td>
-                            <span class="badge ${progressClass}">${assignment.completion_percentage.toFixed(1)}%</span>
-                        </td>
-                        <td>
-                            <span class="badge ${statusClass}">${assignment.status.replace('_', ' ').toUpperCase()}</span>
-                        </td>
-                        <td>
-                            <button type="button" class="btn btn-sm btn-primary" onclick="selectWorker('${assignment.member_name}')">
-                                <i class="fas fa-user-check"></i> Select
-                            </button>
-                        </td>
+    // Initialize fields on page load
+    toggleWorkerFields();
+    
+    // Listen for worker type changes
+    workerTypeSelect.addEventListener('change', toggleWorkerFields);
+});
+</script>
                     </tr>
                 `;
             });
