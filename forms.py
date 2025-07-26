@@ -308,10 +308,11 @@ class JobWorkForm(FlaskForm):
 
 class DailyJobWorkForm(FlaskForm):
     """Simplified form for daily job work entry by workers"""
-    # Simplified worker name field
-    worker_name = StringField('Worker Name', 
-                             validators=[DataRequired(), Length(max=100)],
-                             render_kw={'placeholder': 'Enter worker name', 'id': 'worker_name'})
+    # Worker selection from employee table
+    worker_name = SelectField('Worker Name', 
+                             validators=[DataRequired()],
+                             coerce=str,
+                             render_kw={'id': 'worker_name'})
     
     job_work_id = SelectField('Job Work Order', validators=[DataRequired()], coerce=int)
     work_date = DateField('Work Date', validators=[DataRequired()], default=datetime.utcnow().date())
@@ -339,7 +340,12 @@ class DailyJobWorkForm(FlaskForm):
     def __init__(self, *args, **kwargs):
         super(DailyJobWorkForm, self).__init__(*args, **kwargs)
         
-        # No employee choices needed for simplified worker name field
+        # Populate worker choices from employee table
+        from models import Employee
+        employees = Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
+        self.worker_name.choices = [('', 'Select Worker')] + [
+            (emp.name, f"{emp.name} ({emp.employee_code})") for emp in employees
+        ]
         
         # Only show active in-house job works that are in progress
         active_jobs = JobWork.query.filter(

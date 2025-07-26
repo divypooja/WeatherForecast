@@ -40,7 +40,7 @@
                             <!-- Worker Name -->
                             <div class="col-md-6 mb-3">
                                 {{ form.worker_name.label(class="form-label") }}
-                                {{ form.worker_name(class="form-control") }}
+                                {{ form.worker_name(class="form-select") }}
                                 {% if form.worker_name.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.worker_name.errors %}
@@ -212,7 +212,6 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const workerNameInput = document.getElementById('worker_name');
     
     // Job work selection and team assignments
     const jobWorkSelect = document.getElementById('job_work_select');
@@ -252,7 +251,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function displayTeamAssignments(data) {
         // Get currently selected worker
-        const currentWorkerName = workerNameInput.value;
+        const currentWorkerName = document.getElementById('worker_name').value;
         
         let html = `
             <div class="alert alert-info">
@@ -345,12 +344,20 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Listen for worker name changes
-    workerNameInput.addEventListener('input', refreshTeamAssignments);
+    document.getElementById('worker_name').addEventListener('change', refreshTeamAssignments);
     
     // Function to select worker from team assignments
     window.selectWorkerFromAssignment = function(memberName) {
-        // Set the worker name
-        workerNameInput.value = memberName;
+        // Set the worker name in the dropdown
+        const workerSelect = document.getElementById('worker_name');
+        
+        // Find the option that matches the member name
+        for (let option of workerSelect.options) {
+            if (option.value === memberName) {
+                workerSelect.value = memberName;
+                break;
+            }
+        }
         
         // Refresh team assignments to show updated selection
         refreshTeamAssignments();

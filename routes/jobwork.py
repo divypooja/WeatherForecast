@@ -411,8 +411,8 @@ def daily_job_work_entry():
     form = DailyJobWorkForm()
     
     if form.validate_on_submit():
-        # Use the worker name directly from the form
-        worker_name = form.worker_name.data.strip()
+        # Use the worker name directly from the form (selected from dropdown)
+        worker_name = form.worker_name.data
         
         # Check if entry already exists for this worker/job/date
         existing_entry = DailyJobWorkEntry.query.filter_by(
