@@ -253,6 +253,82 @@ def daily_entry_detail(entry_id):
     entry = DailyJobWorkEntry.query.get_or_404(entry_id)
     return render_template('jobwork/daily_entry_detail.html', entry=entry)
 
+@jobwork_bp.route('/edit-daily-entry/<int:entry_id>', methods=['GET', 'POST'])
+@login_required
+def edit_daily_entry(entry_id):
+    """Edit a daily work entry"""
+    entry = DailyJobWorkEntry.query.get_or_404(entry_id)
+    
+    from forms import DailyJobWorkForm
+    form = DailyJobWorkForm()
+    
+    # Get in-house job works for the dropdown
+    in_house_jobs = JobWork.query.filter_by(work_type='in_house').all()
+    form.job_work_id.choices = [(job.id, f"{job.job_number} - {job.item.name}") for job in in_house_jobs]
+    
+    if form.validate_on_submit():
+        # Get the old assignment progress for rollback if needed
+        old_assignment = None
+        if entry.job_work.is_team_work:
+            old_assignment = JobWorkTeamAssignment.query.filter_by(
+                job_work_id=entry.job_work_id,
+                member_name=entry.worker_name
+            ).first()
+            old_progress = old_assignment.progress_percentage if old_assignment else 0
+        
+        # Update the entry
+        entry.job_work_id = form.job_work_id.data
+        entry.worker_name = form.worker_name.data
+        entry.work_date = form.work_date.data
+        entry.hours_worked = form.hours_worked.data
+        entry.quantity_completed = form.quantity_completed.data
+        entry.quality_status = form.quality_status.data
+        entry.process_stage = form.process_stage.data
+        entry.notes = form.notes.data
+        
+        # Update team assignment progress if this is team work
+        if entry.job_work.is_team_work:
+            assignment = JobWorkTeamAssignment.query.filter_by(
+                job_work_id=entry.job_work_id,
+                member_name=entry.worker_name
+            ).first()
+            
+            if assignment:
+                # Calculate total completed quantity for this worker
+                total_completed = db.session.query(func.sum(DailyJobWorkEntry.quantity_completed)).filter_by(
+                    job_work_id=entry.job_work_id,
+                    worker_name=entry.worker_name
+                ).scalar() or 0
+                
+                # Update progress percentage
+                if assignment.assigned_quantity > 0:
+                    new_progress = min(100, (total_completed / assignment.assigned_quantity) * 100)
+                    assignment.progress_percentage = new_progress
+                    assignment.status = 'completed' if new_progress >= 100 else 'in_progress'
+        
+        db.session.commit()
+        
+        # Check if job should be auto-completed
+        if entry.job_work.is_team_work:
+            entry.job_work.check_and_update_completion_status()
+            db.session.commit()
+        
+        flash('Daily work entry updated successfully!', 'success')
+        return redirect(url_for('jobwork.daily_entries_list'))
+    
+    # Pre-populate form with existing data
+    if request.method == 'GET':
+        form.job_work_id.data = entry.job_work_id
+        form.worker_name.data = entry.worker_name
+        form.work_date.data = entry.work_date
+        form.hours_worked.data = entry.hours_worked
+        form.quantity_completed.data = entry.quantity_completed
+        form.quality_status.data = entry.quality_status
+        form.process_stage.data = entry.process_stage
+        form.notes.data = entry.notes
+    
+    return render_template('jobwork/edit_daily_entry_form.html', form=form, entry=entry)
+
 @jobwork_bp.route('/update-team-progress/<int:job_id>')
 @login_required
 def update_team_progress(job_id):
