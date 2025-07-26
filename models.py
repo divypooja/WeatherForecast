@@ -519,6 +519,46 @@ class JobWork(db.Model):
         return 'bg-success' if self.work_type == 'in_house' else 'bg-primary'
     
     @property
+    def calculated_quantity_received(self):
+        """Calculate quantity received from material inspections (source of truth)"""
+        # Import here to avoid circular imports
+        from sqlalchemy import func
+        
+        # Calculate sum of received quantities from material inspections
+        total_received = db.session.query(func.sum(MaterialInspection.received_quantity)).filter(
+            MaterialInspection.job_work_id == self.id
+        ).scalar() or 0.0
+        
+        return float(total_received)
+    
+    @property
+    def has_quantity_mismatch(self):
+        """Check if stored quantity_received differs from actual inspection data"""
+        return abs((self.quantity_received or 0) - self.calculated_quantity_received) > 0.01
+    
+    def sync_quantity_received(self):
+        """Sync quantity_received field with actual inspection data"""
+        calculated_qty = self.calculated_quantity_received
+        if abs((self.quantity_received or 0) - calculated_qty) > 0.01:
+            old_qty = self.quantity_received
+            self.quantity_received = calculated_qty
+            
+            # Update status based on corrected quantity
+            if self.quantity_received >= self.quantity_sent:
+                self.status = 'completed'
+            elif self.quantity_received > 0:
+                self.status = 'partial_received'
+            else:
+                self.status = 'sent'
+                
+            # Log the correction in notes
+            note = f"\n[SYSTEM] Quantity received corrected from {old_qty} to {calculated_qty} based on inspection records"
+            self.notes = (self.notes or "") + note
+            
+            return True  # Indicates correction was made
+        return False  # No correction needed
+    
+    @property
     def assigned_team_members(self):
         """Get list of assigned team members"""
         return [assignment.member_name for assignment in self.team_assignments]
