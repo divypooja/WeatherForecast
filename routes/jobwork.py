@@ -411,15 +411,8 @@ def daily_job_work_entry():
     form = DailyJobWorkForm()
     
     if form.validate_on_submit():
-        # Determine worker name for unique constraint check
-        if form.worker_type.data == 'employee' and form.employee_id.data:
-            employee = Employee.query.get(form.employee_id.data)
-            worker_name = employee.name if employee else ''
-        elif form.worker_type.data == 'contractor' and form.contractor_name.data:
-            worker_name = f"{form.contractor_name.data} (Contractor)"
-        else:
-            # No specific worker type selected
-            worker_name = "Unspecified Worker"
+        # Use the worker name directly from the form
+        worker_name = form.worker_name.data.strip()
         
         # Check if entry already exists for this worker/job/date
         existing_entry = DailyJobWorkEntry.query.filter_by(
@@ -435,6 +428,7 @@ def daily_job_work_entry():
         # Create new daily entry
         daily_entry = DailyJobWorkEntry(
             job_work_id=form.job_work_id.data,
+            worker_name=worker_name,
             work_date=form.work_date.data,
             hours_worked=form.hours_worked.data,
             quantity_completed=form.quantity_completed.data,
@@ -442,13 +436,6 @@ def daily_job_work_entry():
             process_stage=form.process_stage.data,
             notes=form.notes.data,
             logged_by=current_user.id
-        )
-        
-        # Set worker information using the helper method
-        daily_entry.set_worker_info(
-            worker_type=form.worker_type.data or 'employee',
-            employee_id=form.employee_id.data if form.worker_type.data == 'employee' and form.employee_id.data else None,
-            contractor_name=form.contractor_name.data if form.worker_type.data == 'contractor' and form.contractor_name.data else None
         )
         
         db.session.add(daily_entry)
