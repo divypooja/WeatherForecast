@@ -161,8 +161,7 @@
                                         <small class="text-muted">
                                             <a href="{{ url_for('purchase.quantity_details_page', po_id=po.id) }}" 
                                                class="text-decoration-none" 
-                                               title="Click for detailed quantity breakdown" 
-                                               target="_blank">
+                                               title="Click for detailed quantity breakdown">
                                                 {{ "%.0f"|format(total_received) }}/{{ "%.0f"|format(total_ordered) }} 
                                                 ({{ "%.0f"|format(progress_percent) }}%)
                                                 {% if progress_percent == 100 %}
