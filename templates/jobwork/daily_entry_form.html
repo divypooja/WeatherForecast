@@ -36,11 +36,10 @@
                                     <i class="fas fa-user"></i> Worker Information
                                 </h6>
                             </div>
-                            
-                            <!-- Worker Name -->
                             <div class="col-md-6 mb-3">
                                 {{ form.worker_name.label(class="form-label") }}
-                                {{ form.worker_name(class="form-select") }}
+                                {{ form.worker_name(class="form-control", id="worker_name_input") }}
+                                <small class="text-muted">Select a job work to see assigned team members</small>
                                 {% if form.worker_name.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.worker_name.errors %}
@@ -49,8 +48,6 @@
                                     </div>
                                 {% endif %}
                             </div>
-                            
-                            <!-- Work Date -->
                             <div class="col-md-6 mb-3">
                                 {{ form.work_date.label(class="form-label") }}
                                 {{ form.work_date(class="form-control") }}
@@ -212,47 +209,42 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    
-    // Job work selection and team assignments
-    const jobWorkSelect = document.getElementById('job_work_id');
+    const jobWorkSelect = document.getElementById('job_work_select');
     const teamAssignmentsSection = document.getElementById('team_assignments_section');
     const teamAssignmentsContent = document.getElementById('team_assignments_content');
+    const workerNameInput = document.getElementById('worker_name_input');
     
     // Load team assignments when job work is selected
-    if (jobWorkSelect) {
-        jobWorkSelect.addEventListener('change', function() {
-            const jobId = this.value;
-            
-            if (!jobId || jobId === '0') {
-                teamAssignmentsSection.style.display = 'none';
-                return;
-            }
-            
-            // Show loading state
-            teamAssignmentsContent.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading team assignments...</div>';
-            teamAssignmentsSection.style.display = 'block';
-            
-            // Fetch team assignments
-            fetch(`/jobwork/api/job-work/${jobId}/team-assignments`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        displayTeamAssignments(data);
-                    } else {
-                        teamAssignmentsContent.innerHTML = '<div class="alert alert-warning">No team assignments found for this job work.</div>';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading team assignments:', error);
-                    teamAssignmentsContent.innerHTML = '<div class="alert alert-danger">Error loading team assignments.</div>';
-                });
-        });
-    }
+    jobWorkSelect.addEventListener('change', function() {
+        const jobId = this.value;
+        
+        if (!jobId) {
+            teamAssignmentsSection.style.display = 'none';
+            workerNameInput.value = '';
+            return;
+        }
+        
+        // Show loading state
+        teamAssignmentsContent.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading team assignments...</div>';
+        teamAssignmentsSection.style.display = 'block';
+        
+        // Fetch team assignments
+        fetch(`/jobwork/api/job-work/${jobId}/team-assignments`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayTeamAssignments(data);
+                } else {
+                    teamAssignmentsContent.innerHTML = '<div class="alert alert-warning">No team assignments found for this job work.</div>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading team assignments:', error);
+                teamAssignmentsContent.innerHTML = '<div class="alert alert-danger">Error loading team assignments.</div>';
+            });
+    });
     
     function displayTeamAssignments(data) {
-        // Get currently selected worker
-        const currentWorkerName = document.getElementById('worker_name').value;
-        
         let html = `
             <div class="alert alert-info">
                 <strong>Job Work:</strong> ${data.job_number} - ${data.item_name}
@@ -266,7 +258,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <table class="table table-sm table-striped">
                         <thead class="table-dark">
                             <tr>
-                                <th>Worker</th>
+                                <th>Employee</th>
                                 <th>Role</th>
                                 <th>Assigned Qty</th>
                                 <th>Progress</th>
@@ -283,18 +275,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 const statusClass = assignment.status === 'completed' ? 'bg-success' : 
                                   assignment.status === 'in_progress' ? 'bg-primary' : 'bg-secondary';
                 
-                // Check if this worker is currently selected
-                const isSelected = currentWorkerName === assignment.member_name;
-                const selectButtonClass = isSelected ? 'btn btn-sm btn-success' : 'btn btn-sm btn-primary';
-                const selectButtonText = isSelected ? '<i class="fas fa-check"></i> Selected' : '<i class="fas fa-user-check"></i> Select';
-                const rowClass = isSelected ? 'table-success' : '';
-                
                 html += `
-                    <tr class="${rowClass}">
+                    <tr>
                         <td>
                             <strong>${assignment.member_name}</strong><br>
                             <small class="text-muted">${assignment.employee_code}</small>
-                            ${isSelected ? '<span class="badge bg-success ms-2">Currently Selected</span>' : ''}
                         </td>
                         <td><span class="badge bg-info">${assignment.member_role}</span></td>
                         <td>${assignment.assigned_quantity} units</td>
@@ -305,71 +290,10 @@ document.addEventListener('DOMContentLoaded', function() {
                             <span class="badge ${statusClass}">${assignment.status.replace('_', ' ').toUpperCase()}</span>
                         </td>
                         <td>
-                            <button type="button" class="${selectButtonClass}" onclick="selectWorkerFromAssignment('${assignment.member_name}')" ${isSelected ? 'disabled' : ''}>
-                                ${selectButtonText}
+                            <button type="button" class="btn btn-sm btn-primary" onclick="selectWorker('${assignment.member_name}')">
+                                <i class="fas fa-user-check"></i> Select
                             </button>
                         </td>
-                    </tr>
-                `;
-            });
-            
-            html += `
-                        </tbody>
-                    </table>
-                </div>
-            `;
-        } else {
-            html += '<div class="alert alert-info">No team assignments found for this job work.</div>';
-        }
-        
-        teamAssignmentsContent.innerHTML = html;
-    }
-    
-    // Function to refresh team assignments when worker selection changes
-    function refreshTeamAssignments() {
-        const jobId = jobWorkSelect ? jobWorkSelect.value : null;
-        if (jobId && jobId !== '0' && teamAssignmentsSection && teamAssignmentsSection.style.display !== 'none') {
-            // Re-fetch and display team assignments to update selection status
-            fetch(`/jobwork/api/job-work/${jobId}/team-assignments`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        displayTeamAssignments(data);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error refreshing team assignments:', error);
-                });
-        }
-    }
-    
-    // Listen for worker name changes
-    const workerNameSelect = document.getElementById('worker_name');
-    if (workerNameSelect) {
-        workerNameSelect.addEventListener('change', refreshTeamAssignments);
-    }
-    
-    // Function to select worker from team assignments
-    window.selectWorkerFromAssignment = function(memberName) {
-        // Set the worker name in the dropdown
-        const workerSelect = document.getElementById('worker_name');
-        
-        // Find the option that matches the member name
-        for (let option of workerSelect.options) {
-            if (option.value === memberName) {
-                workerSelect.value = memberName;
-                break;
-            }
-        }
-        
-        // Refresh team assignments to show updated selection
-        refreshTeamAssignments();
-        
-        // Show confirmation
-        alert(`Selected worker: ${memberName}`);
-    };
-});
-</script>
                     </tr>
                 `;
             });

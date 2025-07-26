@@ -308,12 +308,8 @@ class JobWorkForm(FlaskForm):
 
 class DailyJobWorkForm(FlaskForm):
     """Simplified form for daily job work entry by workers"""
-    # Worker selection from employee table
-    worker_name = SelectField('Worker Name', 
-                             validators=[DataRequired()],
-                             coerce=str,
-                             render_kw={'id': 'worker_name'})
-    
+    worker_name = StringField('Worker Name', validators=[DataRequired(), Length(max=100)], 
+                             render_kw={'placeholder': 'Enter your name'})
     job_work_id = SelectField('Job Work Order', validators=[DataRequired()], coerce=int)
     work_date = DateField('Work Date', validators=[DataRequired()], default=datetime.utcnow().date())
     hours_worked = FloatField('Hours Worked', validators=[DataRequired(), NumberRange(min=0.1, max=24)],
@@ -339,14 +335,6 @@ class DailyJobWorkForm(FlaskForm):
     
     def __init__(self, *args, **kwargs):
         super(DailyJobWorkForm, self).__init__(*args, **kwargs)
-        
-        # Populate worker choices from employee table
-        from models import Employee
-        employees = Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
-        self.worker_name.choices = [('', 'Select Worker')] + [
-            (emp.name, f"{emp.name} ({emp.employee_code})") for emp in employees
-        ]
-        
         # Only show active in-house job works that are in progress
         active_jobs = JobWork.query.filter(
             JobWork.status.in_(['sent', 'partial_received']),
@@ -356,8 +344,6 @@ class DailyJobWorkForm(FlaskForm):
             (job.id, f"{job.job_number} - {job.item.name} ({job.process}) - {job.department.replace('_', ' ').title()}") 
             for job in active_jobs
         ]
-    
-    # No custom validation needed for simplified worker name field
 
 class JobWorkQuantityUpdateForm(FlaskForm):
     quantity_received = FloatField('Quantity Received', validators=[DataRequired(), NumberRange(min=0)])
