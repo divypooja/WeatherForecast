@@ -153,67 +153,6 @@ def generate_quality_issue_number():
     
     return f"QI-{current_year}-{next_sequence:04d}"
 
-def update_item_code_with_classification(item, material_classification):
-    """
-    Update item code with suffix based on material classification
-    
-    Args:
-        item: Item object to update
-        material_classification: 'raw_material', 'production_use', or 'finished_goods'
-    
-    Returns:
-        bool: True if code was updated, False if already had correct suffix
-    """
-    # Define suffix mappings
-    suffix_mapping = {
-        'raw_material': '-raw',
-        'production_use': '-prod', 
-        'finished_goods': '-AK'
-    }
-    
-    if material_classification not in suffix_mapping:
-        return False
-    
-    target_suffix = suffix_mapping[material_classification]
-    current_code = item.code
-    
-    # Check if code already has any classification suffix
-    has_raw = current_code.endswith('-raw')
-    has_prod = current_code.endswith('-prod')
-    has_ak = current_code.endswith('-AK')
-    
-    # If already has the correct suffix, no change needed
-    if current_code.endswith(target_suffix):
-        return False
-    
-    # Remove existing suffix if present
-    base_code = current_code
-    if has_raw:
-        base_code = current_code[:-4]  # Remove '-raw'
-    elif has_prod:
-        base_code = current_code[:-5]  # Remove '-prod'
-    elif has_ak:
-        base_code = current_code[:-3]  # Remove '-AK'
-    
-    # Add new suffix
-    new_code = base_code + target_suffix
-    
-    # Check if new code already exists (to avoid duplicates)
-    from models import Item
-    existing_item = Item.query.filter_by(code=new_code).first()
-    if existing_item and existing_item.id != item.id:
-        # If conflict, add a number suffix
-        counter = 1
-        while existing_item and existing_item.id != item.id:
-            test_code = f"{base_code}{target_suffix}-{counter}"
-            existing_item = Item.query.filter_by(code=test_code).first()
-            counter += 1
-        new_code = f"{base_code}{target_suffix}-{counter-1}"
-    
-    # Update the item code
-    item.code = new_code
-    return True
-
 def generate_next_number(prefix, table_name, column_name, year_based=True):
     """
     Generate the next sequential number with given prefix
