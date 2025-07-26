@@ -459,3 +459,44 @@ def get_job_items(job_id):
             'success': False,
             'error': str(e)
         })
+
+@material_inspection.route('/api/job_progress/<int:job_id>')
+@login_required
+def get_job_progress(job_id):
+    """Get inspection progress data for a Job Work"""
+    try:
+        job = JobWork.query.get_or_404(job_id)
+        
+        # Calculate already inspected quantity from material inspections
+        total_inspected = 0.0
+        inspections = MaterialInspection.query.filter_by(job_work_id=job_id).all()
+        for inspection in inspections:
+            if inspection.passed_quantity:
+                total_inspected += inspection.passed_quantity
+        
+        # Calculate remaining to inspect
+        total_sent = float(job.quantity_sent)
+        remaining_to_inspect = max(0, total_sent - total_inspected)
+        
+        # Calculate inspection percentage
+        inspection_percentage = (total_inspected / total_sent * 100) if total_sent > 0 else 0
+        
+        progress_data = {
+            'total_sent': total_sent,
+            'already_inspected': total_inspected,
+            'remaining_to_inspect': remaining_to_inspect,
+            'inspection_percentage': round(inspection_percentage, 1),
+            'unit': job.item.unit_of_measure if job.item else 'pcs',
+            'job_number': job.job_number,
+            'customer_name': job.customer_name
+        }
+        
+        return jsonify({
+            'success': True,
+            'progress': progress_data
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })

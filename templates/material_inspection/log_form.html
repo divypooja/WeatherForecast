@@ -90,6 +90,52 @@
                             </div>
                         </div>
 
+                        <!-- Inspection Progress Section (for Job Works) -->
+                        <div id="inspectionProgressSection" style="display: none;">
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="card border-info">
+                                        <div class="card-header bg-info text-white">
+                                            <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Inspection Progress</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-3">
+                                                    <div class="text-center">
+                                                        <h5 class="text-primary mb-1" id="totalSentQty">-</h5>
+                                                        <small class="text-muted">Total Sent</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <div class="text-center">
+                                                        <h5 class="text-success mb-1" id="alreadyInspectedQty">-</h5>
+                                                        <small class="text-muted">Already Inspected</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <div class="text-center">
+                                                        <h5 class="text-warning mb-1" id="remainingToInspectQty">-</h5>
+                                                        <small class="text-muted">Remaining to Inspect</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <div class="text-center">
+                                                        <div class="progress mb-1" style="height: 20px;">
+                                                            <div class="progress-bar bg-success" role="progressbar" 
+                                                                 style="width: 0%" id="inspectionProgressBar">
+                                                                0%
+                                                            </div>
+                                                        </div>
+                                                        <small class="text-muted">Inspection Progress</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Quantity Fields -->
                         <div class="row mb-4">
                             <div class="col-md-4">
@@ -261,8 +307,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (this.value && this.value !== '0') {
             poSelect.value = '0';
             loadJobWorkItems(this.value);
+            loadJobWorkProgress(this.value);
         } else {
             clearItemSelect();
+            hideInspectionProgress();
         }
     });
     
@@ -396,6 +444,57 @@ document.addEventListener('DOMContentLoaded', function() {
         loadPOItems(initialPOSelection);
     } else if (initialJobSelection && initialJobSelection !== '0') {
         loadJobWorkItems(initialJobSelection);
+        loadJobWorkProgress(initialJobSelection);
+    }
+    
+    // Function to load Job Work progress data
+    function loadJobWorkProgress(jobId) {
+        fetch(`/inspection/api/job_progress/${jobId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showInspectionProgress(data.progress);
+                } else {
+                    hideInspectionProgress();
+                }
+            })
+            .catch(error => {
+                console.error('Error loading Job Work progress:', error);
+                hideInspectionProgress();
+            });
+    }
+    
+    // Function to show inspection progress section
+    function showInspectionProgress(progress) {
+        const section = document.getElementById('inspectionProgressSection');
+        section.style.display = 'block';
+        
+        // Update progress data
+        document.getElementById('totalSentQty').textContent = `${progress.total_sent} ${progress.unit}`;
+        document.getElementById('alreadyInspectedQty').textContent = `${progress.already_inspected} ${progress.unit}`;
+        document.getElementById('remainingToInspectQty').textContent = `${progress.remaining_to_inspect} ${progress.unit}`;
+        
+        // Update progress bar
+        const progressBar = document.getElementById('inspectionProgressBar');
+        const percentage = progress.inspection_percentage;
+        progressBar.style.width = `${percentage}%`;
+        progressBar.textContent = `${percentage.toFixed(1)}%`;
+        
+        // Color coding for progress bar
+        progressBar.className = 'progress-bar';
+        if (percentage >= 100) {
+            progressBar.classList.add('bg-success');
+        } else if (percentage >= 50) {
+            progressBar.classList.add('bg-warning');
+        } else {
+            progressBar.classList.add('bg-danger');
+        }
+    }
+    
+    // Function to hide inspection progress section
+    function hideInspectionProgress() {
+        const section = document.getElementById('inspectionProgressSection');
+        section.style.display = 'none';
     }
     
     // Set default unit labels
