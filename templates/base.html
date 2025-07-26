@@ -251,6 +251,16 @@
     <script>
         // Fix for Bootstrap modal backdrop issues and prevent sidebar flickering
         document.addEventListener('DOMContentLoaded', function() {
+            // Force close all modals and remove backdrops
+            const allModals = document.querySelectorAll('.modal');
+            allModals.forEach(modal => {
+                modal.classList.remove('show');
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+                modal.removeAttribute('aria-modal');
+                modal.removeAttribute('role');
+            });
+            
             // Remove any existing modal backdrops on page load
             const existingBackdrops = document.querySelectorAll('.modal-backdrop');
             existingBackdrops.forEach(backdrop => backdrop.remove());
@@ -259,6 +269,30 @@
             document.body.classList.remove('modal-open');
             document.body.style.overflow = '';
             document.body.style.paddingRight = '';
+            document.body.style.marginRight = '';
+            
+            // Add click handler to close button if modal is stuck
+            setTimeout(() => {
+                const closeButtons = document.querySelectorAll('[data-bs-dismiss="modal"], .btn-close');
+                closeButtons.forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        // Force close the modal
+                        const modal = this.closest('.modal');
+                        if (modal) {
+                            modal.classList.remove('show');
+                            modal.style.display = 'none';
+                            modal.setAttribute('aria-hidden', 'true');
+                        }
+                        // Remove backdrops
+                        document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+                        document.body.classList.remove('modal-open');
+                        document.body.style.overflow = '';
+                        document.body.style.paddingRight = '';
+                        document.body.style.marginRight = '';
+                    });
+                });
+            }, 100);
             
             // Small delay to ensure everything is rendered
             setTimeout(function() {
