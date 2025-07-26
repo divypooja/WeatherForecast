@@ -41,6 +41,7 @@
                             <div class="col-md-4 mb-3">
                                 {{ form.worker_type.label(class="form-label") }}
                                 {{ form.worker_type(class="form-select") }}
+                                <small class="text-muted">Optional: Choose if worker is employee or contractor</small>
                                 {% if form.worker_type.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.worker_type.errors %}
@@ -255,6 +256,13 @@ document.addEventListener('DOMContentLoaded', function() {
             employeeSelection.style.display = 'none';
             contractorSelection.style.display = 'block';
             // Reset employee selection
+            document.getElementById('employee_id').value = '0';
+        } else {
+            // No worker type selected, hide both
+            employeeSelection.style.display = 'none';
+            contractorSelection.style.display = 'none';
+            // Clear both fields
+            document.getElementById('contractor_name').value = '';
             document.getElementById('employee_id').value = '0';
         }
     }

@@ -1348,7 +1348,8 @@ class DailyJobWorkEntry(db.Model):
     
     def set_worker_info(self, worker_type, employee_id=None, contractor_name=None):
         """Set worker information based on type"""
-        self.worker_type = worker_type
+        self.worker_type = worker_type or 'employee'  # Default to employee if not specified
+        
         if worker_type == 'employee' and employee_id:
             self.employee_id = employee_id
             self.contractor_name = None
@@ -1359,6 +1360,11 @@ class DailyJobWorkEntry(db.Model):
             self.contractor_name = contractor_name
             self.employee_id = None
             self.worker_name = f"{contractor_name} (Contractor)"
+        elif not worker_type or worker_type == '':
+            # Handle case where no worker type is selected
+            self.worker_name = "Unspecified Worker"
+            self.employee_id = None
+            self.contractor_name = None
     
     @property
     def quality_badge_class(self):
