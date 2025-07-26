@@ -150,6 +150,10 @@ def edit_job_work(id):
     job = JobWork.query.get_or_404(id)
     form = JobWorkForm(obj=job)
     
+    # Pre-populate the process_type field since obj=job doesn't handle it correctly
+    if job.process:
+        form.process_type.data = job.process
+    
     if form.validate_on_submit():
         # Check if job number already exists (excluding current job)
         existing_job = JobWork.query.filter(

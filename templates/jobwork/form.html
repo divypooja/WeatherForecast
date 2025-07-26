@@ -594,6 +594,12 @@ document.addEventListener('DOMContentLoaded', function() {
         toggleTeamWorkSection();
     }
     
+    // Initialize unit labels and stock check on page load (important for edit forms)
+    if (itemSelect && itemSelect.value && itemSelect.value !== '0') {
+        updateUnitLabels();
+        checkInventoryStock();
+    }
+    
     // Add team work checkbox listener
     const isTeamWorkCheckbox = document.getElementById('is_team_work');
     if (isTeamWorkCheckbox) {
