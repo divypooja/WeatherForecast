@@ -210,14 +210,64 @@ def edit_job_work(id):
 @login_required
 def update_status(id, status):
     job = JobWork.query.get_or_404(id)
-    if status in ['sent', 'partial_received', 'completed']:
-        job.status = status
-        db.session.commit()
-        flash(f'Job Work status updated to {status}', 'success')
-    else:
-        flash('Invalid status', 'danger')
     
+    if status not in ['sent', 'partial_received', 'completed']:
+        flash('Invalid status', 'danger')
+        return redirect(url_for('jobwork.list_job_works'))
+    
+    # Special validation for completion status
+    if status == 'completed':
+        # Check if job has team assignments
+        team_assignments = JobWorkTeamAssignment.query.filter_by(job_work_id=id).all()
+        
+        if team_assignments:
+            # For team work, all assignments must be completed
+            incomplete_assignments = [a for a in team_assignments if a.status != 'completed']
+            
+            if incomplete_assignments:
+                incomplete_names = [a.member_name for a in incomplete_assignments]
+                flash(f'Cannot complete job work. The following team members have not completed their assignments: {", ".join(incomplete_names)}', 'danger')
+                return redirect(url_for('jobwork.detail', id=id))
+        
+        # If no team assignments or all are completed, allow completion
+        job.status = status
+        job.actual_return = datetime.utcnow()
+        flash(f'Job Work {job.job_number} marked as completed successfully!', 'success')
+    else:
+        # For other statuses, allow direct update
+        job.status = status
+        flash(f'Job Work status updated to {status}', 'success')
+    
+    db.session.commit()
     return redirect(url_for('jobwork.list_job_works'))
+
+@jobwork_bp.route('/validate-and-fix-completion/<int:job_id>')
+@login_required
+def validate_and_fix_completion(job_id):
+    """Validate job completion status against team assignments and fix if needed"""
+    job = JobWork.query.get_or_404(job_id)
+    
+    # Check if job is marked as completed
+    if job.status == 'completed':
+        # Check team assignments
+        team_assignments = JobWorkTeamAssignment.query.filter_by(job_work_id=job_id).all()
+        
+        if team_assignments:
+            # Check if all team members are actually completed
+            incomplete_assignments = [a for a in team_assignments if a.status != 'completed']
+            
+            if incomplete_assignments:
+                # Job was incorrectly marked as completed - revert it
+                job.status = 'in_progress'
+                job.actual_return = None
+                db.session.commit()
+                
+                incomplete_names = [a.member_name for a in incomplete_assignments]
+                flash(f'Job Work status corrected to "In Progress". Team members still working: {", ".join(incomplete_names)}', 'warning')
+                return redirect(url_for('jobwork.detail', id=job_id))
+    
+    flash('Job Work status is correct based on team assignment completion.', 'info')
+    return redirect(url_for('jobwork.detail', id=job_id))
 
 @jobwork_bp.route('/update_quantity/<int:id>', methods=['GET', 'POST'])
 @login_required
