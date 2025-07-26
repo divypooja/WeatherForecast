@@ -315,6 +315,8 @@ class DailyJobWorkForm(FlaskForm):
                              render_kw={'placeholder': 'Hours spent on this job work'})
     quantity_completed = FloatField('Quantity Completed', validators=[DataRequired(), NumberRange(min=0)],
                                    render_kw={'placeholder': 'Units completed today'})
+    scrap_quantity = FloatField('Scrap Quantity', validators=[Optional(), NumberRange(min=0)],
+                               render_kw={'placeholder': 'Scrap/waste quantity today'})
     quality_status = SelectField('Quality Status', 
                                 validators=[DataRequired()],
                                 choices=[('good', 'Good Quality'),
