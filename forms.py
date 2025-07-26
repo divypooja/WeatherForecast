@@ -314,7 +314,7 @@ class DailyJobWorkForm(FlaskForm):
                              choices=[('employee', 'Employee'), ('contractor', 'Contractor')],
                              default='employee',
                              render_kw={'id': 'worker_type'})
-    employee_id = SelectField('Select Employee', 
+    employee_id = SelectField('Select Worker', 
                              validators=[Optional()], 
                              coerce=int,
                              render_kw={'id': 'employee_id'})
