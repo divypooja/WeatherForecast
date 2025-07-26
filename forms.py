@@ -286,7 +286,10 @@ class JobWorkForm(FlaskForm):
     def __init__(self, *args, **kwargs):
         super(JobWorkForm, self).__init__(*args, **kwargs)
         self.item_id.choices = [(0, 'Select Item')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.all()]
-        self.customer_name.choices = [('', 'Select Customer')] + [(s.name, s.name) for s in Supplier.query.order_by(Supplier.name).all()]
+        
+        # Populate customer choices from suppliers/vendors 
+        suppliers = Supplier.query.order_by(Supplier.name).all()
+        self.customer_name.choices = [('', 'Select Customer')] + [(s.name, s.name) for s in suppliers]
     
     def validate(self, extra_validators=None):
         if not super().validate(extra_validators):

@@ -97,11 +97,12 @@ def add_job_work():
             return render_template('jobwork/form.html', form=form, title='Add Job Work')
         
         # Initialize multi-state inventory if not set
-        if item.qty_raw is None:
+        if item.qty_raw is None or item.qty_raw == 0.0:
             item.qty_raw = item.current_stock or 0.0
             item.qty_wip = 0.0
             item.qty_finished = 0.0
             item.qty_scrap = 0.0
+            db.session.commit()  # Save the initialization
             
         if (item.qty_raw or 0) < form.quantity_sent.data:
             flash(f'Insufficient raw material inventory. Available: {item.qty_raw or 0} {item.unit_of_measure}', 'danger')
