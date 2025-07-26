@@ -159,10 +159,10 @@
                                             </div>
                                         </div>
                                         <small class="text-muted">
-                                            <button type="button" class="btn btn-link p-0 text-decoration-none" 
-                                                    onclick="showQuantityDetails({{ po.id }})" 
-                                                    data-bs-toggle="modal" data-bs-target="#quantityDetailsModal"
-                                                    title="Click for detailed breakdown">
+                                            <a href="{{ url_for('purchase.quantity_details', po_id=po.id) }}" 
+                                               class="text-decoration-none" 
+                                               title="Click for detailed quantity breakdown" 
+                                               target="_blank">
                                                 {{ "%.0f"|format(total_received) }}/{{ "%.0f"|format(total_ordered) }} 
                                                 ({{ "%.0f"|format(progress_percent) }}%)
                                                 {% if progress_percent == 100 %}
@@ -172,7 +172,7 @@
                                                 {% else %}
                                                     <i class="fas fa-hourglass-start text-secondary ms-1"></i>
                                                 {% endif %}
-                                            </button>
+                                            </a>
                                         </small>
                                     </div>
                                 </td>
@@ -288,42 +288,11 @@
     </div>
 </div>
 
-<!-- Quantity Details Modal -->
-<div class="modal fade" id="quantityDetailsModal" tabindex="-1" role="dialog" aria-labelledby="quantityDetailsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="quantityDetailsModalLabel">
-                    <i class="fas fa-list-alt"></i> Purchase Order Quantity Details
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body" id="quantityDetailsContent">
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> 
-                    <strong>Test Modal</strong><br>
-                    This modal is working! Click the button below to load quantity details.
-                    <br><br>
-                    <button class="btn btn-primary btn-sm" onclick="loadQuantityData()">
-                        <i class="fas fa-sync"></i> Load Data
-                    </button>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="goToMaterialInspection()">
-                    <i class="fas fa-clipboard-check"></i> Material Inspection
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
-let currentPoId = null;
-
 function changePoStatus(poId, newStatus) {
     if (confirm(`Are you sure you want to change the status to "${newStatus.toUpperCase()}"?`)) {
         const formData = new FormData();
@@ -350,204 +319,12 @@ function changePoStatus(poId, newStatus) {
     }
 }
 
-function showQuantityDetails(poId) {
-    currentPoId = poId;
-    
-    // Show loading state immediately
-    document.getElementById('quantityDetailsContent').innerHTML = `
-        <div class="d-flex justify-content-center py-4">
-            <div class="spinner-border" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-        </div>
-    `;
-    
-    // Fetch quantity details
-    fetch(`/purchase/quantity_details/${poId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                displayQuantityDetails(data.data);
-            } else {
-                document.getElementById('quantityDetailsContent').innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle"></i> Error loading quantity details: ${data.message}
-                    </div>
-                `;
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            document.getElementById('quantityDetailsContent').innerHTML = `
-                <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-triangle"></i> Error loading quantity details
-                </div>
-            `;
-        });
-}
-
-function displayQuantityDetails(data) {
-    let html = `
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <h6><i class="fas fa-file-alt"></i> ${data.po_number}</h6>
-                <p class="text-muted mb-0">${data.supplier_name}</p>
-            </div>
-            <div class="col-md-6 text-end">
-                <span class="badge bg-${data.status === 'closed' ? 'success' : data.status === 'partial' ? 'warning' : 'primary'} fs-6">
-                    ${data.status.toUpperCase()}
-                </span>
-            </div>
-        </div>
-        
-        <div class="table-responsive">
-            <table class="table table-sm table-striped">
-                <thead>
-                    <tr>
-                        <th>Item</th>
-                        <th>UOM</th>
-                        <th>Ordered</th>
-                        <th>Received</th>
-                        <th>Pending</th>
-                        <th>Progress</th>
-                    </tr>
-                </thead>
-                <tbody>
-    `;
-    
-    data.items.forEach(item => {
-        const progressPercent = item.quantity_ordered > 0 ? (item.quantity_received / item.quantity_ordered) * 100 : 0;
-        const pending = item.quantity_ordered - item.quantity_received;
-        
-        html += `
-            <tr>
-                <td>
-                    <strong>${item.item_code}</strong><br>
-                    <small class="text-muted">${item.item_name}</small>
-                </td>
-                <td>${item.uom}</td>
-                <td>${item.quantity_ordered}</td>
-                <td class="text-${item.quantity_received > 0 ? 'success' : 'muted'}">${item.quantity_received}</td>
-                <td class="text-${pending > 0 ? 'warning' : 'muted'}">${pending}</td>
-                <td>
-                    <div class="progress" style="height: 6px;">
-                        <div class="progress-bar bg-${progressPercent === 100 ? 'success' : progressPercent > 0 ? 'warning' : 'secondary'}" 
-                             style="width: ${progressPercent}%"></div>
-                    </div>
-                    <small class="text-muted">${Math.round(progressPercent)}%</small>
-                </td>
-            </tr>
-        `;
-    });
-    
-    html += `
-                </tbody>
-            </table>
-        </div>
-        
-        <div class="row mt-3">
-            <div class="col-md-4">
-                <div class="card bg-light">
-                    <div class="card-body text-center">
-                        <h5 class="card-title text-primary">${data.summary.total_ordered}</h5>
-                        <p class="card-text small">Total Ordered</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card bg-light">
-                    <div class="card-body text-center">
-                        <h5 class="card-title text-success">${data.summary.total_received}</h5>
-                        <p class="card-text small">Total Received</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card bg-light">
-                    <div class="card-body text-center">
-                        <h5 class="card-title text-warning">${data.summary.total_pending}</h5>
-                        <p class="card-text small">Total Pending</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.getElementById('quantityDetailsContent').innerHTML = html;
-}
-
-function goToMaterialInspection() {
-    if (currentPoId) {
-        window.location.href = `/material_inspection/add?po_id=${currentPoId}`;
-    }
-}
-
-function loadQuantityData() {
-    if (currentPoId) {
-        document.getElementById('quantityDetailsContent').innerHTML = `
-            <div class="d-flex justify-content-center py-4">
-                <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-            </div>
-        `;
-        
-        // Fetch quantity details
-        fetch(`/purchase/quantity_details/${currentPoId}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    displayQuantityDetails(data.data);
-                } else {
-                    document.getElementById('quantityDetailsContent').innerHTML = `
-                        <div class="alert alert-danger">
-                            <i class="fas fa-exclamation-triangle"></i> Error loading quantity details: ${data.message}
-                        </div>
-                    `;
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                document.getElementById('quantityDetailsContent').innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle"></i> Error loading quantity details: ${error.message}
-                    </div>
-                `;
-            });
-    } else {
-        document.getElementById('quantityDetailsContent').innerHTML = `
-            <div class="alert alert-warning">
-                <i class="fas fa-exclamation-triangle"></i> No Purchase Order ID found
-            </div>
-        `;
-    }
-}
-
-// Initialize tooltips and modal event handlers
+// Initialize tooltips
 document.addEventListener('DOMContentLoaded', function() {
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
-    
-    // Handle modal shown event to reset content
-    const quantityModal = document.getElementById('quantityDetailsModal');
-    if (quantityModal) {
-        quantityModal.addEventListener('shown.bs.modal', function () {
-            // Modal is now visible, content should already be loaded by showQuantityDetails
-        });
-        
-        quantityModal.addEventListener('hidden.bs.modal', function () {
-            // Reset content when modal is hidden
-            document.getElementById('quantityDetailsContent').innerHTML = `
-                <div class="d-flex justify-content-center py-4">
-                    <div class="spinner-border" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                </div>
-            `;
-        });
-    }
 });
 </script>
 {% endblock %}

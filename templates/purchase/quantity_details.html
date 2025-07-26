@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}Purchase Order Quantity Details - {{ po.po_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-list-alt"></i> Purchase Order Quantity Details</h1>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('purchase.list_purchase_orders') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Purchase Orders
+            </a>
+            <a href="{{ url_for('purchase.edit_purchase_order', id=po.id) }}" class="btn btn-primary">
+                <i class="fas fa-edit"></i> Edit Purchase Order
+            </a>
+        </div>
+    </div>
+
+    <!-- Purchase Order Header Info -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-file-alt"></i> {{ po.po_number }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <strong>Supplier:</strong><br>
+                            {{ po.supplier.name }}
+                        </div>
+                        <div class="col-sm-6">
+                            <strong>Order Date:</strong><br>
+                            {{ po.order_date.strftime('%m/%d/%Y') }}
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-sm-6">
+                            <strong>Expected Date:</strong><br>
+                            {{ po.expected_date.strftime('%m/%d/%Y') if po.expected_date else 'Not specified' }}
+                        </div>
+                        <div class="col-sm-6">
+                            <strong>Status:</strong><br>
+                            <span class="badge bg-{{ 'success' if po.status == 'closed' else 'warning' if po.status == 'partial' else 'danger' if po.status == 'cancelled' else 'secondary' if po.status == 'draft' else 'primary' }}">
+                                {{ po.status.title() }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie"></i> Overall Progress
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="progress mb-3" style="height: 25px;">
+                        <div class="progress-bar bg-{{ 'success' if overall_progress == 100 else 'warning' if overall_progress > 0 else 'secondary' }}" 
+                             role="progressbar" style="width: {{ overall_progress }}%" 
+                             aria-valuenow="{{ overall_progress }}" aria-valuemin="0" aria-valuemax="100">
+                            {{ "%.0f"|format(overall_progress) }}%
+                        </div>
+                    </div>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h5 class="text-primary">{{ "%.0f"|format(total_ordered) }}</h5>
+                            <small class="text-muted">Total Ordered</small>
+                        </div>
+                        <div class="col-4">
+                            <h5 class="text-success">{{ "%.0f"|format(total_received) }}</h5>
+                            <small class="text-muted">Total Received</small>
+                        </div>
+                        <div class="col-4">
+                            <h5 class="text-warning">{{ "%.0f"|format(total_pending) }}</h5>
+                            <small class="text-muted">Total Pending</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Item Details Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-boxes"></i> Item Quantity Details
+            </h5>
+            <span class="badge bg-info">{{ items|length }} item(s)</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Item Code</th>
+                            <th>Item Name</th>
+                            <th>UOM</th>
+                            <th>Ordered</th>
+                            <th>Received</th>
+                            <th>Pending</th>
+                            <th>Progress</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr>
+                            <td>
+                                <strong>{{ item.item_code }}</strong>
+                            </td>
+                            <td>
+                                {{ item.item_name }}
+                                {% if item.item and item.item.current_stock is not none %}
+                                <br><small class="text-muted">Stock: {{ item.item.current_stock }} {{ item.item.unit_of_measure }}</small>
+                                {% endif %}
+                            </td>
+                            <td>{{ item.uom }}</td>
+                            <td><strong>{{ "%.0f"|format(item.quantity_ordered) }}</strong></td>
+                            <td class="text-{{ 'success' if item.quantity_received > 0 else 'muted' }}">
+                                {{ "%.0f"|format(item.quantity_received) }}
+                            </td>
+                            <td class="text-{{ 'warning' if item.pending > 0 else 'muted' }}">
+                                {{ "%.0f"|format(item.pending) }}
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="progress me-2" style="height: 8px; width: 60px;">
+                                        <div class="progress-bar bg-{{ 'success' if item.progress_percent == 100 else 'warning' if item.progress_percent > 0 else 'secondary' }}" 
+                                             style="width: {{ item.progress_percent }}%"></div>
+                                    </div>
+                                    <small class="text-muted">{{ "%.0f"|format(item.progress_percent) }}%</small>
+                                </div>
+                            </td>
+                            <td>
+                                {% if item.progress_percent == 100 %}
+                                    <span class="badge bg-success">Complete</span>
+                                {% elif item.progress_percent > 0 %}
+                                    <span class="badge bg-warning">Partial</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Pending</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="row mt-4">
+        <div class="col text-center">
+            <a href="{{ url_for('material_inspection.add_inspection') }}?po_id={{ po.id }}" class="btn btn-success">
+                <i class="fas fa-clipboard-check"></i> Material Inspection
+            </a>
+            <a href="{{ url_for('purchase.print_purchase_order', id=po.id) }}" class="btn btn-info" target="_blank">
+                <i class="fas fa-print"></i> Print Purchase Order
+            </a>
+            <a href="{{ url_for('purchase.send_purchase_order', po_id=po.id) }}" class="btn btn-primary">
+                <i class="fas fa-paper-plane"></i> Send via Email/WhatsApp
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}
