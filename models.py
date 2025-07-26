@@ -1382,6 +1382,12 @@ class DailyJobWorkEntry(db.Model):
     inspected_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     inspected_at = db.Column(db.DateTime, nullable=True)
     
+    # Quality inspection quantity fields
+    inspected_quantity = db.Column(db.Float, default=0.0)  # Total quantity inspected
+    passed_quantity = db.Column(db.Float, default=0.0)  # Quantity that passed inspection
+    rejected_quantity = db.Column(db.Float, default=0.0)  # Quantity that was rejected
+    rejection_reasons = db.Column(db.Text)  # Reasons for rejection
+    
     # Audit fields
     logged_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
