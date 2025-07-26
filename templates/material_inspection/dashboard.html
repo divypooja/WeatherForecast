@@ -158,7 +158,8 @@
         <div class="col-lg-6">
             <div class="card">
                 <div class="card-header">
-                    <h5><i class="fas fa-tools text-success me-2"></i>Pending Job Work Inspections</h5>
+                    <h5><i class="fas fa-tools text-success me-2"></i>Available Job Work Inspections</h5>
+                    <small class="text-muted">All outsourced Job Works that may need inspection</small>
                 </div>
                 <div class="card-body">
                     {% if pending_job_inspections %}
@@ -168,6 +169,7 @@
                                     <tr>
                                         <th>Job Number</th>
                                         <th>Customer</th>
+                                        <th>Status</th>
                                         <th>Item</th>
                                         <th>Action</th>
                                     </tr>
@@ -177,12 +179,21 @@
                                     <tr>
                                         <td><strong>{{ job.job_number }}</strong></td>
                                         <td>{{ job.customer_name }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ 'success' if job.status == 'completed' else 'warning' if job.status == 'partial_received' else 'primary' if job.status == 'sent' else 'secondary' }}">
+                                                {{ job.status.replace('_', ' ').title() }}
+                                            </span>
+                                        </td>
                                         <td>{{ job.item.name }}</td>
                                         <td>
-                                            <a href="{{ url_for('material_inspection.log_inspection') }}?job_id={{ job.id }}" 
-                                               class="btn btn-sm btn-warning">
-                                                <i class="fas fa-search me-1"></i>Inspect
-                                            </a>
+                                            {% if job.inspection_status == 'completed' and job.status != 'partial_received' %}
+                                                <span class="badge bg-success">Completed</span>
+                                            {% else %}
+                                                <a href="{{ url_for('material_inspection.log_inspection') }}?job_id={{ job.id }}" 
+                                                   class="btn btn-sm btn-warning">
+                                                    <i class="fas fa-search me-1"></i>{% if job.status == 'partial_received' and job.inspection_status == 'completed' %}Inspect More{% else %}Inspect{% endif %}
+                                                </a>
+                                            {% endif %}
                                         </td>
                                     </tr>
                                     {% endfor %}

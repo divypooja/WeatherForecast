@@ -30,9 +30,15 @@ def dashboard():
     
     # For job works, only show outsourced ones for traditional inspection
     # In-house job works use daily entries for inspection
-    pending_job_inspections = JobWork.query.filter_by(
-        inspection_status='pending',
-        work_type='outsourced'  # Only outsourced job works need traditional inspection
+    # Include job works with partial_received status that may need additional inspections
+    # Include job works with pending/in_progress/failed inspection status
+    pending_job_inspections = JobWork.query.filter(
+        JobWork.work_type == 'outsourced',  # Only outsourced job works need traditional inspection
+        JobWork.inspection_required == True
+    ).filter(
+        # Include partial_received status jobs (may need additional inspections) OR jobs with incomplete inspection
+        (JobWork.status == 'partial_received') |
+        (JobWork.inspection_status.in_(['pending', 'in_progress', 'failed']))
     ).all()
     
     # Get in-house job works with daily entries that need inspection
@@ -327,13 +333,23 @@ def log_inspection():
             if job_work:
                 job_work.inspection_status = 'completed'
                 job_work.inspected_at = datetime.utcnow()
+                
+                # Update Job Work status based on received quantity
+                passed_quantity = form.passed_quantity.data or 0.0
+                total_received = sum((inspection.passed_quantity or 0.0) for inspection in job_work.material_inspections if inspection.passed_quantity) + passed_quantity
+                job_work.quantity_received = total_received
+                
+                if total_received >= job_work.quantity_sent:
+                    job_work.status = 'completed'  # All materials received
+                elif total_received > 0:
+                    job_work.status = 'partial_received'  # Some materials received
+                # else status remains 'sent' if nothing received yet
             
                 # Update inventory with passed quantity and material classification
                 item = Item.query.get(job_work.item_id)
                 if item:
                     if item.current_stock is None:
                         item.current_stock = 0.0
-                    passed_quantity = form.passed_quantity.data or 0.0
                     item.current_stock += passed_quantity
                     # Update the item's material classification based on inspection
                     item.material_classification = form.material_classification.data
