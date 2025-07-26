@@ -1309,13 +1309,7 @@ class DailyJobWorkEntry(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     job_work_id = db.Column(db.Integer, db.ForeignKey('job_works.id'), nullable=False)
-    
-    # Enhanced worker information
-    worker_type = db.Column(db.String(20), nullable=False, default='employee')  # employee, contractor
-    employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=True)  # For employees
-    contractor_name = db.Column(db.String(100), nullable=True)  # For contractors
-    worker_name = db.Column(db.String(100), nullable=False)  # Display name (computed)
-    
+    worker_name = db.Column(db.String(100), nullable=False)
     work_date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date())
     hours_worked = db.Column(db.Float, nullable=False)
     quantity_completed = db.Column(db.Float, nullable=False)
@@ -1330,41 +1324,10 @@ class DailyJobWorkEntry(db.Model):
     
     # Relationships
     job_work = db.relationship('JobWork', backref='daily_entries')
-    employee = db.relationship('Employee', backref='daily_work_entries')
     logger = db.relationship('User', backref='logged_daily_work')
     
     # Unique constraint to prevent duplicate entries for same worker/job/date
     __table_args__ = (db.UniqueConstraint('job_work_id', 'worker_name', 'work_date', name='unique_worker_job_date'),)
-    
-    @property
-    def display_worker_name(self):
-        """Get display name for worker with type indication"""
-        if self.worker_type == 'contractor':
-            return f"{self.contractor_name} (Contractor)"
-        elif self.employee:
-            return f"{self.employee.name} ({self.employee.employee_code})"
-        else:
-            return self.worker_name
-    
-    def set_worker_info(self, worker_type, employee_id=None, contractor_name=None):
-        """Set worker information based on type"""
-        self.worker_type = worker_type or 'employee'  # Default to employee if not specified
-        
-        if worker_type == 'employee' and employee_id:
-            self.employee_id = employee_id
-            self.contractor_name = None
-            # Set worker_name from employee
-            if self.employee:
-                self.worker_name = self.employee.name
-        elif worker_type == 'contractor' and contractor_name:
-            self.contractor_name = contractor_name
-            self.employee_id = None
-            self.worker_name = f"{contractor_name} (Contractor)"
-        elif not worker_type or worker_type == '':
-            # Handle case where no worker type is selected
-            self.worker_name = "Unspecified Worker"
-            self.employee_id = None
-            self.contractor_name = None
     
     @property
     def quality_badge_class(self):
