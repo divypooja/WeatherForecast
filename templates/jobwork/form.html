@@ -316,55 +316,7 @@
                 </div>
             </div>
             
-            <!-- Document Management Section -->
-            {% if job %}
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-header">
-                        <h6><i class="fas fa-file"></i> Supporting Documents</h6>
-                    </div>
-                    <div class="card-body">
-                        {% set documents = get_documents_for_transaction('job_work', job.id) %}
-                        {% if documents %}
-                            <div class="list-group list-group-flush">
-                                {% for doc in documents %}
-                                <div class="list-group-item d-flex justify-content-between align-items-center p-2">
-                                    <div>
-                                        <i class="fas fa-file-{{ 'pdf' if doc.filename.endswith('.pdf') else 'image' if doc.filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')) else 'alt' }}"></i>
-                                        <small>{{ doc.filename[:20] }}{{ '...' if doc.filename|length > 20 else '' }}</small>
-                                    </div>
-                                    <div class="btn-group btn-group-sm">
-                                        <a href="{{ url_for('documents.download_document', doc_id=doc.id) }}" 
-                                           class="btn btn-outline-primary btn-sm" title="Download">
-                                            <i class="fas fa-download"></i>
-                                        </a>
-                                        <a href="{{ url_for('documents.view_document', doc_id=doc.id) }}" 
-                                           class="btn btn-outline-info btn-sm" title="View" target="_blank">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            <div class="text-center text-muted">
-                                <i class="fas fa-file-alt" style="font-size: 2rem; opacity: 0.3;"></i>
-                                <p class="mt-2 mb-0">No documents uploaded</p>
-                                <small>Documents can be added during job work creation</small>
-                            </div>
-                        {% endif %}
-                        
-                        <!-- Quick Actions -->
-                        <div class="border-top pt-2 mt-2">
-                            <a href="{{ url_for('documents.list_documents', transaction_type='job_work', transaction_id=job.id) }}" 
-                               class="btn btn-outline-secondary btn-sm w-100">
-                                <i class="fas fa-folder-open"></i> Manage Documents
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
+
         </div>
     </div>
 </div>
