@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_required, current_user
 from app import db
-from models import MaterialInspection, PurchaseOrder, JobWork, Item, User, PurchaseOrderItem
+from models import MaterialInspection, PurchaseOrder, JobWork, Item, User, PurchaseOrderItem, DailyJobWorkEntry
 from models_uom import ItemUOMConversion, UnitOfMeasure
 from forms import MaterialInspectionForm
 from datetime import datetime
@@ -22,9 +22,18 @@ def dashboard():
     # Filter to only show POs that have items and could need inspection
     pending_po_inspections = [po for po in all_pos_with_items if po.items]
     
+    # For job works, only show outsourced ones for traditional inspection
+    # In-house job works use daily entries for inspection
     pending_job_inspections = JobWork.query.filter_by(
-        inspection_status='pending'
+        inspection_status='pending',
+        work_type='outsourced'  # Only outsourced job works need traditional inspection
     ).all()
+    
+    # Get in-house job works with daily entries that need inspection
+    pending_daily_entries = DailyJobWorkEntry.query.join(JobWork).filter(
+        JobWork.work_type == 'in_house',
+        DailyJobWorkEntry.inspection_status == 'pending'
+    ).order_by(DailyJobWorkEntry.work_date.desc()).limit(10).all()
     
     # Get recent inspections
     recent_inspections = MaterialInspection.query.order_by(
@@ -32,7 +41,7 @@ def dashboard():
     ).limit(10).all()
     
     # Calculate statistics
-    total_pending = len(pending_po_inspections) + len(pending_job_inspections)
+    total_pending = len(pending_po_inspections) + len(pending_job_inspections) + len(pending_daily_entries)
     
     # Get inspections this month
     this_month = datetime.now().replace(day=1)
@@ -56,8 +65,69 @@ def dashboard():
                          title='Material Inspection Dashboard',
                          pending_po_inspections=pending_po_inspections,
                          pending_job_inspections=pending_job_inspections,
+                         pending_daily_entries=pending_daily_entries,
                          recent_inspections=recent_inspections,
                          stats=stats)
+
+@material_inspection.route('/inspect/daily-entry/<int:entry_id>')
+@login_required
+def inspect_daily_entry(entry_id):
+    """Inspect a Daily Job Work Entry for in-house work"""
+    daily_entry = DailyJobWorkEntry.query.get_or_404(entry_id)
+    
+    # Verify this is from an in-house job work
+    if daily_entry.job_work.work_type != 'in_house':
+        flash('This daily entry is not from an in-house job work.', 'error')
+        return redirect(url_for('material_inspection.dashboard'))
+    
+    # Check if already inspected
+    if daily_entry.inspection_status == 'passed':
+        flash('This daily entry has already been inspected and passed.', 'info')
+        return redirect(url_for('material_inspection.dashboard'))
+    
+    return render_template('material_inspection/daily_entry_inspection.html',
+                         title=f'Inspect Daily Entry - {daily_entry.job_work.job_number}',
+                         daily_entry=daily_entry)
+
+@material_inspection.route('/approve-daily-entry/<int:entry_id>', methods=['POST'])
+@login_required
+def approve_daily_entry(entry_id):
+    """Approve a Daily Job Work Entry inspection"""
+    daily_entry = DailyJobWorkEntry.query.get_or_404(entry_id)
+    
+    # Get inspection notes from form
+    inspection_notes = request.form.get('inspection_notes', '')
+    
+    # Update inspection status
+    daily_entry.inspection_status = 'passed'
+    daily_entry.inspection_notes = inspection_notes
+    daily_entry.inspected_by = current_user.id
+    daily_entry.inspected_at = datetime.utcnow()
+    
+    db.session.commit()
+    
+    flash(f'Daily entry for {daily_entry.worker_name} on {daily_entry.work_date.strftime("%d/%m/%Y")} has been approved!', 'success')
+    return redirect(url_for('material_inspection.dashboard'))
+
+@material_inspection.route('/reject-daily-entry/<int:entry_id>', methods=['POST'])
+@login_required
+def reject_daily_entry(entry_id):
+    """Reject a Daily Job Work Entry inspection"""
+    daily_entry = DailyJobWorkEntry.query.get_or_404(entry_id)
+    
+    # Get inspection notes from form
+    inspection_notes = request.form.get('inspection_notes', '')
+    
+    # Update inspection status
+    daily_entry.inspection_status = 'failed'
+    daily_entry.inspection_notes = inspection_notes
+    daily_entry.inspected_by = current_user.id
+    daily_entry.inspected_at = datetime.utcnow()
+    
+    db.session.commit()
+    
+    flash(f'Daily entry for {daily_entry.worker_name} has been rejected. Inspection notes: {inspection_notes}', 'warning')
+    return redirect(url_for('material_inspection.dashboard'))
 
 @material_inspection.route('/inspect/po/<int:po_id>')
 @login_required
@@ -101,7 +171,15 @@ def inspect_purchase_order(po_id):
 @material_inspection.route('/inspect/job/<int:job_id>')
 @login_required
 def inspect_job_work(job_id):
-    """Start inspection for a Job Work"""
+    """Start inspection for a Job Work (outsourced only)"""
+    job_work = JobWork.query.get_or_404(job_id)
+    
+    # Check if this is an in-house job work
+    if job_work.work_type == 'in_house':
+        flash('In-house job works use Daily Work Entries for inspection. Please use the Daily Entry inspection workflow.', 'info')
+        return redirect(url_for('material_inspection.dashboard'))
+    
+    # Continue with traditional inspection for outsourced job works
     job_work = JobWork.query.get_or_404(job_id)
     
     # Check if inspection is required

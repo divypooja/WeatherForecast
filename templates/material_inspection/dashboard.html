@@ -190,7 +190,68 @@
                             </table>
                         </div>
                     {% else %}
-                        <p class="text-muted text-center py-3">No Job Works pending inspection.</p>
+                        <p class="text-muted text-center py-3">No outsourced job works pending inspection.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- In-House Daily Entries Inspection Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-calendar-day me-2"></i>In-House Daily Entries Requiring Inspection</h5>
+                    <small>Daily work entries from in-house job works that need quality inspection</small>
+                </div>
+                <div class="card-body">
+                    {% if pending_daily_entries %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Job Number</th>
+                                        <th>Worker</th>
+                                        <th>Work Date</th>
+                                        <th>Completed Qty</th>
+                                        <th>Scrap Qty</th>
+                                        <th>Quality Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for entry in pending_daily_entries %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ entry.job_work.job_number }}</strong><br>
+                                            <small class="text-muted">{{ entry.job_work.item.name }}</small>
+                                        </td>
+                                        <td>{{ entry.worker_name }}</td>
+                                        <td>{{ entry.work_date.strftime('%d %b %Y') }}</td>
+                                        <td>{{ entry.quantity_completed }} {{ entry.job_work.item.unit_of_measure }}</td>
+                                        <td>{{ entry.scrap_quantity or 0 }} {{ entry.job_work.item.unit_of_measure }}</td>
+                                        <td>
+                                            <span class="badge {{ entry.quality_badge_class }}">
+                                                {{ entry.quality_status.replace('_', ' ').title() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('material_inspection.inspect_daily_entry', entry_id=entry.id) }}" 
+                                               class="btn btn-sm btn-success">
+                                                <i class="fas fa-search"></i> Inspect
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                            <p class="text-muted">No in-house daily entries require inspection.</p>
+                        </div>
                     {% endif %}
                 </div>
             </div>
