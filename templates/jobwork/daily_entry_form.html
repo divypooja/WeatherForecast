@@ -214,7 +214,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     
     // Job work selection and team assignments
-    const jobWorkSelect = document.getElementById('job_work_select');
+    const jobWorkSelect = document.getElementById('job_work_id');
     const teamAssignmentsSection = document.getElementById('team_assignments_section');
     const teamAssignmentsContent = document.getElementById('team_assignments_content');
     
@@ -328,7 +328,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to refresh team assignments when worker selection changes
     function refreshTeamAssignments() {
         const jobId = jobWorkSelect ? jobWorkSelect.value : null;
-        if (jobId && jobId !== '0' && teamAssignmentsSection.style.display !== 'none') {
+        if (jobId && jobId !== '0' && teamAssignmentsSection && teamAssignmentsSection.style.display !== 'none') {
             // Re-fetch and display team assignments to update selection status
             fetch(`/jobwork/api/job-work/${jobId}/team-assignments`)
                 .then(response => response.json())
@@ -344,7 +344,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Listen for worker name changes
-    document.getElementById('worker_name').addEventListener('change', refreshTeamAssignments);
+    const workerNameSelect = document.getElementById('worker_name');
+    if (workerNameSelect) {
+        workerNameSelect.addEventListener('change', refreshTeamAssignments);
+    }
     
     // Function to select worker from team assignments
     window.selectWorkerFromAssignment = function(memberName) {
