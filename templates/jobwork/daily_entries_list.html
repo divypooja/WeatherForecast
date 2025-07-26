@@ -125,10 +125,9 @@
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
-                                        <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" 
-                                                data-bs-target="#entryModal{{ entry.id }}">
+                                        <a href="{{ url_for('jobwork.daily_entries_list') }}?refresh=1" class="btn btn-outline-info">
                                             <i class="fas fa-eye"></i>
-                                        </button>
+                                        </a>
                                     </div>
                                 </td>
                             </tr>
@@ -188,135 +187,37 @@
     </div>
 </div>
 
-<!-- Entry Detail Modals -->
-{% for entry in entries.items %}
-<div class="modal fade" id="entryModal{{ entry.id }}" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Daily Entry Details - {{ entry.worker_name }}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <table class="table table-borderless">
-                            <tr>
-                                <td><strong>Worker:</strong></td>
-                                <td>{{ entry.worker_name }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Work Date:</strong></td>
-                                <td>{{ entry.work_date.strftime('%d/%m/%Y') }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Job Work:</strong></td>
-                                <td>{{ entry.job_work.job_number }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Item:</strong></td>
-                                <td>{{ entry.job_work.item.name }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Process:</strong></td>
-                                <td>{{ entry.job_work.process }}</td>
-                            </tr>
-                        </table>
-                    </div>
-                    <div class="col-md-6">
-                        <table class="table table-borderless">
-                            <tr>
-                                <td><strong>Hours Worked:</strong></td>
-                                <td><span class="badge bg-info">{{ entry.hours_worked }} hours</span></td>
-                            </tr>
-                            <tr>
-                                <td><strong>Quantity Completed:</strong></td>
-                                <td><span class="badge bg-success">{{ entry.quantity_completed }} units</span></td>
-                            </tr>
-                            <tr>
-                                <td><strong>Quality Status:</strong></td>
-                                <td><span class="badge {{ entry.quality_badge_class }}">{{ entry.quality_status.replace('_', ' ').title() }}</span></td>
-                            </tr>
-                            <tr>
-                                <td><strong>Process Stage:</strong></td>
-                                <td><span class="badge {{ entry.stage_badge_class }}">{{ entry.process_stage.replace('_', ' ').title() }}</span></td>
-                            </tr>
-                            <tr>
-                                <td><strong>Logged At:</strong></td>
-                                <td>{{ entry.created_at.strftime('%d/%m/%Y %I:%M %p') }}</td>
-                            </tr>
-                        </table>
-                    </div>
-                </div>
-                {% if entry.notes %}
-                <div class="row mt-3">
-                    <div class="col-12">
-                        <h6><strong>Work Notes:</strong></h6>
-                        <div class="bg-light p-3 rounded">
-                            {{ entry.notes }}
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-{% endfor %}
+<!-- Modals removed to fix stuck modal issue -->
 
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// Fix for stuck modal backdrops
+// Enhanced modal cleanup for stuck backdrops
 document.addEventListener('DOMContentLoaded', function() {
-    // Remove any existing modal backdrops on page load
-    const existingBackdrops = document.querySelectorAll('.modal-backdrop');
-    existingBackdrops.forEach(backdrop => backdrop.remove());
+    // Force remove any stuck modal backdrops immediately
+    const removeBackdrops = () => {
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        backdrops.forEach(backdrop => backdrop.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+        document.body.style.marginRight = '';
+    };
     
-    // Remove modal-open class from body if present
-    document.body.classList.remove('modal-open');
+    // Remove backdrops immediately
+    removeBackdrops();
     
-    // Ensure proper modal cleanup when closed
-    document.querySelectorAll('.modal').forEach(modal => {
-        modal.addEventListener('hidden.bs.modal', function() {
-            // Remove any stuck backdrops
-            const backdrops = document.querySelectorAll('.modal-backdrop');
-            backdrops.forEach(backdrop => backdrop.remove());
-            
-            // Remove modal-open class from body
-            document.body.classList.remove('modal-open');
-            
-            // Reset body styles
-            document.body.style.overflow = '';
-            document.body.style.paddingRight = '';
-        });
-    });
+    // Remove after a short delay to catch any late-loading backdrops
+    setTimeout(removeBackdrops, 100);
+    setTimeout(removeBackdrops, 500);
     
-    // Add escape key handler to close any stuck modals
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            // Close all open modals
-            const openModals = document.querySelectorAll('.modal.show');
-            openModals.forEach(modal => {
-                const modalInstance = bootstrap.Modal.getInstance(modal);
-                if (modalInstance) {
-                    modalInstance.hide();
-                }
-            });
-            
-            // Force remove any stuck backdrops
-            setTimeout(() => {
-                const backdrops = document.querySelectorAll('.modal-backdrop');
-                backdrops.forEach(backdrop => backdrop.remove());
-                document.body.classList.remove('modal-open');
-                document.body.style.overflow = '';
-                document.body.style.paddingRight = '';
-            }, 300);
-        }
+    // Force close any visible modals
+    const allModals = document.querySelectorAll('.modal');
+    allModals.forEach(modal => {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
     });
 });
 </script>
