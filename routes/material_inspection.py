@@ -269,6 +269,31 @@ def log_inspection():
             form.job_work_id.data = job_id
             form.purchase_order_id.data = 0  # Clear purchase order selection
     
+    # Handle POST requests - ensure Job Work choices include the target when job_id provided
+    if request.method == 'POST' and job_id:
+        target_job = JobWork.query.get(job_id)
+        if target_job:
+            current_choices = list(form.job_work_id.choices)
+            if job_id not in [choice[0] for choice in current_choices]:
+                current_choices.append((target_job.id, f"{target_job.job_number} - {target_job.customer_name}"))
+                form.job_work_id.choices = current_choices
+                print(f"DEBUG POST: Added Job Work to choices for validation")
+            # Ensure the form data is set correctly
+            form.job_work_id.data = job_id
+            print(f"DEBUG POST: Job Work data set to {form.job_work_id.data}")
+            print(f"DEBUG POST: Available Job Work choices: {form.job_work_id.choices}")
+    
+    # Handle POST requests - ensure PO choices include the target when po_id provided  
+    if request.method == 'POST' and po_id:
+        target_po = PurchaseOrder.query.get(po_id)
+        if target_po:
+            current_choices = list(form.purchase_order_id.choices)
+            if po_id not in [choice[0] for choice in current_choices]:
+                current_choices.append((target_po.id, f"{target_po.po_number} - {target_po.supplier.name}"))
+                form.purchase_order_id.choices = current_choices
+                print(f"DEBUG POST: Added PO to choices for validation")
+            form.purchase_order_id.data = po_id
+    
     if form.validate_on_submit():
         # Generate inspection number
         inspection_number = generate_next_number('INSPECT', 'material_inspections', 'inspection_number')
