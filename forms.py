@@ -3,7 +3,7 @@ from flask_wtf.file import FileField, FileAllowed
 from wtforms import StringField, PasswordField, SubmitField, SelectField, TextAreaField, FloatField, IntegerField, DateField, TimeField, BooleanField, SelectMultipleField, ValidationError, DateTimeField
 from wtforms.validators import DataRequired, Length, Email, NumberRange, Optional
 from wtforms.widgets import CheckboxInput, ListWidget
-from models import User, Item, Supplier, QualityIssue, Production, PurchaseOrder, JobWork, ItemType, DailyJobWorkEntry
+from models import User, Item, Supplier, QualityIssue, Production, PurchaseOrder, JobWork, ItemType, DailyJobWorkEntry, Employee
 from models_uom import UnitOfMeasure
 from datetime import datetime
 
@@ -308,8 +308,7 @@ class JobWorkForm(FlaskForm):
 
 class DailyJobWorkForm(FlaskForm):
     """Simplified form for daily job work entry by workers"""
-    worker_name = StringField('Worker Name', validators=[DataRequired(), Length(max=100)], 
-                             render_kw={'placeholder': 'Enter your name'})
+    worker_name = SelectField('Worker Name', validators=[DataRequired()], coerce=str)
     job_work_id = SelectField('Job Work Order', validators=[DataRequired()], coerce=int)
     work_date = DateField('Work Date', validators=[DataRequired()], default=datetime.utcnow().date())
     hours_worked = FloatField('Hours Worked', validators=[DataRequired(), NumberRange(min=0.1, max=24)],
@@ -335,6 +334,14 @@ class DailyJobWorkForm(FlaskForm):
     
     def __init__(self, *args, **kwargs):
         super(DailyJobWorkForm, self).__init__(*args, **kwargs)
+        
+        # Load active employees for worker selection
+        active_employees = Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
+        self.worker_name.choices = [('', 'Select Worker')] + [
+            (emp.name, f"{emp.name} ({emp.employee_code}) - {emp.designation or 'Worker'}")
+            for emp in active_employees
+        ]
+        
         # Only show active in-house job works that are in progress
         active_jobs = JobWork.query.filter(
             JobWork.status.in_(['sent', 'partial_received']),
