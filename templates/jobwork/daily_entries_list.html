@@ -125,7 +125,7 @@
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
-                                        <a href="{{ url_for('jobwork.daily_entries_list') }}?refresh=1" class="btn btn-outline-info">
+                                        <a href="{{ url_for('jobwork.daily_entry_detail', entry_id=entry.id) }}" class="btn btn-outline-info">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                     </div>

@@ -246,6 +246,13 @@ def clear_modal_fix():
     """Simple route to clear any stuck modals by redirecting"""
     return render_template('clear_modal.html')
 
+@jobwork_bp.route('/daily-entry-detail/<int:entry_id>')
+@login_required
+def daily_entry_detail(entry_id):
+    """View details of a daily work entry"""
+    entry = DailyJobWorkEntry.query.get_or_404(entry_id)
+    return render_template('jobwork/daily_entry_detail.html', entry=entry)
+
 @jobwork_bp.route('/update-team-progress/<int:job_id>')
 @login_required
 def update_team_progress(job_id):
