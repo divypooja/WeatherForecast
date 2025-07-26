@@ -144,6 +144,17 @@
                             </div>
                         </div>
 
+                        <!-- Save button for new BOM or when no components are added yet -->
+                        <div class="card-footer">
+                            <div class="d-flex justify-content-between gap-2">
+                                <a href="{{ url_for('production.list_bom') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="fas fa-save"></i> {{ 'Update BOM' if bom else 'Create BOM' }}
+                                </button>
+                            </div>
+                        </div>
 
                     </form>
                 </div>
@@ -360,6 +371,32 @@
                     <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
                     <h5 class="text-muted">No Components Added</h5>
                     <p class="text-muted">Start adding materials and components to build your BOM.</p>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between gap-2">
+                        <div class="d-flex gap-2">
+                            <a href="{{ url_for('production.list_bom') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                        <form method="POST" style="display: inline;">
+                            {{ form.hidden_tag() }}
+                            <!-- Hidden fields to preserve form data -->
+                            <input type="hidden" name="product_id" value="{{ bom.product_id }}">
+                            <input type="hidden" name="version" value="{{ bom.version }}">
+                            <input type="hidden" name="labor_cost_per_unit" value="{{ bom.labor_cost_per_unit or 0 }}">
+                            <input type="hidden" name="labor_hours_per_unit" value="{{ bom.labor_hours_per_unit or 0 }}">
+                            <input type="hidden" name="labor_rate_per_hour" value="{{ bom.labor_rate_per_hour or 0 }}">
+                            <input type="hidden" name="overhead_cost_per_unit" value="{{ bom.overhead_cost_per_unit or 0 }}">
+                            <input type="hidden" name="overhead_percentage" value="{{ bom.overhead_percentage or 0 }}">
+                            <input type="hidden" name="freight_cost_per_unit" value="{{ bom.freight_cost_per_unit or 0 }}">
+                            <input type="hidden" name="freight_unit_type" value="{{ bom.freight_unit_type or 'per_piece' }}">
+                            <input type="hidden" name="markup_percentage" value="{{ bom.markup_percentage or 0 }}">
+                            <button type="button" class="btn btn-success btn-lg" onclick="saveBOMWithCurrentValues()">
+                                <i class="fas fa-save"></i> Save BOM
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
