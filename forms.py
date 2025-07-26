@@ -310,8 +310,8 @@ class DailyJobWorkForm(FlaskForm):
     """Simplified form for daily job work entry by workers"""
     # Worker selection with employee and contractor support
     worker_type = SelectField('Worker Type', 
-                             validators=[DataRequired()],
-                             choices=[('employee', 'Employee'), ('contractor', 'Contractor')],
+                             validators=[Optional()],
+                             choices=[('', 'Select Type...'), ('employee', 'Employee'), ('contractor', 'Contractor')],
                              default='employee',
                              render_kw={'id': 'worker_type'})
     employee_id = SelectField('Select Worker', 
