@@ -71,34 +71,47 @@
                             </div>
                         </div>
 
+                        <!-- Quantity Fields in 2x2 Grid Layout -->
                         <div class="row mb-3">
-                            <div class="col-md-4">
-                                {{ form.quantity_received.label(class="form-label") }}
+                            <div class="col-md-6">
+                                <label class="form-label">Received Quantity</label>
                                 <div class="input-group">
                                     {{ form.quantity_received(class="form-control", id="quantity_received") }}
-                                    <span class="input-group-text">{{ po_item.uom or item.unit_of_measure }}</span>
+                                    <span class="input-group-text">Unit</span>
                                 </div>
                                 {% if form.quantity_received.errors %}
                                     <div class="text-danger">{{ form.quantity_received.errors[0] }}</div>
                                 {% endif %}
                             </div>
-                            <div class="col-md-4">
-                                {{ form.quantity_rejected.label(class="form-label") }}
+                            <div class="col-md-6">
+                                <label class="form-label">Inspected Quantity</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="quantity_inspected" readonly>
+                                    <span class="input-group-text">Unit</span>
+                                </div>
+                                <small class="text-muted">Same as received quantity</small>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Passed/Good Quantity</label>
+                                <div class="input-group">
+                                    {{ form.quantity_passed(class="form-control", id="quantity_passed", readonly=True) }}
+                                    <span class="input-group-text">Unit</span>
+                                </div>
+                                <small class="text-muted">Auto-calculated</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Rejected Quantity</label>
                                 <div class="input-group">
                                     {{ form.quantity_rejected(class="form-control", id="quantity_rejected") }}
-                                    <span class="input-group-text">{{ po_item.uom or item.unit_of_measure }}</span>
+                                    <span class="input-group-text">Unit</span>
                                 </div>
                                 {% if form.quantity_rejected.errors %}
                                     <div class="text-danger">{{ form.quantity_rejected.errors[0] }}</div>
                                 {% endif %}
-                            </div>
-                            <div class="col-md-4">
-                                {{ form.quantity_passed.label(class="form-label") }}
-                                <div class="input-group">
-                                    {{ form.quantity_passed(class="form-control", id="quantity_passed", readonly=True) }}
-                                    <span class="input-group-text">{{ po_item.uom or item.unit_of_measure }}</span>
-                                </div>
-                                <small class="text-muted">Auto-calculated</small>
+                                <small class="text-muted">Auto-calculated: Inspected Quantity - Passed Quantity</small>
                             </div>
                         </div>
 
@@ -190,19 +203,23 @@ document.addEventListener('DOMContentLoaded', function() {
     const quantityReceived = document.getElementById('quantity_received');
     const quantityRejected = document.getElementById('quantity_rejected');
     const quantityPassed = document.getElementById('quantity_passed');
+    const quantityInspected = document.getElementById('quantity_inspected');
     
-    function updatePassedQuantity() {
+    function updateCalculations() {
         const received = parseFloat(quantityReceived.value) || 0;
         const rejected = parseFloat(quantityRejected.value) || 0;
         const passed = Math.max(0, received - rejected);
+        
+        // Update all calculated fields
         quantityPassed.value = passed.toFixed(2);
+        quantityInspected.value = received.toFixed(2);
     }
     
-    quantityReceived.addEventListener('input', updatePassedQuantity);
-    quantityRejected.addEventListener('input', updatePassedQuantity);
+    quantityReceived.addEventListener('input', updateCalculations);
+    quantityRejected.addEventListener('input', updateCalculations);
     
     // Initial calculation
-    updatePassedQuantity();
+    updateCalculations();
 });
 </script>
 {% endblock %}
