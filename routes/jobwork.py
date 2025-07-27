@@ -1219,16 +1219,16 @@ def handle_multi_process_submission(form):
         # In a full implementation, these would go in a separate processes table
         process_summary = []
         for i, process in enumerate(processes, 1):
-            scrap_note = f" (Expected Scrap: {process.get('expected_scrap', 0)})" if process.get('expected_scrap', 0) > 0 else ""
+            scrap_note = f" (Expected Scrap: {process.get('expected_scrap', 0)} kg)" if process.get('expected_scrap', 0) > 0 else ""
             process_summary.append(f"Process {i}: {process.get('process_name')} - {process.get('quantity_input')} units - ₹{process.get('rate_per_unit', 0)}/unit{scrap_note}")
         
         job.notes += f"\n\nProcess Breakdown:\n" + "\n".join(process_summary)
         if total_scrap > 0:
-            job.notes += f"\n\nTotal Expected Scrap: {total_scrap} units"
+            job.notes += f"\n\nTotal Expected Scrap: {total_scrap} kg"
         
         db.session.commit()
         
-        scrap_message = f" (Expected scrap: {total_scrap} {item.unit_of_measure})" if total_scrap > 0 else ""
+        scrap_message = f" (Expected scrap: {total_scrap} kg)" if total_scrap > 0 else ""
         flash(f'Multi-Process Job Work {job_number} created successfully with {len(processes)} processes. Total quantity: {total_quantity} {item.unit_of_measure}{scrap_message}, Total cost: ₹{total_cost:.2f}', 'success')
         return redirect(url_for('jobwork.dashboard'))
         
