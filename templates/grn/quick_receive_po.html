@@ -77,7 +77,7 @@
                                 <label class="form-label">Received Quantity</label>
                                 <div class="input-group">
                                     {{ form.quantity_received(class="form-control", id="quantity_received") }}
-                                    <span class="input-group-text">Unit</span>
+                                    <span class="input-group-text">{{ po_item.uom or item.unit_of_measure }}</span>
                                 </div>
                                 {% if form.quantity_received.errors %}
                                     <div class="text-danger">{{ form.quantity_received.errors[0] }}</div>
@@ -87,7 +87,7 @@
                                 <label class="form-label">Inspected Quantity</label>
                                 <div class="input-group">
                                     <input type="number" class="form-control" id="quantity_inspected" readonly>
-                                    <span class="input-group-text">Unit</span>
+                                    <span class="input-group-text">{{ po_item.uom or item.unit_of_measure }}</span>
                                 </div>
                                 <small class="text-muted">Same as received quantity</small>
                             </div>
@@ -98,7 +98,7 @@
                                 <label class="form-label">Passed/Good Quantity</label>
                                 <div class="input-group">
                                     {{ form.quantity_passed(class="form-control", id="quantity_passed", readonly=True) }}
-                                    <span class="input-group-text">Unit</span>
+                                    <span class="input-group-text">{{ po_item.uom or item.unit_of_measure }}</span>
                                 </div>
                                 <small class="text-muted">Auto-calculated</small>
                             </div>
@@ -106,7 +106,7 @@
                                 <label class="form-label">Rejected Quantity</label>
                                 <div class="input-group">
                                     {{ form.quantity_rejected(class="form-control", id="quantity_rejected") }}
-                                    <span class="input-group-text">Unit</span>
+                                    <span class="input-group-text">{{ po_item.uom or item.unit_of_measure }}</span>
                                 </div>
                                 {% if form.quantity_rejected.errors %}
                                     <div class="text-danger">{{ form.quantity_rejected.errors[0] }}</div>
