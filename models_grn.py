@@ -105,7 +105,6 @@ class GRNLineItem(db.Model):
     
     # Quantity tracking
     quantity_received = db.Column(db.Float, nullable=False)
-    quantity_inspected = db.Column(db.Float, default=0.0)
     quantity_passed = db.Column(db.Float, default=0.0)
     quantity_rejected = db.Column(db.Float, default=0.0)
     
