@@ -6,15 +6,17 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (July 27, 2025)
 
-### Process-Aware GRN System for Multi-Process Job Works (Latest - July 27, 2025)
-- **Enhanced GRN Process Intelligence**: Multi-process GRN system now shows which specific process is returning materials and the expected output product instead of generic raw material information
-- **Output Product Integration**: GRN dropdown now displays process information with output product details (e.g., "Cutting - in_house (pending) → Mounted Plate (3490 pcs)")
-- **Dynamic Unit Management**: GRN form automatically updates unit labels based on the selected process's output product unit of measure (pcs, kg, etc.)
-- **Smart Item Handling**: System creates GRN line items using the process's output_item_id instead of original raw material, ensuring accurate inventory tracking for transformed products
-- **Process-Specific Inventory Updates**: Materials received are added to the correct output product inventory rather than the original raw material stock
-- **Enhanced UI with Real-time Feedback**: JavaScript-powered interface provides immediate feedback showing selected process, expected output product, quantities, and proper units
-- **Comprehensive Process Summary**: GRN template displays detailed process information including work type, output products, expected quantities, and process status
-- **Intelligent Form Pre-population**: System automatically sets process stage completion text and expected quantities based on selected process
+### Sequential Process-Aware GRN System for Multi-Process Job Works (Latest - July 27, 2025)
+- **Sequential Process Understanding**: GRN system now fully understands manufacturing flow where Process 1 (Cutting: Ms sheet → Mounted Plate) feeds into Process 2 (Zinc: Mounted Plate → Zinc-coated Mounted Plate)
+- **Flow-Aware Process Selection**: GRN dropdown shows complete sequential flow (e.g., "Seq 2: Zinc - outsourced (pending) | Mounted Plate → Mounted Plate (3490 pcs)") indicating material transformation at each step
+- **Visual Sequential Flow Display**: Process summary shows numbered sequence with input sources, visual flow arrows, and clear indication of which process outputs feed into subsequent processes
+- **Intelligent Input Source Recognition**: System automatically identifies that later processes use outputs from previous processes, not original raw materials (Zinc process uses Mounted Plate from Cutting, not Ms sheet)
+- **Dynamic Unit Management**: GRN form automatically updates unit labels based on the selected process's output product unit of measure, understanding material transformations
+- **Smart Item Handling**: System creates GRN line items using the process's output_item_id, ensuring materials are added to correct product inventory after sequential transformation
+- **Process-Specific Inventory Updates**: Materials received are added to the final output product inventory (Mounted Plate after Zinc coating) rather than intermediate or raw material stock
+- **Enhanced Sequential UI**: JavaScript-powered interface provides real-time feedback distinguishing between first processes (create intermediate products) and final processes (ready for inventory)
+- **Comprehensive Flow Visualization**: GRN template displays complete manufacturing flow with sequence numbers, input/output relationships, and visual process arrows
+- **Manufacturing Intelligence**: System recognizes that multi-process jobs create finished products through sequential transformation rather than parallel processing
 - **Database Connection Resilience**: Resolved SSL connection issues through workflow restart maintaining system stability during enhancements
 
 ### Unified Job Work System - Single Form for All Job Types (July 27, 2025)

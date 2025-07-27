@@ -50,10 +50,14 @@
                     <h6><i class="fas fa-tasks me-2"></i>Process Summary</h6>
                 </div>
                 <div class="card-body">
-                    {% for process in processes %}
-                    <div class="mb-3 p-2 border rounded">
+                    {% set processes_sorted = processes|sort(attribute='sequence_number') %}
+                    {% for process in processes_sorted %}
+                    <div class="mb-3 p-2 border rounded {% if process.sequence_number == 1 %}border-primary{% endif %}">
                         <div class="d-flex justify-content-between align-items-center mb-1">
-                            <strong class="text-primary">{{ process.process_name }}</strong>
+                            <strong class="text-primary">
+                                <span class="badge bg-secondary me-1">{{ process.sequence_number }}</span>
+                                {{ process.process_name }}
+                            </strong>
                             {% if process.status == 'completed' %}
                                 <span class="badge bg-success">Completed</span>
                             {% elif process.status == 'in_progress' %}
@@ -64,13 +68,34 @@
                         </div>
                         <div class="small text-muted">
                             <strong>Type:</strong> {{ process.work_type|title }}<br>
+                            
+                            <!-- Show sequential flow -->
+                            {% if process.sequence_number == 1 %}
+                                <strong>Input:</strong> {{ job_work.item.name }} (Raw Material)<br>
+                            {% else %}
+                                {% set prev_process = processes_sorted[loop.index0 - 1] %}
+                                <strong>Input:</strong> 
+                                {% if prev_process.output_item_id %}
+                                    {{ prev_process.output_item.name }} (from {{ prev_process.process_name }})
+                                {% else %}
+                                    {{ job_work.item.name }} (from {{ prev_process.process_name }})
+                                {% endif %}<br>
+                            {% endif %}
+                            
                             {% if process.output_item_id %}
-                                <strong>Output Product:</strong> {{ process.output_item.name }}<br>
+                                <strong>Output:</strong> {{ process.output_item.name }}<br>
                                 <strong>Expected Qty:</strong> {{ process.output_quantity }} {{ process.output_item.unit_of_measure }}
                             {% else %}
-                                <strong>Output Product:</strong> Same as input material
+                                <strong>Output:</strong> Same as input material
                             {% endif %}
                         </div>
+                        
+                        <!-- Visual flow arrow for sequential processes -->
+                        {% if not loop.last %}
+                        <div class="text-center mt-2">
+                            <i class="fas fa-arrow-down text-muted"></i>
+                        </div>
+                        {% endif %}
                     </div>
                     {% endfor %}
                 </div>
@@ -81,7 +106,11 @@
         <div class="col-lg-8">
             <div class="card">
                 <div class="card-header">
-                    <h5><i class="fas fa-clipboard-check me-2"></i>Process Material Receipt</h5>
+                    <h5><i class="fas fa-clipboard-check me-2"></i>Sequential Process Material Receipt</h5>
+                    <div class="small text-light">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Understanding process flow: Raw Material → Process 1 → Process 2 → Final Product
+                    </div>
                 </div>
                 <div class="card-body">
                     <form method="POST">
@@ -104,7 +133,10 @@
                                     {% if form.process_selection.errors %}
                                         <div class="text-danger small">{{ form.process_selection.errors[0] }}</div>
                                     {% endif %}
-                                    <div class="form-text">Select which process is returning materials</div>
+                                    <div class="form-text">
+                                        <i class="fas fa-arrow-right me-1"></i>
+                                        Select which sequential process is returning materials to inventory
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -216,17 +248,22 @@
 </div>
 
 <script>
-// Process data for dynamic updates
+// Process data for dynamic updates with sequential flow information
 const processData = {
-    {% for process in processes %}
+    {% set processes_sorted = processes|sort(attribute='sequence_number') %}
+    {% for process in processes_sorted %}
     {{ process.id }}: {
         name: '{{ process.process_name }}',
         workType: '{{ process.work_type }}',
         status: '{{ process.status }}',
+        sequenceNumber: {{ process.sequence_number }},
         outputItemId: {{ process.output_item_id or 'null' }},
         outputItemName: '{{ process.output_item.name if process.output_item_id else "" }}',
         outputQuantity: {{ process.output_quantity or 'null' }},
-        outputUnit: '{{ process.output_item.unit_of_measure if process.output_item_id else job_work.item.unit_of_measure }}'
+        outputUnit: '{{ process.output_item.unit_of_measure if process.output_item_id else job_work.item.unit_of_measure }}',
+        inputSource: '{% if process.sequence_number == 1 %}{{ job_work.item.name }}{% else %}{% set prev_process = processes_sorted[loop.index0 - 1] %}{% if prev_process.output_item_id %}{{ prev_process.output_item.name }}{% else %}{{ job_work.item.name }}{% endif %}{% endif %}',
+        isSequential: {{ process.sequence_number > 1 }},
+        flowDescription: '{% if process.sequence_number == 1 %}{{ job_work.item.name }} → {{ process.output_item.name if process.output_item_id else "Same as input" }}{% else %}{% set prev_process = processes_sorted[loop.index0 - 1] %}{% if prev_process.output_item_id %}{{ prev_process.output_item.name }}{% else %}{{ job_work.item.name }}{% endif %} → {{ process.output_item.name if process.output_item_id else "Same as input" }}{% endif %}'
     }{% if not loop.last %},{% endif %}
     {% endfor %}
 };
@@ -267,11 +304,11 @@ document.getElementById('process_selection').addEventListener('change', function
             processStageField.value = `${process.name} Complete`;
         }
         
-        // Show output product information in a toast/alert
-        if (process.outputItemName) {
-            showProcessInfo(`Selected: ${process.name} → ${process.outputItemName} (Expected: ${process.outputQuantity} ${unit})`);
+        // Show sequential flow information
+        if (process.isSequential) {
+            showProcessInfo(`Sequential Process ${process.sequenceNumber}: ${process.flowDescription} | Ready for inventory after this step`);
         } else {
-            showProcessInfo(`Selected: ${process.name} → Same as input material`);
+            showProcessInfo(`First Process: ${process.flowDescription} | Creates intermediate product for next process`);
         }
     }
 });
