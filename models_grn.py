@@ -4,12 +4,14 @@ from utils import generate_next_number
 
 
 class GRN(db.Model):
-    """Goods Receipt Note - Parent table for tracking material receipts from job works"""
+    """Goods Receipt Note - Parent table for tracking material receipts from job works and purchase orders"""
     __tablename__ = 'grn'
     
     id = db.Column(db.Integer, primary_key=True)
     grn_number = db.Column(db.String(50), unique=True, nullable=False)  # GRN-YYYY-0001
-    job_work_id = db.Column(db.Integer, db.ForeignKey('job_works.id'), nullable=False)
+    # Foreign Keys (either job_work_id OR purchase_order_id should be set)
+    job_work_id = db.Column(db.Integer, db.ForeignKey('job_works.id'), nullable=True)
+    purchase_order_id = db.Column(db.Integer, db.ForeignKey('purchase_orders.id'), nullable=True)
     received_date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date())
     received_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     
@@ -34,8 +36,27 @@ class GRN(db.Model):
     
     # Relationships
     job_work = db.relationship('JobWork', backref='grn_receipts')
+    purchase_order = db.relationship('PurchaseOrder', backref='grn_receipts')
     receiver = db.relationship('User', foreign_keys=[received_by], backref='received_grns')
     inspector = db.relationship('User', foreign_keys=[inspected_by], backref='inspected_grns')
+    
+    @property
+    def source_document(self):
+        """Get the source document (either job work or purchase order)"""
+        if self.job_work_id:
+            return self.job_work
+        elif self.purchase_order_id:
+            return self.purchase_order
+        return None
+    
+    @property
+    def source_type(self):
+        """Get the type of source document"""
+        if self.job_work_id:
+            return 'job_work'
+        elif self.purchase_order_id:
+            return 'purchase_order'
+        return None
     
     @staticmethod
     def generate_grn_number():

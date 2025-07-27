@@ -10,7 +10,8 @@ class GRNForm(FlaskForm):
     
     # Basic GRN Information
     grn_number = StringField('GRN Number', validators=[DataRequired(), Length(max=50)])
-    job_work_id = IntegerField('Job Work ID', validators=[DataRequired()], widget=HiddenInput())
+    job_work_id = IntegerField('Job Work ID', validators=[Optional()], widget=HiddenInput())
+    purchase_order_id = IntegerField('Purchase Order ID', validators=[Optional()], widget=HiddenInput())
     received_date = DateField('Received Date', validators=[DataRequired()], default=date.today)
     
     # Delivery Information

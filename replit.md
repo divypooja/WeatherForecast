@@ -15,6 +15,10 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **Automated Status Management**: Job work status (partial_received/completed) automatically updated through GRN material receipt with comprehensive audit trail notes including timestamps and GRN numbers
 - **Comprehensive Activity Logging**: All material receipts logged with detailed information including quantities received, pending amounts, and GRN references in job work notes for complete traceability
 - **Quality Control Integration**: GRN system handles material classification, inspection status, acceptance rates, and rejection tracking for complete quality management workflow
+- **Purchase Order GRN Integration**: Extended GRN system to handle Purchase Order material receipts alongside Job Work receipts, creating unified material receipt workflow across all incoming materials
+- **Unified GRN Dashboard**: Enhanced GRN dashboard to display both Job Work and Purchase Order based GRNs with clear source document identification and appropriate action buttons
+- **Database Schema Updates**: Added purchase_order_id column to GRN table and made job_work_id optional to support both material receipt sources
+- **PO List Integration**: Added GRN creation buttons to Purchase Order list for approved/partial status orders, enabling seamless transition from procurement to material receipt
 
 ### Multi-Process Job Work System with Auto-Generated Numbers (July 27, 2025)
 - **Auto-Generated Job Numbers**: Implemented MPJOB-YYYY-0001 format for multi-process job work numbers with automatic sequential generation

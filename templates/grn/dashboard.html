@@ -147,8 +147,8 @@
                                 <thead>
                                     <tr>
                                         <th>GRN Number</th>
-                                        <th>Job Work</th>
-                                        <th>Customer</th>
+                                        <th>Source Document</th>
+                                        <th>Vendor/Customer</th>
                                         <th>Received Date</th>
                                         <th>Status</th>
                                         <th>Inspection</th>
@@ -160,11 +160,25 @@
                                     <tr>
                                         <td><strong>{{ grn.grn_number }}</strong></td>
                                         <td>
+                                            {% if grn.source_type == 'job_work' %}
+                                            <span class="badge bg-info me-1">Job Work</span>
                                             <a href="{{ url_for('jobwork.detail', id=grn.job_work.id) }}" class="text-decoration-none">
                                                 {{ grn.job_work.job_number }}
                                             </a>
+                                            {% elif grn.source_type == 'purchase_order' %}
+                                            <span class="badge bg-success me-1">Purchase Order</span>
+                                            <a href="{{ url_for('purchase.detail', id=grn.purchase_order.id) }}" class="text-decoration-none">
+                                                {{ grn.purchase_order.po_number }}
+                                            </a>
+                                            {% endif %}
                                         </td>
-                                        <td>{{ grn.job_work.customer_name }}</td>
+                                        <td>
+                                            {% if grn.source_type == 'job_work' %}
+                                                {{ grn.job_work.customer_name }}
+                                            {% elif grn.source_type == 'purchase_order' %}
+                                                {{ grn.purchase_order.supplier.name }}
+                                            {% endif %}
+                                        </td>
                                         <td>{{ grn.received_date.strftime('%d/%m/%Y') }}</td>
                                         <td>
                                             <span class="badge bg-{{ 'success' if grn.status == 'completed' else 'info' if grn.status == 'received' else 'warning' if grn.status == 'inspected' else 'secondary' }}">
@@ -197,20 +211,22 @@
             </div>
         </div>
 
-        <!-- Job Works Pending Material Receipt -->
+        <!-- Pending Material Receipt -->
         <div class="col-lg-4">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5><i class="fas fa-tools me-2"></i>Pending Material Receipt</h5>
-                    <span class="badge bg-warning">{{ pending_job_works|length }} jobs</span>
+                    <h5><i class="fas fa-truck me-2"></i>Pending Material Receipt</h5>
+                    <span class="badge bg-warning">{{ (pending_job_works|length + pending_purchase_orders|length) }} items</span>
                 </div>
                 <div class="card-body">
-                    {% if pending_job_works %}
+                    {% if pending_job_works or pending_purchase_orders %}
                         <div class="list-group list-group-flush">
+                            <!-- Job Works -->
                             {% for job in pending_job_works %}
                             <div class="list-group-item px-0">
                                 <div class="d-flex justify-content-between align-items-start">
                                     <div class="flex-grow-1">
+                                        <span class="badge bg-info me-2">Job Work</span>
                                         <h6 class="mb-1">{{ job.job_number }}</h6>
                                         <p class="mb-1 text-muted small">{{ job.item.name }}</p>
                                         <p class="mb-1 small">
@@ -247,11 +263,49 @@
                                 </div>
                             </div>
                             {% endfor %}
+                            
+                            <!-- Purchase Orders -->
+                            {% for po in pending_purchase_orders %}
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <span class="badge bg-success me-2">Purchase Order</span>
+                                        <h6 class="mb-1">{{ po.po_number }}</h6>
+                                        <p class="mb-1 text-muted small">{{ po.supplier.name }}</p>
+                                        <p class="mb-1 small">
+                                            <span class="text-muted">Total Value:</span> 
+                                            <strong>₹{{ "%.2f"|format(po.total_amount) }}</strong>
+                                        </p>
+                                        <span class="badge bg-{{ 'warning' if po.status == 'partial' else 'success' }}">
+                                            {{ po.status.title() }}
+                                        </span>
+                                    </div>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            Action
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li>
+                                                <a class="dropdown-item" href="{{ url_for('grn.create_grn_for_po', purchase_order_id=po.id) }}">
+                                                    <i class="fas fa-receipt me-2"></i>Create GRN
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <a class="dropdown-item" href="{{ url_for('purchase.detail', id=po.id) }}">
+                                                    <i class="fas fa-eye me-2"></i>View Purchase Order
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
                         </div>
                     {% else %}
                         <div class="text-center py-3">
                             <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
-                            <p class="mb-0 text-muted">All job works are up to date!</p>
+                            <p class="mb-0 text-muted">All items are up to date!</p>
                         </div>
                     {% endif %}
                 </div>
