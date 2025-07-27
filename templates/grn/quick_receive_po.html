@@ -86,9 +86,12 @@
                             <div class="col-md-6">
                                 <label class="form-label">Inspected Quantity</label>
                                 <div class="input-group">
-                                    <input type="number" class="form-control" id="quantity_inspected" step="0.01" min="0">
+                                    {{ form.quantity_inspected(class="form-control", id="quantity_inspected") }}
                                     <span class="input-group-text">{{ po_item.uom or item.unit_of_measure }}</span>
                                 </div>
+                                {% if form.quantity_inspected.errors %}
+                                    <div class="text-danger">{{ form.quantity_inspected.errors[0] }}</div>
+                                {% endif %}
                             </div>
                         </div>
                         
