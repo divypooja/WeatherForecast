@@ -6,7 +6,14 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (July 27, 2025)
 
-### Modal Issue Resolution and Unified Job Work System Implementation (Latest - July 27, 2025)
+### Complete Data Integrity and WIP Cleanup (Latest - July 27, 2025)
+- **Orphaned WIP Data Cleanup**: Resolved issue where WIP quantities remained in inventory after job works were deleted, causing incorrect WIP breakdown displays
+- **GRN Inspection Status Logic Fix**: Corrected "All Items Inspected" display logic to recognize 'passed', 'rejected', and 'partial' statuses instead of requiring 'completed' status
+- **Process-Specific WIP Synchronization**: Fixed orphaned process-specific WIP quantities (qty_wip_cutting, etc.) that persisted after job work deletion
+- **Data Consistency Enforcement**: Implemented cleanup to ensure WIP breakdown accurately reflects actual active job works and processes
+- **Dashboard Display Accuracy**: WIP Breakdown and Multi-State Inventory now show consistent data with no phantom WIP quantities from deleted job works
+
+### Modal Issue Resolution and Unified Job Work System Implementation (July 27, 2025)
 - **Critical Modal Fix**: Resolved persistent modal blocking issue where delete job work modal was getting stuck with black overlay preventing all user interactions
 - **Alternative Confirmation System**: Replaced problematic Bootstrap modal with simple browser confirmation dialog for delete operations, eliminating modal blocking completely
 - **Route Optimization**: Updated delete job work route to handle both GET and JSON requests properly with appropriate redirects and flash messages
