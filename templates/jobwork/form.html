@@ -850,18 +850,36 @@ document.addEventListener('DOMContentLoaded', function() {
             if (multiProcess && multiProcess.checked) {
                 e.preventDefault();
                 
-                // Disable validation on hidden single-process fields
-                const hiddenFields = form.querySelectorAll('input[style*="display: none"], select[style*="display: none"], textarea[style*="display: none"]');
-                hiddenFields.forEach(field => {
-                    field.removeAttribute('required');
+                // Disable validation on all single-process specific fields
+                const singleProcessFields = [
+                    '#process_type',
+                    '#customer_name', 
+                    '#department',
+                    '#quantity_sent',
+                    '#rate_per_unit',
+                    '#expected_finished_material',
+                    '#expected_scrap',
+                    '#sent_date',
+                    '#expected_return',
+                    '#is_team_work',
+                    '#max_team_members'
+                ];
+                
+                singleProcessFields.forEach(fieldId => {
+                    const field = document.querySelector(fieldId);
+                    if (field) {
+                        field.removeAttribute('required');
+                        field.disabled = true;
+                    }
                 });
                 
                 // Also disable validation on fields in hidden containers
                 const hiddenContainers = form.querySelectorAll('[style*="display: none"]');
                 hiddenContainers.forEach(container => {
-                    const requiredFields = container.querySelectorAll('[required]');
-                    requiredFields.forEach(field => {
+                    const allFields = container.querySelectorAll('input, select, textarea');
+                    allFields.forEach(field => {
                         field.removeAttribute('required');
+                        field.disabled = true;
                     });
                 });
                 
