@@ -1034,14 +1034,14 @@ function addProcess() {
                     </div>
                     <div class="col-md-3 mb-3">
                         <label class="form-label">Work Type</label>
-                        <select class="form-select work-type" id="work_type_${processCounter}" onchange="toggleProcessFields(${processCounter})">
+                        <select class="form-select work-type" id="work_type_${processCounter}" name="work_type_${processCounter}" onchange="toggleProcessFields(${processCounter})">
                             <option value="outsourced">Outsourced</option>
                             <option value="in_house">In-House</option>
                         </select>
                     </div>
                     <div class="col-md-3 mb-3">
                         <label class="form-label">Rate per Unit (₹)</label>
-                        <input type="number" class="form-control rate-per-unit" min="0" step="0.01" placeholder="0.00" onchange="updateMultiProcessCostSummary()">
+                        <input type="number" class="form-control rate-per-unit" id="rate_${processCounter}" name="rate_${processCounter}" min="0" step="0.01" placeholder="0.00" onchange="updateMultiProcessCostSummary()">
                     </div>
                 </div>
                 
@@ -1049,12 +1049,12 @@ function addProcess() {
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Process Quantity</label>
-                        <input type="number" class="form-control quantity-input" min="0" step="0.01" placeholder="Enter quantity" onchange="updateMultiProcessCostSummary()">
+                        <input type="number" class="form-control quantity-input" id="quantity_${processCounter}" name="quantity_${processCounter}" min="0" step="0.01" placeholder="Enter quantity" onchange="updateMultiProcessCostSummary()">
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Expected Scrap (kg) <small class="text-muted">(Optional)</small></label>
                         <div class="input-group">
-                            <input type="number" class="form-control expected-scrap" min="0" step="0.001" placeholder="Estimated waste in kg" onchange="updateMultiProcessCostSummary()">
+                            <input type="number" class="form-control expected-scrap" id="scrap_${processCounter}" name="scrap_${processCounter}" min="0" step="0.001" placeholder="Estimated waste in kg" onchange="updateMultiProcessCostSummary()">
                             <span class="input-group-text">kg</span>
                         </div>
                         <div class="form-text"><i class="fas fa-info-circle"></i> Estimated waste/scrap quantity in kilograms for this process</div>
@@ -1065,13 +1065,13 @@ function addProcess() {
                 <div class="row">
                     <div class="col-md-6 mb-3 customer-field" id="customer_field_${processCounter}">
                         <label class="form-label">Customer/Vendor</label>
-                        <select class="form-select customer-name" id="customer_name_${processCounter}">
+                        <select class="form-select customer-name" id="process_customer_${processCounter}" name="process_customer_${processCounter}">
                             <option value="">Select Customer/Vendor</option>
                         </select>
                     </div>
                     <div class="col-md-6 mb-3 department-field" id="department_field_${processCounter}" style="display: none;">
                         <label class="form-label">Department</label>
-                        <select class="form-select department" id="department_${processCounter}">
+                        <select class="form-select department" id="process_department_${processCounter}" name="process_department_${processCounter}">
                             <option value="">Select Department</option>
                             <option value="production">Production</option>
                             <option value="assembly">Assembly</option>
