@@ -131,7 +131,7 @@ def create_grn(job_work_id):
             db.session.rollback()
             flash(f'Error creating GRN: {str(e)}', 'error')
     
-    return render_template('grn/create_grn.html',
+    return render_template('grn/create.html',
                          title='Create GRN',
                          form=form,
                          job_work=job_work)
@@ -179,7 +179,7 @@ def create_grn_for_po(purchase_order_id):
             db.session.rollback()
             flash(f'Error creating GRN: {str(e)}', 'error')
     
-    return render_template('grn/create_grn.html',
+    return render_template('grn/create.html',
                          title='Create GRN for Purchase Order',
                          form=form,
                          purchase_order=purchase_order)
