@@ -79,8 +79,7 @@ class JobWorkProcessForm(FlaskForm):
 class MultiProcessJobWorkForm(FlaskForm):
     """Enhanced Job Work form with multiple processes support"""
     
-    # Basic Job Work Information
-    job_number = StringField('Job Number', validators=[DataRequired(), Length(max=50)])
+    # Basic Job Work Information (job_number will be auto-generated)
     item_id = SelectField('Item', validators=[DataRequired()], coerce=int)
     total_quantity = FloatField('Total Quantity', 
                                validators=[DataRequired(), NumberRange(min=0)],
