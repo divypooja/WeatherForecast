@@ -83,6 +83,11 @@ def add_job_work():
     if request.method == 'GET' and not form.sent_date.data:
         form.sent_date.data = datetime.now().date()
     
+    print(f"Form submitted: {request.method == 'POST'}")
+    print(f"Form valid: {form.validate()}")
+    if request.method == 'POST' and not form.validate():
+        print(f"Form errors: {form.errors}")
+    
     if form.validate_on_submit():
         # Check if job number already exists
         existing_job = JobWork.query.filter_by(job_number=form.job_number.data).first()
