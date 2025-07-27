@@ -256,8 +256,7 @@ document.getElementById('confirmCancelBtn').addEventListener('click', function()
         fetch(`/jobwork/cancel/${currentJobId}`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token() }}'
+                'Content-Type': 'application/json'
             }
         })
         .then(response => response.json())
@@ -281,8 +280,7 @@ document.getElementById('confirmDeleteBtn').addEventListener('click', function()
         fetch(`/jobwork/delete/${currentJobId}`, {
             method: 'DELETE',
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token() }}'
+                'Content-Type': 'application/json'
             }
         })
         .then(response => response.json())
