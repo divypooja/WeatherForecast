@@ -149,39 +149,77 @@
             </div>
         </div>
 
-        <!-- Information Panel -->
+        <!-- Summary Card -->
         <div class="col-md-4">
             <div class="card">
                 <div class="card-header">
-                    <h6 class="mb-0"><i class="fas fa-info me-2"></i>Quick Receive Process</h6>
+                    <h6 class="mb-0"><i class="fas fa-calculator me-2"></i>Receipt Summary</h6>
                 </div>
                 <div class="card-body">
-                    <div class="step-info">
-                        <div class="d-flex align-items-center mb-2">
-                            <span class="badge bg-primary me-2">1</span>
-                            <strong>Enter Quantities</strong>
-                        </div>
-                        <p class="small text-muted mb-3">Enter the quantity received and any rejected quantity. Passed quantity will be calculated automatically.</p>
-                        
-                        <div class="d-flex align-items-center mb-2">
-                            <span class="badge bg-secondary me-2">2</span>
-                            <strong>Set Inspection Status</strong>
-                        </div>
-                        <p class="small text-muted mb-3">Choose the overall inspection status for this material receipt.</p>
-                        
-                        <div class="d-flex align-items-center mb-2">
-                            <span class="badge bg-success me-2">3</span>
-                            <strong>Complete Receipt</strong>
-                        </div>
-                        <p class="small text-muted">GRN will be created automatically and inventory will be updated if enabled.</p>
+                    <div class="row mb-2">
+                        <div class="col-6">Total Ordered:</div>
+                        <div class="col-6 text-end"><strong>{{ po_item.qty }} {{ po_item.uom or item.unit_of_measure }}</strong></div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6">Already Received:</div>
+                        <div class="col-6 text-end">{{ po_item.quantity_received or 0 }} {{ po_item.uom or item.unit_of_measure }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6">Pending:</div>
+                        <div class="col-6 text-end"><span class="text-warning">{{ po_item.pending_quantity }} {{ po_item.uom or item.unit_of_measure }}</span></div>
+                    </div>
+                    <hr>
+                    <div class="row mb-2">
+                        <div class="col-6">Now Receiving:</div>
+                        <div class="col-6 text-end"><span id="summary_received" class="text-info">0.00 {{ po_item.uom or item.unit_of_measure }}</span></div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6">Will Pass:</div>
+                        <div class="col-6 text-end"><span id="summary_passed" class="text-success">0.00 {{ po_item.uom or item.unit_of_measure }}</span></div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6">Will Reject:</div>
+                        <div class="col-6 text-end"><span id="summary_rejected" class="text-danger">0.00 {{ po_item.uom or item.unit_of_measure }}</span></div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-6">New Pending:</div>
+                        <div class="col-6 text-end"><span id="summary_new_pending" class="text-warning">{{ po_item.pending_quantity }} {{ po_item.uom or item.unit_of_measure }}</span></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Quick Actions -->
+            <!-- Progress Visualization -->
             <div class="card mt-3">
                 <div class="card-header">
-                    <h6 class="mb-0"><i class="fas fa-lightning-bolt me-2"></i>Quick Options</h6>
+                    <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Completion Progress</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <small class="text-muted">Current Progress</small>
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" 
+                                 style="width: {{ po_item.completion_percentage }}%">
+                                {{ "%.1f"|format(po_item.completion_percentage) }}%
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <small class="text-muted">After This Receipt</small>
+                        <div class="progress">
+                            <div class="progress-bar bg-success" role="progressbar" 
+                                 id="new_progress_bar" style="width: {{ po_item.completion_percentage }}%">
+                                <span id="new_progress_text">{{ "%.1f"|format(po_item.completion_percentage) }}%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Options -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-bolt me-2"></i>Quick Options</h6>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
@@ -199,27 +237,62 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const quantityReceived = document.getElementById('quantity_received');
-    const quantityRejected = document.getElementById('quantity_rejected');
-    const quantityPassed = document.getElementById('quantity_passed');
-    const quantityInspected = document.getElementById('quantity_inspected');
+// Auto-calculate passed quantity and update summary
+function updateCalculations() {
+    const received = parseFloat(document.getElementById('quantity_received').value) || 0;
+    const rejected = parseFloat(document.getElementById('quantity_rejected').value) || 0;
+    const passed = Math.max(0, received - rejected);
+    const pendingQty = {{ po_item.pending_quantity }};
+    const orderedQty = {{ po_item.qty }};
+    const alreadyReceived = {{ po_item.quantity_received or 0 }};
     
-    function updateCalculations() {
-        const received = parseFloat(quantityReceived.value) || 0;
-        const rejected = parseFloat(quantityRejected.value) || 0;
-        const passed = Math.max(0, received - rejected);
-        
-        // Update all calculated fields
-        quantityPassed.value = passed.toFixed(2);
-        quantityInspected.value = received.toFixed(2);
+    // Update passed quantity and inspected quantity
+    document.getElementById('quantity_passed').value = passed.toFixed(2);
+    document.getElementById('quantity_inspected').value = received.toFixed(2);
+    
+    // Update summary
+    document.getElementById('summary_received').textContent = received.toFixed(2) + ' {{ po_item.uom or item.unit_of_measure }}';
+    document.getElementById('summary_passed').textContent = passed.toFixed(2) + ' {{ po_item.uom or item.unit_of_measure }}';
+    document.getElementById('summary_rejected').textContent = rejected.toFixed(2) + ' {{ po_item.uom or item.unit_of_measure }}';
+    
+    const newPending = Math.max(0, pendingQty - received);
+    document.getElementById('summary_new_pending').textContent = newPending.toFixed(2) + ' {{ po_item.uom or item.unit_of_measure }}';
+    
+    // Update progress bar
+    const newReceived = alreadyReceived + received;
+    const newProgress = Math.min(100, (newReceived / orderedQty) * 100);
+    document.getElementById('new_progress_bar').style.width = newProgress + '%';
+    document.getElementById('new_progress_text').textContent = newProgress.toFixed(1) + '%';
+}
+
+// Add event listeners
+document.getElementById('quantity_received').addEventListener('input', updateCalculations);
+document.getElementById('quantity_rejected').addEventListener('input', updateCalculations);
+
+// Validate quantities
+document.getElementById('quantity_received').addEventListener('change', function() {
+    const received = parseFloat(this.value) || 0;
+    const maxReceive = {{ po_item.pending_quantity }};
+    
+    if (received > maxReceive) {
+        alert('Cannot receive more than pending quantity (' + maxReceive + ' {{ po_item.uom or item.unit_of_measure }})');
+        this.value = maxReceive;
+        updateCalculations();
     }
-    
-    quantityReceived.addEventListener('input', updateCalculations);
-    quantityRejected.addEventListener('input', updateCalculations);
-    
-    // Initial calculation
-    updateCalculations();
 });
+
+document.getElementById('quantity_rejected').addEventListener('change', function() {
+    const received = parseFloat(document.getElementById('quantity_received').value) || 0;
+    const rejected = parseFloat(this.value) || 0;
+    
+    if (rejected > received) {
+        alert('Rejected quantity cannot be more than received quantity');
+        this.value = received;
+        updateCalculations();
+    }
+});
+
+// Initialize calculations
+updateCalculations();
 </script>
 {% endblock %}
