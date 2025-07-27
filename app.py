@@ -89,6 +89,10 @@ def create_app():
     from routes.backup import backup_bp
     app.register_blueprint(backup_bp, url_prefix='/backup')
     
+    # Register Multi-Process Job Work blueprint
+    from routes.multi_process_jobwork import multi_process_jobwork_bp
+    app.register_blueprint(multi_process_jobwork_bp)
+    
     # Register Item Types blueprint
     from routes.item_types import item_types_bp
     app.register_blueprint(item_types_bp)

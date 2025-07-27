@@ -536,6 +536,7 @@ class JobWork(db.Model):
     item = db.relationship('Item', backref='job_works')
     creator = db.relationship('User', foreign_keys=[created_by], backref='created_job_works')
     inspector = db.relationship('User', foreign_keys=[inspected_by], backref='inspected_job_works')
+    # processes relationship will be defined in JobWorkProcess model to avoid forward reference issues
     
     @property
     def total_cost(self):
@@ -774,6 +775,79 @@ class JobWorkTeamAssignment(db.Model):
         ).scalar() or 0
         
         self.actual_hours_worked = total_hours
+
+class JobWorkProcess(db.Model):
+    """Model for tracking individual processes within a job work"""
+    __tablename__ = 'job_work_processes'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    job_work_id = db.Column(db.Integer, db.ForeignKey('job_works.id'), nullable=False)
+    process_name = db.Column(db.String(100), nullable=False)  # Zinc, Cutting, Bending, Welding, etc.
+    sequence_number = db.Column(db.Integer, nullable=False, default=1)  # Order of process execution
+    status = db.Column(db.String(20), default='pending')  # pending, in_progress, completed, on_hold
+    
+    # Define the back-relationship here to avoid forward reference issues
+    job_work = db.relationship('JobWork', backref='processes')
+    
+    # Quantity tracking for this specific process
+    quantity_input = db.Column(db.Float, nullable=False)  # Quantity received for this process
+    quantity_output = db.Column(db.Float, default=0.0)  # Quantity completed from this process
+    quantity_scrap = db.Column(db.Float, default=0.0)  # Scrap generated in this process
+    
+    # Process-specific details
+    customer_name = db.Column(db.String(100))  # Customer for this process (may differ per process)
+    rate_per_unit = db.Column(db.Float, default=0.0)  # Rate for this specific process
+    work_type = db.Column(db.String(20), default='outsourced')  # in_house or outsourced
+    department = db.Column(db.String(100))  # Department for in-house processes
+    
+    # Timing
+    start_date = db.Column(db.Date)  # When this process started
+    expected_completion = db.Column(db.Date)  # Expected completion date
+    actual_completion = db.Column(db.Date)  # Actual completion date
+    
+    # Process tracking
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    notes = db.Column(db.Text)
+    
+    @property
+    def process_cost(self):
+        """Calculate cost for this specific process"""
+        return (self.quantity_input or 0.0) * (self.rate_per_unit or 0.0)
+    
+    @property
+    def completion_percentage(self):
+        """Calculate completion percentage for this process"""
+        if not self.quantity_input or self.quantity_input == 0:
+            return 0.0
+        output_plus_scrap = (self.quantity_output or 0.0) + (self.quantity_scrap or 0.0)
+        return min(100.0, (output_plus_scrap / self.quantity_input) * 100)
+    
+    @property
+    def status_badge_class(self):
+        """Return Bootstrap badge class for status"""
+        status_classes = {
+            'pending': 'bg-secondary',
+            'in_progress': 'bg-primary',
+            'completed': 'bg-success',
+            'on_hold': 'bg-warning'
+        }
+        return status_classes.get(self.status, 'bg-secondary')
+    
+    @property
+    def process_badge_class(self):
+        """Return Bootstrap badge class for process type"""
+        process_classes = {
+            'Zinc': 'bg-info',
+            'Cutting': 'bg-danger',
+            'Bending': 'bg-warning',
+            'Welding': 'bg-dark',
+            'Painting': 'bg-success',
+            'Assembly': 'bg-primary',
+            'Machining': 'bg-secondary',
+            'Polishing': 'bg-light text-dark'
+        }
+        return process_classes.get(self.process_name, 'bg-secondary')
 
 class Production(db.Model):
     __tablename__ = 'productions'
