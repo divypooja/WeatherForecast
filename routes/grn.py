@@ -517,6 +517,33 @@ def quick_receive_multi_process(job_work_id):
                 grn.inspected_by = current_user.id
                 grn.inspected_at = datetime.utcnow()
             
+            # Update job work status and quantity_received based on completion
+            # For multi-process jobs, we need to check if all expected outputs have been received
+            total_expected_output = sum(p.output_quantity or 0 for p in processes if p.output_item_id)
+            total_received_output = sum(gli.quantity_passed for grn_item in GRN.query.filter_by(job_work_id=job_work_id).all() 
+                                      for gli in grn_item.line_items if gli.item_id != job_work.item_id)  # Exclude input material
+            
+            if total_received_output >= total_expected_output and total_expected_output > 0:
+                # All expected output received - mark job as completed
+                job_work.status = 'completed'
+                job_work.quantity_received = job_work.quantity_sent  # Mark input as fully processed
+                
+                # Remove input material from WIP since it's been transformed
+                if hasattr(job_work.item, 'qty_wip_cutting'):
+                    job_work.item.qty_wip_cutting = max(0, (job_work.item.qty_wip_cutting or 0) - job_work.quantity_sent)
+                
+                completion_note = f"[{datetime.utcnow().strftime('%Y-%m-%d %H:%M')}] Completed via GRN {grn.grn_number} - All expected output materials received"
+            else:
+                # Partial completion
+                job_work.status = 'partial_received'
+                completion_note = f"[{datetime.utcnow().strftime('%Y-%m-%d %H:%M')}] Partial receipt via GRN {grn.grn_number} - {quantity_passed} {receiving_item.unit_of_measure} received"
+            
+            # Add completion note to job work
+            if job_work.notes:
+                job_work.notes += f"\n{completion_note}"
+            else:
+                job_work.notes = completion_note
+            
             db.session.commit()
             
             # Create success message with scrap tracking info
