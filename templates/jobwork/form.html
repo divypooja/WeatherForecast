@@ -94,7 +94,7 @@
                             
                             <div class="col-md-6 mb-3" id="process-field-single">
                                 {{ form.process_type.label(class="form-label") }}
-                                {{ form.process_type(class="form-select", id="process_type") }}
+                                {{ form.process_type(class="form-select", id="process_type", required=false) }}
                                 <small class="text-muted">Select the type of process for this job work</small>
                                 {% if form.process_type.errors %}
                                     <div class="text-danger small">
@@ -110,7 +110,7 @@
                         <div class="row" id="customer-row" style="display: none;">
                             <div class="col-md-12 mb-3">
                                 {{ form.customer_name.label(class="form-label") }}
-                                {{ form.customer_name(class="form-select", id="customer_name") }}
+                                {{ form.customer_name(class="form-select", id="customer_name", required=false) }}
                                 <small class="text-muted">Select vendor/customer for this job work</small>
                                 {% if form.customer_name.errors %}
                                     <div class="text-danger small">
