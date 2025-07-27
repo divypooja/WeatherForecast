@@ -36,6 +36,32 @@ def generate_job_number():
 
 multi_process_jobwork_bp = Blueprint('multi_process_jobwork', __name__, url_prefix='/jobwork/multi-process')
 
+@multi_process_jobwork_bp.route('/')
+@multi_process_jobwork_bp.route('/list')
+@login_required
+def list_multi_process_jobs():
+    """List all multi-process job works"""
+    jobs = JobWork.query.filter_by(work_type='multi_process').order_by(JobWork.created_at.desc()).all()
+    
+    # Add process summary for each job
+    job_summaries = []
+    for job in jobs:
+        processes = JobWorkProcess.query.filter_by(job_work_id=job.id).all()
+        total_cost = sum(p.process_cost for p in processes if p.process_cost) if processes else 0
+        completed_count = len([p for p in processes if p.status == 'completed']) if processes else 0
+        
+        job_summaries.append({
+            'job': job,
+            'total_processes': len(processes) if processes else 0,
+            'completed_processes': completed_count,
+            'total_cost': total_cost,
+            'progress_percentage': (completed_count / len(processes) * 100) if processes else 0
+        })
+    
+    return render_template('multi_process_jobwork/list.html', 
+                         job_summaries=job_summaries,
+                         title='Multi-Process Job Works')
+
 @multi_process_jobwork_bp.route('/add', methods=['GET', 'POST'])
 @login_required
 def add_multi_process_job():
@@ -287,30 +313,7 @@ def update_process(process_id):
                          title=f'Update {process.process_name} Process')
 
 
-@multi_process_jobwork_bp.route('/list')
-@login_required
-def list_multi_process_jobs():
-    """List all multi-process job works"""
-    jobs = JobWork.query.filter_by(work_type='multi_process').order_by(JobWork.created_at.desc()).all()
-    
-    # Add process summary for each job
-    job_summaries = []
-    for job in jobs:
-        processes = JobWorkProcess.query.filter_by(job_work_id=job.id).all()
-        total_cost = sum(p.process_cost for p in processes)
-        completed_count = len([p for p in processes if p.status == 'completed'])
-        
-        job_summaries.append({
-            'job': job,
-            'total_processes': len(processes),
-            'completed_processes': completed_count,
-            'total_cost': total_cost,
-            'progress_percentage': (completed_count / len(processes) * 100) if processes else 0
-        })
-    
-    return render_template('multi_process_jobwork/list.html', 
-                         job_summaries=job_summaries,
-                         title='Multi-Process Job Works')
+
 
 
 @multi_process_jobwork_bp.route('/api/process-template')
