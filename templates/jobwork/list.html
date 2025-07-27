@@ -92,6 +92,11 @@
                                         <a href="{{ url_for('documents.upload_document', transaction_type='job_work', transaction_id=job.id) }}" class="btn btn-outline-warning btn-sm" title="Upload Documents">
                                             <i class="fas fa-paperclip"></i>
                                         </a>
+                                        {% if job.status != 'completed' and job.work_type == 'outsourced' and job.has_pending_quantity %}
+                                        <a href="{{ url_for('grn.quick_receive', job_work_id=job.id) }}" class="btn btn-outline-warning btn-sm" title="Receive Materials">
+                                            <i class="fas fa-truck"></i> Receive
+                                        </a>
+                                        {% endif %}
                                         {% if job.status != 'completed' %}
                                         <a href="{{ url_for('jobwork.update_quantity', id=job.id) }}" class="btn btn-outline-success btn-sm" title="Update Quantity">
                                             <i class="fas fa-plus-circle"></i>

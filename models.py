@@ -556,6 +556,67 @@ class JobWork(db.Model):
         return f"₹{self.rate_per_unit:.2f}" if self.rate_per_unit else "₹0.00"
     
     @property
+    def pending_quantity(self):
+        """Calculate pending quantity to be received"""
+        return max(0, (self.quantity_sent or 0) - (self.quantity_received or 0))
+    
+    @property
+    def has_pending_quantity(self):
+        """Check if there's any pending quantity"""
+        return self.pending_quantity > 0
+    
+    @property
+    def total_grn_received(self):
+        """Calculate total quantity received through all GRNs"""
+        try:
+            from models_grn import GRN
+            total = 0
+            for grn in self.grn_receipts:
+                total += grn.total_quantity_received
+            return total
+        except:
+            return 0
+    
+    @property
+    def total_grn_passed(self):
+        """Calculate total quantity passed inspection through all GRNs"""
+        try:
+            from models_grn import GRN
+            total = 0
+            for grn in self.grn_receipts:
+                total += grn.total_quantity_passed
+            return total
+        except:
+            return 0
+    
+    @property
+    def total_grn_rejected(self):
+        """Calculate total quantity rejected through all GRNs"""
+        try:
+            from models_grn import GRN
+            total = 0
+            for grn in self.grn_receipts:
+                total += grn.total_quantity_rejected
+            return total
+        except:
+            return 0
+    
+    @property
+    def grn_acceptance_rate(self):
+        """Calculate overall acceptance rate from GRNs"""
+        total_received = self.total_grn_received
+        if total_received > 0:
+            return (self.total_grn_passed / total_received) * 100
+        return 0
+    
+    @property
+    def completion_percentage(self):
+        """Calculate completion percentage for job work"""
+        if self.quantity_sent > 0:
+            return min((self.quantity_received / self.quantity_sent) * 100, 100)
+        return 0
+    
+    @property
     def total_cost_display(self):
         """Return formatted total cost for display"""
         if self.work_type == 'in_house':
