@@ -92,7 +92,7 @@
                                         <a href="{{ url_for('documents.upload_document', transaction_type='job_work', transaction_id=job.id) }}" class="btn btn-outline-warning btn-sm" title="Upload Documents">
                                             <i class="fas fa-paperclip"></i>
                                         </a>
-                                        {% if job.work_type == 'outsourced' and job.has_pending_quantity %}
+                                        {% if job.work_type in ['outsourced', 'multi_process'] and job.has_pending_quantity %}
                                         <div class="btn-group btn-group-sm">
                                             <a href="{{ url_for('grn.quick_receive', job_work_id=job.id) }}" class="btn btn-outline-success btn-sm" title="Quick Receive Materials">
                                                 <i class="fas fa-truck"></i> Quick Receive
@@ -113,7 +113,7 @@
                                                 </a></li>
                                             </ul>
                                         </div>
-                                        {% elif job.work_type == 'outsourced' and not job.has_pending_quantity %}
+                                        {% elif job.work_type in ['outsourced', 'multi_process'] and not job.has_pending_quantity %}
                                         <span class="badge bg-success">All Materials Received</span>
                                         {% endif %}
                                         {% if job.work_type == 'in_house' and job.status != 'completed' %}
