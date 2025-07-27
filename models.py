@@ -1183,6 +1183,8 @@ class MaterialInspection(db.Model):
     inspection_number = db.Column(db.String(50), unique=True, nullable=False)
     purchase_order_id = db.Column(db.Integer, db.ForeignKey('purchase_orders.id'), nullable=True)
     job_work_id = db.Column(db.Integer, db.ForeignKey('job_works.id'), nullable=True)
+    process_id = db.Column(db.Integer, db.ForeignKey('job_work_processes.id'), nullable=True)
+    inspection_type = db.Column(db.String(50), default='general')  # general, job_work_process
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     material_classification = db.Column(db.String(50), nullable=False, default='raw_material')  # raw_material, production_use, finished_goods
     received_quantity = db.Column(db.Float, nullable=False)
