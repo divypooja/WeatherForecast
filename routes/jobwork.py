@@ -89,17 +89,23 @@ def add_job_work():
         print(f"Form errors: {form.errors}")
     
     if form.validate_on_submit():
+        print("Form validation passed, starting save process...")
+        
         # Check if job number already exists
         existing_job = JobWork.query.filter_by(job_number=form.job_number.data).first()
         if existing_job:
+            print(f"Job number already exists: {form.job_number.data}")
             flash('Job number already exists', 'danger')
             return render_template('jobwork/form.html', form=form, title='Add Job Work')
         
         # Check if there's sufficient inventory
         item = Item.query.get(form.item_id.data)
         if not item:
+            print(f"Item not found: {form.item_id.data}")
             flash('Selected item not found', 'danger')
             return render_template('jobwork/form.html', form=form, title='Add Job Work')
+        
+        print(f"Item found: {item.name}, current raw qty: {item.qty_raw}")
         
         # Initialize multi-state inventory if not set
         if item.qty_raw is None or item.qty_raw == 0.0:
@@ -113,24 +119,31 @@ def add_job_work():
             flash(f'Insufficient raw material inventory. Available: {item.qty_raw or 0} {item.unit_of_measure}', 'danger')
             return render_template('jobwork/form.html', form=form, title='Add Job Work')
 
-        job = JobWork(
-            job_number=form.job_number.data,
-            customer_name=form.customer_name.data,
-            item_id=form.item_id.data,
-            process=form.process_type.data,
-            work_type=form.work_type.data,
-            department=form.department.data if form.work_type.data == 'in_house' else None,
-            quantity_sent=form.quantity_sent.data,
-            expected_finished_material=form.expected_finished_material.data or 0.0,
-            expected_scrap=form.expected_scrap.data or 0.0,
-            rate_per_unit=form.rate_per_unit.data if form.work_type.data == 'outsourced' else 0.0,
-            sent_date=form.sent_date.data,
-            expected_return=form.expected_return.data,
-            notes=form.notes.data,
-            is_team_work=form.is_team_work.data if form.work_type.data == 'in_house' else False,
-            max_team_members=form.max_team_members.data if form.is_team_work.data and form.work_type.data == 'in_house' else 1,
-            created_by=current_user.id
-        )
+        print("Creating JobWork object...")
+        try:
+            job = JobWork(
+                job_number=form.job_number.data,
+                customer_name=form.customer_name.data,
+                item_id=form.item_id.data,
+                process=form.process_type.data,
+                work_type=form.work_type.data,
+                department=form.department.data if form.work_type.data == 'in_house' else None,
+                quantity_sent=form.quantity_sent.data,
+                expected_finished_material=form.expected_finished_material.data or 0.0,
+                expected_scrap=form.expected_scrap.data or 0.0,
+                rate_per_unit=form.rate_per_unit.data if form.work_type.data == 'outsourced' else 0.0,
+                sent_date=form.sent_date.data,
+                expected_return=form.expected_return.data,
+                notes=form.notes.data,
+                is_team_work=form.is_team_work.data if form.work_type.data == 'in_house' else False,
+                max_team_members=form.max_team_members.data if form.is_team_work.data and form.work_type.data == 'in_house' else 1,
+                created_by=current_user.id
+            )
+            print("JobWork object created successfully")
+        except Exception as e:
+            print(f"Error creating JobWork object: {e}")
+            flash(f'Error creating job work: {str(e)}', 'danger')
+            return render_template('jobwork/form.html', form=form, title='Add Job Work')
         
         # Move materials from raw to WIP (Work in Progress) for job work
         if item.move_to_wip(form.quantity_sent.data):
@@ -141,8 +154,18 @@ def add_job_work():
             # Fallback to legacy method
             item.current_stock = (item.current_stock or 0) - form.quantity_sent.data
         
+        print("Adding job to database session...")
         db.session.add(job)
-        db.session.commit()
+        
+        print("Committing to database...")
+        try:
+            db.session.commit()
+            print("Database commit successful")
+        except Exception as e:
+            print(f"Database commit failed: {e}")
+            db.session.rollback()
+            flash(f'Error saving job work: {str(e)}', 'danger')
+            return render_template('jobwork/form.html', form=form, title='Add Job Work')
         
         # Create appropriate success message based on work type
         if form.work_type.data == 'in_house':
