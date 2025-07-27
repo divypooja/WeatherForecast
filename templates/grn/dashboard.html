@@ -285,9 +285,32 @@
                                             Action
                                         </button>
                                         <ul class="dropdown-menu">
+                                            {% if po.items|length == 1 %}
+                                            <li>
+                                                <a class="dropdown-item" href="{{ url_for('grn.quick_receive_po', purchase_order_id=po.id, item_id=po.items[0].item_id) }}">
+                                                    <i class="fas fa-plus me-2"></i>Quick Receive
+                                                </a>
+                                            </li>
+                                            {% else %}
+                                            <li>
+                                                <h6 class="dropdown-header">Quick Receive:</h6>
+                                            </li>
+                                            {% for item in po.items[:3] %}
+                                            <li>
+                                                <a class="dropdown-item" href="{{ url_for('grn.quick_receive_po', purchase_order_id=po.id, item_id=item.item_id) }}">
+                                                    <i class="fas fa-plus me-2"></i>{{ item.item.name[:15] }}{{ '...' if item.item.name|length > 15 else '' }}
+                                                </a>
+                                            </li>
+                                            {% endfor %}
+                                            {% if po.items|length > 3 %}
+                                            <li>
+                                                <span class="dropdown-item-text small text-muted">{{ po.items|length - 3 }} more items...</span>
+                                            </li>
+                                            {% endif %}
+                                            {% endif %}
                                             <li>
                                                 <a class="dropdown-item" href="{{ url_for('grn.create_grn_for_po', purchase_order_id=po.id) }}">
-                                                    <i class="fas fa-receipt me-2"></i>Create GRN
+                                                    <i class="fas fa-receipt me-2"></i>Create Full GRN
                                                 </a>
                                             </li>
                                             <li><hr class="dropdown-divider"></li>
