@@ -152,9 +152,20 @@ def add_multi_process_job():
             
             print(f"Total process quantity: {total_process_quantity}, Required total: {total_quantity}")
             
-            # Business rule: Process quantities must equal total quantity (flexible distribution)
-            if total_process_quantity != total_quantity:
-                flash(f'Process quantities must equal total quantity. Current total: {total_process_quantity}, Required: {total_quantity}. Please adjust process quantities to sum exactly to {total_quantity}.', 'danger')
+            # Business rule: For sequential processes, each process can handle the full quantity
+            # For parallel processes, quantities must add up to total
+            # Allow both scenarios - user decides the workflow
+            
+            # Check if all processes have the same quantity (sequential workflow)
+            all_quantities = [float(json.loads(p)['quantity_input']) for p in processes_data]
+            is_sequential = all(q == total_quantity for q in all_quantities)
+            
+            print(f"Process quantities: {all_quantities}")
+            print(f"Is sequential workflow: {is_sequential}")
+            print(f"Total from processes: {total_process_quantity}")
+            
+            if not is_sequential and total_process_quantity != total_quantity:
+                flash(f'For parallel processes, quantities must sum to {total_quantity}. For sequential processes, each process should handle {total_quantity} pieces. Current total: {total_process_quantity}', 'danger')
                 return render_template('multi_process_jobwork/form.html', form=form, title='Add Multi-Process Job Work')
             
             # Create individual processes

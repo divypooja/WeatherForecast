@@ -15,6 +15,7 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **Process Workflow**: Sequential process management with status tracking, completion percentages, and visual progress indicators
 - **Dashboard Integration**: Added multi-process job work buttons to existing job work dashboard for easy access
 - **Validation & Security**: Comprehensive form validation with CSRF protection, process requirement checks, and inventory availability verification
+- **Flexible Process Workflows**: Support for both sequential (same parts through multiple processes) and parallel (different quantities per process) manufacturing workflows
 
 ### Complete Multi-State Inventory Tracking System Implementation (July 26, 2025)
 - **Multi-State Inventory Architecture**: Implemented comprehensive inventory tracking with Raw Material, WIP (Work in Progress), Finished Goods, and Scrap states for complete manufacturing workflow visibility
