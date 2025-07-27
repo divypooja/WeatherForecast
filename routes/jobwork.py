@@ -172,7 +172,7 @@ def add_job_work():
 @jobwork_bp.route('/detail/<int:id>')
 @login_required
 def detail(id):
-    """View job work details with team assignments"""
+    """View job work details with team assignments and multi-process information"""
     job = JobWork.query.get_or_404(id)
     
     # Get team assignments if this is a team work
