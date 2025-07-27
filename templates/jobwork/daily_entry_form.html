@@ -146,12 +146,12 @@
                         <!-- Additional Progress Fields -->
                         <div class="row mb-4">
                             <div class="col-md-6 mb-3">
-                                {{ form.scrap_quantity.label(class="form-label") }}
+                                {{ form.scrap_quantity.label(class="form-label") }} (kg)
                                 <div class="input-group">
-                                    {{ form.scrap_quantity(class="form-control") }}
-                                    <span class="input-group-text" id="scrap_unit">units</span>
+                                    {{ form.scrap_quantity(class="form-control", step="0.001") }}
+                                    <span class="input-group-text" id="scrap_unit">kg</span>
                                 </div>
-                                <small class="text-muted">Scrap/waste quantity produced today (optional)</small>
+                                <small class="text-muted">Scrap/waste quantity produced today in kilograms (optional)</small>
                                 {% if form.scrap_quantity.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.scrap_quantity.errors %}
