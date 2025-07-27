@@ -7,6 +7,7 @@
     <div class="row mb-4">
         <div class="col">
             <h1><i class="fas fa-tools"></i> {{ title }}</h1>
+            <p class="text-muted">Send materials for job work processing - single or multi-process</p>
         </div>
         <div class="col-auto">
             <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-secondary">
@@ -15,11 +16,37 @@
         </div>
     </div>
 
+    <!-- Job Work Type Selection -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-layer-group"></i> Job Work Type</h6>
+                </div>
+                <div class="card-body">
+                    <div class="btn-group w-100" role="group" aria-label="Job Work Type">
+                        <input type="radio" class="btn-check" name="jobWorkType" id="singleProcess" value="single" checked autocomplete="off">
+                        <label class="btn btn-outline-primary" for="singleProcess">
+                            <i class="fas fa-cog"></i> Single Process
+                            <br><small class="text-muted">Traditional job work with one process</small>
+                        </label>
+                        
+                        <input type="radio" class="btn-check" name="jobWorkType" id="multiProcess" value="multi" autocomplete="off">
+                        <label class="btn btn-outline-success" for="multiProcess">
+                            <i class="fas fa-cogs"></i> Multi-Process
+                            <br><small class="text-muted">Sequential processes (Cutting → Bending → Welding...)</small>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header">
-                    <h5>Job Work Details</h5>
+                    <h5><span id="formTitle">Single Process Job Work Details</span></h5>
                 </div>
                 <div class="card-body">
                     <form method="POST">
@@ -307,13 +334,56 @@
                             </div>
                         </div>
                         
+                        <!-- Multi-Process Section - Hidden by default -->
+                        <div id="multi-process-section" style="display: none;">
+                            <div class="card mb-3 border-success">
+                                <div class="card-header bg-success text-white">
+                                    <h6 class="mb-0"><i class="fas fa-cogs"></i> Multi-Process Configuration</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="processes-container">
+                                        <!-- Process forms will be added here dynamically -->
+                                    </div>
+                                    
+                                    <button type="button" class="btn btn-outline-primary" onclick="addProcess()">
+                                        <i class="fas fa-plus"></i> Add Process
+                                    </button>
+                                    
+                                    <!-- Cost Summary for Multi-Process -->
+                                    <div class="row mt-3">
+                                        <div class="col-12">
+                                            <div class="card bg-light">
+                                                <div class="card-body">
+                                                    <h6 class="card-title"><i class="fas fa-calculator"></i> Multi-Process Cost Summary</h6>
+                                                    <div class="row">
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-bold">Total Processes:</label>
+                                                            <div id="total-processes" class="fs-6 fw-bold text-info">0</div>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-bold">Total Quantity:</label>
+                                                            <div id="total-quantity-summary" class="fs-6 fw-bold text-warning">0 pcs</div>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-bold">Total Cost:</label>
+                                                            <div id="total-cost-multi" class="fs-5 fw-bold text-primary">₹0.00</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="d-flex justify-content-between">
                             <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-secondary">
                                 <i class="fas fa-times"></i> Cancel
                             </a>
                             <div>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-save"></i> {{ 'Update' if job else 'Save' }} Job Work
+                                <button type="submit" class="btn btn-primary" id="submitBtn">
+                                    <i class="fas fa-save"></i> <span id="submitText">{{ 'Update' if job else 'Save' }} Job Work</span>
                                 </button>
                             </div>
                         </div>
@@ -758,6 +828,267 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initial cost calculation update
     updateCostCalculation();
+    
+    // Add event listeners for job work type selection
+    const singleProcessRadio = document.getElementById('singleProcess');
+    const multiProcessRadio = document.getElementById('multiProcess');
+    
+    if (singleProcessRadio && multiProcessRadio) {
+        singleProcessRadio.addEventListener('change', toggleJobWorkMode);
+        multiProcessRadio.addEventListener('change', toggleJobWorkMode);
+        
+        // Initialize in single process mode
+        toggleJobWorkMode();
+    }
+    
+    // Override form submission to handle multi-process data
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const multiProcess = document.getElementById('multiProcess');
+            
+            if (multiProcess && multiProcess.checked) {
+                e.preventDefault();
+                
+                const processCards = document.querySelectorAll('.process-card');
+                const processesData = [];
+                
+                processCards.forEach(card => {
+                    const processData = {
+                        process_name: card.querySelector('.process-name').value,
+                        sequence_number: parseInt(card.querySelector('.sequence-number').value),
+                        quantity_input: parseFloat(card.querySelector('.quantity-input').value),
+                        work_type: card.querySelector('.work-type').value,
+                        customer_name: card.querySelector('.customer-name').value,
+                        department: card.querySelector('.department').value,
+                        rate_per_unit: parseFloat(card.querySelector('.rate-per-unit').value) || 0,
+                        start_date: document.getElementById('sent_date').value,
+                        expected_completion: card.querySelector('.expected-completion').value,
+                        notes: card.querySelector('.process-notes').value
+                    };
+                    
+                    processesData.push(JSON.stringify(processData));
+                });
+                
+                // Add hidden inputs for processes data
+                processesData.forEach(processJson => {
+                    const hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = 'processes';
+                    hiddenInput.value = processJson;
+                    this.appendChild(hiddenInput);
+                });
+                
+                // Add hidden field to indicate multi-process mode
+                const multiProcessInput = document.createElement('input');
+                multiProcessInput.type = 'hidden';
+                multiProcessInput.name = 'is_multi_process';
+                multiProcessInput.value = 'true';
+                this.appendChild(multiProcessInput);
+                
+                // Submit the form
+                this.submit();
+            }
+        });
+    }
 });
+
+// Multi-Process Job Work Functions
+let processCounter = 0;
+
+// Function to toggle between single and multi-process modes
+function toggleJobWorkMode() {
+    const singleProcess = document.getElementById('singleProcess').checked;
+    const multiProcess = document.getElementById('multiProcess').checked;
+    
+    const multiProcessSection = document.getElementById('multi-process-section');
+    const formTitle = document.getElementById('formTitle');
+    const submitText = document.getElementById('submitText');
+    
+    if (multiProcess) {
+        // Show multi-process section, hide some single process fields
+        multiProcessSection.style.display = 'block';
+        formTitle.textContent = 'Multi-Process Job Work Details';
+        submitText.textContent = 'Create Multi-Process Job Work';
+        
+        // Hide single process specific fields
+        const customerRow = document.getElementById('customer-row');
+        const departmentRow = document.getElementById('department-row');
+        const rateRow = document.getElementById('rate-row');
+        const teamWorkSection = document.getElementById('team-work-section');
+        
+        if (customerRow) customerRow.style.display = 'none';
+        if (departmentRow) departmentRow.style.display = 'none';
+        if (rateRow) rateRow.style.display = 'none';
+        if (teamWorkSection) teamWorkSection.style.display = 'none';
+        
+        // Initialize with one process if none exist
+        if (processCounter === 0) {
+            addProcess();
+        }
+    } else {
+        // Show single process fields, hide multi-process section
+        multiProcessSection.style.display = 'none';
+        formTitle.textContent = 'Single Process Job Work Details';
+        submitText.textContent = 'Create Job Work';
+        
+        // Show single process fields based on work type
+        toggleCustomerFields();
+    }
+}
+
+// Function to add a new process in multi-process mode
+function addProcess() {
+    processCounter++;
+    
+    const processHtml = `
+        <div class="card mb-3 process-card" id="process-${processCounter}">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="fas fa-cog"></i> Process ${processCounter}</h6>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeProcess(${processCounter})">
+                    <i class="fas fa-trash"></i> Remove
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Process Name</label>
+                        <select class="form-select process-name" required>
+                            <option value="">Select Process</option>
+                            <option value="Zinc">Zinc</option>
+                            <option value="Cutting">Cutting</option>
+                            <option value="Bending">Bending</option>
+                            <option value="Welding">Welding</option>
+                            <option value="Painting">Painting</option>
+                            <option value="Assembly">Assembly</option>
+                            <option value="Machining">Machining</option>
+                            <option value="Polishing">Polishing</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">Sequence</label>
+                        <input type="number" class="form-control sequence-number" value="${processCounter}" min="1" required>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">Quantity</label>
+                        <input type="number" class="form-control quantity-input" min="0" step="0.01" required onchange="updateMultiProcessCostSummary()">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Work Type</label>
+                        <select class="form-select work-type" onchange="toggleProcessFields(${processCounter})" required>
+                            <option value="outsourced">Outsourced</option>
+                            <option value="in_house">In-House</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">Rate/Unit</label>
+                        <input type="number" class="form-control rate-per-unit" min="0" step="0.01" onchange="updateMultiProcessCostSummary()">
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4 mb-3 customer-field">
+                        <label class="form-label">Customer/Vendor</label>
+                        <select class="form-select customer-name">
+                            <option value="">Select Customer/Vendor</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3 department-field" style="display: none;">
+                        <label class="form-label">Department</label>
+                        <select class="form-select department">
+                            <option value="">Select Department</option>
+                            <option value="production">Production</option>
+                            <option value="assembly">Assembly</option>
+                            <option value="quality_control">Quality Control</option>
+                            <option value="finishing">Finishing</option>
+                            <option value="packaging">Packaging</option>
+                            <option value="maintenance">Maintenance</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Expected Completion</label>
+                        <input type="date" class="form-control expected-completion">
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label class="form-label">Process Notes</label>
+                        <textarea class="form-control process-notes" rows="2" placeholder="Specific instructions for this process"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('processes-container').insertAdjacentHTML('beforeend', processHtml);
+    
+    // Populate customer dropdown for new process
+    populateCustomerDropdown(processCounter);
+    
+    updateMultiProcessCostSummary();
+}
+
+// Function to remove a process
+function removeProcess(processId) {
+    document.getElementById(`process-${processId}`).remove();
+    updateMultiProcessCostSummary();
+}
+
+// Function to toggle fields based on work type for individual processes
+function toggleProcessFields(processId) {
+    const processCard = document.getElementById(`process-${processId}`);
+    const workType = processCard.querySelector('.work-type').value;
+    const customerField = processCard.querySelector('.customer-field');
+    const departmentField = processCard.querySelector('.department-field');
+    
+    if (workType === 'in_house') {
+        customerField.style.display = 'none';
+        departmentField.style.display = 'block';
+    } else {
+        customerField.style.display = 'block';
+        departmentField.style.display = 'none';
+    }
+}
+
+// Function to populate customer dropdown
+function populateCustomerDropdown(processId) {
+    // Get suppliers from existing single process dropdown if available
+    const existingCustomerSelect = document.getElementById('customer_name');
+    if (!existingCustomerSelect) return;
+    
+    const processCard = document.getElementById(`process-${processId}`);
+    const customerSelect = processCard.querySelector('.customer-name');
+    
+    // Copy options from existing dropdown
+    Array.from(existingCustomerSelect.options).forEach(option => {
+        if (option.value) {
+            const newOption = document.createElement('option');
+            newOption.value = option.value;
+            newOption.textContent = option.textContent;
+            customerSelect.appendChild(newOption);
+        }
+    });
+}
+
+// Function to update cost summary for multi-process
+function updateMultiProcessCostSummary() {
+    const processCards = document.querySelectorAll('.process-card');
+    let totalProcesses = processCards.length;
+    let totalCost = 0;
+    let totalQuantity = 0;
+    
+    processCards.forEach(card => {
+        const quantity = parseFloat(card.querySelector('.quantity-input').value) || 0;
+        const rate = parseFloat(card.querySelector('.rate-per-unit').value) || 0;
+        totalCost += quantity * rate;
+        totalQuantity += quantity;
+    });
+    
+    document.getElementById('total-processes').textContent = totalProcesses;
+    document.getElementById('total-quantity-summary').textContent = `${totalQuantity} pcs`;
+    document.getElementById('total-cost-multi').textContent = `₹${totalCost.toFixed(2)}`;
+}
+
 </script>
 {% endblock %}
