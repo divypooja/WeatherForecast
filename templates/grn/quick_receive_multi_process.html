@@ -44,22 +44,33 @@
                 </div>
             </div>
 
-            <!-- Process Summary -->
+            <!-- Process Summary with Output Products -->
             <div class="card mt-4">
                 <div class="card-header">
                     <h6><i class="fas fa-tasks me-2"></i>Process Summary</h6>
                 </div>
                 <div class="card-body">
                     {% for process in processes %}
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="small">{{ process.process_name }}</span>
-                        {% if process.status == 'completed' %}
-                            <span class="badge bg-success">Completed</span>
-                        {% elif process.status == 'in_progress' %}
-                            <span class="badge bg-warning">In Progress</span>
-                        {% else %}
-                            <span class="badge bg-secondary">Pending</span>
-                        {% endif %}
+                    <div class="mb-3 p-2 border rounded">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <strong class="text-primary">{{ process.process_name }}</strong>
+                            {% if process.status == 'completed' %}
+                                <span class="badge bg-success">Completed</span>
+                            {% elif process.status == 'in_progress' %}
+                                <span class="badge bg-warning">In Progress</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Pending</span>
+                            {% endif %}
+                        </div>
+                        <div class="small text-muted">
+                            <strong>Type:</strong> {{ process.work_type|title }}<br>
+                            {% if process.output_item_id %}
+                                <strong>Output Product:</strong> {{ process.output_item.name }}<br>
+                                <strong>Expected Qty:</strong> {{ process.output_quantity }} {{ process.output_item.unit_of_measure }}
+                            {% else %}
+                                <strong>Output Product:</strong> Same as input material
+                            {% endif %}
+                        </div>
                     </div>
                     {% endfor %}
                 </div>
@@ -104,7 +115,7 @@
                                     {{ form.quantity_received.label(class="form-label") }}
                                     <div class="input-group">
                                         {{ form.quantity_received(class="form-control", id="quantity_received") }}
-                                        <span class="input-group-text">{{ job_work.item.unit_of_measure }}</span>
+                                        <span class="input-group-text" id="received_unit">{{ job_work.item.unit_of_measure }}</span>
                                     </div>
                                     {% if form.quantity_received.errors %}
                                         <div class="text-danger small">{{ form.quantity_received.errors[0] }}</div>
@@ -117,7 +128,7 @@
                                     {{ form.quantity_rejected.label(class="form-label") }}
                                     <div class="input-group">
                                         {{ form.quantity_rejected(class="form-control", id="quantity_rejected") }}
-                                        <span class="input-group-text">{{ job_work.item.unit_of_measure }}</span>
+                                        <span class="input-group-text" id="rejected_unit">{{ job_work.item.unit_of_measure }}</span>
                                     </div>
                                     {% if form.quantity_rejected.errors %}
                                         <div class="text-danger small">{{ form.quantity_rejected.errors[0] }}</div>
@@ -129,7 +140,7 @@
                                     {{ form.quantity_passed.label(class="form-label") }}
                                     <div class="input-group">
                                         {{ form.quantity_passed(class="form-control", id="quantity_passed", readonly=True) }}
-                                        <span class="input-group-text">{{ job_work.item.unit_of_measure }}</span>
+                                        <span class="input-group-text" id="passed_unit">{{ job_work.item.unit_of_measure }}</span>
                                     </div>
                                     <div class="form-text text-success">Auto-calculated</div>
                                 </div>
@@ -205,6 +216,21 @@
 </div>
 
 <script>
+// Process data for dynamic updates
+const processData = {
+    {% for process in processes %}
+    {{ process.id }}: {
+        name: '{{ process.process_name }}',
+        workType: '{{ process.work_type }}',
+        status: '{{ process.status }}',
+        outputItemId: {{ process.output_item_id or 'null' }},
+        outputItemName: '{{ process.output_item.name if process.output_item_id else "" }}',
+        outputQuantity: {{ process.output_quantity or 'null' }},
+        outputUnit: '{{ process.output_item.unit_of_measure if process.output_item_id else job_work.item.unit_of_measure }}'
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+};
+
 // Auto-calculate passed quantity
 document.getElementById('quantity_received').addEventListener('input', calculatePassed);
 document.getElementById('quantity_rejected').addEventListener('input', calculatePassed);
@@ -216,7 +242,64 @@ function calculatePassed() {
     document.getElementById('quantity_passed').value = passed.toFixed(2);
 }
 
+// Update form based on selected process
+document.getElementById('process_selection').addEventListener('change', function() {
+    const processId = parseInt(this.value);
+    const process = processData[processId];
+    
+    if (process) {
+        // Update unit labels based on output product
+        const unit = process.outputUnit;
+        document.getElementById('received_unit').textContent = unit;
+        document.getElementById('rejected_unit').textContent = unit;
+        document.getElementById('passed_unit').textContent = unit;
+        
+        // Update max quantity hint (use expected output quantity if available)
+        const maxQuantity = process.outputQuantity || {{ job_work.quantity_sent - (job_work.quantity_received or 0) }};
+        const maxHint = document.querySelector('.form-text');
+        if (maxHint) {
+            maxHint.textContent = `Max: ${maxQuantity} ${unit}`;
+        }
+        
+        // Update process stage field if empty
+        const processStageField = document.getElementById('process_stage');
+        if (!processStageField.value) {
+            processStageField.value = `${process.name} Complete`;
+        }
+        
+        // Show output product information in a toast/alert
+        if (process.outputItemName) {
+            showProcessInfo(`Selected: ${process.name} → ${process.outputItemName} (Expected: ${process.outputQuantity} ${unit})`);
+        } else {
+            showProcessInfo(`Selected: ${process.name} → Same as input material`);
+        }
+    }
+});
+
+function showProcessInfo(message) {
+    // Create or update info alert
+    let alert = document.getElementById('process-info-alert');
+    if (!alert) {
+        alert = document.createElement('div');
+        alert.id = 'process-info-alert';
+        alert.className = 'alert alert-info alert-dismissible fade show mt-3';
+        alert.innerHTML = `
+            <i class="fas fa-info-circle me-2"></i>
+            <span id="process-info-text"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.querySelector('.card-body').insertBefore(alert, document.querySelector('form'));
+    }
+    document.getElementById('process-info-text').textContent = message;
+}
+
 // Initialize calculation on page load
 calculatePassed();
+
+// Trigger process selection change on page load if a process is already selected
+const processSelect = document.getElementById('process_selection');
+if (processSelect.value) {
+    processSelect.dispatchEvent(new Event('change'));
+}
 </script>
 {% endblock %}

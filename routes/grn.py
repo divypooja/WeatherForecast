@@ -383,8 +383,15 @@ def quick_receive_multi_process(job_work_id):
     form = MultiProcessQuickReceiveForm()
     form.job_work_id.data = job_work_id
     
-    # Populate process choices
-    form.process_selection.choices = [(p.id, f"{p.process_name} - {p.work_type} ({p.status})") for p in processes]
+    # Populate process choices with output product information
+    form.process_selection.choices = []
+    for p in processes:
+        output_info = ""
+        if p.output_item_id:
+            output_info = f" → {p.output_item.name} ({p.output_quantity} {p.output_item.unit_of_measure})"
+        else:
+            output_info = f" → Same as input"
+        form.process_selection.choices.append((p.id, f"{p.process_name} - {p.work_type} ({p.status}){output_info}"))
     
     if form.validate_on_submit():
         try:
@@ -411,14 +418,18 @@ def quick_receive_multi_process(job_work_id):
             # Auto-calculate passed quantity
             quantity_passed = form.quantity_received.data - (form.quantity_rejected.data or 0)
             
+            # Determine which item is being received (output item or original item)
+            receiving_item_id = selected_process.output_item_id if selected_process.output_item_id else job_work.item_id
+            receiving_item = Item.query.get(receiving_item_id)
+            
             # Create line item with process information
             line_item = GRNLineItem(
                 grn_id=grn.id,
-                item_id=job_work.item_id,
+                item_id=receiving_item_id,
                 quantity_received=form.quantity_received.data,
                 quantity_passed=quantity_passed,
                 quantity_rejected=form.quantity_rejected.data or 0,
-                unit_of_measure=job_work.item.unit_of_measure,
+                unit_of_measure=receiving_item.unit_of_measure,
                 inspection_status=form.inspection_status.data,
                 rejection_reason=form.rejection_reason.data,
                 process_name=selected_process.process_name,
@@ -428,10 +439,11 @@ def quick_receive_multi_process(job_work_id):
             
             # Update inventory if requested and materials passed inspection
             if form.add_to_inventory.data and quantity_passed > 0:
-                if hasattr(job_work.item, 'receive_from_wip'):
-                    job_work.item.receive_from_wip(quantity_passed, form.quantity_rejected.data or 0)
+                # Add to the output item's inventory (not the original raw material)
+                if hasattr(receiving_item, 'receive_from_wip'):
+                    receiving_item.receive_from_wip(quantity_passed, form.quantity_rejected.data or 0)
                 else:
-                    job_work.item.current_stock = (job_work.item.current_stock or 0) + quantity_passed
+                    receiving_item.current_stock = (receiving_item.current_stock or 0) + quantity_passed
                 grn.add_to_inventory = True
             else:
                 grn.add_to_inventory = False
