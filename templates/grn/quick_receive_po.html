@@ -97,20 +97,19 @@
                             <div class="col-md-6">
                                 <label class="form-label">Passed/Good Quantity</label>
                                 <div class="input-group">
-                                    {{ form.quantity_passed(class="form-control", id="quantity_passed", readonly=True) }}
+                                    {{ form.quantity_passed(class="form-control", id="quantity_passed") }}
                                     <span class="input-group-text">{{ po_item.uom or item.unit_of_measure }}</span>
                                 </div>
-                                <small class="text-muted">Auto-calculated</small>
+                                {% if form.quantity_passed.errors %}
+                                    <div class="text-danger">{{ form.quantity_passed.errors[0] }}</div>
+                                {% endif %}
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Rejected Quantity</label>
                                 <div class="input-group">
-                                    {{ form.quantity_rejected(class="form-control", id="quantity_rejected") }}
+                                    {{ form.quantity_rejected(class="form-control", id="quantity_rejected", readonly=True) }}
                                     <span class="input-group-text">{{ po_item.uom or item.unit_of_measure }}</span>
                                 </div>
-                                {% if form.quantity_rejected.errors %}
-                                    <div class="text-danger">{{ form.quantity_rejected.errors[0] }}</div>
-                                {% endif %}
                                 <small class="text-muted">Auto-calculated: Inspected Quantity - Passed Quantity</small>
                             </div>
                         </div>
@@ -207,16 +206,19 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function updateCalculations() {
         const received = parseFloat(quantityReceived.value) || 0;
-        const rejected = parseFloat(quantityRejected.value) || 0;
-        const passed = Math.max(0, received - rejected);
+        const passed = parseFloat(quantityPassed.value) || 0;
         
-        // Update all calculated fields
-        quantityPassed.value = passed.toFixed(2);
+        // Update inspected quantity to match received
         quantityInspected.value = received.toFixed(2);
+        
+        // Auto-calculate rejected quantity: Inspected - Passed
+        const rejected = Math.max(0, received - passed);
+        quantityRejected.value = rejected.toFixed(2);
     }
     
+    // Listen for changes in received and passed quantities
     quantityReceived.addEventListener('input', updateCalculations);
-    quantityRejected.addEventListener('input', updateCalculations);
+    quantityPassed.addEventListener('input', updateCalculations);
     
     // Initial calculation
     updateCalculations();
