@@ -240,7 +240,7 @@ function addProcess() {
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-3 mb-3">
+                    <div class="col-md-2 mb-3">
                         <label class="form-label">Process Name</label>
                         <select class="form-select process-name" required>
                             <option value="">Select Process</option>
@@ -258,11 +258,11 @@ function addProcess() {
                         <label class="form-label">Sequence</label>
                         <input type="number" class="form-control sequence-number" value="${processCounter}" min="1" required>
                     </div>
-                    <div class="col-md-1 mb-3">
+                    <div class="col-md-2 mb-3">
                         <label class="form-label">Quantity</label>
                         <input type="number" class="form-control quantity-input" min="0" step="0.01" required onchange="updateCostSummary()">
                     </div>
-                    <div class="col-md-1 mb-3">
+                    <div class="col-md-2 mb-3">
                         <label class="form-label">Scrap</label>
                         <input type="number" class="form-control expected-scrap" min="0" step="0.01" placeholder="0" onchange="updateCostSummary()">
                     </div>
