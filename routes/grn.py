@@ -306,7 +306,6 @@ def quick_receive(job_work_id):
                 unit_of_measure=job_work.item.unit_of_measure,
                 inspection_status=form.inspection_status.data,
                 rejection_reason=form.rejection_reason.data,
-                material_classification='finished_goods',
                 remarks=form.remarks.data
             )
             db.session.add(line_item)
@@ -422,7 +421,6 @@ def quick_receive_multi_process(job_work_id):
                 unit_of_measure=job_work.item.unit_of_measure,
                 inspection_status=form.inspection_status.data,
                 rejection_reason=form.rejection_reason.data,
-                material_classification='finished_goods',
                 process_name=selected_process.process_name,
                 process_stage=form.process_stage.data or selected_process.process_name
             )
@@ -641,7 +639,7 @@ def add_line_items(grn_id):
                 quality_grade=form.quality_grade.data,
                 process_name=form.process_name.data,
                 process_stage=form.process_stage.data,
-                material_classification=form.material_classification.data,
+
                 batch_number=form.batch_number.data,
                 serial_numbers=form.serial_numbers.data,
                 remarks=form.remarks.data

@@ -71,12 +71,7 @@ class GRNLineItemForm(FlaskForm):
     process_name = StringField('Process Name', validators=[Optional(), Length(max=100)])
     process_stage = StringField('Process Stage', validators=[Optional(), Length(max=50)])
     
-    # Material classification
-    material_classification = SelectField('Material Classification', choices=[
-        ('finished_goods', 'Finished Goods'),
-        ('semi_finished', 'Semi-Finished'),
-        ('raw_material', 'Raw Material')
-    ], default='finished_goods')
+
     
     # Tracking information
     batch_number = StringField('Batch Number', validators=[Optional(), Length(max=50)])

@@ -114,33 +114,15 @@ def list_items():
     items = query.order_by(Item.name).paginate(
         page=page, per_page=20, error_out=False)
     
-    # Get items separated by material classification
-    raw_materials = Item.query.filter(
-        Item.material_classification == 'raw_material'
-    ).order_by(Item.name).all()
+    # Get all items for the list
+    material_items = query.order_by(Item.name).all()
     
-    production_use_items = Item.query.filter(
-        Item.material_classification == 'production_use'
-    ).order_by(Item.name).all()
-    
-    finished_goods = Item.query.filter(
-        Item.material_classification == 'finished_goods'
-    ).order_by(Item.name).all()
-    
-    # Get counts for tabs
-    raw_material_count = len(raw_materials)
-    production_use_count = len(production_use_items)
-    finished_goods_count = len(finished_goods)
+    # Get total count
     total_items = Item.query.count()
     
     return render_template('inventory/list.html', 
                          items=items, 
-                         raw_materials=raw_materials,
-                         production_use_items=production_use_items,
-                         finished_goods=finished_goods,
-                         raw_material_count=raw_material_count,
-                         production_use_count=production_use_count,
-                         finished_goods_count=finished_goods_count,
+                         material_items=material_items,
                          total_items=total_items,
                          search=search,
                          item_type_filter=item_type_filter,
@@ -221,7 +203,6 @@ def add_item():
             minimum_stock=form.minimum_stock.data,
             unit_price=form.unit_price.data,
             unit_weight=form.unit_weight.data,
-            material_classification=form.material_classification.data,
             item_type_id=int(form.item_type.data),
             item_type=item_type_obj.name.lower() if item_type_obj else 'material'
         )
@@ -256,7 +237,6 @@ def edit_item(id):
         item.minimum_stock = form.minimum_stock.data
         item.unit_price = form.unit_price.data
         item.unit_weight = form.unit_weight.data
-        item.material_classification = form.material_classification.data
         item.item_type_id = int(form.item_type.data)
         item.item_type = item_type_obj.name.lower() if item_type_obj else 'material'
         

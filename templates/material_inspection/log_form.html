@@ -95,19 +95,6 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    {{ form.material_classification.label(class="form-label") }}
-                                    {{ form.material_classification(class="form-select", id="materialClassification") }}
-                                    {% for error in form.material_classification.errors %}
-                                        <div class="text-danger">{{ error }}</div>
-                                    {% endfor %}
-                                    <div class="form-text">
-                                        <i class="fas fa-tag me-1"></i>
-                                        Categorize this material - this will update the inventory classification
-                                    </div>
-                                </div>
-                            </div>
                         </div>
 
                         <!-- Inspection Progress Section (for Job Works) -->

@@ -12,9 +12,7 @@
                         <th style="min-width: 90px;">Code</th>
                         <th style="min-width: 120px;">Name</th>
                         <th style="min-width: 80px;">Type</th>
-                        {% if classification_type == 'all' %}
-                        <th style="min-width: 120px;">Classification</th>
-                        {% endif %}
+
                         <th style="min-width: 90px;">Current Stock</th>
                         <th style="min-width: 80px;">Min Stock</th>
                         <th style="min-width: 60px;">UOM</th>
@@ -38,27 +36,7 @@
                         <td>
                             <span class="badge bg-secondary">{{ item.display_item_type }}</span>
                         </td>
-                        {% if classification_type == 'all' %}
-                        <td>
-                            {% if item.material_classification == 'raw_material' %}
-                                <span class="badge bg-info">
-                                    <i class="fas fa-cubes me-1"></i>Raw Material
-                                </span>
-                            {% elif item.material_classification == 'production_use' %}
-                                <span class="badge bg-warning">
-                                    <i class="fas fa-cogs me-1"></i>Production Use
-                                </span>
-                            {% elif item.material_classification == 'finished_goods' %}
-                                <span class="badge bg-success">
-                                    <i class="fas fa-box me-1"></i>Finished Goods
-                                </span>
-                            {% else %}
-                                <span class="badge bg-light text-dark">
-                                    <i class="fas fa-question me-1"></i>Unclassified
-                                </span>
-                            {% endif %}
-                        </td>
-                        {% endif %}
+
                         <td>
                             {% if (item.current_stock or 0) <= (item.minimum_stock or 0) and (item.minimum_stock or 0) > 0 %}
                                 <span class="text-danger">{{ item.current_stock or 0 }}</span>

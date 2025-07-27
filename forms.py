@@ -24,12 +24,6 @@ class ItemForm(FlaskForm):
     minimum_stock = FloatField('Minimum Stock', validators=[NumberRange(min=0)], default=0.0)
     unit_price = FloatField('Unit Price', validators=[NumberRange(min=0)], default=0.0)
     unit_weight = FloatField('Unit Weight (kg)', validators=[NumberRange(min=0)], default=0.0)
-    material_classification = SelectField('Material Classification', 
-                                        choices=[('raw_material', 'Raw Material'), 
-                                               ('production_use', 'Production Use'), 
-                                               ('finished_goods', 'Finished Goods')],
-                                        validators=[DataRequired()],
-                                        default='raw_material')
     item_type = SelectField('Item Type', 
                           choices=[],  # Will be populated dynamically
                           validators=[DataRequired()])
@@ -609,12 +603,6 @@ class MaterialInspectionForm(FlaskForm):
     purchase_order_id = SelectField('Purchase Order', coerce=int, validators=[Optional()])
     job_work_id = SelectField('Job Work', coerce=int, validators=[Optional()])
     item_id = SelectField('Item', coerce=int, validators=[DataRequired()])
-    material_classification = SelectField('Material Classification', 
-                                        choices=[('raw_material', 'Raw Material'), 
-                                               ('production_use', 'Production Use'), 
-                                               ('finished_goods', 'Finished Goods')],
-                                        validators=[DataRequired()],
-                                        default='raw_material')
     received_quantity = FloatField('Received Quantity', validators=[DataRequired(), NumberRange(min=0.01)])
     inspected_quantity = FloatField('Inspected Quantity', validators=[DataRequired(), NumberRange(min=0.01)])
     passed_quantity = FloatField('Passed/Good Quantity', validators=[DataRequired(), NumberRange(min=0)])
