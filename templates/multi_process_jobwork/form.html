@@ -258,11 +258,15 @@ function addProcess() {
                         <label class="form-label">Sequence</label>
                         <input type="number" class="form-control sequence-number" value="${processCounter}" min="1" required>
                     </div>
-                    <div class="col-md-2 mb-3">
+                    <div class="col-md-1 mb-3">
                         <label class="form-label">Quantity</label>
                         <input type="number" class="form-control quantity-input" min="0" step="0.01" required onchange="updateCostSummary()">
                     </div>
-                    <div class="col-md-3 mb-3">
+                    <div class="col-md-1 mb-3">
+                        <label class="form-label">Scrap</label>
+                        <input type="number" class="form-control expected-scrap" min="0" step="0.01" placeholder="0" onchange="updateCostSummary()">
+                    </div>
+                    <div class="col-md-2 mb-3">
                         <label class="form-label">Work Type</label>
                         <select class="form-select work-type" onchange="toggleProcessFields(${processCounter})" required>
                             <option value="outsourced">Outsourced</option>
@@ -414,6 +418,7 @@ document.getElementById('multiProcessForm').addEventListener('submit', function(
             process_name: card.querySelector('.process-name').value,
             sequence_number: parseInt(card.querySelector('.sequence-number').value),
             quantity_input: parseFloat(card.querySelector('.quantity-input').value),
+            expected_scrap: parseFloat(card.querySelector('.expected-scrap').value) || 0,
             work_type: card.querySelector('.work-type').value,
             customer_name: card.querySelector('.customer-name').value,
             department: card.querySelector('.department').value,

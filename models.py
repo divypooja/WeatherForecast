@@ -790,6 +790,7 @@ class JobWorkProcess(db.Model):
     quantity_input = db.Column(db.Float, nullable=False, default=0.0)
     quantity_output = db.Column(db.Float, default=0.0)
     quantity_scrap = db.Column(db.Float, default=0.0)
+    expected_scrap = db.Column(db.Float, default=0.0)  # Expected scrap quantity for planning
     
     # Work assignment fields
     work_type = db.Column(db.String(20), default='outsourced')  # outsourced, in_house

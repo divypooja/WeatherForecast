@@ -177,6 +177,7 @@ def add_multi_process_job():
                         process_name=process_data['process_name'],
                         sequence_number=process_data.get('sequence_number', i + 1),
                         quantity_input=process_data['quantity_input'],
+                        expected_scrap=process_data.get('expected_scrap', 0.0),
                         work_type=process_data['work_type'],
                         customer_name=process_data.get('customer_name', ''),
                         department=process_data.get('department', ''),
