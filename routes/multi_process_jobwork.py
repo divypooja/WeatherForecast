@@ -11,6 +11,29 @@ from forms_jobwork_process import MultiProcessJobWorkForm, JobWorkProcessForm, P
 from datetime import datetime, date
 import json
 
+def generate_job_number():
+    """Generate unique job number in format MPJOB-YYYY-0001"""
+    from datetime import datetime
+    current_year = datetime.now().year
+    
+    # Find the highest job number for current year for multi-process jobs
+    last_job = JobWork.query.filter(
+        JobWork.job_number.like(f'MPJOB-{current_year}-%'),
+        JobWork.work_type == 'multi_process'
+    ).order_by(JobWork.job_number.desc()).first()
+    
+    if last_job:
+        # Extract the number part and increment
+        try:
+            last_number = int(last_job.job_number.split('-')[-1])
+            next_number = last_number + 1
+        except (IndexError, ValueError):
+            next_number = 1
+    else:
+        next_number = 1
+    
+    return f"MPJOB-{current_year}-{next_number:04d}"
+
 multi_process_jobwork_bp = Blueprint('multi_process_jobwork', __name__, url_prefix='/jobwork/multi-process')
 
 @multi_process_jobwork_bp.route('/add', methods=['GET', 'POST'])
@@ -41,9 +64,12 @@ def add_multi_process_job():
                     flash(f'Insufficient raw materials. Available: {item.qty_raw}, Required: {form.total_quantity.data}', 'danger')
                     return render_template('multi_process_jobwork/form.html', form=form, title='Add Multi-Process Job Work')
                 
+                # Generate unique job number
+                job_number = generate_job_number()
+                
                 # Create main job work record
                 job = JobWork(
-                    job_number=form.job_number.data,
+                    job_number=job_number,
                     customer_name="Multi-Process Job",  # Will be handled by individual processes
                     item_id=form.item_id.data,
                     process="Multi-Process",  # Indicates this is a multi-process job
@@ -92,7 +118,7 @@ def add_multi_process_job():
                 # Move materials from Raw to WIP
                 if item.move_to_wip(form.total_quantity.data):
                     db.session.commit()
-                    flash(f'Multi-process job work {job.job_number} created successfully! {form.total_quantity.data} units moved to WIP state.', 'success')
+                    flash(f'Multi-process job work {job_number} created successfully! {form.total_quantity.data} units moved to WIP state.', 'success')
                     return redirect(url_for('multi_process_jobwork.detail', id=job.id))
                 else:
                     flash('Failed to move materials to WIP state', 'danger')

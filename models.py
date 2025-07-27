@@ -786,8 +786,68 @@ class JobWorkProcess(db.Model):
     sequence_number = db.Column(db.Integer, nullable=False, default=1)  # Order of process execution
     status = db.Column(db.String(20), default='pending')  # pending, in_progress, completed, on_hold
     
+    # Process tracking fields
+    quantity_input = db.Column(db.Float, nullable=False, default=0.0)
+    quantity_output = db.Column(db.Float, default=0.0)
+    quantity_scrap = db.Column(db.Float, default=0.0)
+    
+    # Work assignment fields
+    work_type = db.Column(db.String(20), default='outsourced')  # outsourced, in_house
+    customer_name = db.Column(db.String(100))  # For outsourced work
+    department = db.Column(db.String(100))  # For in-house work
+    rate_per_unit = db.Column(db.Float, default=0.0)
+    
+    # Date tracking
+    start_date = db.Column(db.Date)
+    expected_completion = db.Column(db.Date)
+    actual_completion = db.Column(db.Date)
+    
+    # Notes and timestamps
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
     # Define the back-relationship here to avoid forward reference issues
     job_work = db.relationship('JobWork', backref='processes')
+    
+    @property
+    def process_cost(self):
+        """Calculate total cost for this process"""
+        return self.quantity_input * self.rate_per_unit
+    
+    @property
+    def completion_percentage(self):
+        """Calculate completion percentage based on output + scrap vs input"""
+        if self.quantity_input == 0:
+            return 0
+        processed = (self.quantity_output or 0) + (self.quantity_scrap or 0)
+        return min(100, (processed / self.quantity_input) * 100)
+    
+    @property
+    def status_badge_class(self):
+        """Return Bootstrap badge class for status"""
+        status_classes = {
+            'pending': 'bg-secondary',
+            'in_progress': 'bg-primary',
+            'completed': 'bg-success',
+            'on_hold': 'bg-warning'
+        }
+        return status_classes.get(self.status, 'bg-secondary')
+    
+    @property
+    def process_badge_class(self):
+        """Return Bootstrap badge class for process type"""
+        process_classes = {
+            'Zinc': 'bg-info',
+            'Cutting': 'bg-warning',
+            'Bending': 'bg-primary',
+            'Welding': 'bg-danger',
+            'Painting': 'bg-success',
+            'Assembly': 'bg-dark',
+            'Machining': 'bg-secondary',
+            'Polishing': 'bg-light text-dark'
+        }
+        return process_classes.get(self.process_name, 'bg-secondary')
     
     # Quantity tracking for this specific process
     quantity_input = db.Column(db.Float, nullable=False)  # Quantity received for this process

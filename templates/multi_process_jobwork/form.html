@@ -35,15 +35,9 @@
                             </div>
                             
                             <div class="col-md-4 mb-3">
-                                {{ form.job_number.label(class="form-label") }}
-                                {{ form.job_number(class="form-control") }}
-                                {% if form.job_number.errors %}
-                                    <div class="text-danger small">
-                                        {% for error in form.job_number.errors %}
-                                            <div>{{ error }}</div>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
+                                <label class="form-label">Job Number</label>
+                                <input type="text" class="form-control" value="Auto-generated (MPJOB-YYYY-0001)" readonly>
+                                <small class="text-muted">Job number will be automatically generated when saved</small>
                             </div>
                             
                             <div class="col-md-4 mb-3">
