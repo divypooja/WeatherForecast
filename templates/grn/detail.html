@@ -49,7 +49,7 @@
                         {% elif grn.purchase_order %}
                         <div class="col-md-4">
                             <strong>Purchase Order:</strong><br>
-                            <a href="{{ url_for('purchase.detail', id=grn.purchase_order.id) }}" class="text-decoration-none">
+                            <a href="{{ url_for('purchase.edit_purchase_order', id=grn.purchase_order.id) }}" class="text-decoration-none">
                                 {{ grn.purchase_order.po_number }}
                             </a>
                         </div>
