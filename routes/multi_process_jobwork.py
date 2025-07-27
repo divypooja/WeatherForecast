@@ -210,7 +210,9 @@ def add_multi_process_job():
                         rate_per_unit=process_data.get('rate_per_unit', 0.0),
                         start_date=datetime.strptime(process_data['start_date'], '%Y-%m-%d').date() if process_data.get('start_date') else None,
                         expected_completion=datetime.strptime(process_data['expected_completion'], '%Y-%m-%d').date() if process_data.get('expected_completion') else None,
-                        notes=process_data.get('notes', '')
+                        notes=process_data.get('notes', ''),
+                        output_item_id=int(process_data['output_item_id']) if process_data.get('output_item_id') else None,
+                        output_quantity=float(process_data.get('output_quantity', 0))
                     )
                     
                     db.session.add(process)
@@ -328,7 +330,7 @@ def process_template():
 def get_all_items():
     """API endpoint to get all active items for output product dropdowns"""
     try:
-        items = Item.query.filter_by(is_active=True).order_by(Item.name).all()
+        items = Item.query.order_by(Item.name).all()
         items_data = []
         for item in items:
             items_data.append({

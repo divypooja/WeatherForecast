@@ -483,7 +483,9 @@ document.getElementById('multiProcessForm').addEventListener('submit', function(
             rate_per_unit: parseFloat(card.querySelector('.rate-per-unit').value) || 0,
             start_date: document.getElementById('sent_date').value,
             expected_completion: card.querySelector('.expected-completion').value,
-            notes: card.querySelector('.process-notes').value
+            notes: '',
+            output_item_id: card.querySelector('.output-product-select').value,
+            output_quantity: parseFloat(card.querySelector('.output-quantity').value) || 0
         };
         
         processesData.push(JSON.stringify(processData));
