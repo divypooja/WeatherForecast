@@ -318,24 +318,31 @@ document.getElementById('process_selection').addEventListener('change', function
         document.getElementById('rejected_unit').textContent = unit;
         document.getElementById('passed_unit').textContent = unit;
         
-        // Update max quantity hint based on process expected output/input
+        // Calculate the correct max quantity for "Quantity Received from Process"
+        // This should equal the "Expected Qty" shown in the process summary
         let maxQuantity;
+        
         if (process.sequenceNumber === 1) {
-            // First process: Use the output_quantity (what cutting can produce - 3490.0 pcs)
-            // NOT the quantity_input (10.0 sheet input)
-            maxQuantity = process.outputQuantity || process.quantityInput;
+            // First process: Max is what this process can output (Expected Qty: 3500 pcs)
+            maxQuantity = process.outputQuantity;
         } else {
-            // Sequential process: Use previous process output_quantity as this process's max input
+            // Sequential processes: Max is what previous process can deliver  
+            // For Process 2 (Bending): Use Process 1 (Cutting) Expected Qty (3500 pcs)
             const prevProcessSeq = process.sequenceNumber - 1;
             const prevProcess = Object.values(processData).find(p => p.sequenceNumber === prevProcessSeq);
             
-            if (prevProcess) {
-                // Use previous process output_quantity (e.g., 3490 pcs from cutting)
-                maxQuantity = prevProcess.outputQuantity || prevProcess.quantityInput;
+            if (prevProcess && prevProcess.outputQuantity) {
+                // Use previous process Expected Qty (output_quantity)
+                maxQuantity = prevProcess.outputQuantity;
             } else {
-                // Fallback to this process output quantity
-                maxQuantity = process.outputQuantity || process.quantityInput;
+                // Fallback: Use this process expected output
+                maxQuantity = process.outputQuantity;
             }
+        }
+        
+        // Final fallback if no output quantity specified
+        if (!maxQuantity) {
+            maxQuantity = process.quantityInput;
         }
         
         const maxHint = document.querySelector('.form-text');
