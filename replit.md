@@ -16,6 +16,9 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **Quick Actions Update**: Replaced daily entry quick actions with GRN Dashboard and Material Inspection links for streamlined navigation
 - **Workflow Clarity**: Added informational alerts explaining that daily entries have been replaced by GRN system for all job work material receipt operations
 - **Material Inspection Integration**: Enhanced integration between Job Work system and GRN-based material inspection workflow for comprehensive quality control
+- **Multi-Process Job Work GRN Integration**: Extended GRN workflow to Multi-Process Job Works, replacing individual process management with unified material receipt system
+- **Job Work Detail Page Updates**: Updated all job work detail pages to show GRN-based material receipt options for all work types (In-House, Outsourced, Multi-Process)
+- **Template Consistency**: Eliminated work-type-specific sections and implemented unified GRN workflow messaging across all job work templates
 
 ### Fully Automated Purchase Order Workflow Implementation (July 27, 2025)
 - **Complete PO Automation**: Implemented fully automated Purchase Order status workflow eliminating all manual status updates except cancellation

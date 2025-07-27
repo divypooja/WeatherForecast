@@ -99,9 +99,10 @@
                                                    class="btn btn-sm btn-outline-primary" title="View Details">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
-                                                {% if summary.progress_percentage < 100 %}
-                                                    <a href="#" class="btn btn-sm btn-outline-warning" title="Edit Job Work">
-                                                        <i class="fas fa-edit"></i>
+                                                {% if job.has_pending_quantity %}
+                                                    <a href="{{ url_for('grn.quick_receive', job_work_id=job.id) }}" 
+                                                       class="btn btn-sm btn-outline-success" title="Receive Materials via GRN">
+                                                        <i class="fas fa-receipt"></i>
                                                     </a>
                                                 {% endif %}
                                             </div>
