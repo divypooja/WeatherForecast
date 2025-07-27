@@ -262,7 +262,8 @@
                 </div>
             </div>
 
-            <!-- Job Work Status -->
+            <!-- Job Work Status - Only show for Job Work GRNs -->
+            {% if grn.job_work %}
             <div class="card mt-3">
                 <div class="card-header">
                     <h6 class="mb-0"><i class="fas fa-tools me-2"></i>Job Work Status</h6>
@@ -288,6 +289,34 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
+
+            <!-- Purchase Order Status - Only show for PO GRNs -->
+            {% if grn.purchase_order %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>Purchase Order Status</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <strong>PO Status:</strong><br>
+                        <span class="badge bg-{{ 'success' if grn.purchase_order.status == 'closed' else 'warning' if grn.purchase_order.status == 'partial' else 'info' }}">
+                            {{ grn.purchase_order.status.title() }}
+                        </span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>Order Date:</strong><br>
+                        {{ grn.purchase_order.order_date.strftime('%d/%m/%Y') }}
+                    </div>
+                    {% if grn.purchase_order.expected_date %}
+                    <div class="mb-2">
+                        <strong>Expected Date:</strong><br>
+                        {{ grn.purchase_order.expected_date.strftime('%d/%m/%Y') }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
