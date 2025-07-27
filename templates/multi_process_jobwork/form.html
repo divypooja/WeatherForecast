@@ -290,6 +290,31 @@ function addProcess() {
                     </div>
                 </div>
                 
+                <!-- Output Products Section -->
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <h6 class="text-success border-bottom pb-1">
+                            <i class="fas fa-arrow-right"></i> Output Products
+                            <small class="text-muted">(What finished products will be created?)</small>
+                        </h6>
+                    </div>
+                    
+                    <div class="col-md-8 mb-3">
+                        <label class="form-label">Output Product</label>
+                        <select class="form-select output-product-select">
+                            <option value="">Select Output Product</option>
+                            <!-- Options will be populated dynamically -->
+                        </select>
+                        <small class="text-muted">Select the finished product that will be created from this process</small>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Output Quantity</label>
+                        <input type="number" class="form-control output-quantity" step="0.01" min="0" value="0.0" placeholder="Expected output">
+                        <small class="text-muted">How many units expected</small>
+                    </div>
+                </div>
+                
                 <div class="row">
                     <div class="col-md-4 mb-3 customer-field">
                         <label class="form-label">Customer/Vendor</label>
@@ -332,6 +357,28 @@ function addProcess() {
     populateCustomerDropdown(processCounter);
     
     updateCostSummary();
+    
+    // Populate output product dropdown for this process
+    populateOutputProductDropdown(processCounter);
+}
+
+// Function to populate output product dropdown
+function populateOutputProductDropdown(processIndex) {
+    fetch('/jobwork/multi-process/api/all-items')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const processDiv = document.getElementById(`process-${processIndex}`);
+                const select = processDiv.querySelector('.output-product-select');
+                if (select) {
+                    select.innerHTML = '<option value="">Select Output Product</option>';
+                    data.items.forEach(item => {
+                        select.innerHTML += `<option value="${item.id}">${item.code} - ${item.name}</option>`;
+                    });
+                }
+            }
+        })
+        .catch(error => console.error('Error loading output products:', error));
 }
 
 // Function to remove a process

@@ -322,3 +322,25 @@ def process_template():
     """API endpoint to get process form template for dynamic addition"""
     form = JobWorkProcessForm()
     return render_template('multi_process_jobwork/process_template.html', form=form)
+
+@multi_process_jobwork_bp.route('/api/all-items')
+@login_required
+def get_all_items():
+    """API endpoint to get all active items for output product dropdowns"""
+    try:
+        items = Item.query.filter_by(is_active=True).order_by(Item.name).all()
+        items_data = []
+        for item in items:
+            items_data.append({
+                'id': item.id,
+                'code': item.code,
+                'name': item.name,
+                'unit_of_measure': item.unit_of_measure
+            })
+        
+        return jsonify({
+            'success': True,
+            'items': items_data
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})

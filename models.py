@@ -864,6 +864,10 @@ class JobWorkProcess(db.Model):
     quantity_scrap = db.Column(db.Float, default=0.0)
     expected_scrap = db.Column(db.Float, default=0.0)  # Expected scrap quantity for planning
     
+    # Output product specification
+    output_item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=True)  # What product is being created
+    output_quantity = db.Column(db.Float, default=0.0)  # How many units of output product expected
+    
     # Work assignment fields
     work_type = db.Column(db.String(20), default='outsourced')  # outsourced, in_house
     customer_name = db.Column(db.String(100))  # For outsourced work
@@ -882,6 +886,7 @@ class JobWorkProcess(db.Model):
     
     # Define the back-relationship here to avoid forward reference issues
     job_work = db.relationship('JobWork', backref='processes')
+    output_item = db.relationship('Item', foreign_keys=[output_item_id], backref='processes_output')
     
     @property
     def process_cost(self):
