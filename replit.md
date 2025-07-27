@@ -6,7 +6,17 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (July 26, 2025)
 
-### Multi-Process Job Work System with Auto-Generated Numbers (Latest - July 27, 2025)
+### Complete GRN-Based Job Work Management System (Latest - July 27, 2025)
+- **GRN-Managed Outsourced Job Works**: Completely replaced manual status updates (Partial/Complete buttons) with comprehensive GRN-based material receipt management for all outsourced job works
+- **Workflow Separation**: Clear separation between outsourced jobs (managed via GRN system) and in-house jobs (managed via daily work entries) throughout all interfaces
+- **Enhanced Job Work Dashboard**: Replaced all Partial/Complete buttons with context-aware GRN actions - "Receive Materials" for outsourced jobs with pending quantities, "Daily Entry" for in-house jobs
+- **Job Work List Actions**: Updated job work list with GRN-focused dropdown actions - "Quick Receive", "Create Full GRN", and "GRN Dashboard" for seamless material receipt workflow
+- **Job Work Detail Page Redesign**: Replaced manual status update section with GRN-based material receipt interface providing clear workflow guidance based on job type (outsourced vs in-house)
+- **Automated Status Management**: Job work status (partial_received/completed) automatically updated through GRN material receipt with comprehensive audit trail notes including timestamps and GRN numbers
+- **Comprehensive Activity Logging**: All material receipts logged with detailed information including quantities received, pending amounts, and GRN references in job work notes for complete traceability
+- **Quality Control Integration**: GRN system handles material classification, inspection status, acceptance rates, and rejection tracking for complete quality management workflow
+
+### Multi-Process Job Work System with Auto-Generated Numbers (July 27, 2025)
 - **Auto-Generated Job Numbers**: Implemented MPJOB-YYYY-0001 format for multi-process job work numbers with automatic sequential generation
 - **Enhanced Form Processing**: Fixed CSRF token validation issues by implementing manual form processing for complex multi-process data
 - **Complete Process Management**: JobWorkProcess model with comprehensive tracking fields including quantity input/output/scrap, work type, vendor/department assignment, rates, and completion tracking
