@@ -515,17 +515,23 @@ def reset_database():
         # Delete all child tables first to avoid foreign key violations
         if reset_inspections or reset_production or reset_purchase_sales or reset_inventory:
             print("Deleting all related child records first...")
+            # Delete all child tables in correct order
+            db.session.execute(db.text("DELETE FROM grn_line_items"))
+            db.session.execute(db.text("DELETE FROM grn"))
+            db.session.execute(db.text("DELETE FROM daily_job_work_entries"))
+            db.session.execute(db.text("DELETE FROM job_work_processes"))
+            db.session.execute(db.text("DELETE FROM job_work_rates"))
             db.session.execute(db.text("DELETE FROM purchase_order_items"))
             db.session.execute(db.text("DELETE FROM sales_order_items"))
             db.session.execute(db.text("DELETE FROM bom_items"))
-            db.session.execute(db.text("DELETE FROM boms"))  # Added missing BOM table
+            db.session.execute(db.text("DELETE FROM boms"))
             db.session.execute(db.text("DELETE FROM item_uom_conversions"))
+            db.session.execute(db.text("DELETE FROM material_inspections"))
             print("Child records deleted successfully")
         
         # Now delete parent records in safe order
         if reset_inspections:
             print(f"Deleting {counts['material_inspections']} material inspections and {counts['quality_issues']} quality issues")
-            db.session.execute(db.text("DELETE FROM material_inspections"))
             db.session.execute(db.text("DELETE FROM quality_issues"))
             deleted_items.append(f"Material Inspections ({counts['material_inspections']}) & Quality Issues ({counts['quality_issues']})")
         
