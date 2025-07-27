@@ -273,15 +273,19 @@ const processData = {
     {{ process.id }}: {
         name: {{ process.process_name|tojson }},
         sequenceNumber: {{ process.sequence_number }},
-        outputQuantity: {{ process.output_quantity }},
-        quantityInput: {{ process.quantity_input }},
+        outputQuantity: {{ process.output_quantity if process.output_quantity is not none else 0 }},
+        quantityInput: {{ process.quantity_input if process.quantity_input is not none else 0 }},
         outputUnit: {{ (process.output_item.unit_of_measure if process.output_item_id else job_work.item.unit_of_measure)|tojson }}
     }{% if not loop.last %},{% endif %}
     {% endfor %}
 };
 
-// Debug: Log the actual process data being rendered
+// Debug: Log the actual process data being rendered with detailed values
 console.log('Process Data:', processData);
+Object.keys(processData).forEach(key => {
+    const process = processData[key];
+    console.log(`Process ${key} (${process.name}): outputQuantity=${process.outputQuantity}, quantityInput=${process.quantityInput}`);
+});
 
 // Auto-calculate passed quantity
 function calculatePassed() {
