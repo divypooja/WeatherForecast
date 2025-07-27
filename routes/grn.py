@@ -8,6 +8,65 @@ from datetime import datetime, date
 from utils import generate_next_number
 from sqlalchemy import func, and_, or_
 
+
+def update_po_status_based_on_grn(purchase_order_id):
+    """Automatically update Purchase Order status based on GRN activities"""
+    try:
+        po = PurchaseOrder.query.get(purchase_order_id)
+        if not po:
+            return
+            
+        # Get all GRNs for this PO
+        po_grns = GRN.query.filter_by(purchase_order_id=purchase_order_id).all()
+        
+        if not po_grns:
+            # No GRNs yet, keep as 'sent'
+            if po.status not in ['cancelled']:
+                po.status = 'sent'
+            return
+            
+        # Calculate total ordered vs received quantities
+        total_ordered = {}
+        total_received = {}
+        
+        # Sum ordered quantities by item
+        for po_item in po.items:
+            item_id = po_item.item_id
+            total_ordered[item_id] = total_ordered.get(item_id, 0) + po_item.quantity
+            
+        # Sum received quantities by item from all GRNs
+        for grn in po_grns:
+            for line_item in grn.line_items:
+                item_id = line_item.item_id
+                total_received[item_id] = total_received.get(item_id, 0) + line_item.quantity_received
+                
+        # Determine new status
+        all_items_fully_received = True
+        any_items_partially_received = False
+        
+        for item_id, ordered_qty in total_ordered.items():
+            received_qty = total_received.get(item_id, 0)
+            
+            if received_qty < ordered_qty:
+                all_items_fully_received = False
+                
+            if received_qty > 0:
+                any_items_partially_received = True
+                
+        # Update PO status
+        if all_items_fully_received:
+            po.status = 'closed'
+        elif any_items_partially_received:
+            po.status = 'partial'
+        else:
+            po.status = 'sent'
+            
+        db.session.commit()
+        
+    except Exception as e:
+        print(f"Error updating PO status: {str(e)}")
+        db.session.rollback()
+
 grn_bp = Blueprint('grn', __name__)
 
 @grn_bp.route('/dashboard')
@@ -144,7 +203,7 @@ def create_grn_for_po(purchase_order_id):
     purchase_order = PurchaseOrder.query.get_or_404(purchase_order_id)
     
     # Check if user can create GRN for this PO
-    if purchase_order.status not in ['approved', 'partial']:
+    if purchase_order.status not in ['sent', 'partial']:
         flash('Cannot create GRN for this purchase order. Invalid status.', 'error')
         return redirect(url_for('purchase.detail', id=purchase_order_id))
     
@@ -171,6 +230,9 @@ def create_grn_for_po(purchase_order_id):
             
             db.session.add(grn)
             db.session.commit()
+            
+            # Update PO status automatically based on GRN creation
+            update_po_status_based_on_grn(purchase_order_id)
             
             flash(f'GRN {grn.grn_number} created successfully for PO {purchase_order.po_number}!', 'success')
             return redirect(url_for('grn.add_line_items', grn_id=grn.id))
@@ -346,6 +408,9 @@ def quick_receive_po(purchase_order_id, item_id):
                 grn.inspected_at = datetime.utcnow()
             
             db.session.commit()
+            
+            # Update PO status automatically based on GRN receipt
+            update_po_status_based_on_grn(purchase_order_id)
             
             flash(f'Materials received successfully! GRN {grn.grn_number} created for PO {purchase_order.po_number}.', 'success')
             return redirect(url_for('purchase.edit_purchase_order', id=purchase_order_id))
