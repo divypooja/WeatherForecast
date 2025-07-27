@@ -12,40 +12,67 @@ material_inspection = Blueprint('material_inspection', __name__)
 @material_inspection.route('/dashboard')
 @login_required
 def dashboard():
-    """Material Inspection Dashboard"""
-    # Get all POs that need inspection - exclude cancelled POs
-    # Include POs with partial status even if some inspection is completed (for additional deliveries)
-    # Include POs with pending/in_progress/failed inspection status
-    all_pos_with_items = PurchaseOrder.query.filter(
+    """Material Inspection Dashboard with filtering"""
+    # Get filter parameters
+    search = request.args.get('search', '').strip()
+    customer_filter = request.args.get('customer', '').strip()
+    status_filter = request.args.get('status', '').strip()
+    type_filter = request.args.get('type', '').strip()
+    
+    # Build base query for POs
+    po_query = PurchaseOrder.query.filter(
         PurchaseOrder.status != 'cancelled',
         PurchaseOrder.inspection_required == True
     ).filter(
         # Include partial status POs (may need additional inspections) OR POs with incomplete inspection
         (PurchaseOrder.status == 'partial') |
         (PurchaseOrder.inspection_status.in_(['pending', 'in_progress', 'failed']))
-    ).all()
+    )
     
-    # Filter to only show POs that have items and could need inspection
+    # Apply filters to PO query
+    if search:
+        po_query = po_query.filter(PurchaseOrder.po_number.ilike(f'%{search}%'))
+    if customer_filter:
+        from models import Supplier
+        po_query = po_query.join(Supplier).filter(
+            Supplier.name.ilike(f'%{customer_filter}%')
+        )
+    if status_filter:
+        po_query = po_query.filter(PurchaseOrder.status == status_filter)
+    
+    # Get filtered POs
+    all_pos_with_items = po_query.all() if type_filter != 'job' else []
     pending_po_inspections = [po for po in all_pos_with_items if po.items]
     
-    # For job works, show outsourced and multi-process ones for traditional inspection
-    # In-house job works use daily entries for inspection
-    # Include job works with partial_received status that may need additional inspections
-    # Include job works with pending/in_progress/failed inspection status
-    pending_job_inspections = JobWork.query.filter(
+    # Build base query for Job Works
+    job_query = JobWork.query.filter(
         JobWork.work_type.in_(['outsourced', 'multi_process']),  # Include multi-process job works for inspection
         JobWork.inspection_required == True
     ).filter(
         # Include partial_received status jobs (may need additional inspections) OR jobs with incomplete inspection
         (JobWork.status == 'partial_received') |
         (JobWork.inspection_status.in_(['pending', 'in_progress', 'failed']))
-    ).all()
+    )
     
-    # Get in-house job works with daily entries that need inspection
-    pending_daily_entries = DailyJobWorkEntry.query.join(JobWork).filter(
-        JobWork.work_type == 'in_house',
-        DailyJobWorkEntry.inspection_status == 'pending'
-    ).order_by(DailyJobWorkEntry.work_date.desc()).limit(10).all()
+    # Apply filters to Job Work query
+    if search:
+        job_query = job_query.filter(JobWork.job_number.ilike(f'%{search}%'))
+    if customer_filter:
+        job_query = job_query.filter(JobWork.customer_name.ilike(f'%{customer_filter}%'))
+    if status_filter:
+        job_query = job_query.filter(JobWork.status == status_filter)
+    
+    # Get filtered Job Works
+    pending_job_inspections = job_query.all() if type_filter != 'po' else []
+    
+    # Get in-house job works with daily entries that need inspection (if available)
+    try:
+        pending_daily_entries = DailyJobWorkEntry.query.join(JobWork).filter(
+            JobWork.work_type == 'in_house',
+            DailyJobWorkEntry.inspection_status == 'pending'
+        ).order_by(DailyJobWorkEntry.work_date.desc()).limit(10).all()
+    except:
+        pending_daily_entries = []
     
     # Get recent inspections
     recent_inspections = MaterialInspection.query.order_by(

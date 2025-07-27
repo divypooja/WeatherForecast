@@ -34,6 +34,63 @@
         </div>
     </div>
 
+    <!-- Filter and Search Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-filter me-2"></i>Filter & Search Inspections</h6>
+                </div>
+                <div class="card-body">
+                    <form method="GET" action="{{ url_for('material_inspection.dashboard') }}" id="filterForm">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Search PO/Job Number</label>
+                                <input type="text" class="form-control" name="search" value="{{ request.args.get('search', '') }}" 
+                                       placeholder="PO-2025-0001 or JOB-2025-0001">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Customer/Supplier</label>
+                                <input type="text" class="form-control" name="customer" value="{{ request.args.get('customer', '') }}" 
+                                       placeholder="Search customer or supplier">
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <label class="form-label">Status</label>
+                                <select name="status" class="form-select">
+                                    <option value="">All Status</option>
+                                    <option value="pending" {{ 'selected' if request.args.get('status') == 'pending' }}>Pending</option>
+                                    <option value="partial" {{ 'selected' if request.args.get('status') == 'partial' }}>Partial</option>
+                                    <option value="completed" {{ 'selected' if request.args.get('status') == 'completed' }}>Completed</option>
+                                    <option value="sent" {{ 'selected' if request.args.get('status') == 'sent' }}>Sent</option>
+                                    <option value="partial_received" {{ 'selected' if request.args.get('status') == 'partial_received' }}>Partial Received</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <label class="form-label">Type</label>
+                                <select name="type" class="form-select">
+                                    <option value="">All Types</option>
+                                    <option value="po" {{ 'selected' if request.args.get('type') == 'po' }}>Purchase Orders</option>
+                                    <option value="job" {{ 'selected' if request.args.get('type') == 'job' }}>Job Works</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <label class="form-label">&nbsp;</label>
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-search"></i> Filter
+                                    </button>
+                                    <a href="{{ url_for('material_inspection.dashboard') }}" class="btn btn-outline-secondary btn-sm">
+                                        <i class="fas fa-times"></i> Clear
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Statistics Cards -->
     <div class="row mb-4">
         <div class="col-md-3">
@@ -102,9 +159,12 @@
         <!-- Pending Purchase Order Inspections -->
         <div class="col-lg-6">
             <div class="card">
-                <div class="card-header">
-                    <h5><i class="fas fa-file-invoice text-primary me-2"></i>Available PO Inspections</h5>
-                    <small class="text-muted">All Purchase Orders with items that may need inspection</small>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5><i class="fas fa-file-invoice text-primary me-2"></i>Available PO Inspections</h5>
+                        <small class="text-muted">All Purchase Orders with items that may need inspection</small>
+                    </div>
+                    <span class="badge bg-primary">{{ pending_po_inspections|length }} found</span>
                 </div>
                 <div class="card-body">
                     {% if pending_po_inspections %}
@@ -157,9 +217,12 @@
         <!-- Pending Job Work Inspections -->
         <div class="col-lg-6">
             <div class="card">
-                <div class="card-header">
-                    <h5><i class="fas fa-tools text-success me-2"></i>Available Job Work Inspections</h5>
-                    <small class="text-muted">All outsourced Job Works that may need inspection</small>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5><i class="fas fa-tools text-success me-2"></i>Available Job Work Inspections</h5>
+                        <small class="text-muted">All outsourced Job Works that may need inspection</small>
+                    </div>
+                    <span class="badge bg-success">{{ pending_job_inspections|length }} found</span>
                 </div>
                 <div class="card-body">
                     {% if pending_job_inspections %}
