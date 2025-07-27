@@ -281,10 +281,8 @@ const processData = {
         outputQuantity: {{ process.output_quantity or 'null' }},
         quantityInput: {{ process.quantity_input or 'null' }},
         expectedQuantity: {{ process.output_quantity or process.quantity_input or 'null' }},
-        outputUnit: '{{ process.output_item.unit_of_measure if process.output_item_id else job_work.item.unit_of_measure }}',
-        inputSource: '{% if process.sequence_number == 1 %}{{ job_work.item.name }}{% else %}{% set prev_process = processes_sorted[loop.index0 - 1] %}{% if prev_process.output_item_id %}{{ prev_process.output_item.name }}{% else %}{{ job_work.item.name }}{% endif %}{% endif %}',
-        isSequential: {{ process.sequence_number > 1 }},
-        flowDescription: '{% if process.sequence_number == 1 %}{{ job_work.item.name }} → {{ process.output_item.name if process.output_item_id else "Same as input" }}{% else %}{% set prev_process = processes_sorted[loop.index0 - 1] %}{% if prev_process.output_item_id %}{{ prev_process.output_item.name }}{% else %}{{ job_work.item.name }}{% endif %} → {{ process.output_item.name if process.output_item_id else "Same as input" }}{% endif %}'
+        outputUnit: '{% if process.output_item_id %}{{ process.output_item.unit_of_measure }}{% else %}{{ job_work.item.unit_of_measure }}{% endif %}',
+        isSequential: {{ 'true' if process.sequence_number > 1 else 'false' }}
     }{% if not loop.last %},{% endif %}
     {% endfor %}
 };
