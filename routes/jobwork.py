@@ -73,9 +73,112 @@ def list_job_works():
 @jobwork_bp.route('/add', methods=['GET', 'POST'])
 @login_required
 def add_job_work():
-    """Redirect to unified multi-process job work form"""
-    # According to system design: unified form handles both single and multi-process jobs
-    return redirect(url_for('multi_process_jobwork.add_multi_process_job'))
+    """Simple unified job work form without complex quantity logic"""
+    if request.method == 'GET':
+        # Load data for form dropdowns
+        items = Item.query.filter_by(active=True).all()
+        suppliers = Supplier.query.filter(Supplier.partner_type.in_(['customer', 'both'])).all()
+        try:
+            from models_department import Department
+            departments = Department.query.filter_by(active=True).all()
+        except ImportError:
+            departments = []
+        
+        return render_template('jobwork/simple_add.html', 
+                             items=items, 
+                             suppliers=suppliers, 
+                             departments=departments)
+    
+    # Handle form submission
+    try:
+        # Extract form data
+        work_type = request.form.get('work_type')
+        item_id = int(request.form.get('item_id'))
+        process = request.form.get('process')
+        quantity_sent = float(request.form.get('quantity_sent'))
+        sent_date_str = request.form.get('sent_date')
+        expected_return_str = request.form.get('expected_return')
+        notes = request.form.get('notes', '')
+        
+        # Work type specific fields
+        customer_name = request.form.get('customer_name') if work_type == 'outsourced' else None
+        rate_per_unit = float(request.form.get('rate_per_unit', 0)) if work_type == 'outsourced' else 0.0
+        department = request.form.get('department') if work_type == 'in_house' else None
+        
+        # Parse dates
+        from datetime import datetime
+        sent_date = datetime.strptime(sent_date_str, '%Y-%m-%d').date() if sent_date_str else None
+        expected_return = datetime.strptime(expected_return_str, '%Y-%m-%d').date() if expected_return_str else None
+        
+        # Validate item and inventory
+        item = Item.query.get(item_id)
+        if not item:
+            flash('Selected item not found', 'error')
+            return redirect(url_for('jobwork.add_job_work'))
+        
+        # Initialize multi-state inventory if needed
+        if item.qty_raw is None or item.qty_raw == 0.0:
+            item.qty_raw = item.current_stock or 0.0
+            item.qty_wip = 0.0
+            item.qty_finished = 0.0
+            item.qty_scrap = 0.0
+        
+        # Check inventory
+        if item.qty_raw < quantity_sent:
+            flash(f'Insufficient raw material inventory. Available: {item.qty_raw or 0} {item.unit_of_measure}', 'error')
+            return redirect(url_for('jobwork.add_job_work'))
+        
+        # Generate job number
+        job_number = generate_job_number()
+        
+        # Create job work
+        job = JobWork(
+            job_number=job_number,
+            customer_name=customer_name,
+            item_id=item_id,
+            process=process,
+            work_type=work_type,
+            department=department,
+            quantity_sent=quantity_sent,
+            rate_per_unit=rate_per_unit,
+            sent_date=sent_date,
+            expected_return=expected_return,
+            notes=notes,
+            created_by=current_user.id
+        )
+        
+        # Move materials to WIP
+        if item.move_to_wip(quantity_sent):
+            movement_note = f"[{datetime.utcnow().strftime('%d/%m/%Y %H:%M')}] {quantity_sent} {item.unit_of_measure} moved to WIP for {job_number}"
+            job.notes = (job.notes or '') + f"\n{movement_note}"
+        else:
+            item.current_stock = (item.current_stock or 0) - quantity_sent
+        
+        db.session.add(job)
+        db.session.commit()
+        
+        # Success message
+        if work_type == 'in_house':
+            flash(f'Job Work {job_number} created successfully for in-house processing in {department} department.', 'success')
+        else:
+            flash(f'Job Work {job_number} created successfully for {customer_name}.', 'success')
+        
+        return redirect(url_for('jobwork.list_job_works'))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error creating job work: {str(e)}', 'error')
+        return redirect(url_for('jobwork.add_job_work'))
+
+@jobwork_bp.route('/api/generate-job-number')
+@login_required
+def api_generate_job_number():
+    """API endpoint to generate job number"""
+    try:
+        job_number = generate_job_number()
+        return jsonify({'job_number': job_number})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @jobwork_bp.route('/detail/<int:id>')
 @login_required
