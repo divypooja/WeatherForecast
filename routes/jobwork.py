@@ -147,11 +147,12 @@ def add_job_work():
             created_by=current_user.id
         )
         
-        # Move materials to WIP
-        if item.move_to_wip(quantity_sent):
-            movement_note = f"[{datetime.utcnow().strftime('%d/%m/%Y %H:%M')}] {quantity_sent} {item.unit_of_measure} moved to WIP for {job_number}"
+        # Move materials to process-specific WIP
+        if item.move_to_wip(quantity_sent, process):
+            movement_note = f"[{datetime.utcnow().strftime('%d/%m/%Y %H:%M')}] {quantity_sent} {item.unit_of_measure} moved to {process} WIP for {job_number}"
             job.notes = (job.notes or '') + f"\n{movement_note}"
         else:
+            # Fallback to legacy deduction if move_to_wip fails
             item.current_stock = (item.current_stock or 0) - quantity_sent
         
         db.session.add(job)

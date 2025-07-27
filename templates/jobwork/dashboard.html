@@ -17,6 +17,12 @@
                 <a href="{{ url_for('grn.dashboard') }}" class="btn btn-success">
                     <i class="fas fa-receipt"></i> GRN Dashboard
                 </a>
+                <a href="{{ url_for('live_status.process_dashboard') }}" class="btn btn-info">
+                    <i class="fas fa-broadcast-tower"></i> Live Status
+                </a>
+                <a href="{{ url_for('live_status.wip_breakdown') }}" class="btn btn-warning">
+                    <i class="fas fa-chart-pie"></i> WIP Breakdown
+                </a>
             </div>
             <div class="alert alert-info mt-2 mb-0">
                 <i class="fas fa-info-circle"></i> <strong>Unified Job Work Form:</strong> Now handles both single-process and multi-process jobs in one streamlined interface

@@ -200,6 +200,65 @@ class Supplier(db.Model):
 
 # Customer model removed - now using unified Supplier table for all business partners
 
+class ItemBatch(db.Model):
+    """Model for tracking inventory batches/lots for better traceability"""
+    __tablename__ = 'item_batches'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
+    batch_number = db.Column(db.String(50), nullable=False)  # Batch/Lot number
+    supplier_batch = db.Column(db.String(50))  # Supplier's batch number
+    manufacture_date = db.Column(db.Date)  # Date of manufacture
+    expiry_date = db.Column(db.Date)  # Expiry date (if applicable)
+    
+    # Batch quantities by state
+    qty_raw = db.Column(db.Float, default=0.0)
+    qty_wip = db.Column(db.Float, default=0.0)  # Legacy WIP
+    qty_finished = db.Column(db.Float, default=0.0)
+    qty_scrap = db.Column(db.Float, default=0.0)
+    
+    # Process-specific WIP for this batch
+    qty_wip_cutting = db.Column(db.Float, default=0.0)
+    qty_wip_bending = db.Column(db.Float, default=0.0)
+    qty_wip_welding = db.Column(db.Float, default=0.0)
+    qty_wip_zinc = db.Column(db.Float, default=0.0)
+    qty_wip_painting = db.Column(db.Float, default=0.0)
+    qty_wip_assembly = db.Column(db.Float, default=0.0)
+    qty_wip_machining = db.Column(db.Float, default=0.0)
+    qty_wip_polishing = db.Column(db.Float, default=0.0)
+    
+    # Quality information
+    quality_status = db.Column(db.String(20), default='good')  # good, defective, expired
+    quality_notes = db.Column(db.Text)
+    
+    # Tracking information
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    
+    # Relationships
+    item = db.relationship('Item', backref='batches')
+    creator = db.relationship('User', backref='created_batches')
+    
+    @property
+    def total_quantity(self):
+        """Calculate total quantity across all states"""
+        return (
+            (self.qty_raw or 0) + (self.qty_wip or 0) + (self.qty_finished or 0) + 
+            (self.qty_wip_cutting or 0) + (self.qty_wip_bending or 0) + (self.qty_wip_welding or 0) +
+            (self.qty_wip_zinc or 0) + (self.qty_wip_painting or 0) + (self.qty_wip_assembly or 0) +
+            (self.qty_wip_machining or 0) + (self.qty_wip_polishing or 0)
+        )
+    
+    @property
+    def is_expired(self):
+        """Check if this batch is expired"""
+        if self.expiry_date:
+            return datetime.now().date() > self.expiry_date
+        return False
+    
+    def __repr__(self):
+        return f'<ItemBatch {self.batch_number} - {self.item.name if self.item else "Unknown"}>'
+
 class ItemType(db.Model):
     __tablename__ = 'item_types'
     
@@ -260,9 +319,19 @@ class Item(db.Model):
     
     # Multi-state inventory tracking
     qty_raw = db.Column(db.Float, default=0.0)      # Raw material stock
-    qty_wip = db.Column(db.Float, default=0.0)      # Work in Progress (sent for job work)
+    qty_wip = db.Column(db.Float, default=0.0)      # Work in Progress (sent for job work) - LEGACY
     qty_finished = db.Column(db.Float, default=0.0) # Finished goods (completed job work)
     qty_scrap = db.Column(db.Float, default=0.0)    # Scrap/rejected material
+    
+    # Process-specific WIP breakdown
+    qty_wip_cutting = db.Column(db.Float, default=0.0)     # WIP in cutting process
+    qty_wip_bending = db.Column(db.Float, default=0.0)     # WIP in bending process  
+    qty_wip_welding = db.Column(db.Float, default=0.0)     # WIP in welding process
+    qty_wip_zinc = db.Column(db.Float, default=0.0)        # WIP in zinc plating process
+    qty_wip_painting = db.Column(db.Float, default=0.0)    # WIP in painting process
+    qty_wip_assembly = db.Column(db.Float, default=0.0)    # WIP in assembly process
+    qty_wip_machining = db.Column(db.Float, default=0.0)   # WIP in machining process
+    qty_wip_polishing = db.Column(db.Float, default=0.0)   # WIP in polishing process
     
     unit_price = db.Column(db.Float, default=0.0)
     unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
@@ -280,31 +349,171 @@ class Item(db.Model):
     @property
     def total_stock(self):
         """Calculate total stock across all states"""
-        return (self.qty_raw or 0) + (self.qty_wip or 0) + (self.qty_finished or 0)
+        return (self.qty_raw or 0) + (self.total_wip or 0) + (self.qty_finished or 0)
+    
+    @property
+    def total_wip(self):
+        """Calculate total WIP across all processes"""
+        process_wip = (
+            (self.qty_wip_cutting or 0) + (self.qty_wip_bending or 0) + 
+            (self.qty_wip_welding or 0) + (self.qty_wip_zinc or 0) + 
+            (self.qty_wip_painting or 0) + (self.qty_wip_assembly or 0) + 
+            (self.qty_wip_machining or 0) + (self.qty_wip_polishing or 0)
+        )
+        # Include legacy WIP for backward compatibility
+        return process_wip + (self.qty_wip or 0)
+    
+    @property
+    def wip_breakdown(self):
+        """Return WIP breakdown by process"""
+        return {
+            'cutting': self.qty_wip_cutting or 0,
+            'bending': self.qty_wip_bending or 0,
+            'welding': self.qty_wip_welding or 0,
+            'zinc': self.qty_wip_zinc or 0,
+            'painting': self.qty_wip_painting or 0,
+            'assembly': self.qty_wip_assembly or 0,
+            'machining': self.qty_wip_machining or 0,
+            'polishing': self.qty_wip_polishing or 0,
+            'other': self.qty_wip or 0  # Legacy WIP
+        }
     
     @property
     def available_stock(self):
         """Stock available for use (raw + finished, excluding WIP)"""
         return (self.qty_raw or 0) + (self.qty_finished or 0)
     
-    def move_to_wip(self, quantity):
-        """Move raw material to Work in Progress (job work sent)"""
+    def move_to_wip(self, quantity, process=None):
+        """Move raw material to Work in Progress (job work sent)
+        Args:
+            quantity: Amount to move to WIP
+            process: Process name (cutting, bending, welding, zinc, painting, assembly, machining, polishing)
+        """
         if self.qty_raw >= quantity:
             self.qty_raw -= quantity
-            self.qty_wip += quantity
+            
+            # Move to process-specific WIP if process specified
+            if process:
+                process_lower = process.lower()
+                if process_lower == 'cutting':
+                    self.qty_wip_cutting += quantity
+                elif process_lower == 'bending':
+                    self.qty_wip_bending += quantity
+                elif process_lower == 'welding':
+                    self.qty_wip_welding += quantity
+                elif process_lower == 'zinc':
+                    self.qty_wip_zinc += quantity
+                elif process_lower == 'painting':
+                    self.qty_wip_painting += quantity
+                elif process_lower == 'assembly':
+                    self.qty_wip_assembly += quantity
+                elif process_lower == 'machining':
+                    self.qty_wip_machining += quantity
+                elif process_lower == 'polishing':
+                    self.qty_wip_polishing += quantity
+                else:
+                    # Unknown process, use legacy WIP
+                    self.qty_wip += quantity
+            else:
+                # No process specified, use legacy WIP
+                self.qty_wip += quantity
             return True
         return False
     
-    def receive_from_wip(self, finished_qty, scrap_qty=0):
-        """Receive finished goods and scrap from WIP (job work completed)"""
+    def receive_from_wip(self, finished_qty, scrap_qty=0, process=None):
+        """Receive finished goods and scrap from WIP (job work completed)
+        Args:
+            finished_qty: Amount of finished goods
+            scrap_qty: Amount of scrap generated
+            process: Process name to receive from
+        """
         total_received = finished_qty + scrap_qty
-        if self.qty_wip >= total_received:
-            self.qty_wip -= total_received
-            self.qty_finished += finished_qty
-            self.qty_scrap += scrap_qty
-            # Update legacy current_stock for compatibility
-            self.current_stock = self.available_stock
-            return True
+        
+        # Check if we have enough WIP in the specified process
+        if process:
+            process_lower = process.lower()
+            process_wip = 0
+            
+            if process_lower == 'cutting':
+                process_wip = self.qty_wip_cutting or 0
+            elif process_lower == 'bending':
+                process_wip = self.qty_wip_bending or 0
+            elif process_lower == 'welding':
+                process_wip = self.qty_wip_welding or 0
+            elif process_lower == 'zinc':
+                process_wip = self.qty_wip_zinc or 0
+            elif process_lower == 'painting':
+                process_wip = self.qty_wip_painting or 0
+            elif process_lower == 'assembly':
+                process_wip = self.qty_wip_assembly or 0
+            elif process_lower == 'machining':  
+                process_wip = self.qty_wip_machining or 0
+            elif process_lower == 'polishing':
+                process_wip = self.qty_wip_polishing or 0
+            else:
+                process_wip = self.qty_wip or 0
+            
+            if process_wip >= total_received:
+                # Deduct from process-specific WIP
+                if process_lower == 'cutting':
+                    self.qty_wip_cutting -= total_received
+                elif process_lower == 'bending':
+                    self.qty_wip_bending -= total_received
+                elif process_lower == 'welding':
+                    self.qty_wip_welding -= total_received
+                elif process_lower == 'zinc':
+                    self.qty_wip_zinc -= total_received
+                elif process_lower == 'painting':
+                    self.qty_wip_painting -= total_received
+                elif process_lower == 'assembly':
+                    self.qty_wip_assembly -= total_received
+                elif process_lower == 'machining':
+                    self.qty_wip_machining -= total_received
+                elif process_lower == 'polishing':
+                    self.qty_wip_polishing -= total_received
+                else:
+                    self.qty_wip -= total_received
+                
+                # Add to finished and scrap
+                self.qty_finished += finished_qty
+                self.qty_scrap += scrap_qty
+                # Update legacy current_stock for compatibility
+                self.current_stock = self.available_stock
+                return True
+        else:
+            # Legacy behavior - use total WIP
+            if self.total_wip >= total_received:
+                # Try to deduct from legacy WIP first
+                if self.qty_wip >= total_received:
+                    self.qty_wip -= total_received
+                else:
+                    # Need to deduct from process-specific WIPs
+                    remaining = total_received
+                    if self.qty_wip > 0:
+                        deduct = min(self.qty_wip, remaining)
+                        self.qty_wip -= deduct
+                        remaining -= deduct
+                    
+                    # Deduct from process WIPs proportionally
+                    if remaining > 0:
+                        for process_attr in ['qty_wip_cutting', 'qty_wip_bending', 'qty_wip_welding', 
+                                           'qty_wip_zinc', 'qty_wip_painting', 'qty_wip_assembly', 
+                                           'qty_wip_machining', 'qty_wip_polishing']:
+                            if remaining <= 0:
+                                break
+                            process_qty = getattr(self, process_attr) or 0
+                            if process_qty > 0:
+                                deduct = min(process_qty, remaining)
+                                setattr(self, process_attr, process_qty - deduct)
+                                remaining -= deduct
+                
+                # Add to finished and scrap
+                self.qty_finished += finished_qty
+                self.qty_scrap += scrap_qty
+                # Update legacy current_stock for compatibility
+                self.current_stock = self.available_stock
+                return True
+        
         return False
     
     def sync_legacy_stock(self):
@@ -864,6 +1073,17 @@ class JobWorkProcess(db.Model):
     quantity_scrap = db.Column(db.Float, default=0.0)
     expected_scrap = db.Column(db.Float, default=0.0)  # Expected scrap quantity for planning
     
+    # Live status tracking with timestamps
+    status_history = db.Column(db.Text)  # JSON field to track status changes
+    started_at = db.Column(db.DateTime)  # When process actually started
+    completed_at = db.Column(db.DateTime)  # When process completed
+    on_hold_since = db.Column(db.DateTime)  # When process was put on hold
+    on_hold_reason = db.Column(db.String(200))  # Reason for hold
+    
+    # Batch tracking for this process
+    batch_number = db.Column(db.String(50))  # Batch/lot number for traceability
+    input_batch_ids = db.Column(db.Text)  # JSON array of input batch IDs
+    
     # Output product specification
     output_item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=True)  # What product is being created
     output_quantity = db.Column(db.Float, default=0.0)  # How many units of output product expected
@@ -932,6 +1152,64 @@ class JobWorkProcess(db.Model):
             'Polishing': 'bg-light text-dark'
         }
         return process_classes.get(self.process_name, 'bg-secondary')
+    
+    def update_status(self, new_status, user_id, reason=None):
+        """Update process status with tracking"""
+        import json
+        
+        old_status = self.status
+        self.status = new_status
+        
+        # Update timestamps based on status
+        now = datetime.utcnow()
+        if new_status == 'in_progress' and not self.started_at:
+            self.started_at = now
+        elif new_status == 'completed':
+            self.completed_at = now
+        elif new_status == 'on_hold':
+            self.on_hold_since = now
+            self.on_hold_reason = reason
+        elif new_status == 'in_progress' and old_status == 'on_hold':
+            # Resume from hold
+            self.on_hold_since = None
+            self.on_hold_reason = None
+        
+        # Track status history
+        try:
+            history = json.loads(self.status_history or '[]')
+        except (json.JSONDecodeError, TypeError):
+            history = []
+        
+        history.append({
+            'timestamp': now.isoformat(),
+            'old_status': old_status,
+            'new_status': new_status,
+            'user_id': user_id,
+            'reason': reason
+        })
+        
+        self.status_history = json.dumps(history)
+        self.updated_at = now
+        
+        return True
+    
+    @property
+    def time_in_current_status(self):
+        """Calculate time spent in current status"""
+        if self.status == 'in_progress' and self.started_at:
+            return datetime.utcnow() - self.started_at
+        elif self.status == 'completed' and self.completed_at and self.started_at:
+            return self.completed_at - self.started_at
+        elif self.status == 'on_hold' and self.on_hold_since:
+            return datetime.utcnow() - self.on_hold_since
+        return None
+    
+    @property
+    def is_delayed(self):
+        """Check if process is delayed based on expected completion"""
+        if self.expected_completion and self.status not in ['completed']:
+            return datetime.now().date() > self.expected_completion
+        return False
     
     # Quantity tracking for this specific process
     quantity_input = db.Column(db.Float, nullable=False)  # Quantity received for this process

@@ -73,6 +73,7 @@ def create_app():
     from routes.uom import uom_bp
     from routes.tally import tally_bp
     from routes.packing import packing_bp
+    from routes.live_status import live_status_bp
     
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -93,6 +94,7 @@ def create_app():
     app.register_blueprint(uom_bp, url_prefix='/uom')
     app.register_blueprint(tally_bp, url_prefix='/tally')
     app.register_blueprint(packing_bp, url_prefix='/packing')
+    app.register_blueprint(live_status_bp)
     from routes.backup import backup_bp
     app.register_blueprint(backup_bp, url_prefix='/backup')
     
