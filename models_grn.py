@@ -92,7 +92,7 @@ class GRN(db.Model):
     @property
     def is_fully_inspected(self):
         """Check if all received items have been inspected"""
-        return all(item.inspection_status == 'completed' for item in self.line_items)
+        return all(item.inspection_status in ['passed', 'rejected', 'partial'] for item in self.line_items)
     
     def __repr__(self):
         return f'<GRN {self.grn_number}>'
