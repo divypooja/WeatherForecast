@@ -69,6 +69,9 @@
                                         {% endfor %}
                                     </div>
                                 {% endif %}
+                                <small class="text-info">
+                                    <i class="fas fa-info-circle"></i> This is the total raw material quantity that will go through sequential processes
+                                </small>
                                 <div id="stock-info" class="mt-2"></div>
                             </div>
                         </div>
@@ -431,17 +434,19 @@ function updateCostSummary() {
     const processCards = document.querySelectorAll('.process-card');
     let totalProcesses = processCards.length;
     let totalCost = 0;
-    let totalQuantity = 0;
+    
+    // For sequential manufacturing, we don't add quantities - each process works on the same material
+    // The total quantity is what we specified in the main form, not sum of process quantities
+    const mainQuantity = parseFloat(document.getElementById('total_quantity').value) || 0;
     
     processCards.forEach(card => {
         const quantity = parseFloat(card.querySelector('.quantity-input').value) || 0;
         const rate = parseFloat(card.querySelector('.rate-per-unit').value) || 0;
         totalCost += quantity * rate;
-        totalQuantity += quantity;
     });
     
     document.getElementById('total-processes').textContent = totalProcesses;
-    document.getElementById('total-quantity-summary').textContent = `${totalQuantity} pcs`;
+    document.getElementById('total-quantity-summary').textContent = `${mainQuantity} pcs (Sequential Manufacturing)`;
     document.getElementById('total-cost').textContent = `₹${totalCost.toFixed(2)}`;
 }
 

@@ -175,39 +175,18 @@ def add_multi_process_job():
                 flash('At least one process must be defined', 'danger')
                 return render_template('multi_process_jobwork/form.html', form=form, title='Add Multi-Process Job Work')
             
-            # Validate total process quantities match total quantity
-            print("Validating process quantities...")
-            total_process_quantity = 0
+            # Parse and validate processes
+            print("Processing individual processes...")
             process_list = []
             
             for i, process_json in enumerate(processes_data):
                 try:
                     process_data = json.loads(process_json)
-                    process_quantity = float(process_data['quantity_input'])
-                    total_process_quantity += process_quantity
                     process_list.append(process_data)
-                    print(f"Process {i+1}: {process_data['process_name']} - Quantity: {process_quantity}")
+                    print(f"Process {i+1}: {process_data['process_name']} - Sequence: {process_data.get('sequence_number', i+1)}")
                 except (json.JSONDecodeError, KeyError, ValueError) as e:
                     flash(f'Error processing process {i+1}: {str(e)}', 'danger')
                     return render_template('multi_process_jobwork/form.html', form=form, title='Add Multi-Process Job Work')
-            
-            print(f"Total process quantity: {total_process_quantity}, Required total: {total_quantity}")
-            
-            # Business rule: For sequential processes, each process can handle the full quantity
-            # For parallel processes, quantities must add up to total
-            # Allow both scenarios - user decides the workflow
-            
-            # Check if all processes have the same quantity (sequential workflow)
-            all_quantities = [float(json.loads(p)['quantity_input']) for p in processes_data]
-            is_sequential = all(q == total_quantity for q in all_quantities)
-            
-            print(f"Process quantities: {all_quantities}")
-            print(f"Is sequential workflow: {is_sequential}")
-            print(f"Total from processes: {total_process_quantity}")
-            
-            if not is_sequential and total_process_quantity != total_quantity:
-                flash(f'For parallel processes, quantities must sum to {total_quantity}. For sequential processes, each process should handle {total_quantity} pieces. Current total: {total_process_quantity}', 'danger')
-                return render_template('multi_process_jobwork/form.html', form=form, title='Add Multi-Process Job Work')
             
             # Create individual processes
             print("Creating individual processes...")
