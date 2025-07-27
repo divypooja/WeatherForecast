@@ -399,6 +399,9 @@ function addProcess() {
     
     // Populate output product dropdown for this process
     populateOutputProductDropdown(processCounter);
+    
+    // Populate team lead dropdown for this process
+    populateTeamLeadDropdown(processCounter);
 }
 
 // Function to populate output product dropdown
@@ -418,6 +421,25 @@ function populateOutputProductDropdown(processIndex) {
             }
         })
         .catch(error => console.error('Error loading output products:', error));
+}
+
+// Function to populate team lead dropdown
+function populateTeamLeadDropdown(processIndex) {
+    fetch('/jobwork/multi-process/api/employees')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const processDiv = document.getElementById(`process-${processIndex}`);
+                const select = processDiv.querySelector('.team-lead');
+                if (select) {
+                    select.innerHTML = '<option value="">Select Team Lead</option>';
+                    data.employees.forEach(emp => {
+                        select.innerHTML += `<option value="${emp.id}">${emp.employee_code} - ${emp.name} (${emp.department})</option>`;
+                    });
+                }
+            }
+        })
+        .catch(error => console.error('Error loading employees:', error));
 }
 
 // Function to remove a process
