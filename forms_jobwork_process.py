@@ -37,6 +37,16 @@ class JobWorkProcessForm(FlaskForm):
                                default=0.0,
                                render_kw={'placeholder': 'Expected scrap quantity'})
     
+    # Output product specification
+    output_item_id = SelectField('Output Product', 
+                                coerce=int,
+                                render_kw={'placeholder': 'What product will be created?'})
+    
+    output_quantity = FloatField('Output Quantity', 
+                                validators=[NumberRange(min=0)], 
+                                default=0.0,
+                                render_kw={'placeholder': 'Expected quantity of output product'})
+    
     work_type = SelectField('Work Type',
                            validators=[DataRequired()],
                            coerce=str,
@@ -79,6 +89,10 @@ class JobWorkProcessForm(FlaskForm):
         # Populate customer choices from suppliers/vendors 
         suppliers = Supplier.query.order_by(Supplier.name).all()
         self.customer_name.choices = [('', 'Select Customer/Vendor')] + [(s.name, s.name) for s in suppliers]
+        
+        # Populate output product choices with all items
+        items = Item.query.filter_by(is_active=True).order_by(Item.name).all()
+        self.output_item_id.choices = [('', 'Select Output Product')] + [(str(i.id), f"{i.code} - {i.name}") for i in items]
 
 
 class MultiProcessJobWorkForm(FlaskForm):
