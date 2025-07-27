@@ -218,13 +218,17 @@ def add_multi_process_job():
                     flash(f'Error creating process {i+1}: {str(e)}', 'danger')
                     return render_template('multi_process_jobwork/form.html', form=form, title='Add Multi-Process Job Work')
                 
-            # Move materials from Raw to WIP
+            # Move materials from Raw to process-specific WIP
             print("Moving materials to WIP...")
-            if item.move_to_wip(total_quantity):
-                print("Materials moved successfully, committing transaction...")
+            # For multi-process jobs, move materials to the first process WIP
+            first_process = min(process_list, key=lambda p: p.get('sequence_number', 1))
+            process_name = first_process['process_name']
+            
+            if item.move_to_wip(total_quantity, process_name):
+                print(f"Materials moved successfully to {process_name} WIP, committing transaction...")
                 db.session.commit()
                 print("Transaction committed successfully!")
-                flash(f'Multi-process job work {job_number} created successfully! {total_quantity} units moved to WIP state.', 'success')
+                flash(f'Multi-process job work {job_number} created successfully! {total_quantity} units moved to {process_name} WIP state.', 'success')
                 print(f"Redirecting to detail page for job ID: {job.id}")
                 return redirect(url_for('multi_process_jobwork.detail', id=job.id))
             else:

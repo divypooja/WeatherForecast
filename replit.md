@@ -15,6 +15,19 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **User Experience Enhancement**: System now uses simple confirmation dialogs instead of complex modals, providing reliable and non-blocking user interactions
 - **Architectural Consistency**: Ensured all job work creation flows through unified multi-process form regardless of entry point, maintaining system design integrity
 
+### Process-Specific WIP Tracking and Live Status System Implementation (Latest - July 27, 2025)
+- **Process-Specific WIP Columns**: Added individual WIP tracking columns for each manufacturing process (qty_wip_cutting, qty_wip_bending, qty_wip_welding, qty_wip_zinc, qty_wip_painting, qty_wip_assembly, qty_wip_machining, qty_wip_polishing) to items table
+- **Enhanced Item Model**: Implemented move_to_wip_for_process() and get_wip_by_process() methods for process-specific material state management replacing single WIP quantity with granular process tracking
+- **Live Process Status Dashboard**: Created comprehensive real-time dashboard showing active job work processes with status tracking, completion percentages, and time-in-status monitoring
+- **Individual Process Status Tracking**: Enhanced JobWorkProcess model with status_history, started_at, completed_at, on_hold_since fields for complete process lifecycle tracking
+- **Batch/Lot Number System**: Implemented ItemBatch model for complete material traceability with process-specific quantity tracking across manufacturing stages
+- **Live Status Blueprint**: Added live_status routes with process dashboard, WIP breakdown visualization, and batch tracking interfaces accessible from navigation sidebar
+- **Process-Specific Material Flow**: Updated job work creation to move materials to specific process WIP fields (e.g., Cutting WIP) instead of generic WIP, enabling precise manufacturing stage tracking
+- **Real-Time Process Updates**: Implemented AJAX-powered status update system allowing operators to change process status (pending→in_progress→completed→on_hold) with automatic timestamp tracking
+- **WIP Breakdown Visualization**: Created detailed WIP breakdown dashboard showing material distribution across all manufacturing processes with color-coded process indicators
+- **Enhanced Navigation**: Added Live Process Status link to sidebar navigation and quick access buttons in Job Work and Inventory dashboards for seamless workflow integration
+- **Database Synchronization Fix**: Resolved WIP tracking synchronization issue where legacy qty_wip field was being used instead of process-specific fields, ensuring accurate material state representation
+
 ### Sequential Process-Aware GRN System with Individual Process Scrap Tracking (July 27, 2025)
 - **Sequential Process Understanding**: GRN system now fully understands manufacturing flow where Process 1 (Cutting: Ms sheet → Mounted Plate) feeds into Process 2 (Zinc: Mounted Plate → Zinc-coated Mounted Plate)
 - **Individual Process Scrap Tracking**: Revolutionary scrap tracking system allows recording scrap from each individual process step (Process 1: Cutting scrap, Process 2: Zinc scrap) preventing scrap data loss in sequential manufacturing
