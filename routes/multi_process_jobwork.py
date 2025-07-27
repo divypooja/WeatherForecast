@@ -152,9 +152,9 @@ def add_multi_process_job():
             
             print(f"Total process quantity: {total_process_quantity}, Required total: {total_quantity}")
             
-            # Business rule: Process quantities must equal total quantity
+            # Business rule: Process quantities must equal total quantity (flexible distribution)
             if total_process_quantity != total_quantity:
-                flash(f'Process quantities must equal total quantity. Process total: {total_process_quantity}, Required: {total_quantity}', 'danger')
+                flash(f'Process quantities must equal total quantity. Current total: {total_process_quantity}, Required: {total_quantity}. Please adjust process quantities to sum exactly to {total_quantity}.', 'danger')
                 return render_template('multi_process_jobwork/form.html', form=form, title='Add Multi-Process Job Work')
             
             # Create individual processes
