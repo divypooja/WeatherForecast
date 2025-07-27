@@ -97,6 +97,41 @@
                     <option value="maintenance">Maintenance</option>
                 </select>
             </div>
+        </div>
+        
+        <!-- Team Assignment Section (Only for In-House) -->
+        <div class="team-assignment-section" id="team-section-{index}" style="display: none;">
+            <div class="row">
+                <div class="col-12 mb-3">
+                    <h6 class="text-info border-bottom pb-1">
+                        <i class="fas fa-users"></i> Team Assignment
+                        <small class="text-muted">(For In-House work)</small>
+                    </h6>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Team Work?</label>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="processes-{index}-is_team_work" id="team-work-{index}" onchange="toggleTeamFields('{index}')">
+                        <label class="form-check-label" for="team-work-{index}">
+                            Enable team assignment for this process
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="col-md-3 mb-3 team-fields" id="team-fields-{index}" style="display: none;">
+                    <label class="form-label">Max Team Members</label>
+                    <input type="number" name="processes-{index}-max_team_members" class="form-control" min="1" max="10" value="1" placeholder="Maximum team size">
+                </div>
+                
+                <div class="col-md-3 mb-3 team-fields" id="team-fields2-{index}" style="display: none;">
+                    <label class="form-label">Team Lead</label>
+                    <select name="processes-{index}-team_lead" class="form-select">
+                        <option value="">Select Team Lead</option>
+                        <!-- Options will be populated from employees -->
+                    </select>
+                </div>
+            </div>
             
             <div class="col-md-4 mb-3">
                 <label class="form-label">Rate/Unit</label>

@@ -345,6 +345,41 @@ function addProcess() {
                     </div>
                 </div>
                 
+                <!-- Team Assignment Section (Only for In-House) -->
+                <div class="team-assignment-section" style="display: none;">
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <h6 class="text-info border-bottom pb-1">
+                                <i class="fas fa-users"></i> Team Assignment
+                                <small class="text-muted">(For In-House work)</small>
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Team Work?</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="team-work-${processCounter}" onchange="toggleTeamFields(${processCounter})">
+                                <label class="form-check-label" for="team-work-${processCounter}">
+                                    Enable team assignment for this process
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3 team-fields" style="display: none;">
+                            <label class="form-label">Max Team Members</label>
+                            <input type="number" class="form-control max-team-members" min="1" max="10" value="1" placeholder="Maximum team size">
+                        </div>
+                        
+                        <div class="col-md-3 mb-3 team-fields" style="display: none;">
+                            <label class="form-label">Team Lead</label>
+                            <select class="form-select team-lead">
+                                <option value="">Select Team Lead</option>
+                                <!-- Options will be populated from employees -->
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="row">
                     <div class="col-12 mb-3">
                         <label class="form-label">Process Notes</label>
@@ -397,14 +432,32 @@ function toggleProcessFields(processId) {
     const workType = processCard.querySelector('.work-type').value;
     const customerField = processCard.querySelector('.customer-field');
     const departmentField = processCard.querySelector('.department-field');
+    const teamSection = processCard.querySelector('.team-assignment-section');
     
     if (workType === 'in_house') {
         customerField.style.display = 'none';
         departmentField.style.display = 'block';
+        if (teamSection) {
+            teamSection.style.display = 'block';
+        }
     } else {
         customerField.style.display = 'block';
         departmentField.style.display = 'none';
+        if (teamSection) {
+            teamSection.style.display = 'none';
+        }
     }
+}
+
+// Function to toggle team assignment fields
+function toggleTeamFields(processId) {
+    const processCard = document.getElementById(`process-${processId}`);
+    const isTeamWork = processCard.querySelector(`#team-work-${processId}`).checked;
+    const teamFields = processCard.querySelectorAll('.team-fields');
+    
+    teamFields.forEach(field => {
+        field.style.display = isTeamWork ? 'block' : 'none';
+    });
 }
 
 // Function to populate customer dropdown
@@ -478,6 +531,9 @@ document.getElementById('multiProcessForm').addEventListener('submit', function(
     const processesData = [];
     
     processCards.forEach(card => {
+        const processId = card.id.split('-')[1]; // Extract process ID from card ID
+        const teamWorkCheckbox = card.querySelector(`#team-work-${processId}`);
+        
         const processData = {
             process_name: card.querySelector('.process-name').value,
             sequence_number: parseInt(card.querySelector('.sequence-number').value),
@@ -491,7 +547,10 @@ document.getElementById('multiProcessForm').addEventListener('submit', function(
             expected_completion: card.querySelector('.expected-completion').value,
             notes: '',
             output_item_id: card.querySelector('.output-product-select').value,
-            output_quantity: parseFloat(card.querySelector('.output-quantity').value) || 0
+            output_quantity: parseFloat(card.querySelector('.output-quantity').value) || 0,
+            is_team_work: teamWorkCheckbox ? teamWorkCheckbox.checked : false,
+            max_team_members: parseInt(card.querySelector('.max-team-members')?.value) || 1,
+            team_lead: card.querySelector('.team-lead')?.value || ''
         };
         
         processesData.push(JSON.stringify(processData));
