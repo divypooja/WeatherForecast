@@ -180,7 +180,16 @@ def detail(id):
     if job.is_team_work:
         team_assignments = JobWorkTeamAssignment.query.filter_by(job_work_id=id).all()
     
-    return render_template('jobwork/detail.html', job=job, team_assignments=team_assignments)
+    # Load processes for multi-process job works
+    processes = []
+    if job.work_type == 'multi_process':
+        try:
+            from models import JobWorkProcess
+            processes = JobWorkProcess.query.filter_by(job_work_id=id).order_by(JobWorkProcess.sequence_number).all()
+        except ImportError:
+            processes = []
+    
+    return render_template('jobwork/detail.html', job=job, team_assignments=team_assignments, processes=processes)
 
 @jobwork_bp.route('/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
