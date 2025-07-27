@@ -238,17 +238,16 @@
                                                 <i class="fas fa-users"></i> Team Assignments
                                             </a>
                                             {% endif %}
-                                            {% if job.status != 'completed' %}
-                                            <div class="btn-group btn-group-sm">
-                                                <a href="{{ url_for('jobwork.update_status', id=job.id, status='partial_received') }}" 
-                                                   class="btn btn-outline-warning btn-sm">
-                                                    <i class="fas fa-clock"></i> Partial
-                                                </a>
-                                                <a href="{{ url_for('jobwork.update_status', id=job.id, status='completed') }}" 
-                                                   class="btn btn-outline-success btn-sm">
-                                                    <i class="fas fa-check"></i> Complete
-                                                </a>
-                                            </div>
+                                            {% if job.work_type == 'outsourced' and job.has_pending_quantity %}
+                                            <a href="{{ url_for('grn.quick_receive', job_work_id=job.id) }}" class="btn btn-outline-success btn-sm">
+                                                <i class="fas fa-truck"></i> Receive Materials
+                                            </a>
+                                            {% elif job.work_type == 'in_house' and job.status != 'completed' %}
+                                            <a href="{{ url_for('jobwork.daily_job_work_entry') }}" class="btn btn-outline-info btn-sm">
+                                                <i class="fas fa-clock"></i> Daily Entry
+                                            </a>
+                                            {% elif job.work_type == 'outsourced' and not job.has_pending_quantity %}
+                                            <span class="badge bg-success">Materials Received</span>
                                             {% endif %}
                                         </div>
                                     </div>
@@ -389,14 +388,19 @@
                                         <td>{{ job.customer_name }}</td>
                                         <td>{{ job.expected_return.strftime('%m/%d/%Y') if job.expected_return else '-' }}</td>
                                         <td>
-                                            <div class="btn-group btn-group-sm">
-                                                <a href="{{ url_for('jobwork.update_status', id=job.id, status='partial_received') }}" class="btn btn-outline-warning btn-sm">
-                                                    Partial
-                                                </a>
-                                                <a href="{{ url_for('jobwork.update_status', id=job.id, status='completed') }}" class="btn btn-outline-success btn-sm">
-                                                    Complete
-                                                </a>
-                                            </div>
+                                            {% if job.work_type == 'outsourced' and job.has_pending_quantity %}
+                                            <a href="{{ url_for('grn.quick_receive', job_work_id=job.id) }}" class="btn btn-outline-success btn-sm">
+                                                <i class="fas fa-truck"></i> Receive Materials
+                                            </a>
+                                            {% elif job.work_type == 'in_house' and job.status != 'completed' %}
+                                            <a href="{{ url_for('jobwork.daily_job_work_entry') }}" class="btn btn-outline-info btn-sm">
+                                                <i class="fas fa-clock"></i> Daily Entry
+                                            </a>
+                                            {% elif job.work_type == 'outsourced' and not job.has_pending_quantity %}
+                                            <span class="badge bg-success">Materials Received</span>
+                                            {% else %}
+                                            <span class="badge bg-success">Completed</span>
+                                            {% endif %}
                                         </td>
                                     </tr>
                                     {% endfor %}
