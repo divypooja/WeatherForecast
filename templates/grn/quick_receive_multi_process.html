@@ -152,7 +152,7 @@
                                     {% if form.quantity_received.errors %}
                                         <div class="text-danger small">{{ form.quantity_received.errors[0] }}</div>
                                     {% endif %}
-                                    <div class="form-text">Max: {{ (job_work.quantity_sent - (job_work.quantity_received or 0)) }} {{ job_work.item.unit_of_measure }}</div>
+                                    <div class="form-text" id="quantity-max-hint">Max: Select process to see max quantity</div>
                                 </div>
                             </div>
                             <div class="col-md-4">
@@ -319,9 +319,14 @@ document.getElementById('process_selection').addEventListener('change', function
         
         console.log(`Selected Process ${processId} (${process.name}): Using maxQuantity=${maxQuantity} (outputQuantity=${process.outputQuantity}, quantityInput=${process.quantityInput})`);
         
-        const maxHint = document.querySelector('.form-text');
+        // Update the max hint using the specific ID
+        const maxHint = document.getElementById('quantity-max-hint');
+        
         if (maxHint) {
             maxHint.textContent = 'Max: ' + maxQuantity + ' ' + unit;
+            console.log(`Updated max hint to: Max: ${maxQuantity} ${unit}`);
+        } else {
+            console.log('Could not find max hint element with ID quantity-max-hint');
         }
         
         // Update process stage field
