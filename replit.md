@@ -6,6 +6,18 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (July 27, 2025)
 
+### Unified Job Work System - Single Form for All Job Types (Latest - July 27, 2025)
+- **Simplified User Experience**: Eliminated confusing dual job work forms by making Multi-Process Job Work the unified form for all job work types
+- **Single Entry Point**: Users now use one form that handles both single-process jobs (add 1 process) and multi-process jobs (add multiple processes)
+- **Streamlined Dashboard**: Updated Job Work dashboard to show single "New Job Work" button instead of confusing "New Job Work" and "Multi-Process" options
+- **Unified Job Numbering**: Changed from separate MPJOB-YYYY-0001 format to unified JOB-YYYY-0001 format for all job works
+- **Enhanced Output Product Tracking**: Each process can specify output products (Mounted Plate, Base Plate, etc.) with expected quantities for complex material transformations
+- **Clear User Guidance**: Added informational text explaining that the unified form handles both single and multiple processes
+- **Database Integration**: Added output_item_id and output_quantity fields to JobWorkProcess model for tracking material transformations
+- **Architectural Simplification**: Removed redundant separate job work creation paths while maintaining all functionality in single unified interface
+
+## Recent Changes (July 27, 2025)
+
 ### Complete Material Classification System Removal (Latest - July 27, 2025)
 - **Database Schema Cleanup**: Completely removed material_classification column from both items and material_inspections tables
 - **Model Updates**: Eliminated material_classification field from Item and MaterialInspection models to simplify data structure

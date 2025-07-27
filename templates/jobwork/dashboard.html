@@ -11,15 +11,15 @@
         </div>
         <div class="col-auto">
             <div class="btn-group">
-                <a href="{{ url_for('jobwork.add_job_work') }}" class="btn btn-primary">
+                <a href="{{ url_for('multi_process_jobwork.add_multi_process_job') }}" class="btn btn-primary">
                     <i class="fas fa-plus"></i> New Job Work
-                </a>
-                <a href="{{ url_for('multi_process_jobwork.add_multi_process_job') }}" class="btn btn-outline-success">
-                    <i class="fas fa-cogs"></i> Multi-Process
                 </a>
                 <a href="{{ url_for('grn.dashboard') }}" class="btn btn-success">
                     <i class="fas fa-receipt"></i> GRN Dashboard
                 </a>
+            </div>
+            <div class="alert alert-info mt-2 mb-0">
+                <i class="fas fa-info-circle"></i> <strong>Unified Job Work Form:</strong> Now handles both single-process and multi-process jobs in one streamlined interface
             </div>
         </div>
     </div>

@@ -124,9 +124,24 @@ def add_multi_process_job():
                 flash(f'Insufficient raw materials. Available: {item.qty_raw}, Required: {total_quantity}', 'danger')
                 return render_template('multi_process_jobwork/form.html', form=form, title='Add Multi-Process Job Work')
             
-            # Generate unique job number
+            # Generate unique job number - use regular JOB format for unified system
             print("Generating job number...")
-            job_number = generate_job_number()
+            from datetime import datetime
+            current_year = datetime.now().year
+            
+            # Get the highest job number for current year
+            existing_jobs = JobWork.query.filter(
+                JobWork.job_number.like(f'JOB-{current_year}-%')
+            ).order_by(JobWork.job_number.desc()).first()
+            
+            if existing_jobs:
+                # Extract number and increment
+                last_number = int(existing_jobs.job_number.split('-')[2])
+                next_number = last_number + 1
+            else:
+                next_number = 1
+                
+            job_number = f"JOB-{current_year}-{next_number:04d}"
             print(f"Generated job number: {job_number}")
                 
             # Create main job work record
@@ -136,7 +151,7 @@ def add_multi_process_job():
                 customer_name="Multi-Process Job",  # Will be handled by individual processes
                 item_id=item_id,
                 process="Multi-Process",  # Indicates this is a multi-process job
-                work_type="multi_process",  # New work type for multi-process jobs
+                work_type="unified",  # Unified work type for all job works
                 quantity_sent=total_quantity,
                 rate_per_unit=0.0,  # Total cost will be sum of all processes
                 sent_date=sent_date,

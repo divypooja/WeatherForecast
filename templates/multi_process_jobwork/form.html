@@ -6,8 +6,8 @@
 <div class="container">
     <div class="row mb-4">
         <div class="col">
-            <h1><i class="fas fa-cogs"></i> {{ title }}</h1>
-            <p class="text-muted">Create job work with multiple sequential processes</p>
+            <h1><i class="fas fa-tools"></i> {{ title }}</h1>
+            <p class="text-muted">Create job work with single or multiple processes - unified form for all job work types</p>
         </div>
         <div class="col-auto">
             <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-secondary">
@@ -20,7 +20,8 @@
         <div class="col-md-10">
             <div class="card">
                 <div class="card-header">
-                    <h5><i class="fas fa-plus-circle"></i> Multi-Process Job Work Details</h5>
+                    <h5><i class="fas fa-plus-circle"></i> Job Work Details</h5>
+                    <p class="text-info small mb-0"><i class="fas fa-info-circle"></i> This unified form handles both single process jobs (add 1 process) and multi-process jobs (add multiple processes)</p>
                 </div>
                 <div class="card-body">
                     <form method="POST" id="multiProcessForm">
@@ -36,7 +37,7 @@
                             
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Job Number</label>
-                                <input type="text" class="form-control" value="Auto-generated (MPJOB-YYYY-0001)" readonly>
+                                <input type="text" class="form-control" value="Auto-generated (JOB-YYYY-0001)" readonly>
                                 <small class="text-muted">Job number will be automatically generated when saved</small>
                             </div>
                             
