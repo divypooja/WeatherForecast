@@ -134,12 +134,33 @@ def add_multi_process_job():
                 flash('At least one process must be defined', 'danger')
                 return render_template('multi_process_jobwork/form.html', form=form, title='Add Multi-Process Job Work')
             
-            # Create individual processes
-            print("Creating individual processes...")
+            # Validate total process quantities match total quantity
+            print("Validating process quantities...")
+            total_process_quantity = 0
+            process_list = []
+            
             for i, process_json in enumerate(processes_data):
                 try:
                     process_data = json.loads(process_json)
-                    
+                    process_quantity = float(process_data['quantity_input'])
+                    total_process_quantity += process_quantity
+                    process_list.append(process_data)
+                    print(f"Process {i+1}: {process_data['process_name']} - Quantity: {process_quantity}")
+                except (json.JSONDecodeError, KeyError, ValueError) as e:
+                    flash(f'Error processing process {i+1}: {str(e)}', 'danger')
+                    return render_template('multi_process_jobwork/form.html', form=form, title='Add Multi-Process Job Work')
+            
+            print(f"Total process quantity: {total_process_quantity}, Required total: {total_quantity}")
+            
+            # Business rule: Process quantities must equal total quantity
+            if total_process_quantity != total_quantity:
+                flash(f'Process quantities must equal total quantity. Process total: {total_process_quantity}, Required: {total_quantity}', 'danger')
+                return render_template('multi_process_jobwork/form.html', form=form, title='Add Multi-Process Job Work')
+            
+            # Create individual processes
+            print("Creating individual processes...")
+            for i, process_data in enumerate(process_list):
+                try:
                     process = JobWorkProcess(
                         job_work_id=job.id,
                         process_name=process_data['process_name'],
@@ -155,8 +176,9 @@ def add_multi_process_job():
                     )
                     
                     db.session.add(process)
-                except (json.JSONDecodeError, KeyError, ValueError) as e:
-                    flash(f'Error processing process {i+1}: {str(e)}', 'danger')
+                    print(f"Added process: {process_data['process_name']} with quantity {process_data['quantity_input']}")
+                except Exception as e:
+                    flash(f'Error creating process {i+1}: {str(e)}', 'danger')
                     return render_template('multi_process_jobwork/form.html', form=form, title='Add Multi-Process Job Work')
                 
             # Move materials from Raw to WIP
