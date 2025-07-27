@@ -49,7 +49,7 @@
                     <h5><span id="formTitle">Single Process Job Work Details</span></h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST" id="jobWorkForm">
+                    <form method="POST" id="jobWorkForm" novalidate>
                         {{ form.hidden_tag() }}
                         
                         <div class="row">
@@ -94,7 +94,7 @@
                             
                             <div class="col-md-6 mb-3" id="process-field-single">
                                 {{ form.process_type.label(class="form-label") }}
-                                {{ form.process_type(class="form-select", id="process_type", required=false) }}
+                                {{ form.process_type(class="form-select", id="process_type") }}
                                 <small class="text-muted">Select the type of process for this job work</small>
                                 {% if form.process_type.errors %}
                                     <div class="text-danger small">
@@ -110,7 +110,7 @@
                         <div class="row" id="customer-row" style="display: none;">
                             <div class="col-md-12 mb-3">
                                 {{ form.customer_name.label(class="form-label") }}
-                                {{ form.customer_name(class="form-select", id="customer_name", required=false) }}
+                                {{ form.customer_name(class="form-select", id="customer_name") }}
                                 <small class="text-muted">Select vendor/customer for this job work</small>
                                 {% if form.customer_name.errors %}
                                     <div class="text-danger small">
@@ -905,7 +905,42 @@ document.addEventListener('DOMContentLoaded', function() {
                 submitMultiProcessForm();
             } else {
                 console.log('Allowing normal single-process form submission');
-                // Allow normal form submission for single-process mode
+                // Add basic single-process validation
+                const itemId = document.getElementById('item_id').value;
+                const workType = document.getElementById('work_type').value;
+                const quantitySent = document.getElementById('quantity_sent').value;
+                const sentDate = document.getElementById('sent_date').value;
+                
+                if (!itemId || itemId === '0') {
+                    alert('Please select an item.');
+                    return false;
+                }
+                if (!quantitySent || parseFloat(quantitySent) <= 0) {
+                    alert('Please enter a valid quantity.');
+                    return false;
+                }
+                if (!sentDate) {
+                    alert('Please select a sent date.');
+                    return false;
+                }
+                
+                if (workType === 'outsourced') {
+                    const customerName = document.getElementById('customer_name').value;
+                    if (!customerName) {
+                        alert('Please select a customer/vendor for outsourced work.');
+                        return false;
+                    }
+                }
+                
+                if (workType === 'in_house') {
+                    const department = document.getElementById('department').value;
+                    if (!department) {
+                        alert('Please select a department for in-house work.');
+                        return false;
+                    }
+                }
+                
+                // Allow form submission
                 return true;
             }
         });
