@@ -380,8 +380,8 @@ def quick_receive_multi_process(job_work_id):
     """Specialized quick receive form for multi-process job works"""
     job_work = JobWork.query.get_or_404(job_work_id)
     
-    # Ensure this is a multi-process job work
-    if job_work.work_type != 'multi_process':
+    # Ensure this is a multi-process or unified job work
+    if job_work.work_type not in ['multi_process', 'unified']:
         flash('This function is only for multi-process job works.', 'error')
         return redirect(url_for('grn.quick_receive', job_work_id=job_work_id))
     
