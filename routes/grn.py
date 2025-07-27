@@ -141,6 +141,10 @@ def dashboard():
         PurchaseOrder.status.in_(['sent', 'partial'])
     ).order_by(PurchaseOrder.order_date.desc()).limit(20).all()
     
+    # Update PO quantities to ensure they're current
+    for po in pending_purchase_orders:
+        update_po_status_based_on_grn(po.id)
+    
     # Calculate monthly trends
     current_month = date.today().replace(day=1)
     monthly_grns = GRN.query.filter(GRN.received_date >= current_month).count()
