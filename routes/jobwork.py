@@ -1210,7 +1210,7 @@ def cancel_job_work(job_id):
             'message': f'Error cancelling job work: {str(e)}'
         }), 500
 
-@jobwork_bp.route('/delete/<int:job_id>', methods=['DELETE'])
+@jobwork_bp.route('/delete/<int:job_id>', methods=['GET', 'DELETE'])
 @login_required
 def delete_job_work(job_id):
     """Permanently delete a job work and all related data"""
@@ -1219,6 +1219,9 @@ def delete_job_work(job_id):
         
         # Only admin can delete job works
         if not current_user.is_admin():
+            if request.method == 'GET':
+                flash('Only administrators can delete job works', 'error')
+                return redirect(url_for('jobwork.list_job_works'))
             return jsonify({
                 'success': False, 
                 'message': 'Only administrators can delete job works'
@@ -1261,6 +1264,10 @@ def delete_job_work(job_id):
         db.session.delete(job)
         db.session.commit()
         
+        if request.method == 'GET':
+            flash(f'Job work {job_number} has been permanently deleted', 'success')
+            return redirect(url_for('jobwork.list_job_works'))
+        
         return jsonify({
             'success': True, 
             'message': f'Job work {job_number} has been permanently deleted'
@@ -1268,6 +1275,9 @@ def delete_job_work(job_id):
         
     except Exception as e:
         db.session.rollback()
+        if request.method == 'GET':
+            flash(f'Error deleting job work: {str(e)}', 'error')
+            return redirect(url_for('jobwork.list_job_works'))
         return jsonify({
             'success': False, 
             'message': f'Error deleting job work: {str(e)}'
