@@ -7,7 +7,7 @@
     <div class="row mb-4">
         <div class="col">
             <h1><i class="fas fa-tools"></i> Job Work Dashboard</h1>
-            <p class="text-muted">Track materials sent for job work and received back</p>
+            <p class="text-muted">Track materials sent for job work and received back via GRN system</p>
         </div>
         <div class="col-auto">
             <div class="btn-group">
@@ -17,11 +17,8 @@
                 <a href="{{ url_for('multi_process_jobwork.add_multi_process_job') }}" class="btn btn-outline-success">
                     <i class="fas fa-cogs"></i> Multi-Process
                 </a>
-                <a href="{{ url_for('jobwork.daily_job_work_entry') }}" class="btn btn-success">
-                    <i class="fas fa-clock"></i> Daily Entry
-                </a>
-                <a href="{{ url_for('grn.dashboard') }}" class="btn btn-outline-info">
-                    <i class="fas fa-truck"></i> GRN Dashboard
+                <a href="{{ url_for('grn.dashboard') }}" class="btn btn-success">
+                    <i class="fas fa-receipt"></i> GRN Dashboard
                 </a>
             </div>
         </div>
@@ -119,6 +116,38 @@
                         </div>
                         <div class="align-self-center">
                             <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Unified GRN Workflow Information -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-info border-start border-info border-4" role="alert">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h5><i class="fas fa-info-circle me-2"></i>Unified GRN-Based Job Work Workflow</h5>
+                        <p class="mb-2">
+                            <strong>All job works (In-House and Outsourced) now use the GRN system for material receipt.</strong>
+                            This creates a unified workflow for receiving and inspecting returned materials.
+                        </p>
+                        <ul class="mb-0">
+                            <li><strong>In-House Jobs:</strong> Use GRN to receive completed materials from internal departments</li>
+                            <li><strong>Outsourced Jobs:</strong> Use GRN to receive materials from external vendors</li>
+                            <li><strong>Multi-Process Jobs:</strong> Use GRN for each process completion stage</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('grn.dashboard') }}" class="btn btn-success">
+                                <i class="fas fa-receipt me-1"></i>Access GRN Dashboard
+                            </a>
+                            <small class="text-muted text-center">
+                                <i class="fas fa-robot me-1"></i>Daily entries replaced by GRN system
+                            </small>
                         </div>
                     </div>
                 </div>
@@ -238,15 +267,11 @@
                                                 <i class="fas fa-users"></i> Team Assignments
                                             </a>
                                             {% endif %}
-                                            {% if job.work_type in ['outsourced', 'multi_process'] and job.has_pending_quantity %}
+                                            {% if job.has_pending_quantity %}
                                             <a href="{{ url_for('grn.quick_receive', job_work_id=job.id) }}" class="btn btn-outline-success btn-sm">
-                                                <i class="fas fa-truck"></i> Receive Materials
+                                                <i class="fas fa-receipt"></i> Receive Materials
                                             </a>
-                                            {% elif job.work_type == 'in_house' and job.status != 'completed' %}
-                                            <a href="{{ url_for('jobwork.daily_job_work_entry') }}" class="btn btn-outline-info btn-sm">
-                                                <i class="fas fa-clock"></i> Daily Entry
-                                            </a>
-                                            {% elif job.work_type in ['outsourced', 'multi_process'] and not job.has_pending_quantity %}
+                                            {% else %}
                                             <span class="badge bg-success">Materials Received</span>
                                             {% endif %}
                                         </div>
@@ -307,13 +332,13 @@
                             </a>
                         </div>
                         <div class="col-md-3 mb-2">
-                            <a href="{{ url_for('jobwork.daily_job_work_entry') }}" class="btn btn-outline-success btn-sm w-100">
-                                <i class="fas fa-clock"></i> Daily Work Entry
+                            <a href="{{ url_for('grn.dashboard') }}" class="btn btn-outline-success btn-sm w-100">
+                                <i class="fas fa-receipt"></i> GRN Dashboard
                             </a>
                         </div>
                         <div class="col-md-3 mb-2">
-                            <a href="{{ url_for('jobwork.daily_entries_list') }}" class="btn btn-outline-info btn-sm w-100">
-                                <i class="fas fa-calendar-day"></i> View Daily Entries
+                            <a href="{{ url_for('material_inspection.dashboard') }}" class="btn btn-outline-info btn-sm w-100">
+                                <i class="fas fa-clipboard-check"></i> Material Inspection
                             </a>
                         </div>
                     </div>
