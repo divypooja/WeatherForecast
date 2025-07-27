@@ -268,6 +268,18 @@ def log_inspection():
             
             form.job_work_id.data = job_id
             form.purchase_order_id.data = 0  # Clear purchase order selection
+            
+            # For multi-process job works, we need special handling
+            if target_job and target_job.work_type == 'multi_process':
+                # Get individual processes for this multi-process job work
+                from models import JobWorkProcess
+                processes = JobWorkProcess.query.filter_by(job_work_id=job_id).all()
+                print(f"DEBUG: Multi-process job has {len(processes)} processes: {[p.process_name for p in processes]}")
+                return render_template('material_inspection/multi_process_inspection.html',
+                                     title=f'Inspect Multi-Process Job Work {target_job.job_number}',
+                                     job_work=target_job,
+                                     processes=processes,
+                                     form=form)
     
     # Handle POST requests - ensure Job Work choices include the target when job_id provided
     if request.method == 'POST' and job_id:
