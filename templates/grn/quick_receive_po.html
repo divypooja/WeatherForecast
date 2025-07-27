@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block title %}Quick Receive Materials - {{ purchase_order.po_number }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-plus me-2"></i>Quick Receive Materials</h2>
+                <a href="{{ url_for('purchase.edit_purchase_order', id=purchase_order.id) }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Purchase Order
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Purchase Order Information -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Purchase Order Details</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>PO Number:</strong><br>
+                            <span class="text-primary">{{ purchase_order.po_number }}</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Item:</strong><br>
+                            {{ item.name }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Ordered Quantity:</strong><br>
+                            {{ po_item.quantity }} {{ po_item.uom or item.unit_of_measure }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Supplier:</strong><br>
+                            <span class="text-info">{{ purchase_order.supplier.name if purchase_order.supplier else 'N/A' }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Receive Form -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-receipt me-2"></i>Receive Materials</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.received_date.label(class="form-label") }}
+                                {{ form.received_date(class="form-control") }}
+                                {% if form.received_date.errors %}
+                                    <div class="text-danger">{{ form.received_date.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.delivery_note.label(class="form-label") }}
+                                {{ form.delivery_note(class="form-control", placeholder="Optional delivery note number") }}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                {{ form.quantity_received.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.quantity_received(class="form-control", id="quantity_received") }}
+                                    <span class="input-group-text">{{ po_item.uom or item.unit_of_measure }}</span>
+                                </div>
+                                {% if form.quantity_received.errors %}
+                                    <div class="text-danger">{{ form.quantity_received.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.quantity_rejected.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.quantity_rejected(class="form-control", id="quantity_rejected") }}
+                                    <span class="input-group-text">{{ po_item.uom or item.unit_of_measure }}</span>
+                                </div>
+                                {% if form.quantity_rejected.errors %}
+                                    <div class="text-danger">{{ form.quantity_rejected.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.quantity_passed.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.quantity_passed(class="form-control", id="quantity_passed", readonly=True) }}
+                                    <span class="input-group-text">{{ po_item.uom or item.unit_of_measure }}</span>
+                                </div>
+                                <small class="text-muted">Auto-calculated</small>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.inspection_status.label(class="form-label") }}
+                                {{ form.inspection_status(class="form-select") }}
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check mt-4">
+                                    {{ form.add_to_inventory(class="form-check-input") }}
+                                    {{ form.add_to_inventory.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.rejection_reason.label(class="form-label") }}
+                            {{ form.rejection_reason(class="form-control", rows="2", placeholder="Only required if items are rejected") }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.remarks.label(class="form-label") }}
+                            {{ form.remarks(class="form-control", rows="3", placeholder="Any additional notes about this receipt") }}
+                        </div>
+
+                        <div class="d-flex justify-content-end">
+                            <a href="{{ url_for('purchase.edit_purchase_order', id=purchase_order.id) }}" class="btn btn-secondary me-2">Cancel</a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check me-1"></i>Receive Materials
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Information Panel -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-info me-2"></i>Quick Receive Process</h6>
+                </div>
+                <div class="card-body">
+                    <div class="step-info">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-primary me-2">1</span>
+                            <strong>Enter Quantities</strong>
+                        </div>
+                        <p class="small text-muted mb-3">Enter the quantity received and any rejected quantity. Passed quantity will be calculated automatically.</p>
+                        
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-secondary me-2">2</span>
+                            <strong>Set Inspection Status</strong>
+                        </div>
+                        <p class="small text-muted mb-3">Choose the overall inspection status for this material receipt.</p>
+                        
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-success me-2">3</span>
+                            <strong>Complete Receipt</strong>
+                        </div>
+                        <p class="small text-muted">GRN will be created automatically and inventory will be updated if enabled.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-lightning-bolt me-2"></i>Quick Options</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('grn.create_grn_for_po', purchase_order_id=purchase_order.id) }}" class="btn btn-outline-info btn-sm">
+                            <i class="fas fa-receipt me-1"></i>Create Full GRN Instead
+                        </a>
+                        <a href="{{ url_for('grn.dashboard') }}" class="btn btn-outline-info btn-sm">
+                            <i class="fas fa-tachometer-alt me-1"></i>GRN Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const quantityReceived = document.getElementById('quantity_received');
+    const quantityRejected = document.getElementById('quantity_rejected');
+    const quantityPassed = document.getElementById('quantity_passed');
+    
+    function updatePassedQuantity() {
+        const received = parseFloat(quantityReceived.value) || 0;
+        const rejected = parseFloat(quantityRejected.value) || 0;
+        const passed = Math.max(0, received - rejected);
+        quantityPassed.value = passed.toFixed(2);
+    }
+    
+    quantityReceived.addEventListener('input', updatePassedQuantity);
+    quantityRejected.addEventListener('input', updatePassedQuantity);
+    
+    // Initial calculation
+    updatePassedQuantity();
+});
+</script>
+{% endblock %}

@@ -120,13 +120,14 @@
 
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                {{ form.status.label(class="form-label") }}
-                                {{ form.status(class="form-select") }}
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-check mt-4">
+                                <div class="form-check">
                                     {{ form.inspection_required(class="form-check-input") }}
                                     {{ form.inspection_required.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>Status will be set automatically to "Received"
                                 </div>
                             </div>
                         </div>

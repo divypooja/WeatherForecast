@@ -161,9 +161,28 @@
                                             <i class="fas fa-paperclip"></i>
                                         </a>
                                         {% if po.status in ['approved', 'partial'] %}
-                                        <a href="{{ url_for('grn.create_grn_for_po', purchase_order_id=po.id) }}" class="btn btn-outline-success btn-sm" title="Create GRN">
-                                            <i class="fas fa-truck"></i>
-                                        </a>
+                                        <div class="btn-group btn-group-sm">
+                                            {% if po.items|length == 1 %}
+                                            <a href="{{ url_for('grn.quick_receive_po', purchase_order_id=po.id, item_id=po.items[0].item_id) }}" class="btn btn-outline-success btn-sm" title="Quick Receive">
+                                                <i class="fas fa-bolt"></i> Quick Receive
+                                            </a>
+                                            {% else %}
+                                            <button type="button" class="btn btn-outline-success btn-sm dropdown-toggle" data-bs-toggle="dropdown" title="Receive Materials">
+                                                <i class="fas fa-truck"></i> Receive
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                {% for item in po.items %}
+                                                <li><a class="dropdown-item" href="{{ url_for('grn.quick_receive_po', purchase_order_id=po.id, item_id=item.item_id) }}">
+                                                    <i class="fas fa-bolt me-2"></i>Quick Receive: {{ item.item.name[:20] }}{{ '...' if item.item.name|length > 20 else '' }}
+                                                </a></li>
+                                                {% endfor %}
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li><a class="dropdown-item" href="{{ url_for('grn.create_grn_for_po', purchase_order_id=po.id) }}">
+                                                    <i class="fas fa-receipt me-2"></i>Create Full GRN
+                                                </a></li>
+                                            </ul>
+                                            {% endif %}
+                                        </div>
                                         {% endif %}
                                         {% if current_user.role == 'admin' %}
                                         <div class="btn-group btn-group-sm">

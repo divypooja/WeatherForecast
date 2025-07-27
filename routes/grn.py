@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from app import db
 from models import JobWork, Item, User, PurchaseOrder, PurchaseOrderItem
 from models_grn import GRN, GRNLineItem
-from forms_grn import GRNForm, GRNLineItemForm, QuickReceiveForm, GRNSearchForm
+from forms_grn import GRNForm, GRNLineItemForm, QuickReceiveForm, QuickReceivePOForm, GRNSearchForm
 from datetime import datetime, date
 from utils import generate_next_number
 from sqlalchemy import func, and_, or_
@@ -117,7 +117,7 @@ def create_grn(job_work_id):
                 transporter_name=form.transporter_name.data,
                 vehicle_number=form.vehicle_number.data,
                 inspection_required=form.inspection_required.data,
-                status=form.status.data,
+                status='received',  # Automatically set to received
                 remarks=form.remarks.data
             )
             
@@ -165,7 +165,7 @@ def create_grn_for_po(purchase_order_id):
                 transporter_name=form.transporter_name.data,
                 vehicle_number=form.vehicle_number.data,
                 inspection_required=form.inspection_required.data,
-                status=form.status.data,
+                status='received',  # Automatically set to received
                 remarks=form.remarks.data
             )
             
@@ -276,6 +276,90 @@ def quick_receive(job_work_id):
                          title='Quick Receive Materials',
                          form=form,
                          job_work=job_work)
+
+
+@grn_bp.route('/quick_receive_po/<int:purchase_order_id>/<int:item_id>', methods=['GET', 'POST'])
+@login_required
+def quick_receive_po(purchase_order_id, item_id):
+    """Quick receive form for purchase order items"""
+    purchase_order = PurchaseOrder.query.get_or_404(purchase_order_id)
+    item = Item.query.get_or_404(item_id)
+    
+    # Get the specific PO item
+    po_item = None
+    for pi in purchase_order.items:
+        if pi.item_id == item_id:
+            po_item = pi
+            break
+    
+    if not po_item:
+        flash('Item not found in this purchase order.', 'error')
+        return redirect(url_for('purchase.edit_purchase_order', id=purchase_order_id))
+    
+    form = QuickReceivePOForm()
+    form.purchase_order_id.data = purchase_order_id
+    form.item_id.data = item_id
+    
+    if form.validate_on_submit():
+        try:
+            # Create GRN automatically
+            grn = GRN(
+                grn_number=GRN.generate_grn_number(),
+                purchase_order_id=purchase_order_id,
+                received_date=form.received_date.data,
+                received_by=current_user.id,
+                delivery_note=form.delivery_note.data,
+                inspection_required=True,
+                status='received',
+                remarks=form.remarks.data
+            )
+            db.session.add(grn)
+            db.session.flush()  # To get the GRN ID
+            
+            # Auto-calculate passed quantity
+            quantity_passed = form.quantity_received.data - (form.quantity_rejected.data or 0)
+            
+            # Create line item
+            line_item = GRNLineItem(
+                grn_id=grn.id,
+                item_id=item_id,
+                quantity_received=form.quantity_received.data,
+                quantity_passed=quantity_passed,
+                quantity_rejected=form.quantity_rejected.data or 0,
+                unit_of_measure=po_item.uom or item.unit_of_measure,
+                inspection_status=form.inspection_status.data,
+                rejection_reason=form.rejection_reason.data,
+                material_classification='raw_material',
+                remarks=form.remarks.data
+            )
+            db.session.add(line_item)
+            
+            # Update inventory if adding to stock
+            if form.add_to_inventory.data and quantity_passed > 0:
+                item.current_stock = (item.current_stock or 0) + quantity_passed
+            
+            # Mark GRN as completed if no further inspection needed
+            if form.inspection_status.data in ['passed', 'rejected']:
+                grn.status = 'completed'
+                grn.inspection_status = 'completed'
+                grn.inspected_by = current_user.id
+                grn.inspected_at = datetime.utcnow()
+            
+            db.session.commit()
+            
+            flash(f'Materials received successfully! GRN {grn.grn_number} created for PO {purchase_order.po_number}.', 'success')
+            return redirect(url_for('purchase.edit_purchase_order', id=purchase_order_id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error receiving materials: {str(e)}', 'error')
+    
+    return render_template('grn/quick_receive_po.html',
+                         title='Quick Receive Materials',
+                         form=form,
+                         purchase_order=purchase_order,
+                         item=item,
+                         po_item=po_item)
 
 
 @grn_bp.route('/list')

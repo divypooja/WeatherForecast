@@ -22,13 +22,7 @@ class GRNForm(FlaskForm):
     # Quality Control
     inspection_required = BooleanField('Inspection Required', default=True)
     
-    # Status
-    status = SelectField('Status', choices=[
-        ('draft', 'Draft'),
-        ('received', 'Received'),
-        ('inspected', 'Inspected'),
-        ('completed', 'Completed')
-    ], default='draft')
+    # Status - will be set automatically by system
     
     # Notes
     remarks = TextAreaField('Remarks', validators=[Optional()])
@@ -97,6 +91,41 @@ class QuickReceiveForm(FlaskForm):
     """Quick form for receiving materials from job work"""
     
     job_work_id = IntegerField('Job Work ID', validators=[DataRequired()], widget=HiddenInput())
+    received_date = DateField('Received Date', validators=[DataRequired()], default=date.today)
+    
+    # Quick quantity fields
+    quantity_received = FloatField('Quantity Received', 
+                                 validators=[DataRequired(), NumberRange(min=0.01, message="Quantity must be greater than 0")])
+    quantity_passed = FloatField('Quantity Passed (Auto-calculated)', 
+                               validators=[Optional()], 
+                               render_kw={'readonly': True})
+    quantity_rejected = FloatField('Quantity Rejected', 
+                                 validators=[Optional(), NumberRange(min=0)],
+                                 default=0.0)
+    
+    # Quick inspection
+    inspection_status = SelectField('Overall Status', choices=[
+        ('passed', 'All Passed'),
+        ('rejected', 'All Rejected'),
+        ('partial', 'Partial (some rejected)')
+    ], default='passed')
+    
+    rejection_reason = TextAreaField('Rejection Reason (if any)', validators=[Optional()])
+    
+    # Delivery info
+    delivery_note = StringField('Delivery Note', validators=[Optional(), Length(max=100)])
+    
+    # Add to inventory option
+    add_to_inventory = BooleanField('Add Passed Quantity to Inventory', default=True)
+    
+    remarks = TextAreaField('Remarks', validators=[Optional()])
+
+
+class QuickReceivePOForm(FlaskForm):
+    """Quick form for receiving materials from purchase order"""
+    
+    purchase_order_id = IntegerField('Purchase Order ID', validators=[DataRequired()], widget=HiddenInput())
+    item_id = IntegerField('Item ID', validators=[DataRequired()], widget=HiddenInput())
     received_date = DateField('Received Date', validators=[DataRequired()], default=date.today)
     
     # Quick quantity fields
