@@ -186,7 +186,7 @@ def add_purchase_order():
             verified_by=form.verified_by.data,
             approved_by=form.approved_by.data,
             delivery_notes=form.delivery_notes.data,
-            status='draft',  # New purchase orders always start as draft
+            status='sent',  # New purchase orders automatically start as sent
             notes=form.notes.data,
             created_by=current_user.id
         )
@@ -290,7 +290,10 @@ def edit_purchase_order(id):
         po.verified_by = form.verified_by.data
         po.approved_by = form.approved_by.data
         po.delivery_notes = form.delivery_notes.data
-        po.status = form.status.data
+        # Status is automatically managed by GRN system - don't allow manual changes except cancel
+        if form.status.data == 'cancelled':
+            po.status = 'cancelled'  # Only allow manual cancellation
+        # All other status changes (sent/partial/closed) are automatic via GRN
         po.notes = form.notes.data
         
         # Process enhanced PO items from form
@@ -537,13 +540,8 @@ Items:
         
         if success:
             flash(f'Purchase Order sent successfully via {send_type.title()}!', 'success')
-            # Update PO status when sent
-            if po.status == 'draft':
-                po.status = 'open'  # Draft -> Open when sent
-                db.session.commit()
-            elif po.status == 'open':
-                # Status remains open when sent
-                pass
+            # Status updates are now automatic - PO starts as 'sent'
+            # No need to update status when sending since it's already 'sent'
         else:
             flash(f'Failed to send Purchase Order via {send_type.title()}. Please check your notification settings.', 'danger')
         
@@ -573,25 +571,24 @@ def delete_purchase_order(id):
 @purchase_bp.route('/change_status/<int:po_id>', methods=['POST'])
 @login_required
 def change_po_status(po_id):
-    # Only admins can change status
+    # Only allow cancellation - all other status changes are automatic via GRN
     if current_user.role != 'admin':
-        return jsonify({'success': False, 'message': 'Only admins can change purchase order status'})
+        return jsonify({'success': False, 'message': 'Only admins can cancel purchase orders'})
     
     po = PurchaseOrder.query.get_or_404(po_id)
     new_status = request.form.get('status')
     
-    # Validate status
-    valid_statuses = ['draft', 'open', 'partial', 'closed', 'cancelled']
-    if new_status not in valid_statuses:
-        return jsonify({'success': False, 'message': 'Invalid status'})
+    # Only allow cancellation
+    if new_status != 'cancelled':
+        return jsonify({'success': False, 'message': 'Only cancellation is allowed. Status updates are automatic via GRN system.'})
     
     old_status = po.status
-    po.status = new_status
+    po.status = 'cancelled'
     db.session.commit()
     
     return jsonify({
         'success': True, 
-        'message': f'Purchase Order {po.po_number} status changed from {old_status.title()} to {new_status.title()}'
+        'message': f'Purchase Order {po.po_number} cancelled (was {old_status.title()})'
     })
 
 def process_po_items(po, form_data):

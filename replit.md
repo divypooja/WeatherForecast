@@ -4,9 +4,23 @@
 
 This is a comprehensive Flask-based Factory Management System designed for small to medium manufacturing companies. The application provides modular dashboards for managing various aspects of factory operations including inventory, purchase orders, sales, HR, job work, production, and reporting.
 
-## Recent Changes (July 26, 2025)
+## Recent Changes (July 27, 2025)
 
-### Complete GRN-Based Job Work Management System (Latest - July 27, 2025)
+### Fully Automated Purchase Order Workflow Implementation (Latest - July 27, 2025)
+- **Complete PO Automation**: Implemented fully automated Purchase Order status workflow eliminating all manual status updates except cancellation
+- **Automatic Status Progression**: New POs automatically start as "Sent" status instead of "Draft", removing need for manual approval workflow
+- **GRN-Controlled Updates**: PO status automatically updates to "Partial" on first GRN creation and "Closed" when all materials fully received via GRN system
+- **Manual Operations Limited**: Only "Cancel" operation remains manual for supplier fulfillment issues, all other status changes (Sent→Partial→Closed) are automatic
+- **Legacy Data Migration**: Updated all existing "Draft" status POs to "Sent" status to align with new automated workflow
+- **Purchase Dashboard Updates**: Updated dashboard statistics to show "Sent POs" instead of "Open POs" reflecting new terminology
+- **Template Enhancements**: Updated purchase order list with automated workflow information showing robot icon and "Fully Automated PO Workflow" messaging
+- **Route Protection**: Modified edit and change status routes to prevent manual status changes except cancellation, maintaining workflow integrity
+- **GRN Integration**: Enhanced GRN creation routes to automatically trigger PO status updates using update_po_status_based_on_grn() function
+- **Send Workflow Update**: Removed manual status updates from email/WhatsApp send functionality since POs already start as "Sent"
+- **API Route Restriction**: Limited change_po_status API to only allow cancellation operations, preventing circumvention of automated workflow
+- **User Interface Clarity**: Added clear messaging about automatic status updates and manual-only cancellation operations throughout purchase interface
+
+### Complete GRN-Based Job Work Management System (July 27, 2025)
 - **GRN-Managed Outsourced Job Works**: Completely replaced manual status updates (Partial/Complete buttons) with comprehensive GRN-based material receipt management for all outsourced job works
 - **Workflow Separation**: Clear separation between outsourced jobs (managed via GRN system) and in-house jobs (managed via daily work entries) throughout all interfaces
 - **Enhanced Job Work Dashboard**: Replaced all Partial/Complete buttons with context-aware GRN actions - "Receive Materials" for outsourced jobs with pending quantities, "Daily Entry" for in-house jobs
