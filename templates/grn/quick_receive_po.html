@@ -210,6 +210,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Auto-calculate rejected quantity: Inspected - Passed
         const rejected = Math.max(0, inspected - passed);
         quantityRejected.value = rejected.toFixed(2);
+        
+        // Log for debugging
+        console.log(`Calculation: Inspected(${inspected}) - Passed(${passed}) = Rejected(${rejected})`);
     }
     
     // Listen for changes in inspected and passed quantities
