@@ -50,8 +50,11 @@ def dashboard():
         'total_suppliers': Supplier.query.count()
     }
     
-    # Recent purchase orders
-    recent_pos = PurchaseOrder.query.order_by(PurchaseOrder.created_at.desc()).limit(10).all()
+    # Get all active purchase orders (not just recent ones) for comprehensive status table
+    # Include orders in sent, partial, and closed status for complete visibility
+    recent_pos = PurchaseOrder.query.filter(
+        PurchaseOrder.status.in_(['sent', 'partial', 'closed'])
+    ).order_by(PurchaseOrder.created_at.desc()).limit(20).all()
     
     # Top suppliers by order count
     top_suppliers = db.session.query(
