@@ -277,9 +277,11 @@
                                     <i class="fas fa-users"></i> Manage Team
                                 </a>
                                 {% endif %}
+                                {% if job.work_type == 'in_house' %}
                                 <a href="{{ url_for('jobwork.update_quantity', id=job.id) }}" class="btn btn-info btn-sm">
                                     <i class="fas fa-box"></i> Update Quantity
                                 </a>
+                                {% endif %}
                                 <a href="{{ url_for('jobwork.send_job_work', job_id=job.id) }}" class="btn btn-warning btn-sm">
                                     <i class="fas fa-paper-plane"></i> Send Order
                                 </a>
@@ -287,28 +289,66 @@
                         </div>
                     </div>
                     
-                    <!-- Status History -->
+                    <!-- GRN-Based Material Receipt -->
+                    {% if job.work_type == 'outsourced' %}
                     <div class="card mb-4">
                         <div class="card-header">
-                            <h6 class="mb-0"><i class="fas fa-history"></i> Status Updates</h6>
+                            <h6 class="mb-0"><i class="fas fa-truck"></i> Material Receipt (GRN)</h6>
                         </div>
                         <div class="card-body">
-                            <div class="btn-group-vertical d-grid gap-1">
-                                <a href="{{ url_for('jobwork.update_status', id=job.id, status='sent') }}" 
-                                   class="btn btn-outline-warning btn-sm {% if job.status == 'sent' %}active{% endif %}">
-                                    <i class="fas fa-shipping-fast"></i> Mark as Sent
+                            {% if job.has_pending_quantity %}
+                            <div class="alert alert-info small">
+                                <i class="fas fa-info-circle me-1"></i>
+                                All material receipts are managed through GRN system for better tracking and quality control.
+                            </div>
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('grn.quick_receive', job_work_id=job.id) }}" class="btn btn-success btn-sm">
+                                    <i class="fas fa-bolt"></i> Quick Receive Materials
                                 </a>
-                                <a href="{{ url_for('jobwork.update_status', id=job.id, status='partial_received') }}" 
-                                   class="btn btn-outline-info btn-sm {% if job.status == 'partial_received' %}active{% endif %}">
-                                    <i class="fas fa-clock"></i> Partial Received
+                                <a href="{{ url_for('grn.create_grn', job_work_id=job.id) }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-receipt"></i> Create Full GRN
                                 </a>
-                                <a href="{{ url_for('jobwork.update_status', id=job.id, status='completed') }}" 
-                                   class="btn btn-outline-success btn-sm {% if job.status == 'completed' %}active{% endif %}">
+                                <a href="{{ url_for('grn.dashboard') }}" class="btn btn-outline-info btn-sm">
+                                    <i class="fas fa-tachometer-alt"></i> GRN Dashboard
+                                </a>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-success small">
+                                <i class="fas fa-check-circle me-1"></i>
+                                All materials have been received through GRN system.
+                            </div>
+                            <div class="d-grid">
+                                <a href="{{ url_for('grn.dashboard') }}" class="btn btn-outline-info btn-sm">
+                                    <i class="fas fa-list"></i> View GRN Records
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <!-- In-House Job Status -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-home"></i> In-House Job Status</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info small">
+                                <i class="fas fa-info-circle me-1"></i>
+                                In-house job status managed through daily work entries.
+                            </div>
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('jobwork.daily_job_work_entry') }}" class="btn btn-success btn-sm">
+                                    <i class="fas fa-clock"></i> Daily Work Entry
+                                </a>
+                                {% if job.status != 'completed' %}
+                                <a href="{{ url_for('jobwork.update_status', id=job.id, status='completed') }}" class="btn btn-outline-success btn-sm">
                                     <i class="fas fa-check-circle"></i> Mark Complete
                                 </a>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
+                    {% endif %}
                     
                     <!-- Document Management Section -->
                     <div class="card mb-4">

@@ -176,11 +176,21 @@ def quick_receive(job_work_id):
             # Update job work quantities
             job_work.quantity_received = (job_work.quantity_received or 0) + form.quantity_received.data
             
-            # Update job work status
+            # Update job work status and add notes
             if job_work.quantity_received >= job_work.quantity_sent:
                 job_work.status = 'completed'
+                # Add completion note
+                completion_note = f"[{datetime.utcnow().strftime('%Y-%m-%d %H:%M')}] Completed via GRN {grn.grn_number} - All {job_work.quantity_sent} {job_work.item.unit_of_measure} received"
             else:
                 job_work.status = 'partial_received'
+                # Add partial receipt note
+                completion_note = f"[{datetime.utcnow().strftime('%Y-%m-%d %H:%M')}] Partial receipt via GRN {grn.grn_number} - {form.quantity_received.data} {job_work.item.unit_of_measure} received, {job_work.pending_quantity} {job_work.item.unit_of_measure} pending"
+            
+            # Add note to job work
+            if job_work.notes:
+                job_work.notes += f"\n{completion_note}"
+            else:
+                job_work.notes = completion_note
             
             # Update inventory if adding to stock
             if form.add_to_inventory.data and quantity_passed > 0:
