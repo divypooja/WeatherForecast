@@ -38,8 +38,8 @@
                         <span class="text-warning">{{ job_work.quantity_sent }} {{ job_work.item.unit_of_measure }}</span>
                     </div>
                     <div class="mb-3">
-                        <strong>Pending Receipt:</strong><br>
-                        <span class="text-danger">{{ (job_work.quantity_sent - (job_work.quantity_received or 0)) }} {{ job_work.item.unit_of_measure }}</span>
+                        <strong>Expected Materials to Receive:</strong><br>
+                        <span class="text-info">{{ job_work.pending_receipt_display }}</span>
                     </div>
                 </div>
             </div>

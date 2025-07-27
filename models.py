@@ -767,6 +767,27 @@ class JobWork(db.Model):
         return max(0, (self.quantity_sent or 0) - (self.quantity_received or 0))
     
     @property
+    def pending_receipt_display(self):
+        """Get display text for pending material receipt, considering multi-process output"""
+        if self.work_type in ['multi_process', 'unified']:
+            # For multi-process jobs, show expected output materials
+            processes = self.processes.all() if hasattr(self, 'processes') else []
+            if processes:
+                pending_items = []
+                for process in processes:
+                    if process.output_item_id and process.output_quantity:
+                        pending_items.append(f"{process.output_quantity} {process.output_item.unit_of_measure} {process.output_item.name}")
+                
+                if pending_items:
+                    return " + ".join(pending_items[:2])  # Show first 2 outputs to avoid clutter
+                    
+        # For regular jobs, show pending input material
+        pending_qty = self.pending_quantity
+        if pending_qty > 0:
+            return f"{pending_qty} {self.item.unit_of_measure}"
+        return "No pending receipt"
+    
+    @property
     def has_pending_quantity(self):
         """Check if there's any pending quantity"""
         return self.pending_quantity > 0
