@@ -267,13 +267,11 @@
 </div>
 
 <script>
-// Process data for dynamic updates with sequential flow information
+// Process data for dynamic updates 
 const processData = {
     {% for process in processes|sort(attribute='sequence_number') %}
     {{ process.id }}: {
         name: {{ process.process_name|tojson }},
-        workType: {{ process.work_type|tojson }},
-        status: {{ process.status|tojson }},
         sequenceNumber: {{ process.sequence_number }},
         outputQuantity: {{ process.output_quantity or 0 }},
         quantityInput: {{ process.quantity_input or 0 }},
@@ -294,8 +292,6 @@ function calculatePassed() {
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('quantity_received').addEventListener('input', calculatePassed);
     document.getElementById('quantity_rejected').addEventListener('input', calculatePassed);
-    
-    // Initialize calculation on page load
     calculatePassed();
 });
 
@@ -305,165 +301,36 @@ document.getElementById('process_selection').addEventListener('change', function
     const process = processData[processId];
     
     if (process) {
-        // Update unit labels based on output product
+        // Update unit labels
         const unit = process.outputUnit;
         document.getElementById('received_unit').textContent = unit;
         document.getElementById('rejected_unit').textContent = unit;
         document.getElementById('passed_unit').textContent = unit;
         
-        // Calculate the correct max quantity for "Quantity Received from Process"
-        // This should equal the "Expected Qty" shown in the process summary
-        let maxQuantity;
+        // Calculate max quantity based on process output quantity
+        let maxQuantity = process.outputQuantity || process.quantityInput || 0;
         
-        if (process.sequenceNumber === 1) {
-            // First process: Max is what this process can output (Expected Qty: 3500 pcs)
-            maxQuantity = process.outputQuantity;
-        } else {
-            // Sequential processes: Max is what previous process can deliver  
-            // For Process 2 (Bending): Use Process 1 (Cutting) Expected Qty (3500 pcs)
-            const prevProcessSeq = process.sequenceNumber - 1;
-            const prevProcess = Object.values(processData).find(p => p.sequenceNumber === prevProcessSeq);
-            
-            if (prevProcess && prevProcess.outputQuantity) {
-                // Use previous process Expected Qty (output_quantity)
+        // For sequential processes, use previous process output
+        if (process.sequenceNumber > 1) {
+            const prevProcess = Object.values(processData).find(p => p.sequenceNumber === process.sequenceNumber - 1);
+            if (prevProcess && prevProcess.outputQuantity > 0) {
                 maxQuantity = prevProcess.outputQuantity;
-            } else {
-                // Fallback: Use this process expected output
-                maxQuantity = process.outputQuantity;
             }
-        }
-        
-        // Final fallback if no output quantity specified
-        if (!maxQuantity || maxQuantity === null || maxQuantity === 0) {
-            maxQuantity = process.quantityInput || 0;
         }
         
         const maxHint = document.querySelector('.form-text');
         if (maxHint) {
-            // Debug log to see actual values
-            console.log('Process Debug:', {
-                processId: processId,
-                sequenceNumber: process.sequenceNumber,
-                outputQuantity: process.outputQuantity,
-                quantityInput: process.quantityInput,
-                expectedQuantity: process.expectedQuantity,
-                maxQuantity: maxQuantity,
-                unit: unit,
-                processData: process
-            });
-            maxHint.textContent = `Max: ${maxQuantity || 'DEBUG_NULL'} ${unit}`;
+            maxHint.textContent = 'Max: ' + maxQuantity + ' ' + unit;
         }
         
-        // Update process stage field if empty
+        // Update process stage field
         const processStageField = document.getElementById('process_stage');
-        if (!processStageField.value) {
-            processStageField.value = `${process.name} Complete`;
+        if (processStageField && !processStageField.value) {
+            processStageField.value = process.name + ' Complete';
         }
         
-        // Show sequential flow information
-        if (process.isSequential) {
-            showProcessInfo(`Sequential Process ${process.sequenceNumber}: ${process.flowDescription} | Ready for inventory after this step`);
-        } else {
-            showProcessInfo(`First Process: ${process.flowDescription} | Creates intermediate product for next process`);
-        }
-        
-        // Show individual process scrap tracking
-        showProcessScrapTracking(processId);
-        
-        // Recalculate passed quantity after process selection
         calculatePassed();
     }
-});
-
-function showProcessInfo(message) {
-    // Create or update info alert
-    let alert = document.getElementById('process-info-alert');
-    if (!alert) {
-        alert = document.createElement('div');
-        alert.id = 'process-info-alert';
-        alert.className = 'alert alert-info alert-dismissible fade show mt-3';
-        alert.innerHTML = `
-            <i class="fas fa-info-circle me-2"></i>
-            <span id="process-info-text"></span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        document.querySelector('.card-body').insertBefore(alert, document.querySelector('form'));
-    }
-    document.getElementById('process-info-text').textContent = message;
-}
-
-function showProcessScrapTracking(selectedProcessId) {
-    const scrapSection = document.getElementById('scrap-tracking-section');
-    const scrapPlaceholder = document.getElementById('scrap-placeholder');
-    
-    if (scrapPlaceholder) {
-        scrapPlaceholder.remove();
-    }
-    
-    // Get all processes up to and including the selected process
-    const selectedProcess = processData[selectedProcessId];
-    if (!selectedProcess) return;
-    
-    let scrapTrackingHTML = '<div class="row">';
-    
-    // Show scrap tracking for all processes in sequence up to selected process
-    const processesArray = Object.values(processData).sort((a, b) => a.sequenceNumber - b.sequenceNumber);
-    
-    processesArray.forEach((process, index) => {
-        if (process.sequenceNumber <= selectedProcess.sequenceNumber) {
-            const colClass = processesArray.length <= 2 ? 'col-md-6' : 'col-md-4';
-            
-            scrapTrackingHTML += `
-                <div class="${colClass} mb-3">
-                    <div class="card border-warning">
-                        <div class="card-header bg-warning bg-opacity-10 py-2">
-                            <small class="fw-bold">
-                                <span class="badge bg-secondary me-1">${process.sequenceNumber}</span>
-                                ${process.name} Scrap
-                            </small>
-                        </div>
-                        <div class="card-body py-2">
-                            <div class="input-group input-group-sm">
-                                <input type="number" 
-                                       class="form-control" 
-                                       id="scrap_process_${process.sequenceNumber}" 
-                                       name="scrap_process_${process.sequenceNumber}"
-                                       placeholder="0.0" 
-                                       min="0" 
-                                       step="0.1"
-                                       value="0">
-                                <span class="input-group-text">${process.outputUnit}</span>
-                            </div>
-                            <div class="form-text">
-                                <small class="text-muted">
-                                    ${process.sequenceNumber === selectedProcess.sequenceNumber ? 
-                                        'Current process scrap' : 
-                                        'Previous process scrap'}
-                                </small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-    });
-    
-    scrapTrackingHTML += '</div>';
-    
-    // Add explanation text
-    scrapTrackingHTML += `
-        <div class="alert alert-warning mt-2">
-            <i class="fas fa-lightbulb me-2"></i>
-            <strong>Sequential Scrap Tracking:</strong> 
-            When receiving from Process ${selectedProcess.sequenceNumber} (${selectedProcess.name}), 
-            you can track scrap from all previous processes plus the current process. 
-            This ensures no scrap quantities are lost in the sequential manufacturing flow.
-        </div>
-    `;
-    
-    scrapSection.innerHTML = scrapTrackingHTML;
-}
-
 });
 </script>
 {% endblock %}
