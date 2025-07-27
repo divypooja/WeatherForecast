@@ -341,21 +341,24 @@ document.getElementById('process_selection').addEventListener('change', function
         }
         
         // Final fallback if no output quantity specified
-        if (!maxQuantity) {
-            maxQuantity = process.quantityInput;
+        if (!maxQuantity || maxQuantity === null || maxQuantity === 0) {
+            maxQuantity = process.quantityInput || 0;
         }
         
         const maxHint = document.querySelector('.form-text');
         if (maxHint) {
             // Debug log to see actual values
             console.log('Process Debug:', {
+                processId: processId,
                 sequenceNumber: process.sequenceNumber,
                 outputQuantity: process.outputQuantity,
                 quantityInput: process.quantityInput,
+                expectedQuantity: process.expectedQuantity,
                 maxQuantity: maxQuantity,
-                unit: unit
+                unit: unit,
+                processData: process
             });
-            maxHint.textContent = `Max: ${maxQuantity || 'N/A'} ${unit}`;
+            maxHint.textContent = `Max: ${maxQuantity || 'DEBUG_NULL'} ${unit}`;
         }
         
         // Update process stage field if empty
