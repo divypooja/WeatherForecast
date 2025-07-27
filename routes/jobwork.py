@@ -83,47 +83,29 @@ def add_job_work():
     if request.method == 'GET' and not form.sent_date.data:
         form.sent_date.data = datetime.now().date()
     
-    print(f"Form submitted: {request.method == 'POST'}")
-    print(f"Form valid: {form.validate()}")
-    if request.method == 'POST' and not form.validate():
-        print(f"Form errors: {form.errors}")
-    
     if form.validate_on_submit():
-        print("Form validation passed, starting save process...")
-        
         # Check if job number already exists
         existing_job = JobWork.query.filter_by(job_number=form.job_number.data).first()
         if existing_job:
-            print(f"Job number already exists: {form.job_number.data}")
             flash('Job number already exists', 'danger')
             return render_template('jobwork/form.html', form=form, title='Add Job Work')
         
         # Check if there's sufficient inventory
         item = Item.query.get(form.item_id.data)
         if not item:
-            print(f"Item not found: {form.item_id.data}")
             flash('Selected item not found', 'danger')
             return render_template('jobwork/form.html', form=form, title='Add Job Work')
         
-        print(f"Item found: {item.name}, current raw qty: {item.qty_raw}")
-        print(f"Quantity requested: {form.quantity_sent.data}")
-        
         # Initialize multi-state inventory if not set
         if item.qty_raw is None or item.qty_raw == 0.0:
-            print("Initializing multi-state inventory...")
             item.qty_raw = item.current_stock or 0.0
             item.qty_wip = 0.0
             item.qty_finished = 0.0
             item.qty_scrap = 0.0
-            print(f"Initialized: raw={item.qty_raw}, wip={item.qty_wip}, finished={item.qty_finished}, scrap={item.qty_scrap}")
             
-        print(f"Checking inventory: Available {item.qty_raw or 0}, Requested {form.quantity_sent.data}")
         if (item.qty_raw or 0) < form.quantity_sent.data:
-            print("Insufficient inventory, returning error")
             flash(f'Insufficient raw material inventory. Available: {item.qty_raw or 0} {item.unit_of_measure}', 'danger')
             return render_template('jobwork/form.html', form=form, title='Add Job Work')
-        
-        print("Inventory check passed, proceeding to create JobWork object...")
 
         print("Creating JobWork object...")
         try:
