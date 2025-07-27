@@ -315,12 +315,9 @@ document.getElementById('process_selection').addEventListener('change', function
         document.getElementById('passed_unit').textContent = unit;
         
         // Calculate max quantity - use output_quantity which contains the correct expected output
-        let maxQuantity = process.outputQuantity;
+        let maxQuantity = process.outputQuantity || process.quantityInput || 0;
         
-        // If no output_quantity, fallback to input quantity
-        if (!maxQuantity || maxQuantity === 0) {
-            maxQuantity = process.quantityInput || 0;
-        }
+        console.log(`Selected Process ${processId} (${process.name}): Using maxQuantity=${maxQuantity} (outputQuantity=${process.outputQuantity}, quantityInput=${process.quantityInput})`);
         
         const maxHint = document.querySelector('.form-text');
         if (maxHint) {
