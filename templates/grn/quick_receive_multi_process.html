@@ -269,20 +269,15 @@
 <script>
 // Process data for dynamic updates with sequential flow information
 const processData = {
-    {% set processes_sorted = processes|sort(attribute='sequence_number') %}
-    {% for process in processes_sorted %}
+    {% for process in processes|sort(attribute='sequence_number') %}
     {{ process.id }}: {
-        name: '{{ process.process_name }}',
-        workType: '{{ process.work_type }}',
-        status: '{{ process.status }}',
+        name: {{ process.process_name|tojson }},
+        workType: {{ process.work_type|tojson }},
+        status: {{ process.status|tojson }},
         sequenceNumber: {{ process.sequence_number }},
-        outputItemId: {{ process.output_item_id or 'null' }},
-        outputItemName: '{{ process.output_item.name if process.output_item_id else "" }}',
-        outputQuantity: {{ process.output_quantity or 'null' }},
-        quantityInput: {{ process.quantity_input or 'null' }},
-        expectedQuantity: {{ process.output_quantity or process.quantity_input or 'null' }},
-        outputUnit: '{% if process.output_item_id %}{{ process.output_item.unit_of_measure }}{% else %}{{ job_work.item.unit_of_measure }}{% endif %}',
-        isSequential: {{ 'true' if process.sequence_number > 1 else 'false' }}
+        outputQuantity: {{ process.output_quantity or 0 }},
+        quantityInput: {{ process.quantity_input or 0 }},
+        outputUnit: {{ (process.output_item.unit_of_measure if process.output_item_id else job_work.item.unit_of_measure)|tojson }}
     }{% if not loop.last %},{% endif %}
     {% endfor %}
 };
