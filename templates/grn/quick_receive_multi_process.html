@@ -318,25 +318,9 @@ document.getElementById('process_selection').addEventListener('change', function
         document.getElementById('rejected_unit').textContent = unit;
         document.getElementById('passed_unit').textContent = unit;
         
-        // Update max quantity hint based on process expected output/input
-        let maxQuantity;
-        if (process.sequenceNumber === 1) {
-            // First process: Use the output_quantity (what cutting can produce - 3490.0 pcs)
-            // NOT the quantity_input (10.0 sheet input)
-            maxQuantity = process.outputQuantity || process.quantityInput;
-        } else {
-            // Sequential process: Use previous process output_quantity as this process's max input
-            const prevProcessSeq = process.sequenceNumber - 1;
-            const prevProcess = Object.values(processData).find(p => p.sequenceNumber === prevProcessSeq);
-            
-            if (prevProcess) {
-                // Use previous process output_quantity (e.g., 3490 pcs from cutting)
-                maxQuantity = prevProcess.outputQuantity || prevProcess.quantityInput;
-            } else {
-                // Fallback to this process output quantity
-                maxQuantity = process.outputQuantity || process.quantityInput;
-            }
-        }
+        // Update max quantity hint based on pending receipt for THIS SPECIFIC PROCESS
+        // Max = What's still pending to be received for this process, NOT total quantities
+        let maxQuantity = {{ job_work.quantity_sent - (job_work.quantity_received or 0) }};
         
         const maxHint = document.querySelector('.form-text');
         if (maxHint) {
@@ -345,10 +329,10 @@ document.getElementById('process_selection').addEventListener('change', function
                 sequenceNumber: process.sequenceNumber,
                 outputQuantity: process.outputQuantity,
                 quantityInput: process.quantityInput,
-                maxQuantity: maxQuantity,
+                pendingReceipt: maxQuantity,
                 unit: unit
             });
-            maxHint.textContent = `Max: ${maxQuantity || 'N/A'} ${unit}`;
+            maxHint.textContent = `Max: ${maxQuantity} ${unit}`;
         }
         
         // Update process stage field if empty
