@@ -291,20 +291,35 @@ def delete_item(id):
 @inventory_bp.route('/api/item-stock/<int:item_id>')
 @login_required
 def get_item_stock(item_id):
-    """API endpoint to get item stock information"""
+    """API endpoint to get item stock information with multi-state inventory"""
     try:
         item = Item.query.get_or_404(item_id)
+        
+        # Initialize multi-state fields if not set
+        if item.qty_raw is None:
+            item.qty_raw = item.current_stock or 0.0
+            item.qty_wip = 0.0
+            item.qty_finished = 0.0
+            item.qty_scrap = 0.0
+            db.session.commit()
+        
         return jsonify({
             'success': True,
             'item_id': item.id,
             'item_name': item.name,
             'item_code': item.code,
             'current_stock': item.current_stock or 0,
+            'qty_raw': item.qty_raw or 0,
+            'qty_wip': item.qty_wip or 0,
+            'qty_finished': item.qty_finished or 0,
+            'qty_scrap': item.qty_scrap or 0,
+            'total_stock': item.total_stock,
+            'available_stock': item.available_stock,
             'minimum_stock': item.minimum_stock or 0,
             'unit_of_measure': item.unit_of_measure or 'units',
             'unit_price': float(item.unit_price or 0),
             'unit_weight': float(item.unit_weight or 0),
-            'low_stock': (item.current_stock or 0) <= (item.minimum_stock or 0)
+            'low_stock': (item.available_stock or 0) <= (item.minimum_stock or 0)
         })
     except Exception as e:
         return jsonify({
