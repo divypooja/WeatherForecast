@@ -29,6 +29,9 @@ class GRN(db.Model):
     transporter_name = db.Column(db.String(100))
     vehicle_number = db.Column(db.String(20))
     
+    # Inventory management
+    add_to_inventory = db.Column(db.Boolean, default=True)  # Whether to add received quantities to inventory
+    
     # Notes and remarks
     remarks = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

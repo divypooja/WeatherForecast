@@ -334,6 +334,9 @@ def quick_receive(job_work_id):
                 else:
                     # Fallback for items without multi-state inventory
                     job_work.item.current_stock = (job_work.item.current_stock or 0) + quantity_passed
+                grn.add_to_inventory = True  # Set the flag to True when inventory is updated
+            else:
+                grn.add_to_inventory = False  # Set the flag to False when inventory is not updated
             
             # Mark GRN as completed if no further inspection needed
             if form.inspection_status.data in ['passed', 'rejected']:
@@ -416,6 +419,9 @@ def quick_receive_po(purchase_order_id, item_id):
             # Update inventory if adding to stock
             if form.add_to_inventory.data and quantity_passed > 0:
                 item.current_stock = (item.current_stock or 0) + quantity_passed
+                grn.add_to_inventory = True  # Set the flag to True when inventory is updated
+            else:
+                grn.add_to_inventory = False  # Set the flag to False when inventory is not updated
             
             # Mark GRN as completed if no further inspection needed
             if form.inspection_status.data in ['passed', 'rejected']:
