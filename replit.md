@@ -19,6 +19,9 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **Send Workflow Update**: Removed manual status updates from email/WhatsApp send functionality since POs already start as "Sent"
 - **API Route Restriction**: Limited change_po_status API to only allow cancellation operations, preventing circumvention of automated workflow
 - **User Interface Clarity**: Added clear messaging about automatic status updates and manual-only cancellation operations throughout purchase interface
+- **Material Inspection Integration**: Material Inspection Dashboard marked as legacy with clear guidance to use GRN system for all new inspections
+- **Streamlined Workflow**: GRN Quick Receive now handles inspection during receipt, eliminating separate inspection steps
+- **PO Quick Receive Enhancement**: Enhanced PO Quick Receive interface to match Job Work functionality with comprehensive summary and progress tracking
 
 ### Complete GRN-Based Job Work Management System (July 27, 2025)
 - **GRN-Managed Outsourced Job Works**: Completely replaced manual status updates (Partial/Complete buttons) with comprehensive GRN-based material receipt management for all outsourced job works
