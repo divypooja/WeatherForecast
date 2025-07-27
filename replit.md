@@ -8,8 +8,10 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ### Complete Data Integrity and WIP Cleanup (Latest - July 27, 2025)
 - **Orphaned WIP Data Cleanup**: Resolved issue where WIP quantities remained in inventory after job works were deleted, causing incorrect WIP breakdown displays
+- **Multi-State Total Stock Calculation Fix**: Fixed total_stock property to correctly use current_stock for legacy items that haven't been fully migrated to multi-state tracking
 - **GRN Inspection Status Logic Fix**: Corrected "All Items Inspected" display logic to recognize 'passed', 'rejected', and 'partial' statuses instead of requiring 'completed' status
 - **Process-Specific WIP Synchronization**: Fixed orphaned process-specific WIP quantities (qty_wip_cutting, etc.) that persisted after job work deletion
+- **Legacy Compatibility Enhancement**: Enhanced total_stock calculation to handle hybrid multi-state/legacy stock scenarios ensuring accurate display across all inventory views
 - **Data Consistency Enforcement**: Implemented cleanup to ensure WIP breakdown accurately reflects actual active job works and processes
 - **Dashboard Display Accuracy**: WIP Breakdown and Multi-State Inventory now show consistent data with no phantom WIP quantities from deleted job works
 

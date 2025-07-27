@@ -349,7 +349,15 @@ class Item(db.Model):
     @property
     def total_stock(self):
         """Calculate total stock across all states"""
-        return (self.qty_raw or 0) + (self.total_wip or 0) + (self.qty_finished or 0)
+        # For items that haven't been migrated to multi-state, use current_stock
+        multi_state_total = (self.qty_raw or 0) + (self.total_wip or 0) + (self.qty_finished or 0) + (self.qty_scrap or 0)
+        
+        # If multi-state fields are not initialized (all zero) but current_stock exists, use current_stock
+        if multi_state_total == 0 and (self.current_stock or 0) > 0:
+            return self.current_stock or 0
+        
+        # Otherwise use multi-state calculation
+        return multi_state_total
     
     @property
     def total_wip(self):
