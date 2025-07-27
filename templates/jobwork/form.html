@@ -49,7 +49,7 @@
                     <h5><span id="formTitle">Single Process Job Work Details</span></h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST">
+                    <form method="POST" id="jobWorkForm">
                         {{ form.hidden_tag() }}
                         
                         <div class="row">
@@ -850,38 +850,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (multiProcess && multiProcess.checked) {
                 e.preventDefault();
                 
-                // Disable validation on all single-process specific fields
-                const singleProcessFields = [
-                    '#process_type',
-                    '#customer_name', 
-                    '#department',
-                    '#quantity_sent',
-                    '#rate_per_unit',
-                    '#expected_finished_material',
-                    '#expected_scrap',
-                    '#sent_date',
-                    '#expected_return',
-                    '#is_team_work',
-                    '#max_team_members'
-                ];
-                
-                singleProcessFields.forEach(fieldId => {
-                    const field = document.querySelector(fieldId);
-                    if (field) {
-                        field.removeAttribute('required');
-                        field.disabled = true;
-                    }
-                });
-                
-                // Also disable validation on fields in hidden containers
-                const hiddenContainers = form.querySelectorAll('[style*="display: none"]');
-                hiddenContainers.forEach(container => {
-                    const allFields = container.querySelectorAll('input, select, textarea');
-                    allFields.forEach(field => {
-                        field.removeAttribute('required');
-                        field.disabled = true;
-                    });
-                });
+                // Disable HTML5 validation entirely for this form
+                form.setAttribute('novalidate', 'novalidate');
                 
                 // Validate multi-process specific requirements
                 const processCards = document.querySelectorAll('.process-card');
@@ -922,50 +892,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     return false;
                 }
                 
-                const processesData = [];
-                processCards.forEach(card => {
-                    const processData = {
-                        process_name: card.querySelector('.process-name').value,
-                        sequence_number: parseInt(card.querySelector('.sequence-number').value),
-                        quantity_input: parseFloat(card.querySelector('.quantity-input').value),
-                        expected_scrap: parseFloat(card.querySelector('.expected-scrap').value) || 0,
-                        work_type: card.querySelector('.work-type').value,
-                        customer_name: card.querySelector('.customer-name').value,
-                        department: card.querySelector('.department').value,
-                        rate_per_unit: parseFloat(card.querySelector('.rate-per-unit').value) || 0,
-                        start_date: document.getElementById('sent_date').value,
-                        expected_completion: card.querySelector('.expected-completion') ? card.querySelector('.expected-completion').value : '',
-                        notes: card.querySelector('.process-notes').value
-                    };
-                    
-                    processesData.push(JSON.stringify(processData));
-                });
-                
-                // Remove any existing hidden process inputs
-                const existingHiddenInputs = form.querySelectorAll('input[name="processes"]');
-                existingHiddenInputs.forEach(input => input.remove());
-                
-                // Add hidden inputs for processes data
-                processesData.forEach(processJson => {
-                    const hiddenInput = document.createElement('input');
-                    hiddenInput.type = 'hidden';
-                    hiddenInput.name = 'processes';
-                    hiddenInput.value = processJson;
-                    form.appendChild(hiddenInput);
-                });
-                
-                // Add hidden field to indicate multi-process mode
-                let multiProcessInput = form.querySelector('input[name="is_multi_process"]');
-                if (!multiProcessInput) {
-                    multiProcessInput = document.createElement('input');
-                    multiProcessInput.type = 'hidden';
-                    multiProcessInput.name = 'is_multi_process';
-                    form.appendChild(multiProcessInput);
-                }
-                multiProcessInput.value = 'true';
-                
-                // Submit the form
-                form.submit();
+                // Submit via JavaScript to bypass form validation
+                submitMultiProcessForm();
             }
         });
     }
@@ -1191,6 +1119,58 @@ function updateMultiProcessCostSummary() {
     document.getElementById('total-processes').textContent = totalProcesses;
     document.getElementById('total-quantity-summary').textContent = `${totalQuantity} pcs (${totalScrap} kg scrap)`;
     document.getElementById('total-cost-multi').textContent = `₹${totalCost.toFixed(2)}`;
+}
+
+// Function to submit multi-process form
+function submitMultiProcessForm() {
+    const form = document.getElementById('jobWorkForm');
+    const processCards = document.querySelectorAll('.process-card');
+    const processesData = [];
+    
+    processCards.forEach(card => {
+        const processData = {
+            process_name: card.querySelector('.process-name').value,
+            sequence_number: parseInt(card.querySelector('.sequence-number').value),
+            quantity_input: parseFloat(card.querySelector('.quantity-input').value),
+            expected_scrap: parseFloat(card.querySelector('.expected-scrap').value) || 0,
+            work_type: card.querySelector('.work-type').value,
+            customer_name: card.querySelector('.customer-name').value,
+            department: card.querySelector('.department').value,
+            rate_per_unit: parseFloat(card.querySelector('.rate-per-unit').value) || 0,
+            start_date: document.getElementById('sent_date').value,
+            expected_completion: card.querySelector('.expected-completion') ? card.querySelector('.expected-completion').value : '',
+            notes: card.querySelector('.process-notes').value
+        };
+        
+        processesData.push(JSON.stringify(processData));
+    });
+    
+    // Remove any existing hidden process inputs
+    const existingHiddenInputs = form.querySelectorAll('input[name="processes"]');
+    existingHiddenInputs.forEach(input => input.remove());
+    
+    // Add hidden inputs for processes data
+    processesData.forEach(processJson => {
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'processes';
+        hiddenInput.value = processJson;
+        form.appendChild(hiddenInput);
+    });
+    
+    // Add hidden field to indicate multi-process mode
+    let multiProcessInput = form.querySelector('input[name="is_multi_process"]');
+    if (!multiProcessInput) {
+        multiProcessInput = document.createElement('input');
+        multiProcessInput.type = 'hidden';
+        multiProcessInput.name = 'is_multi_process';
+        form.appendChild(multiProcessInput);
+    }
+    multiProcessInput.value = 'true';
+    
+    // Submit the form without validation
+    form.noValidate = true;
+    form.submit();
 }
 
 </script>
