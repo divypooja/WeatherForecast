@@ -288,15 +288,21 @@ const processData = {
 };
 
 // Auto-calculate passed quantity
-document.getElementById('quantity_received').addEventListener('input', calculatePassed);
-document.getElementById('quantity_rejected').addEventListener('input', calculatePassed);
-
 function calculatePassed() {
     const received = parseFloat(document.getElementById('quantity_received').value) || 0;
     const rejected = parseFloat(document.getElementById('quantity_rejected').value) || 0;
     const passed = Math.max(0, received - rejected);
-    document.getElementById('quantity_passed').value = passed.toFixed(2);
+    document.getElementById('quantity_passed').value = passed.toFixed(1);
 }
+
+// Add event listeners for auto-calculation
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('quantity_received').addEventListener('input', calculatePassed);
+    document.getElementById('quantity_rejected').addEventListener('input', calculatePassed);
+    
+    // Initialize calculation on page load
+    calculatePassed();
+});
 
 // Update form based on selected process
 document.getElementById('process_selection').addEventListener('change', function() {
@@ -310,11 +316,11 @@ document.getElementById('process_selection').addEventListener('change', function
         document.getElementById('rejected_unit').textContent = unit;
         document.getElementById('passed_unit').textContent = unit;
         
-        // Update max quantity hint (use expected output quantity if available)
-        const maxQuantity = process.outputQuantity || {{ job_work.quantity_sent - (job_work.quantity_received or 0) }};
+        // Update max quantity hint based on pending quantity
+        const pendingQuantity = {{ job_work.quantity_sent - (job_work.quantity_received or 0) }};
         const maxHint = document.querySelector('.form-text');
         if (maxHint) {
-            maxHint.textContent = `Max: ${maxQuantity} ${unit}`;
+            maxHint.textContent = `Max: ${pendingQuantity} ${unit}`;
         }
         
         // Update process stage field if empty
@@ -332,6 +338,9 @@ document.getElementById('process_selection').addEventListener('change', function
         
         // Show individual process scrap tracking
         showProcessScrapTracking(processId);
+        
+        // Recalculate passed quantity after process selection
+        calculatePassed();
     }
 });
 
@@ -424,13 +433,6 @@ function showProcessScrapTracking(selectedProcessId) {
     scrapSection.innerHTML = scrapTrackingHTML;
 }
 
-// Initialize calculation on page load
-calculatePassed();
-
-// Trigger process selection change on page load if a process is already selected
-const processSelect = document.getElementById('process_selection');
-if (processSelect.value) {
-    processSelect.dispatchEvent(new Event('change'));
-}
+});
 </script>
 {% endblock %}
