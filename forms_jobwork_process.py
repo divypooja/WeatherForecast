@@ -91,7 +91,7 @@ class JobWorkProcessForm(FlaskForm):
         self.customer_name.choices = [('', 'Select Customer/Vendor')] + [(s.name, s.name) for s in suppliers]
         
         # Populate output product choices with all items
-        items = Item.query.filter_by(is_active=True).order_by(Item.name).all()
+        items = Item.query.order_by(Item.name).all()
         self.output_item_id.choices = [('', 'Select Output Product')] + [(str(i.id), f"{i.code} - {i.name}") for i in items]
 
 
