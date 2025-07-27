@@ -200,22 +200,33 @@ function checkInventoryStock() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                const availableStock = data.current_stock || 0;
+                const totalStock = data.total_stock || 0;
                 const rawStock = data.qty_raw || 0;
+                const wipStock = data.qty_wip || 0;
+                const finishedStock = data.qty_finished || 0;
+                const availableStock = data.available_stock || 0;
                 const unit = data.unit_of_measure || 'units';
                 
                 let alertClass = 'alert-success';
                 let icon = 'fas fa-check-circle';
-                let message = `✓ Available Stock: ${availableStock} ${unit} (Raw: ${rawStock} ${unit})`;
+                let message = `✓ Available Stock: ${availableStock} ${unit} (Raw: ${rawStock} + Finished: ${finishedStock})`;
+                
+                // Add WIP information if exists
+                if (wipStock > 0) {
+                    message += `<br><small class="text-muted">WIP: ${wipStock} ${unit} (in process)</small>`;
+                }
                 
                 if (quantity > rawStock) {
                     alertClass = 'alert-danger';
                     icon = 'fas fa-exclamation-triangle';
-                    message = `✗ Insufficient Raw Materials! Available: ${rawStock} ${unit}, Required: ${quantity} ${unit}`;
+                    message = `✗ Insufficient Raw Materials! Raw: ${rawStock} ${unit}, Required: ${quantity} ${unit}`;
+                    if (wipStock > 0) {
+                        message += `<br><small class="text-info">Note: ${wipStock} ${unit} in WIP (requires inspection to use)</small>`;
+                    }
                 } else if (quantity > rawStock * 0.8) {
                     alertClass = 'alert-warning';
                     icon = 'fas fa-exclamation-triangle';
-                    message = `⚠ Low Stock Warning! Available: ${rawStock} ${unit}, Required: ${quantity} ${unit}`;
+                    message = `⚠ Low Raw Stock Warning! Raw: ${rawStock} ${unit}, Required: ${quantity} ${unit}`;
                 }
                 
                 stockInfo.innerHTML = `<div class="alert ${alertClass}"><i class="${icon}"></i> ${message}</div>`;
