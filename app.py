@@ -63,6 +63,13 @@ def create_app():
     from routes.material_inspection import material_inspection
     from routes.expenses import expenses_bp
     from routes.documents import documents_bp
+    
+    # Import GRN blueprint if available
+    try:
+        from routes.grn import grn_bp
+        from models_grn import GRN, GRNLineItem
+    except ImportError:
+        grn_bp = None
     from routes.uom import uom_bp
     from routes.tally import tally_bp
     from routes.packing import packing_bp
@@ -88,6 +95,10 @@ def create_app():
     app.register_blueprint(packing_bp, url_prefix='/packing')
     from routes.backup import backup_bp
     app.register_blueprint(backup_bp, url_prefix='/backup')
+    
+    # Register GRN blueprint if available
+    if grn_bp:
+        app.register_blueprint(grn_bp, url_prefix='/grn')
     
     # Register Multi-Process Job Work blueprint
     from routes.multi_process_jobwork import multi_process_jobwork_bp
