@@ -28,12 +28,12 @@ def dashboard():
     # Filter to only show POs that have items and could need inspection
     pending_po_inspections = [po for po in all_pos_with_items if po.items]
     
-    # For job works, only show outsourced ones for traditional inspection
+    # For job works, show outsourced and multi-process ones for traditional inspection
     # In-house job works use daily entries for inspection
     # Include job works with partial_received status that may need additional inspections
     # Include job works with pending/in_progress/failed inspection status
     pending_job_inspections = JobWork.query.filter(
-        JobWork.work_type == 'outsourced',  # Only outsourced job works need traditional inspection
+        JobWork.work_type.in_(['outsourced', 'multi_process']),  # Include multi-process job works for inspection
         JobWork.inspection_required == True
     ).filter(
         # Include partial_received status jobs (may need additional inspections) OR jobs with incomplete inspection
