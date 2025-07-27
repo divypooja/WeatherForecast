@@ -1150,3 +1150,116 @@ def sync_all_quantities():
         flash(f'All {total_jobs} job work quantities are accurate. No corrections needed.', 'info')
     
     return redirect(url_for('jobwork.dashboard'))
+
+@jobwork_bp.route('/cancel/<int:job_id>', methods=['POST'])
+@login_required
+def cancel_job_work(job_id):
+    """Cancel a job work (mark as cancelled but preserve record)"""
+    try:
+        job = JobWork.query.get_or_404(job_id)
+        
+        # Only allow cancelling jobs that are sent or partially received
+        if job.status not in ['sent', 'partial_received']:
+            return jsonify({
+                'success': False, 
+                'message': f'Cannot cancel job work with status: {job.status}'
+            }), 400
+        
+        # Check if user can cancel this job (admin or creator)
+        if not current_user.is_admin() and job.created_by != current_user.id:
+            return jsonify({
+                'success': False, 
+                'message': 'You can only cancel job works you created'
+            }), 403
+        
+        # Update status to cancelled
+        old_status = job.status
+        job.status = 'cancelled'
+        
+        # If materials were moved to WIP, return them to raw materials
+        if job.item and hasattr(job.item, 'qty_wip') and job.item.qty_wip >= job.quantity_sent:
+            # Move materials back from WIP to Raw
+            job.item.qty_wip = (job.item.qty_wip or 0) - job.quantity_sent
+            job.item.qty_raw = (job.item.qty_raw or 0) + job.quantity_sent
+        
+        # Add cancellation note
+        current_time = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+        cancellation_note = f"\n[CANCELLED {current_time}] Job work cancelled by {current_user.username}. Previous status: {old_status}"
+        job.notes = (job.notes or '') + cancellation_note
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Job work {job.job_number} has been cancelled successfully'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False, 
+            'message': f'Error cancelling job work: {str(e)}'
+        }), 500
+
+@jobwork_bp.route('/delete/<int:job_id>', methods=['DELETE'])
+@login_required
+def delete_job_work(job_id):
+    """Permanently delete a job work and all related data"""
+    try:
+        job = JobWork.query.get_or_404(job_id)
+        
+        # Only admin can delete job works
+        if not current_user.is_admin():
+            return jsonify({
+                'success': False, 
+                'message': 'Only administrators can delete job works'
+            }), 403
+        
+        job_number = job.job_number
+        
+        # If materials are in WIP, return them to raw materials
+        if job.item and hasattr(job.item, 'qty_wip') and job.item.qty_wip >= job.quantity_sent:
+            job.item.qty_wip = (job.item.qty_wip or 0) - job.quantity_sent
+            job.item.qty_raw = (job.item.qty_raw or 0) + job.quantity_sent
+        
+        # Delete related records (cascading should handle most, but let's be explicit)
+        from models_grn import GRN, GRNLineItem
+        from models import MaterialInspection, DailyJobWorkEntry, JobWorkTeamAssignment
+        
+        # Delete GRN line items first
+        grns = GRN.query.filter_by(job_work_id=job_id).all()
+        for grn in grns:
+            GRNLineItem.query.filter_by(grn_id=grn.id).delete()
+            db.session.delete(grn)
+        
+        # Delete material inspections
+        MaterialInspection.query.filter_by(job_work_id=job_id).delete()
+        
+        # Delete daily work entries
+        DailyJobWorkEntry.query.filter_by(job_work_id=job_id).delete()
+        
+        # Delete team assignments
+        JobWorkTeamAssignment.query.filter_by(job_work_id=job_id).delete()
+        
+        # Delete job work processes (for multi-process jobs)
+        try:
+            from models import JobWorkProcess
+            JobWorkProcess.query.filter_by(job_work_id=job_id).delete()
+        except ImportError:
+            pass  # Model might not exist in all versions
+        
+        # Finally delete the main job work record
+        db.session.delete(job)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Job work {job_number} has been permanently deleted'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False, 
+            'message': f'Error deleting job work: {str(e)}'
+        }), 500
