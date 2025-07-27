@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block title %}Receive Multi-Process Materials{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-cogs me-2"></i>Receive Multi-Process Materials</h2>
+                <div>
+                    <a href="{{ url_for('multi_process_jobwork.detail', id=job_work.id) }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Job Work
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Job Information -->
+        <div class="col-lg-4">
+            <div class="card border-info">
+                <div class="card-header bg-info text-white">
+                    <h5><i class="fas fa-info-circle me-2"></i>Multi-Process Job Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Job Number:</strong><br>
+                        <span class="text-primary">{{ job_work.job_number }}</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Item:</strong><br>
+                        {{ job_work.item.name }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Quantity Sent:</strong><br>
+                        <span class="text-warning">{{ job_work.quantity_sent }} {{ job_work.item.unit_of_measure }}</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Pending Receipt:</strong><br>
+                        <span class="text-danger">{{ (job_work.quantity_sent - (job_work.quantity_received or 0)) }} {{ job_work.item.unit_of_measure }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Process Summary -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6><i class="fas fa-tasks me-2"></i>Process Summary</h6>
+                </div>
+                <div class="card-body">
+                    {% for process in processes %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small">{{ process.process_name }}</span>
+                        {% if process.status == 'completed' %}
+                            <span class="badge bg-success">Completed</span>
+                        {% elif process.status == 'in_progress' %}
+                            <span class="badge bg-warning">In Progress</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Pending</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Receipt Form -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-clipboard-check me-2"></i>Process Material Receipt</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.received_date.label(class="form-label") }}
+                                    {{ form.received_date(class="form-control") }}
+                                    {% if form.received_date.errors %}
+                                        <div class="text-danger small">{{ form.received_date.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.process_selection.label(class="form-label") }}
+                                    {{ form.process_selection(class="form-select") }}
+                                    {% if form.process_selection.errors %}
+                                        <div class="text-danger small">{{ form.process_selection.errors[0] }}</div>
+                                    {% endif %}
+                                    <div class="form-text">Select which process is returning materials</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.quantity_received.label(class="form-label") }}
+                                    <div class="input-group">
+                                        {{ form.quantity_received(class="form-control", id="quantity_received") }}
+                                        <span class="input-group-text">{{ job_work.item.unit_of_measure }}</span>
+                                    </div>
+                                    {% if form.quantity_received.errors %}
+                                        <div class="text-danger small">{{ form.quantity_received.errors[0] }}</div>
+                                    {% endif %}
+                                    <div class="form-text">Max: {{ (job_work.quantity_sent - (job_work.quantity_received or 0)) }} {{ job_work.item.unit_of_measure }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.quantity_rejected.label(class="form-label") }}
+                                    <div class="input-group">
+                                        {{ form.quantity_rejected(class="form-control", id="quantity_rejected") }}
+                                        <span class="input-group-text">{{ job_work.item.unit_of_measure }}</span>
+                                    </div>
+                                    {% if form.quantity_rejected.errors %}
+                                        <div class="text-danger small">{{ form.quantity_rejected.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.quantity_passed.label(class="form-label") }}
+                                    <div class="input-group">
+                                        {{ form.quantity_passed(class="form-control", id="quantity_passed", readonly=True) }}
+                                        <span class="input-group-text">{{ job_work.item.unit_of_measure }}</span>
+                                    </div>
+                                    <div class="form-text text-success">Auto-calculated</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.process_stage.label(class="form-label") }}
+                                    {{ form.process_stage(class="form-control", placeholder="e.g., Zinc Plating Complete, Machining Finished") }}
+                                    {% if form.process_stage.errors %}
+                                        <div class="text-danger small">{{ form.process_stage.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.inspection_status.label(class="form-label") }}
+                                    {{ form.inspection_status(class="form-select") }}
+                                    {% if form.inspection_status.errors %}
+                                        <div class="text-danger small">{{ form.inspection_status.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.rejection_reason.label(class="form-label") }}
+                            {{ form.rejection_reason(class="form-control", rows=3, placeholder="Describe any quality issues or rejection reasons") }}
+                            {% if form.rejection_reason.errors %}
+                                <div class="text-danger small">{{ form.rejection_reason.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.delivery_note.label(class="form-label") }}
+                            {{ form.delivery_note(class="form-control", placeholder="Process delivery note or reference") }}
+                            {% if form.delivery_note.errors %}
+                                <div class="text-danger small">{{ form.delivery_note.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.add_to_inventory(class="form-check-input") }}
+                                {{ form.add_to_inventory.label(class="form-check-label") }}
+                            </div>
+                            <div class="form-text">Check to automatically add passed quantities to inventory</div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.remarks.label(class="form-label") }}
+                            {{ form.remarks(class="form-control", rows=3, placeholder="Process completion notes and observations") }}
+                            {% if form.remarks.errors %}
+                                <div class="text-danger small">{{ form.remarks.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ url_for('multi_process_jobwork.detail', id=job_work.id) }}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check me-1"></i>Receive Materials
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-calculate passed quantity
+document.getElementById('quantity_received').addEventListener('input', calculatePassed);
+document.getElementById('quantity_rejected').addEventListener('input', calculatePassed);
+
+function calculatePassed() {
+    const received = parseFloat(document.getElementById('quantity_received').value) || 0;
+    const rejected = parseFloat(document.getElementById('quantity_rejected').value) || 0;
+    const passed = Math.max(0, received - rejected);
+    document.getElementById('quantity_passed').value = passed.toFixed(2);
+}
+
+// Initialize calculation on page load
+calculatePassed();
+</script>
+{% endblock %}
