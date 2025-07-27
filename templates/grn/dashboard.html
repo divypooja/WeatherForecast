@@ -310,8 +310,8 @@
                                         <h6 class="mb-1">{{ job.job_number }}</h6>
                                         <p class="mb-1 text-muted small">{{ job.item.name }}</p>
                                         <p class="mb-1 small">
-                                            <span class="text-muted">Pending:</span> 
-                                            <strong>{{ job.pending_quantity }} {{ job.item.unit_of_measure }}</strong>
+                                            <span class="text-muted">Pending Receipt:</span> 
+                                            <strong>{{ job.pending_receipt_display }}</strong>
                                         </p>
                                         <span class="badge bg-{{ 'warning' if job.status == 'partial_received' else 'primary' }}">
                                             {{ job.status.replace('_', ' ').title() }}
