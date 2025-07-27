@@ -350,7 +350,7 @@ def get_employees():
     """API endpoint to get all active employees for team lead selection"""
     try:
         from models import Employee
-        employees = Employee.query.filter_by(status='active').order_by(Employee.name).all()
+        employees = Employee.query.order_by(Employee.name).all()
         employees_data = []
         for emp in employees:
             employees_data.append({
@@ -358,7 +358,7 @@ def get_employees():
                 'employee_code': emp.employee_code,
                 'name': emp.name,
                 'department': emp.department,
-                'position': emp.position
+                'position': getattr(emp, 'position', 'Employee')  # Handle if position field doesn't exist
             })
         
         return jsonify({

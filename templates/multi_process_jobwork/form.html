@@ -425,8 +425,19 @@ function populateOutputProductDropdown(processIndex) {
 
 // Function to populate team lead dropdown
 function populateTeamLeadDropdown(processIndex) {
-    fetch('/jobwork/multi-process/api/employees')
-        .then(response => response.json())
+    fetch('/jobwork/multi-process/api/employees', {
+        method: 'GET',
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 const processDiv = document.getElementById(`process-${processIndex}`);
@@ -437,9 +448,19 @@ function populateTeamLeadDropdown(processIndex) {
                         select.innerHTML += `<option value="${emp.id}">${emp.employee_code} - ${emp.name} (${emp.department})</option>`;
                     });
                 }
+            } else {
+                console.error('API returned error:', data.error);
             }
         })
-        .catch(error => console.error('Error loading employees:', error));
+        .catch(error => {
+            console.error('Error loading employees:', error);
+            // Provide fallback message in dropdown
+            const processDiv = document.getElementById(`process-${processIndex}`);
+            const select = processDiv.querySelector('.team-lead');
+            if (select) {
+                select.innerHTML = '<option value="">Error loading employees</option>';
+            }
+        });
 }
 
 // Function to remove a process
