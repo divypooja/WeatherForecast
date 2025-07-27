@@ -32,6 +32,11 @@ class JobWorkProcessForm(FlaskForm):
                                validators=[DataRequired(), NumberRange(min=0)],
                                render_kw={'placeholder': 'Quantity for this process'})
     
+    expected_scrap = FloatField('Expected Scrap', 
+                               validators=[NumberRange(min=0)], 
+                               default=0.0,
+                               render_kw={'placeholder': 'Expected scrap quantity'})
+    
     work_type = SelectField('Work Type',
                            validators=[DataRequired()],
                            coerce=str,
