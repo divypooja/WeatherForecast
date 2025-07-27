@@ -102,7 +102,7 @@
                                         {% endif %}
                                         {% if job.status != 'cancelled' %}
                                         <button type="button" class="btn btn-outline-danger btn-sm" title="Delete Job Work" 
-                                                onclick="deleteJobWork({{ job.id }}, '{{ job.job_number }}')">
+                                                onclick="if(confirm('Are you sure you want to delete job work {{ job.job_number }}? This action cannot be undone.')) { window.location.href='{{ url_for('jobwork.delete_job_work', job_id=job.id) }}'; }">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                         {% else %}
@@ -215,25 +215,7 @@
     </div>
 </div>
 
-<!-- Delete Job Work Modal -->
-<div class="modal fade" id="deleteJobWorkModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-trash me-2"></i>Delete Job Work</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete job work <strong id="deleteJobNumber"></strong>?</p>
-                <p class="text-danger"><i class="fas fa-exclamation-triangle me-2"></i><strong>Warning:</strong> This action cannot be undone and will permanently remove all job work data including processes, materials, and history.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete Permanently</button>
-            </div>
-        </div>
-    </div>
-</div>
+
 
 <script>
 let currentJobId = null;
@@ -252,19 +234,7 @@ function cancelJobWork(jobId, jobNumber) {
     }, 100);
 }
 
-function deleteJobWork(jobId, jobNumber) {
-    // Clear any existing modals first
-    const existingModals = document.querySelectorAll('.modal.show');
-    existingModals.forEach(modal => {
-        bootstrap.Modal.getInstance(modal)?.hide();
-    });
-    
-    currentJobId = jobId;
-    document.getElementById('deleteJobNumber').textContent = jobNumber;
-    setTimeout(() => {
-        new bootstrap.Modal(document.getElementById('deleteJobWorkModal')).show();
-    }, 100);
-}
+
 
 // Cancel job work
 document.getElementById('confirmCancelBtn').addEventListener('click', function() {
@@ -290,29 +260,7 @@ document.getElementById('confirmCancelBtn').addEventListener('click', function()
     }
 });
 
-// Delete job work
-document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
-    if (currentJobId) {
-        fetch(`/jobwork/delete/${currentJobId}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Error deleting job work: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error deleting job work. Please try again.');
-        });
-    }
-});
+
 
 // Clear any stuck modals on page load
 document.addEventListener('DOMContentLoaded', function() {
