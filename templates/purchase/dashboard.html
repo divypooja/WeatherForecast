@@ -83,148 +83,141 @@
         </div>
     </div>
 
-    <!-- Complete Purchase Order Status Table -->
+    <!-- Active Purchase Order Progress -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5><i class="fas fa-table me-2"></i>Complete Purchase Order Status Table</h5>
-                    <span class="badge bg-primary">{{ recent_pos|length }} recent orders</span>
+                    <h5><i class="fas fa-chart-line me-2"></i>Active Purchase Order Progress</h5>
+                    <div>
+                        <span class="badge bg-primary">{{ recent_pos|length }} Active POs</span>
+                        <button class="btn btn-sm btn-outline-secondary ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#poProgressCards">
+                            <i class="fas fa-chevron-up"></i>
+                        </button>
+                    </div>
                 </div>
-                <div class="card-body">
+                <div class="card-body collapse show" id="poProgressCards">
                     {% if recent_pos %}
-                        <div class="table-responsive">
-                            <table class="table table-striped table-hover">
-                                <thead class="table-dark">
-                                    <tr>
-                                        <th>PO Number</th>
-                                        <th>Date</th>
-                                        <th>Supplier</th>
-                                        <th>Items</th>
-                                        <th>Order Quantities</th>
-                                        <th>Received Quantities</th>
-                                        <th>Pending Quantities</th>
-                                        <th>Progress</th>
-                                        <th>PO Status</th>
-                                        <th>Total Amount</th>
-                                        <th>GRN Actions</th>
-                                        <th>View</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for po in recent_pos %}
-                                    <tr>
-                                        <td><strong class="text-primary">{{ po.po_number }}</strong></td>
-                                        <td>{{ po.order_date.strftime('%d/%m/%Y') }}</td>
-                                        <td>
-                                            <small class="text-muted">{{ po.supplier.name }}</small>
-                                        </td>
-                                        <td>
-                                            <small>
-                                            {% for item in po.items %}
-                                                <div>{{ item.item.name }}</div>
-                                            {% endfor %}
-                                            </small>
-                                        </td>
-                                        <td>
-                                            <small>
-                                            {% for item in po.items %}
-                                                <div class="text-info">{{ item.qty }} {{ item.uom }}</div>
-                                            {% endfor %}
-                                            </small>
-                                        </td>
-                                        <td>
-                                            <small>
-                                            {% for item in po.items %}
-                                                <div class="text-success">
-                                                    {{ item.quantity_received or 0 }} {{ item.uom }}
-                                                </div>
-                                            {% endfor %}
-                                            </small>
-                                        </td>
-                                        <td>
-                                            <small>
-                                            {% for item in po.items %}
-                                                {% set pending = item.qty - (item.quantity_received or 0) %}
-                                                <div class="{{ 'text-warning' if pending > 0 else 'text-success' }}">
-                                                    {{ pending }} {{ item.uom }}
-                                                </div>
-                                            {% endfor %}
-                                            </small>
-                                        </td>
-                                        <td>
-                                            {% set total_ordered = po.items|sum(attribute='qty') %}
-                                            {% set total_received = po.items|sum(attribute='quantity_received') if po.items else 0 %}
-                                            {% set completion_percentage = ((total_received / total_ordered) * 100) if total_ordered > 0 else 0 %}
-                                            <div class="d-flex align-items-center">
-                                                <div class="progress me-2" style="width: 80px; height: 20px;">
-                                                    <div class="progress-bar bg-{{ 'success' if completion_percentage == 100 else 'warning' if completion_percentage > 0 else 'danger' }}" 
-                                                         role="progressbar" 
-                                                         style="width: {{ completion_percentage }}%">
-                                                    </div>
-                                                </div>
-                                                <small>{{ "%.0f"|format(completion_percentage) }}%</small>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-{{ 'success' if po.status == 'closed' else 'warning' if po.status == 'partial' else 'info' if po.status == 'sent' else 'secondary' }}">
+                        <div class="row">
+                            {% for po in recent_pos %}
+                            {% set total_ordered = po.items|sum(attribute='qty') %}
+                            {% set total_received = po.items|sum(attribute='quantity_received') if po.items else 0 %}
+                            {% set total_pending = total_ordered - total_received %}
+                            
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card border-{{ 'success' if po.status == 'closed' else 'warning' if po.status == 'partial' else 'info' }}">
+                                    <div class="card-body">
+                                        <!-- PO Header -->
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h6 class="card-title text-primary mb-0">{{ po.po_number }} - {{ po.items[0].item.name if po.items else 'No Items' }}</h6>
+                                            <span class="badge bg-{{ 'success' if po.status == 'closed' else 'warning' if po.status == 'partial' else 'info' }}">
                                                 {{ po.status.title() }}
                                             </span>
-                                        </td>
-                                        <td>
-                                            <strong>₹{{ "%.2f"|format(po.total_amount) }}</strong>
-                                        </td>
-                                        <td>
-                                            {% if po.status in ['sent', 'partial'] %}
-                                            <div class="btn-group-vertical" role="group">
-                                                <a href="{{ url_for('grn.create_grn_for_po', purchase_order_id=po.id) }}" 
-                                                   class="btn btn-sm btn-outline-primary mb-1" title="Create Full GRN">
-                                                    <i class="fas fa-plus"></i> GRN
-                                                </a>
-                                                <a href="{{ url_for('grn.dashboard') }}" 
-                                                   class="btn btn-sm btn-outline-info" title="GRN Dashboard">
-                                                    <i class="fas fa-receipt"></i> Dashboard
-                                                </a>
+                                        </div>
+                                        
+                                        <!-- Supplier and Date Info -->
+                                        <div class="row small text-muted mb-3">
+                                            <div class="col-6">
+                                                <i class="fas fa-user me-1"></i>{{ po.supplier.name }}
                                             </div>
-                                            {% else %}
-                                            <span class="text-muted"><small>Completed</small></span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
+                                            <div class="col-6 text-end">
+                                                <i class="fas fa-calendar me-1"></i>{{ po.order_date.strftime('%d %b %Y') }}
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Quantity Information -->
+                                        <div class="row mb-3">
+                                            <div class="col-4 text-center">
+                                                <div class="text-secondary small">Ordered</div>
+                                                <div class="fw-bold">{{ "%.1f"|format(total_ordered) }}</div>
+                                            </div>
+                                            <div class="col-4 text-center">
+                                                <div class="text-success small">Received</div>
+                                                <div class="fw-bold text-success">{{ "%.1f"|format(total_received) }}</div>
+                                            </div>
+                                            <div class="col-4 text-center">
+                                                <div class="text-warning small">Pending</div>
+                                                <div class="fw-bold text-warning">{{ "%.1f"|format(total_pending) }}</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Progress Bar -->
+                                        {% set completion_percentage = ((total_received / total_ordered) * 100) if total_ordered > 0 else 0 %}
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between small mb-1">
+                                                <span>Progress</span>
+                                                <span>{{ "%.0f"|format(completion_percentage) }}%</span>
+                                            </div>
+                                            <div class="progress" style="height: 8px;">
+                                                <div class="progress-bar bg-{{ 'success' if completion_percentage == 100 else 'warning' if completion_percentage > 0 else 'danger' }}" 
+                                                     role="progressbar" 
+                                                     style="width: {{ completion_percentage }}%">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Expected Date -->
+                                        <div class="row small text-muted mb-3">
+                                            <div class="col-6">
+                                                <i class="fas fa-clock me-1"></i>Expected: 
+                                                {% if po.expected_delivery_date %}
+                                                    {{ po.expected_delivery_date.strftime('%d %b %Y') }}
+                                                {% else %}
+                                                    Not specified
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-6 text-end">
+                                                <strong>₹{{ "%.0f"|format(po.total_amount) }}</strong>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Action Buttons -->
+                                        <div class="d-flex gap-2">
                                             <a href="{{ url_for('purchase.edit_purchase_order', id=po.id) }}" 
-                                               class="btn btn-sm btn-outline-primary" title="View Details">
-                                                <i class="fas fa-eye"></i>
+                                               class="btn btn-sm btn-outline-primary flex-fill">
+                                                <i class="fas fa-eye"></i> View Details
                                             </a>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                                            {% if po.status in ['sent', 'partial'] %}
+                                            <a href="{{ url_for('grn.dashboard') }}" 
+                                               class="btn btn-sm btn-outline-success">
+                                                <i class="fas fa-receipt"></i> Receive Materials
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
                         </div>
                         
-                        <!-- Summary Row -->
+                        <!-- Summary Information -->
                         <div class="row mt-3">
                             <div class="col-md-6">
-                                <h6><i class="fas fa-chart-pie me-2"></i>Summary by Status</h6>
-                                <ul class="list-unstyled">
-                                    <li><span class="badge bg-info me-2">Sent</span> Ready for receipt: <strong>{{ stats.sent_pos }}</strong></li>
-                                    <li><span class="badge bg-warning me-2">Partial</span> Partially received: <strong>{{ stats.partial_pos }}</strong></li>
-                                    <li><span class="badge bg-success me-2">Closed</span> Fully completed: <strong>{{ stats.closed_pos }}</strong></li>
-                                </ul>
-                            </div>
-                            <div class="col-md-6">
-                                <h6><i class="fas fa-info-circle me-2"></i>Automated Workflow Info</h6>
                                 <div class="alert alert-info">
                                     <i class="fas fa-robot me-2"></i>
                                     <strong>Fully Automated PO Workflow:</strong> PO status automatically updates from "Sent" → "Partial" → "Closed" based on GRN material receipts. Only manual action is cancellation for supplier issues.
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-chart-pie me-2"></i>Status Summary</h6>
+                                <div class="row">
+                                    <div class="col-4 text-center">
+                                        <div class="badge bg-info w-100">Sent: {{ stats.sent_pos }}</div>
+                                    </div>
+                                    <div class="col-4 text-center">
+                                        <div class="badge bg-warning w-100">Partial: {{ stats.partial_pos }}</div>
+                                    </div>
+                                    <div class="col-4 text-center">
+                                        <div class="badge bg-success w-100">Closed: {{ stats.closed_pos }}</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     {% else %}
                         <div class="text-center py-4">
                             <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
-                            <h5>No Purchase Orders found</h5>
-                            <p class="text-muted">Purchase orders will appear here when created.</p>
+                            <h5>No Active Purchase Orders</h5>
+                            <p class="text-muted">Purchase orders will appear here when created and sent to suppliers.</p>
                             <a href="{{ url_for('purchase.add_purchase_order') }}" class="btn btn-primary">
                                 <i class="fas fa-plus"></i> Create First Purchase Order
                             </a>
