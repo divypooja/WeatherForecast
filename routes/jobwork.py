@@ -646,7 +646,7 @@ def daily_job_work_entry():
                 
                 # Handle scrap quantity (if any) - could be logged for reporting but not added to inventory
                 if form.scrap_quantity.data and form.scrap_quantity.data > 0:
-                    scrap_note = f"Scrap generated: {form.scrap_quantity.data} {job_work.item.unit_of_measure} on {form.work_date.data} by {form.worker_name.data}"
+                    scrap_note = f"Scrap generated: {form.scrap_quantity.data} kg on {form.work_date.data} by {form.worker_name.data}"
                     if job_work.notes:
                         job_work.notes += f"\n{scrap_note}"
                     else:

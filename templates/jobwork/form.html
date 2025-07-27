@@ -208,12 +208,12 @@
                             </div>
                             
                             <div class="col-md-6 mb-3">
-                                {{ form.expected_scrap.label(class="form-label") }}
+                                {{ form.expected_scrap.label(class="form-label") }} (kg)
                                 <div class="input-group">
-                                    {{ form.expected_scrap(class="form-control", id="expected_scrap", step="0.01") }}
-                                    <span class="input-group-text" id="scrap-unit">units</span>
+                                    {{ form.expected_scrap(class="form-control", id="expected_scrap", step="0.001") }}
+                                    <span class="input-group-text" id="scrap-unit">kg</span>
                                 </div>
-                                <small class="text-muted">Expected scrap quantity (optional)</small>
+                                <small class="text-muted">Expected scrap quantity in kilograms (optional)</small>
                                 {% if form.expected_scrap.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.expected_scrap.errors %}

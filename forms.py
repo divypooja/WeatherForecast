@@ -269,7 +269,7 @@ class JobWorkForm(FlaskForm):
                                   ('research_development', 'Research & Development')])
     quantity_sent = FloatField('Quantity Sent', validators=[DataRequired(), NumberRange(min=0)])
     expected_finished_material = FloatField('Expected Finished Material', validators=[NumberRange(min=0)], default=0.0)
-    expected_scrap = FloatField('Expected Scrap', validators=[NumberRange(min=0)], default=0.0)
+    expected_scrap = FloatField('Expected Scrap (kg)', validators=[NumberRange(min=0)], default=0.0)
     rate_per_unit = FloatField('Rate per Unit', validators=[NumberRange(min=0)], default=0.0)
     sent_date = DateField('Sent Date', validators=[DataRequired()])
     expected_return = DateField('Expected Return Date')
@@ -324,8 +324,8 @@ class DailyJobWorkForm(FlaskForm):
                              render_kw={'placeholder': 'Hours spent on this job work'})
     quantity_completed = FloatField('Quantity Completed', validators=[DataRequired(), NumberRange(min=0)],
                                    render_kw={'placeholder': 'Units completed today'})
-    scrap_quantity = FloatField('Scrap Quantity', validators=[Optional(), NumberRange(min=0)],
-                               render_kw={'placeholder': 'Scrap/waste quantity today'})
+    scrap_quantity = FloatField('Scrap Quantity (kg)', validators=[Optional(), NumberRange(min=0)],
+                               render_kw={'placeholder': 'Scrap/waste quantity in kg today'})
     quality_status = SelectField('Quality Status', 
                                 validators=[DataRequired()],
                                 choices=[('good', 'Good Quality'),
