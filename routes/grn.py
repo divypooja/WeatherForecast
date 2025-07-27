@@ -132,7 +132,7 @@ def dashboard():
     
     # Get purchase orders pending GRN creation
     pending_purchase_orders = PurchaseOrder.query.filter(
-        PurchaseOrder.status.in_(['approved', 'partial'])
+        PurchaseOrder.status.in_(['sent', 'partial'])
     ).order_by(PurchaseOrder.order_date.desc()).limit(20).all()
     
     # Calculate monthly trends
