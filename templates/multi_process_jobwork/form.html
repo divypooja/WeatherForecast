@@ -381,6 +381,26 @@ document.getElementById('multiProcessForm').addEventListener('submit', function(
     e.preventDefault();
     
     const processCards = document.querySelectorAll('.process-card');
+    if (processCards.length === 0) {
+        alert('Please add at least one process before submitting.');
+        return;
+    }
+    
+    // Validate all processes have required fields
+    let isValid = true;
+    processCards.forEach((card, index) => {
+        const processName = card.querySelector('.process-name').value;
+        const quantity = card.querySelector('.quantity-input').value;
+        
+        if (!processName || !quantity || parseFloat(quantity) <= 0) {
+            alert(`Process ${index + 1}: Please fill in process name and valid quantity.`);
+            isValid = false;
+            return;
+        }
+    });
+    
+    if (!isValid) return;
+    
     const processesData = [];
     
     processCards.forEach(card => {
@@ -400,6 +420,10 @@ document.getElementById('multiProcessForm').addEventListener('submit', function(
         processesData.push(JSON.stringify(processData));
     });
     
+    // Remove any existing hidden process inputs to avoid duplicates
+    const existingInputs = this.querySelectorAll('input[name="processes"]');
+    existingInputs.forEach(input => input.remove());
+    
     // Add hidden inputs for processes data
     processesData.forEach(processJson => {
         const hiddenInput = document.createElement('input');
@@ -409,7 +433,7 @@ document.getElementById('multiProcessForm').addEventListener('submit', function(
         this.appendChild(hiddenInput);
     });
     
-    // Submit the form
+    // Submit the form normally (this will include CSRF token)
     this.submit();
 });
 

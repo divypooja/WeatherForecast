@@ -43,6 +43,10 @@ def add_multi_process_job():
     form = MultiProcessJobWorkForm()
     
     if request.method == 'POST':
+        # Debug: Print form data and validation errors
+        print("Form data received:", request.form)
+        print("Form validation errors:", form.errors)
+        
         if form.validate_on_submit():
             try:
                 # Create the main job work
