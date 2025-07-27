@@ -76,7 +76,7 @@
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ url_for('material_inspection.submit_process_inspection', process_id=process.id) }}">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        {{ form.hidden_tag() if form else '' }}
                         
                         <div class="row">
                             <div class="col-md-6">

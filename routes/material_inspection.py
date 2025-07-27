@@ -231,10 +231,14 @@ def inspect_process(process_id):
         flash('This is not a multi-process job work.', 'error')
         return redirect(url_for('material_inspection.dashboard'))
     
+    # Create a form for CSRF protection
+    form = MaterialInspectionForm()
+    
     return render_template('material_inspection/process_inspection.html',
                          title=f'Inspect Process: {process.process_name} - {job_work.job_number}',
                          process=process,
-                         job_work=job_work)
+                         job_work=job_work,
+                         form=form)
 
 @material_inspection.route('/inspect/process/<int:process_id>/submit', methods=['POST'])
 @login_required
