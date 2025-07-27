@@ -8,6 +8,7 @@ from datetime import datetime
 from utils import generate_job_number  
 from services.notification_helpers import send_email_notification, send_whatsapp_notification, send_email_with_attachment
 from utils_documents import get_documents_for_transaction
+import json
 
 jobwork_bp = Blueprint('jobwork', __name__)
 
@@ -82,6 +83,13 @@ def add_job_work():
     # Set default sent_date to today if not provided (for GET requests)
     if request.method == 'GET' and not form.sent_date.data:
         form.sent_date.data = datetime.now().date()
+    
+    # Check if this is a multi-process submission
+    is_multi_process = request.form.get('is_multi_process') == 'true'
+    
+    if is_multi_process:
+        # Handle multi-process job work submission
+        return handle_multi_process_submission(form)
     
     if form.validate_on_submit():
         # Check if job number already exists
@@ -1136,3 +1144,89 @@ def sync_all_quantities():
         flash(f'All {total_jobs} job work quantities are accurate. No corrections needed.', 'info')
     
     return redirect(url_for('jobwork.dashboard'))
+
+def handle_multi_process_submission(form):
+    """Handle multi-process job work submission"""
+    try:
+        # Get processes data from form
+        processes_data = request.form.getlist('processes')
+        
+        if not processes_data:
+            flash('No processes defined for multi-process job work', 'danger')
+            return render_template('jobwork/form.html', form=form, title='Add Job Work')
+        
+        # Auto-generate job number if not provided
+        job_number = form.job_number.data or generate_job_number()
+        
+        # Check if job number already exists
+        existing_job = JobWork.query.filter_by(job_number=job_number).first()
+        if existing_job:
+            flash('Job number already exists', 'danger')
+            return render_template('jobwork/form.html', form=form, title='Add Job Work')
+        
+        # Get basic job info
+        item = Item.query.get(form.item_id.data)
+        if not item:
+            flash('Selected item not found', 'danger')
+            return render_template('jobwork/form.html', form=form, title='Add Job Work')
+        
+        # Parse and validate processes
+        total_quantity = 0
+        total_cost = 0
+        processes = []
+        
+        for process_json in processes_data:
+            try:
+                process_data = json.loads(process_json)
+                processes.append(process_data)
+                total_quantity += process_data.get('quantity_input', 0)
+                total_cost += process_data.get('quantity_input', 0) * process_data.get('rate_per_unit', 0)
+            except json.JSONDecodeError:
+                flash('Invalid process data format', 'danger')
+                return render_template('jobwork/form.html', form=form, title='Add Job Work')
+        
+        # Check inventory availability
+        if (item.qty_raw or 0) < total_quantity:
+            flash(f'Insufficient raw material inventory. Available: {item.qty_raw or 0} {item.unit_of_measure}, Required: {total_quantity}', 'danger')
+            return render_template('jobwork/form.html', form=form, title='Add Job Work')
+        
+        # Create main job work record for multi-process
+        job = JobWork(
+            job_number=job_number,
+            customer_name='Multi-Process Workflow',  # Special indicator
+            item_id=form.item_id.data,
+            process='Multi-Process',
+            work_type='multi_process',  # Special work type
+            quantity_sent=total_quantity,
+            rate_per_unit=total_cost / total_quantity if total_quantity > 0 else 0,
+            sent_date=form.sent_date.data or datetime.now().date(),
+            notes=f"Multi-process job work with {len(processes)} sequential processes",
+            created_by=current_user.id,
+            status='sent'
+        )
+        
+        # Move materials from raw to WIP for total quantity
+        if item.move_to_wip(total_quantity):
+            movement_note = f"[{datetime.utcnow().strftime('%d/%m/%Y %H:%M')}] {total_quantity} {item.unit_of_measure} moved to WIP for multi-process {job.job_number}"
+            job.notes = (job.notes or '') + f"\n{movement_note}"
+        
+        db.session.add(job)
+        db.session.flush()  # Get the job ID
+        
+        # Store process details in notes as JSON for now
+        # In a full implementation, these would go in a separate processes table
+        process_summary = []
+        for i, process in enumerate(processes, 1):
+            process_summary.append(f"Process {i}: {process.get('process_name')} - {process.get('quantity_input')} units - ₹{process.get('rate_per_unit', 0)}/unit")
+        
+        job.notes += f"\n\nProcess Breakdown:\n" + "\n".join(process_summary)
+        
+        db.session.commit()
+        
+        flash(f'Multi-Process Job Work {job_number} created successfully with {len(processes)} processes. Total quantity: {total_quantity} {item.unit_of_measure}, Total cost: ₹{total_cost:.2f}', 'success')
+        return redirect(url_for('jobwork.dashboard'))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error creating multi-process job work: {str(e)}', 'danger')
+        return render_template('jobwork/form.html', form=form, title='Add Job Work')
