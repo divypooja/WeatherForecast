@@ -192,60 +192,15 @@
         </div>
     </div>
 
-    <!-- Material Classification Tabs -->
+    <!-- All Items -->
     <div class="card">
         <div class="card-header bg-light">
-            <ul class="nav nav-tabs nav-justified card-header-tabs" id="materialTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active fw-bold" id="raw-material-tab" data-bs-toggle="tab" data-bs-target="#raw-material" type="button" role="tab" aria-controls="raw-material" aria-selected="true">
-                        <i class="fas fa-cubes me-2 text-info"></i>Raw Material
-                        <span class="badge bg-info ms-2">{{ raw_material_count or 0 }}</span>
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link fw-bold" id="production-use-tab" data-bs-toggle="tab" data-bs-target="#production-use" type="button" role="tab" aria-controls="production-use" aria-selected="false">
-                        <i class="fas fa-cogs me-2 text-warning"></i>Production Use
-                        <span class="badge bg-warning ms-2">{{ production_use_count or 0 }}</span>
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link fw-bold" id="finished-goods-tab" data-bs-toggle="tab" data-bs-target="#finished-goods" type="button" role="tab" aria-controls="finished-goods" aria-selected="false">
-                        <i class="fas fa-box me-2 text-success"></i>Finished Goods
-                        <span class="badge bg-success ms-2">{{ finished_goods_count or 0 }}</span>
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link fw-bold" id="all-items-tab" data-bs-toggle="tab" data-bs-target="#all-items" type="button" role="tab" aria-controls="all-items" aria-selected="false">
-                        <i class="fas fa-list me-2"></i>All Items
-                        <span class="badge bg-secondary ms-2" id="all-count">{{ total_items or 0 }}</span>
-                    </button>
-                </li>
-            </ul>
+            <h5><i class="fas fa-list me-2"></i>All Items
+                <span class="badge bg-secondary ms-2">{{ items.total if items else 0 }}</span>
+            </h5>
         </div>
         <div class="card-body">
-            <div class="tab-content" id="materialTabsContent">
-                
-                <!-- Raw Material Tab -->
-                <div class="tab-pane fade show active" id="raw-material" role="tabpanel" aria-labelledby="raw-material-tab">
-                    {{ render_material_table(raw_materials, 'raw_material') }}
-                </div>
-                
-                <!-- Production Use Tab -->
-                <div class="tab-pane fade" id="production-use" role="tabpanel" aria-labelledby="production-use-tab">
-                    {{ render_material_table(production_use_items, 'production_use') }}
-                </div>
-                
-                <!-- Finished Goods Tab -->
-                <div class="tab-pane fade" id="finished-goods" role="tabpanel" aria-labelledby="finished-goods-tab">
-                    {{ render_material_table(finished_goods, 'finished_goods') }}
-                </div>
-                
-                <!-- All Items Tab -->
-                <div class="tab-pane fade" id="all-items" role="tabpanel" aria-labelledby="all-items-tab">
-                    {{ render_material_table(items.items if items else [], 'all') }}
-                </div>
-                
-            </div>
+            {{ render_material_table(items.items if items else [], 'all') }}
         </div>
     </div>
     
