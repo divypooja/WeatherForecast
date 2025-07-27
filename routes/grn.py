@@ -383,15 +383,30 @@ def quick_receive_multi_process(job_work_id):
     form = MultiProcessQuickReceiveForm()
     form.job_work_id.data = job_work_id
     
-    # Populate process choices with output product information
+    # Get sequential process information for better understanding
+    processes_ordered = sorted(processes, key=lambda x: x.sequence_number)
+    
+    # Populate process choices with sequential flow information
     form.process_selection.choices = []
-    for p in processes:
-        output_info = ""
-        if p.output_item_id:
-            output_info = f" → {p.output_item.name} ({p.output_quantity} {p.output_item.unit_of_measure})"
+    for p in processes_ordered:
+        # Determine input source for this process
+        if p.sequence_number == 1:
+            input_source = job_work.item.name  # First process uses raw material
         else:
-            output_info = f" → Same as input"
-        form.process_selection.choices.append((p.id, f"{p.process_name} - {p.work_type} ({p.status}){output_info}"))
+            # Find previous process
+            prev_process = next((pr for pr in processes if pr.sequence_number == p.sequence_number - 1), None)
+            if prev_process and prev_process.output_item_id:
+                input_source = prev_process.output_item.name
+            else:
+                input_source = job_work.item.name
+        
+        # Create descriptive choice text showing sequential flow
+        if p.output_item_id:
+            flow_info = f" | {input_source} → {p.output_item.name} ({p.output_quantity} {p.output_item.unit_of_measure})"
+        else:
+            flow_info = f" | {input_source} → Same as input"
+        
+        form.process_selection.choices.append((p.id, f"Seq {p.sequence_number}: {p.process_name} - {p.work_type} ({p.status}){flow_info}"))
     
     if form.validate_on_submit():
         try:
