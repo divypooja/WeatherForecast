@@ -6,7 +6,18 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (July 27, 2025)
 
-### Unified Job Work System - Single Form for All Job Types (Latest - July 27, 2025)
+### Process-Aware GRN System for Multi-Process Job Works (Latest - July 27, 2025)
+- **Enhanced GRN Process Intelligence**: Multi-process GRN system now shows which specific process is returning materials and the expected output product instead of generic raw material information
+- **Output Product Integration**: GRN dropdown now displays process information with output product details (e.g., "Cutting - in_house (pending) → Mounted Plate (3490 pcs)")
+- **Dynamic Unit Management**: GRN form automatically updates unit labels based on the selected process's output product unit of measure (pcs, kg, etc.)
+- **Smart Item Handling**: System creates GRN line items using the process's output_item_id instead of original raw material, ensuring accurate inventory tracking for transformed products
+- **Process-Specific Inventory Updates**: Materials received are added to the correct output product inventory rather than the original raw material stock
+- **Enhanced UI with Real-time Feedback**: JavaScript-powered interface provides immediate feedback showing selected process, expected output product, quantities, and proper units
+- **Comprehensive Process Summary**: GRN template displays detailed process information including work type, output products, expected quantities, and process status
+- **Intelligent Form Pre-population**: System automatically sets process stage completion text and expected quantities based on selected process
+- **Database Connection Resilience**: Resolved SSL connection issues through workflow restart maintaining system stability during enhancements
+
+### Unified Job Work System - Single Form for All Job Types (July 27, 2025)
 - **Simplified User Experience**: Eliminated confusing dual job work forms by making Multi-Process Job Work the unified form for all job work types
 - **Single Entry Point**: Users now use one form that handles both single-process jobs (add 1 process) and multi-process jobs (add multiple processes)
 - **Streamlined Dashboard**: Updated Job Work dashboard to show single "New Job Work" button instead of confusing "New Job Work" and "Multi-Process" options
