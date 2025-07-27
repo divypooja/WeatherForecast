@@ -278,7 +278,8 @@ const processData = {
         sequenceNumber: {{ process.sequence_number }},
         outputItemId: {{ process.output_item_id or 'null' }},
         outputItemName: '{{ process.output_item.name if process.output_item_id else "" }}',
-        outputQuantity: {{ process.output_quantity or 'null' }},
+        outputQuantity: {{ process.output_quantity or process.quantity_input or 'null' }},
+        quantityInput: {{ process.quantity_input or 'null' }},
         outputUnit: '{{ process.output_item.unit_of_measure if process.output_item_id else job_work.item.unit_of_measure }}',
         inputSource: '{% if process.sequence_number == 1 %}{{ job_work.item.name }}{% else %}{% set prev_process = processes_sorted[loop.index0 - 1] %}{% if prev_process.output_item_id %}{{ prev_process.output_item.name }}{% else %}{{ job_work.item.name }}{% endif %}{% endif %}',
         isSequential: {{ process.sequence_number > 1 }},
@@ -316,11 +317,27 @@ document.getElementById('process_selection').addEventListener('change', function
         document.getElementById('rejected_unit').textContent = unit;
         document.getElementById('passed_unit').textContent = unit;
         
-        // Update max quantity hint based on pending quantity
-        const pendingQuantity = {{ job_work.quantity_sent - (job_work.quantity_received or 0) }};
+        // Update max quantity hint based on process input capacity
+        let maxQuantity;
+        if (process.sequenceNumber === 1) {
+            // First process: Use original job work pending quantity
+            maxQuantity = {{ job_work.quantity_sent - (job_work.quantity_received or 0) }};
+        } else {
+            // Sequential process: Use the input quantity for this process
+            // This should be the expected output from the previous process
+            maxQuantity = process.quantityInput;
+            
+            // If no specific input quantity, find previous process output
+            if (!maxQuantity) {
+                const prevProcessSeq = process.sequenceNumber - 1;
+                const prevProcess = Object.values(processData).find(p => p.sequenceNumber === prevProcessSeq);
+                maxQuantity = prevProcess ? (prevProcess.outputQuantity || prevProcess.quantityInput) : {{ job_work.quantity_sent }};
+            }
+        }
+        
         const maxHint = document.querySelector('.form-text');
         if (maxHint) {
-            maxHint.textContent = `Max: ${pendingQuantity} ${unit}`;
+            maxHint.textContent = `Max: ${maxQuantity || 'N/A'} ${unit}`;
         }
         
         // Update process stage field if empty
