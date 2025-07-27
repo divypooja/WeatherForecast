@@ -145,6 +145,13 @@ def dashboard():
     for po in pending_purchase_orders:
         update_po_status_based_on_grn(po.id)
     
+    # Commit any changes and refresh data
+    db.session.commit()
+    
+    # Filter POs that actually have pending quantities
+    pending_purchase_orders = [po for po in pending_purchase_orders 
+                             if any(item.pending_quantity > 0 for item in po.items)]
+    
     # Calculate monthly trends
     current_month = date.today().replace(day=1)
     monthly_grns = GRN.query.filter(GRN.received_date >= current_month).count()
