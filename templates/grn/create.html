@@ -137,7 +137,11 @@
                         </div>
 
                         <div class="d-flex justify-content-end">
+                            {% if job_work %}
                             <a href="{{ url_for('jobwork.detail', id=job_work.id) }}" class="btn btn-secondary me-2">Cancel</a>
+                            {% elif purchase_order %}
+                            <a href="{{ url_for('purchase.edit_purchase_order', id=purchase_order.id) }}" class="btn btn-secondary me-2">Cancel</a>
+                            {% endif %}
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-save me-1"></i>Create GRN
                             </button>
@@ -189,9 +193,11 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
+                        {% if job_work %}
                         <a href="{{ url_for('grn.quick_receive', job_work_id=job_work.id) }}" class="btn btn-outline-success btn-sm">
                             <i class="fas fa-bolt me-1"></i>Quick Receive Instead
                         </a>
+                        {% endif %}
                         <a href="{{ url_for('grn.dashboard') }}" class="btn btn-outline-info btn-sm">
                             <i class="fas fa-tachometer-alt me-1"></i>GRN Dashboard
                         </a>
