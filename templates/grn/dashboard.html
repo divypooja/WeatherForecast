@@ -167,7 +167,7 @@
                                             </a>
                                             {% elif grn.source_type == 'purchase_order' %}
                                             <span class="badge bg-success me-1">Purchase Order</span>
-                                            <a href="{{ url_for('purchase.detail', id=grn.purchase_order.id) }}" class="text-decoration-none">
+                                            <a href="{{ url_for('purchase.edit_purchase_order', id=grn.purchase_order.id) }}" class="text-decoration-none">
                                                 {{ grn.purchase_order.po_number }}
                                             </a>
                                             {% endif %}
@@ -292,7 +292,7 @@
                                             </li>
                                             <li><hr class="dropdown-divider"></li>
                                             <li>
-                                                <a class="dropdown-item" href="{{ url_for('purchase.detail', id=po.id) }}">
+                                                <a class="dropdown-item" href="{{ url_for('purchase.edit_purchase_order', id=po.id) }}">
                                                     <i class="fas fa-eye me-2"></i>View Purchase Order
                                                 </a>
                                             </li>
