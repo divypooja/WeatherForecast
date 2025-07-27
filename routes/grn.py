@@ -32,7 +32,7 @@ def update_po_status_based_on_grn(purchase_order_id):
         # Sum ordered quantities by item
         for po_item in po.items:
             item_id = po_item.item_id
-            total_ordered[item_id] = total_ordered.get(item_id, 0) + po_item.quantity
+            total_ordered[item_id] = total_ordered.get(item_id, 0) + po_item.qty
             
         # Sum received quantities by item from all GRNs
         for grn in po_grns:

@@ -35,6 +35,7 @@
                             <strong>GRN Number:</strong><br>
                             <span class="text-primary">{{ grn.grn_number }}</span>
                         </div>
+                        {% if grn.job_work %}
                         <div class="col-md-4">
                             <strong>Job Work:</strong><br>
                             <a href="{{ url_for('jobwork.detail', id=grn.job_work.id) }}" class="text-decoration-none">
@@ -45,6 +46,18 @@
                             <strong>Customer:</strong><br>
                             {{ grn.job_work.customer_name }}
                         </div>
+                        {% elif grn.purchase_order %}
+                        <div class="col-md-4">
+                            <strong>Purchase Order:</strong><br>
+                            <a href="{{ url_for('purchase.detail', id=grn.purchase_order.id) }}" class="text-decoration-none">
+                                {{ grn.purchase_order.po_number }}
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Supplier:</strong><br>
+                            {{ grn.purchase_order.supplier.name }}
+                        </div>
+                        {% endif %}
                     </div>
                     
                     <div class="row mb-3">
