@@ -106,18 +106,24 @@ def add_job_work():
             return render_template('jobwork/form.html', form=form, title='Add Job Work')
         
         print(f"Item found: {item.name}, current raw qty: {item.qty_raw}")
+        print(f"Quantity requested: {form.quantity_sent.data}")
         
         # Initialize multi-state inventory if not set
         if item.qty_raw is None or item.qty_raw == 0.0:
+            print("Initializing multi-state inventory...")
             item.qty_raw = item.current_stock or 0.0
             item.qty_wip = 0.0
             item.qty_finished = 0.0
             item.qty_scrap = 0.0
-            db.session.commit()  # Save the initialization
+            print(f"Initialized: raw={item.qty_raw}, wip={item.qty_wip}, finished={item.qty_finished}, scrap={item.qty_scrap}")
             
+        print(f"Checking inventory: Available {item.qty_raw or 0}, Requested {form.quantity_sent.data}")
         if (item.qty_raw or 0) < form.quantity_sent.data:
+            print("Insufficient inventory, returning error")
             flash(f'Insufficient raw material inventory. Available: {item.qty_raw or 0} {item.unit_of_measure}', 'danger')
             return render_template('jobwork/form.html', form=form, title='Add Job Work')
+        
+        print("Inventory check passed, proceeding to create JobWork object...")
 
         print("Creating JobWork object...")
         try:
