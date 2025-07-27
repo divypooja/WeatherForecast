@@ -130,10 +130,21 @@ def dashboard():
         'pending_grns': GRN.query.filter(GRN.status.in_(['draft', 'received'])).count()
     }
     
-    # Get job works pending GRN creation
+    # Get job works pending GRN creation - including unified jobs with outsourced processes
     pending_job_works = JobWork.query.filter(
         JobWork.status.in_(['sent', 'partial_received']),
-        JobWork.work_type.in_(['outsourced', 'multi_process'])
+        or_(
+            JobWork.work_type.in_(['outsourced', 'multi_process']),
+            # Include unified jobs that have outsourced processes
+            and_(
+                JobWork.work_type == 'unified',
+                JobWork.id.in_(
+                    db.session.query(JobWorkProcess.job_work_id).filter(
+                        JobWorkProcess.work_type == 'outsourced'
+                    ).distinct()
+                )
+            )
+        )
     ).order_by(JobWork.sent_date.desc()).limit(20).all()
     
     # Get purchase orders pending GRN creation
@@ -271,7 +282,7 @@ def quick_receive(job_work_id):
     job_work = JobWork.query.get_or_404(job_work_id)
     
     # Redirect multi-process jobs to specialized form
-    if job_work.work_type == 'multi_process':
+    if job_work.work_type in ['multi_process', 'unified']:
         return redirect(url_for('grn.quick_receive_multi_process', job_work_id=job_work_id))
     
     form = QuickReceiveForm()
