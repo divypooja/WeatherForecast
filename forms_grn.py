@@ -181,3 +181,44 @@ class GRNSearchForm(FlaskForm):
     date_to = DateField('To Date', validators=[Optional()])
     
     customer = StringField('Customer/Supplier', validators=[Optional()])
+
+
+class MultiProcessQuickReceiveForm(FlaskForm):
+    """Specialized quick receive form for multi-process job works"""
+    
+    job_work_id = IntegerField('Job Work ID', validators=[DataRequired()], widget=HiddenInput())
+    process_id = IntegerField('Process ID', validators=[Optional()], widget=HiddenInput())
+    received_date = DateField('Received Date', validators=[DataRequired()], default=date.today)
+    
+    # Process selection
+    process_selection = SelectField('Select Process', choices=[], coerce=int, validators=[DataRequired()])
+    
+    # Quick quantity fields
+    quantity_received = FloatField('Quantity Received from Process', 
+                                 validators=[DataRequired(), NumberRange(min=0.01, message="Quantity must be greater than 0")])
+    quantity_passed = FloatField('Quantity Passed (Auto-calculated)', 
+                               validators=[Optional()], 
+                               render_kw={'readonly': True})
+    quantity_rejected = FloatField('Quantity Rejected', 
+                                 validators=[Optional(), NumberRange(min=0)],
+                                 default=0.0)
+    
+    # Process stage info
+    process_stage = StringField('Process Stage Completed', validators=[Optional(), Length(max=100)])
+    
+    # Quick inspection
+    inspection_status = SelectField('Overall Status', choices=[
+        ('passed', 'All Passed'),
+        ('rejected', 'All Rejected'),
+        ('partial', 'Partial (some rejected)')
+    ], default='passed')
+    
+    rejection_reason = TextAreaField('Rejection Reason (if any)', validators=[Optional()])
+    
+    # Delivery info
+    delivery_note = StringField('Delivery Note from Process', validators=[Optional(), Length(max=100)])
+    
+    # Add to inventory option
+    add_to_inventory = BooleanField('Add Passed Quantity to Inventory', default=True)
+    
+    remarks = TextAreaField('Process Completion Notes', validators=[Optional()])

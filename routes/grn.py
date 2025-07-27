@@ -1,9 +1,9 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_required, current_user
 from app import db
-from models import JobWork, Item, User, PurchaseOrder, PurchaseOrderItem
+from models import JobWork, Item, User, PurchaseOrder, PurchaseOrderItem, JobWorkProcess
 from models_grn import GRN, GRNLineItem
-from forms_grn import GRNForm, GRNLineItemForm, QuickReceiveForm, QuickReceivePOForm, GRNSearchForm
+from forms_grn import GRNForm, GRNLineItemForm, QuickReceiveForm, QuickReceivePOForm, GRNSearchForm, MultiProcessQuickReceiveForm
 from datetime import datetime, date
 from utils import generate_next_number
 from sqlalchemy import func, and_, or_
@@ -270,6 +270,10 @@ def quick_receive(job_work_id):
     """Quick receive form for simple material receipt"""
     job_work = JobWork.query.get_or_404(job_work_id)
     
+    # Redirect multi-process jobs to specialized form
+    if job_work.work_type == 'multi_process':
+        return redirect(url_for('grn.quick_receive_multi_process', job_work_id=job_work_id))
+    
     form = QuickReceiveForm()
     form.job_work_id.data = job_work_id
     
@@ -358,6 +362,111 @@ def quick_receive(job_work_id):
                          title='Quick Receive Materials',
                          form=form,
                          job_work=job_work)
+
+
+@grn_bp.route('/quick_receive_multi_process/<int:job_work_id>', methods=['GET', 'POST'])
+@login_required
+def quick_receive_multi_process(job_work_id):
+    """Specialized quick receive form for multi-process job works"""
+    job_work = JobWork.query.get_or_404(job_work_id)
+    
+    # Ensure this is a multi-process job work
+    if job_work.work_type != 'multi_process':
+        flash('This function is only for multi-process job works.', 'error')
+        return redirect(url_for('grn.quick_receive', job_work_id=job_work_id))
+    
+    # Get all processes for this job work
+    processes = JobWorkProcess.query.filter_by(job_work_id=job_work_id).all()
+    if not processes:
+        flash('No processes found for this multi-process job work.', 'error')
+        return redirect(url_for('multi_process_jobwork.detail', id=job_work_id))
+    
+    form = MultiProcessQuickReceiveForm()
+    form.job_work_id.data = job_work_id
+    
+    # Populate process choices
+    form.process_selection.choices = [(p.id, f"{p.process_name} - {p.work_type} ({p.status})") for p in processes]
+    
+    if form.validate_on_submit():
+        try:
+            # Get selected process
+            selected_process = JobWorkProcess.query.get(form.process_selection.data)
+            if not selected_process:
+                flash('Selected process not found.', 'error')
+                return redirect(request.url)
+            
+            # Create GRN automatically
+            grn = GRN(
+                grn_number=GRN.generate_grn_number(),
+                job_work_id=job_work_id,
+                received_date=form.received_date.data,
+                received_by=current_user.id,
+                delivery_note=form.delivery_note.data,
+                inspection_required=True,
+                status='received',
+                remarks=f"Multi-process receipt from {selected_process.process_name} process. {form.remarks.data or ''}"
+            )
+            db.session.add(grn)
+            db.session.flush()  # To get the GRN ID
+            
+            # Auto-calculate passed quantity
+            quantity_passed = form.quantity_received.data - (form.quantity_rejected.data or 0)
+            
+            # Create line item with process information
+            line_item = GRNLineItem(
+                grn_id=grn.id,
+                item_id=job_work.item_id,
+                quantity_received=form.quantity_received.data,
+                quantity_passed=quantity_passed,
+                quantity_rejected=form.quantity_rejected.data or 0,
+                unit_of_measure=job_work.item.unit_of_measure,
+                inspection_status=form.inspection_status.data,
+                rejection_reason=form.rejection_reason.data,
+                material_classification='finished_goods',
+                process_name=selected_process.process_name,
+                process_stage=form.process_stage.data or selected_process.process_name
+            )
+            db.session.add(line_item)
+            
+            # Update inventory if requested and materials passed inspection
+            if form.add_to_inventory.data and quantity_passed > 0:
+                if hasattr(job_work.item, 'receive_from_wip'):
+                    job_work.item.receive_from_wip(quantity_passed, form.quantity_rejected.data or 0)
+                else:
+                    job_work.item.current_stock = (job_work.item.current_stock or 0) + quantity_passed
+                grn.add_to_inventory = True
+            else:
+                grn.add_to_inventory = False
+            
+            # Update process completion status
+            if form.inspection_status.data == 'passed':
+                selected_process.quantity_output = (selected_process.quantity_output or 0) + quantity_passed
+                selected_process.quantity_scrap = (selected_process.quantity_scrap or 0) + (form.quantity_rejected.data or 0)
+                if selected_process.quantity_output >= selected_process.quantity_input:
+                    selected_process.status = 'completed'
+                    selected_process.actual_completion = datetime.utcnow()
+            
+            # Mark GRN as completed if no further inspection needed
+            if form.inspection_status.data in ['passed', 'rejected']:
+                grn.status = 'completed'
+                grn.inspection_status = 'completed'
+                grn.inspected_by = current_user.id
+                grn.inspected_at = datetime.utcnow()
+            
+            db.session.commit()
+            
+            flash(f'Materials received from {selected_process.process_name} process! GRN {grn.grn_number} created.', 'success')
+            return redirect(url_for('multi_process_jobwork.detail', id=job_work_id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error receiving materials: {str(e)}', 'error')
+    
+    return render_template('grn/quick_receive_multi_process.html',
+                         title='Receive Multi-Process Materials',
+                         form=form,
+                         job_work=job_work,
+                         processes=processes)
 
 
 @grn_bp.route('/quick_receive_po/<int:purchase_order_id>/<int:item_id>', methods=['GET', 'POST'])
