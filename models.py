@@ -401,6 +401,18 @@ class PurchaseOrderItem(db.Model):
         if self.item and self.item.unit_weight:
             return self.quantity_ordered * self.item.unit_weight
         return self.total_weight or 0.0
+    
+    @property
+    def pending_quantity(self):
+        """Calculate pending quantity (ordered - received)"""
+        return self.qty - (self.quantity_received or 0)
+    
+    @property
+    def completion_percentage(self):
+        """Calculate completion percentage based on received vs ordered quantity"""
+        if self.qty > 0:
+            return min(((self.quantity_received or 0) / self.qty) * 100, 100)
+        return 0
 
 class SalesOrder(db.Model):
     __tablename__ = 'sales_orders'

@@ -39,6 +39,12 @@ def update_po_status_based_on_grn(purchase_order_id):
             for line_item in grn.line_items:
                 item_id = line_item.item_id
                 total_received[item_id] = total_received.get(item_id, 0) + line_item.quantity_received
+        
+        # Update quantity_received in PO items for dashboard display
+        for po_item in po.items:
+            item_id = po_item.item_id
+            received_qty = total_received.get(item_id, 0)
+            po_item.quantity_received = received_qty
                 
         # Determine new status
         all_items_fully_received = True

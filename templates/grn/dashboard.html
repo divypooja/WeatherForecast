@@ -272,10 +272,17 @@
                                         <span class="badge bg-success me-2">Purchase Order</span>
                                         <h6 class="mb-1">{{ po.po_number }}</h6>
                                         <p class="mb-1 text-muted small">{{ po.supplier.name }}</p>
+                                        
+                                        <!-- Show pending quantities for items -->
+                                        {% for po_item in po.items %}
+                                        {% if po_item.pending_quantity > 0 %}
                                         <p class="mb-1 small">
-                                            <span class="text-muted">Total Value:</span> 
-                                            <strong>₹{{ "%.2f"|format(po.total_amount) }}</strong>
+                                            <span class="text-muted">{{ po_item.item.name }}:</span> 
+                                            <strong>{{ po_item.pending_quantity }} {{ po_item.uom or po_item.item.unit_of_measure }}</strong>
                                         </p>
+                                        {% endif %}
+                                        {% endfor %}
+                                        
                                         <span class="badge bg-{{ 'warning' if po.status == 'partial' else 'success' }}">
                                             {{ po.status.title() }}
                                         </span>
