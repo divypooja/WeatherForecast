@@ -36,28 +36,14 @@
                             <span class="text-primary">{{ grn.grn_number }}</span>
                         </div>
                         <div class="col-md-4">
-                            <strong>Source Document:</strong><br>
-                            {% if grn.job_work %}
-                                <a href="{{ url_for('jobwork.detail', id=grn.job_work.id) }}" class="text-decoration-none">
-                                    Job Work: {{ grn.job_work.job_number }}
-                                </a>
-                            {% elif grn.purchase_order %}
-                                <a href="{{ url_for('purchase.edit_purchase_order', id=grn.purchase_order.id) }}" class="text-decoration-none">
-                                    Purchase Order: {{ grn.purchase_order.po_number }}
-                                </a>
-                            {% else %}
-                                <span class="text-muted">No source document</span>
-                            {% endif %}
+                            <strong>Job Work:</strong><br>
+                            <a href="{{ url_for('jobwork.detail', id=grn.job_work.id) }}" class="text-decoration-none">
+                                {{ grn.job_work.job_number }}
+                            </a>
                         </div>
                         <div class="col-md-4">
-                            <strong>{{ 'Customer' if grn.job_work else 'Supplier' }}:</strong><br>
-                            {% if grn.job_work %}
-                                {{ grn.job_work.customer_name }}
-                            {% elif grn.purchase_order %}
-                                {{ grn.purchase_order.supplier.name if grn.purchase_order.supplier else 'N/A' }}
-                            {% else %}
-                                <span class="text-muted">N/A</span>
-                            {% endif %}
+                            <strong>Customer:</strong><br>
+                            {{ grn.job_work.customer_name }}
                         </div>
                     </div>
                     

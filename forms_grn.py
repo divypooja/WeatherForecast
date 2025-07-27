@@ -131,10 +131,9 @@ class QuickReceivePOForm(FlaskForm):
     # Quick quantity fields
     quantity_received = FloatField('Quantity Received', 
                                  validators=[DataRequired(), NumberRange(min=0.01, message="Quantity must be greater than 0")])
-    quantity_inspected = FloatField('Quantity Inspected', 
-                                  validators=[Optional(), NumberRange(min=0)])
-    quantity_passed = FloatField('Quantity Passed/Good', 
-                               validators=[Optional(), NumberRange(min=0)])
+    quantity_passed = FloatField('Quantity Passed (Auto-calculated)', 
+                               validators=[Optional()], 
+                               render_kw={'readonly': True})
     quantity_rejected = FloatField('Quantity Rejected', 
                                  validators=[Optional(), NumberRange(min=0)],
                                  default=0.0)

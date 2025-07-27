@@ -86,12 +86,10 @@
                             <div class="col-md-6">
                                 <label class="form-label">Inspected Quantity</label>
                                 <div class="input-group">
-                                    {{ form.quantity_inspected(class="form-control", id="quantity_inspected") }}
+                                    <input type="number" class="form-control" id="quantity_inspected" readonly>
                                     <span class="input-group-text">{{ po_item.uom or item.unit_of_measure }}</span>
                                 </div>
-                                {% if form.quantity_inspected.errors %}
-                                    <div class="text-danger">{{ form.quantity_inspected.errors[0] }}</div>
-                                {% endif %}
+                                <small class="text-muted">Same as received quantity</small>
                             </div>
                         </div>
                         
@@ -99,19 +97,20 @@
                             <div class="col-md-6">
                                 <label class="form-label">Passed/Good Quantity</label>
                                 <div class="input-group">
-                                    {{ form.quantity_passed(class="form-control", id="quantity_passed") }}
+                                    {{ form.quantity_passed(class="form-control", id="quantity_passed", readonly=True) }}
                                     <span class="input-group-text">{{ po_item.uom or item.unit_of_measure }}</span>
                                 </div>
-                                {% if form.quantity_passed.errors %}
-                                    <div class="text-danger">{{ form.quantity_passed.errors[0] }}</div>
-                                {% endif %}
+                                <small class="text-muted">Auto-calculated</small>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Rejected Quantity</label>
                                 <div class="input-group">
-                                    {{ form.quantity_rejected(class="form-control", id="quantity_rejected", readonly=True) }}
+                                    {{ form.quantity_rejected(class="form-control", id="quantity_rejected") }}
                                     <span class="input-group-text">{{ po_item.uom or item.unit_of_measure }}</span>
                                 </div>
+                                {% if form.quantity_rejected.errors %}
+                                    <div class="text-danger">{{ form.quantity_rejected.errors[0] }}</div>
+                                {% endif %}
                                 <small class="text-muted">Auto-calculated: Inspected Quantity - Passed Quantity</small>
                             </div>
                         </div>
@@ -207,20 +206,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const quantityInspected = document.getElementById('quantity_inspected');
     
     function updateCalculations() {
-        const inspected = parseFloat(quantityInspected.value) || 0;
-        const passed = parseFloat(quantityPassed.value) || 0;
+        const received = parseFloat(quantityReceived.value) || 0;
+        const rejected = parseFloat(quantityRejected.value) || 0;
+        const passed = Math.max(0, received - rejected);
         
-        // Auto-calculate rejected quantity: Inspected - Passed
-        const rejected = Math.max(0, inspected - passed);
-        quantityRejected.value = rejected.toFixed(2);
-        
-        // Log for debugging
-        console.log(`Calculation: Inspected(${inspected}) - Passed(${passed}) = Rejected(${rejected})`);
+        // Update all calculated fields
+        quantityPassed.value = passed.toFixed(2);
+        quantityInspected.value = received.toFixed(2);
     }
     
-    // Listen for changes in inspected and passed quantities
-    quantityInspected.addEventListener('input', updateCalculations);
-    quantityPassed.addEventListener('input', updateCalculations);
+    quantityReceived.addEventListener('input', updateCalculations);
+    quantityRejected.addEventListener('input', updateCalculations);
     
     // Initial calculation
     updateCalculations();

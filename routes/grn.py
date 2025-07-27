@@ -378,19 +378,16 @@ def quick_receive_po(purchase_order_id, item_id):
             db.session.add(grn)
             db.session.flush()  # To get the GRN ID
             
-            # Use manually entered quantities from the form
-            quantity_inspected = form.quantity_inspected.data or 0
-            quantity_passed = form.quantity_passed.data or 0
-            quantity_rejected = form.quantity_rejected.data or 0
+            # Auto-calculate passed quantity
+            quantity_passed = form.quantity_received.data - (form.quantity_rejected.data or 0)
             
             # Create line item
             line_item = GRNLineItem(
                 grn_id=grn.id,
                 item_id=item_id,
                 quantity_received=form.quantity_received.data,
-                quantity_inspected=quantity_inspected,
                 quantity_passed=quantity_passed,
-                quantity_rejected=quantity_rejected,
+                quantity_rejected=form.quantity_rejected.data or 0,
                 unit_of_measure=po_item.uom or item.unit_of_measure,
                 inspection_status=form.inspection_status.data,
                 rejection_reason=form.rejection_reason.data,
