@@ -585,6 +585,9 @@ def quick_receive_po(purchase_order_id, item_id):
             
             # Update inventory if adding to stock
             if form.add_to_inventory.data and quantity_passed > 0:
+                # Add to multi-state inventory (raw materials from PO)
+                item.qty_raw = (item.qty_raw or 0) + quantity_passed
+                # Also update legacy current_stock for backward compatibility
                 item.current_stock = (item.current_stock or 0) + quantity_passed
                 grn.add_to_inventory = True  # Set the flag to True when inventory is updated
             else:
