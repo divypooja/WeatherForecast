@@ -850,9 +850,61 @@ document.addEventListener('DOMContentLoaded', function() {
             if (multiProcess && multiProcess.checked) {
                 e.preventDefault();
                 
-                const processCards = document.querySelectorAll('.process-card');
-                const processesData = [];
+                // Disable validation on hidden single-process fields
+                const hiddenFields = form.querySelectorAll('input[style*="display: none"], select[style*="display: none"], textarea[style*="display: none"]');
+                hiddenFields.forEach(field => {
+                    field.removeAttribute('required');
+                });
                 
+                // Also disable validation on fields in hidden containers
+                const hiddenContainers = form.querySelectorAll('[style*="display: none"]');
+                hiddenContainers.forEach(container => {
+                    const requiredFields = container.querySelectorAll('[required]');
+                    requiredFields.forEach(field => {
+                        field.removeAttribute('required');
+                    });
+                });
+                
+                // Validate multi-process specific requirements
+                const processCards = document.querySelectorAll('.process-card');
+                if (processCards.length === 0) {
+                    alert('Please add at least one process for multi-process job work.');
+                    return false;
+                }
+                
+                // Validate each process
+                let validationErrors = [];
+                processCards.forEach((card, index) => {
+                    const processName = card.querySelector('.process-name').value;
+                    const quantity = card.querySelector('.quantity-input').value;
+                    const workType = card.querySelector('.work-type').value;
+                    
+                    if (!processName) {
+                        validationErrors.push(`Process ${index + 1}: Process name is required`);
+                    }
+                    if (!quantity || parseFloat(quantity) <= 0) {
+                        validationErrors.push(`Process ${index + 1}: Quantity must be greater than 0`);
+                    }
+                    if (workType === 'outsourced') {
+                        const customerName = card.querySelector('.customer-name').value;
+                        if (!customerName) {
+                            validationErrors.push(`Process ${index + 1}: Customer/Vendor is required for outsourced work`);
+                        }
+                    }
+                    if (workType === 'in_house') {
+                        const department = card.querySelector('.department').value;
+                        if (!department) {
+                            validationErrors.push(`Process ${index + 1}: Department is required for in-house work`);
+                        }
+                    }
+                });
+                
+                if (validationErrors.length > 0) {
+                    alert('Please fix the following errors:\n\n' + validationErrors.join('\n'));
+                    return false;
+                }
+                
+                const processesData = [];
                 processCards.forEach(card => {
                     const processData = {
                         process_name: card.querySelector('.process-name').value,
@@ -864,12 +916,16 @@ document.addEventListener('DOMContentLoaded', function() {
                         department: card.querySelector('.department').value,
                         rate_per_unit: parseFloat(card.querySelector('.rate-per-unit').value) || 0,
                         start_date: document.getElementById('sent_date').value,
-                        expected_completion: card.querySelector('.expected-completion').value,
+                        expected_completion: card.querySelector('.expected-completion') ? card.querySelector('.expected-completion').value : '',
                         notes: card.querySelector('.process-notes').value
                     };
                     
                     processesData.push(JSON.stringify(processData));
                 });
+                
+                // Remove any existing hidden process inputs
+                const existingHiddenInputs = form.querySelectorAll('input[name="processes"]');
+                existingHiddenInputs.forEach(input => input.remove());
                 
                 // Add hidden inputs for processes data
                 processesData.forEach(processJson => {
@@ -877,18 +933,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     hiddenInput.type = 'hidden';
                     hiddenInput.name = 'processes';
                     hiddenInput.value = processJson;
-                    this.appendChild(hiddenInput);
+                    form.appendChild(hiddenInput);
                 });
                 
                 // Add hidden field to indicate multi-process mode
-                const multiProcessInput = document.createElement('input');
-                multiProcessInput.type = 'hidden';
-                multiProcessInput.name = 'is_multi_process';
+                let multiProcessInput = form.querySelector('input[name="is_multi_process"]');
+                if (!multiProcessInput) {
+                    multiProcessInput = document.createElement('input');
+                    multiProcessInput.type = 'hidden';
+                    multiProcessInput.name = 'is_multi_process';
+                    form.appendChild(multiProcessInput);
+                }
                 multiProcessInput.value = 'true';
-                this.appendChild(multiProcessInput);
                 
                 // Submit the form
-                this.submit();
+                form.submit();
             }
         });
     }
@@ -963,7 +1022,7 @@ function addProcess() {
                 <div class="row">
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Process Name</label>
-                        <select class="form-select process-name" id="process_name_${processCounter}" required>
+                        <select class="form-select process-name" id="process_name_${processCounter}">
                             <option value="">Select Process</option>
                             <option value="Zinc">Zinc</option>
                             <option value="Cutting">Cutting</option>
@@ -977,11 +1036,11 @@ function addProcess() {
                     </div>
                     <div class="col-md-2 mb-3">
                         <label class="form-label">Sequence</label>
-                        <input type="number" class="form-control sequence-number" value="${processCounter}" min="1" required>
+                        <input type="number" class="form-control sequence-number" value="${processCounter}" min="1">
                     </div>
                     <div class="col-md-3 mb-3">
                         <label class="form-label">Work Type</label>
-                        <select class="form-select work-type" id="work_type_${processCounter}" onchange="toggleProcessFields(${processCounter})" required>
+                        <select class="form-select work-type" id="work_type_${processCounter}" onchange="toggleProcessFields(${processCounter})">
                             <option value="outsourced">Outsourced</option>
                             <option value="in_house">In-House</option>
                         </select>
@@ -996,7 +1055,7 @@ function addProcess() {
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Process Quantity</label>
-                        <input type="number" class="form-control quantity-input" min="0" step="0.01" placeholder="Enter quantity" required onchange="updateMultiProcessCostSummary()">
+                        <input type="number" class="form-control quantity-input" min="0" step="0.01" placeholder="Enter quantity" onchange="updateMultiProcessCostSummary()">
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Expected Scrap (kg) <small class="text-muted">(Optional)</small></label>
