@@ -266,7 +266,7 @@ class JobWorkForm(FlaskForm):
     expected_scrap = FloatField('Expected Scrap', validators=[NumberRange(min=0)], default=0.0)
     rate_per_unit = FloatField('Rate per Unit', validators=[NumberRange(min=0)], default=0.0)
     sent_date = DateField('Sent Date', validators=[DataRequired()])
-    expected_return = DateField('Expected Return Date')
+    expected_return = DateField('Expected Return Date', validators=[Optional()])
     notes = TextAreaField('Notes')
     
     # Team work fields
