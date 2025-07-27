@@ -79,7 +79,7 @@
                             </div>
                         </div>
                         
-                        <div class="row">
+                        <div class="row" id="item-process-row">
                             <div class="col-md-6 mb-3">
                                 {{ form.item_id.label(class="form-label") }}
                                 {{ form.item_id(class="form-select", id="item_id") }}
@@ -92,7 +92,7 @@
                                 {% endif %}
                             </div>
                             
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-6 mb-3" id="process-field-single">
                                 {{ form.process_type.label(class="form-label") }}
                                 {{ form.process_type(class="form-select", id="process_type") }}
                                 <small class="text-muted">Select the type of process for this job work</small>
@@ -903,6 +903,8 @@ function toggleJobWorkMode() {
     const multiProcess = document.getElementById('multiProcess').checked;
     
     const multiProcessSection = document.getElementById('multi-process-section');
+    const singleProcessFields = document.querySelectorAll('.single-process-field');
+    const processFieldSingle = document.getElementById('process-field-single');
     const formTitle = document.getElementById('formTitle');
     const submitText = document.getElementById('submitText');
     
@@ -917,11 +919,13 @@ function toggleJobWorkMode() {
         const departmentRow = document.getElementById('department-row');
         const rateRow = document.getElementById('rate-row');
         const teamWorkSection = document.getElementById('team-work-section');
+        const processFieldSingle = document.getElementById('process-field-single');
         
         if (customerRow) customerRow.style.display = 'none';
         if (departmentRow) departmentRow.style.display = 'none';
         if (rateRow) rateRow.style.display = 'none';
         if (teamWorkSection) teamWorkSection.style.display = 'none';
+        if (processFieldSingle) processFieldSingle.style.display = 'none';
         
         // Initialize with one process if none exist
         if (processCounter === 0) {
@@ -932,6 +936,10 @@ function toggleJobWorkMode() {
         multiProcessSection.style.display = 'none';
         formTitle.textContent = 'Single Process Job Work Details';
         submitText.textContent = 'Create Job Work';
+        
+        // Show single process specific fields
+        const processFieldSingle = document.getElementById('process-field-single');
+        if (processFieldSingle) processFieldSingle.style.display = 'block';
         
         // Show single process fields based on work type
         toggleCustomerFields();
