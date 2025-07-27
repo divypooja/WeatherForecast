@@ -24,6 +24,7 @@
                     <option value="sent" {{ 'selected' if status_filter == 'sent' }}>Sent</option>
                     <option value="partial_received" {{ 'selected' if status_filter == 'partial_received' }}>Partial Received</option>
                     <option value="completed" {{ 'selected' if status_filter == 'completed' }}>Completed</option>
+                    <option value="cancelled" {{ 'selected' if status_filter == 'cancelled' }}>Cancelled</option>
                 </select>
             </form>
         </div>
@@ -62,14 +63,14 @@
                                         <small class="text-muted">Dept: {{ job.department.replace('_', ' ').title() }}</small>
                                         {% endif %}
                                         <div class="progress" style="height: 8px;">
-                                            <div class="progress-bar bg-{{ 'success' if job.status == 'completed' else 'warning' if job.status == 'partial_received' else 'primary' }}" 
-                                                 style="width: {{ (job.quantity_received / job.quantity_sent * 100) if job.quantity_sent > 0 else 0 }}%"></div>
+                                            <div class="progress-bar bg-{{ 'success' if job.status == 'completed' else 'danger' if job.status == 'cancelled' else 'warning' if job.status == 'partial_received' else 'primary' }}" 
+                                                 style="width: {{ (job.quantity_received / job.quantity_sent * 100) if job.quantity_sent > 0 and job.status != 'cancelled' else 100 if job.status == 'cancelled' else 0 }}%"></div>
                                         </div>
                                     </div>
                                 </td>
                                 <td>
                                     <div class="d-flex flex-column gap-1">
-                                        <span class="badge bg-{{ 'success' if job.status == 'completed' else 'warning' if job.status == 'partial_received' else 'primary' }}">
+                                        <span class="badge bg-{{ 'success' if job.status == 'completed' else 'danger' if job.status == 'cancelled' else 'warning' if job.status == 'partial_received' else 'primary' }}">
                                             {{ job.status.replace('_', ' ').title() }}
                                         </span>
                                         <span class="badge {{ job.work_type_badge_class }} badge-sm">
@@ -92,6 +93,21 @@
                                         <a href="{{ url_for('documents.upload_document', transaction_type='job_work', transaction_id=job.id) }}" class="btn btn-outline-warning btn-sm" title="Upload Documents">
                                             <i class="fas fa-paperclip"></i>
                                         </a>
+                                        <!-- Delete/Cancel Actions -->
+                                        {% if job.status in ['sent', 'partial_received'] %}
+                                        <button type="button" class="btn btn-outline-warning btn-sm" title="Cancel Job Work" 
+                                                onclick="cancelJobWork({{ job.id }}, '{{ job.job_number }}')">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                        {% endif %}
+                                        {% if job.status != 'cancelled' %}
+                                        <button type="button" class="btn btn-outline-danger btn-sm" title="Delete Job Work" 
+                                                onclick="deleteJobWork({{ job.id }}, '{{ job.job_number }}')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Cancelled Job</span>
+                                        {% endif %}
                                         {% if job.work_type in ['outsourced', 'multi_process'] and job.has_pending_quantity %}
                                         <div class="btn-group btn-group-sm">
                                             <a href="{{ url_for('grn.quick_receive', job_work_id=job.id) }}" class="btn btn-outline-success btn-sm" title="Quick Receive Materials">
@@ -178,4 +194,110 @@
         </div>
     </div>
 </div>
+
+<!-- Cancel Job Work Modal -->
+<div class="modal fade" id="cancelJobWorkModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-ban me-2"></i>Cancel Job Work</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to cancel job work <strong id="cancelJobNumber"></strong>?</p>
+                <p class="text-warning"><i class="fas fa-exclamation-triangle me-2"></i>This will mark the job as cancelled but preserve the record for audit purposes.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-warning" id="confirmCancelBtn">Cancel Job Work</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Job Work Modal -->
+<div class="modal fade" id="deleteJobWorkModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-trash me-2"></i>Delete Job Work</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete job work <strong id="deleteJobNumber"></strong>?</p>
+                <p class="text-danger"><i class="fas fa-exclamation-triangle me-2"></i><strong>Warning:</strong> This action cannot be undone and will permanently remove all job work data including processes, materials, and history.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete Permanently</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentJobId = null;
+
+function cancelJobWork(jobId, jobNumber) {
+    currentJobId = jobId;
+    document.getElementById('cancelJobNumber').textContent = jobNumber;
+    new bootstrap.Modal(document.getElementById('cancelJobWorkModal')).show();
+}
+
+function deleteJobWork(jobId, jobNumber) {
+    currentJobId = jobId;
+    document.getElementById('deleteJobNumber').textContent = jobNumber;
+    new bootstrap.Modal(document.getElementById('deleteJobWorkModal')).show();
+}
+
+// Cancel job work
+document.getElementById('confirmCancelBtn').addEventListener('click', function() {
+    if (currentJobId) {
+        fetch(`/jobwork/cancel/${currentJobId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error cancelling job work: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error cancelling job work. Please try again.');
+        });
+    }
+});
+
+// Delete job work
+document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+    if (currentJobId) {
+        fetch(`/jobwork/delete/${currentJobId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error deleting job work: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting job work. Please try again.');
+        });
+    }
+});
+</script>
 {% endblock %}
