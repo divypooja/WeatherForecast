@@ -349,27 +349,17 @@ class Item(db.Model):
     @property
     def total_stock(self):
         """Calculate total stock across all states"""
-        # For items that haven't been migrated to multi-state, use current_stock
-        multi_state_total = (self.qty_raw or 0) + (self.total_wip or 0) + (self.qty_finished or 0) + (self.qty_scrap or 0)
-        
-        # If multi-state fields are not initialized (all zero) but current_stock exists, use current_stock
-        if multi_state_total == 0 and (self.current_stock or 0) > 0:
-            return self.current_stock or 0
-        
-        # Otherwise use multi-state calculation
-        return multi_state_total
+        return (self.qty_raw or 0) + (self.total_wip or 0) + (self.qty_finished or 0) + (self.qty_scrap or 0)
     
     @property
     def total_wip(self):
         """Calculate total WIP across all processes"""
-        process_wip = (
+        return (
             (self.qty_wip_cutting or 0) + (self.qty_wip_bending or 0) + 
             (self.qty_wip_welding or 0) + (self.qty_wip_zinc or 0) + 
             (self.qty_wip_painting or 0) + (self.qty_wip_assembly or 0) + 
             (self.qty_wip_machining or 0) + (self.qty_wip_polishing or 0)
         )
-        # Include legacy WIP for backward compatibility
-        return process_wip + (self.qty_wip or 0)
     
     @property
     def wip_breakdown(self):
@@ -383,7 +373,7 @@ class Item(db.Model):
             'assembly': self.qty_wip_assembly or 0,
             'machining': self.qty_wip_machining or 0,
             'polishing': self.qty_wip_polishing or 0,
-            'other': self.qty_wip or 0  # Legacy WIP
+            'other': 0  # No legacy WIP
         }
     
     @property
@@ -420,11 +410,11 @@ class Item(db.Model):
                 elif process_lower == 'polishing':
                     self.qty_wip_polishing += quantity
                 else:
-                    # Unknown process, use legacy WIP
-                    self.qty_wip += quantity
+                    # Unknown process, default to cutting
+                    self.qty_wip_cutting += quantity
             else:
-                # No process specified, use legacy WIP
-                self.qty_wip += quantity
+                # No process specified, default to cutting
+                self.qty_wip_cutting += quantity
             return True
         return False
     
@@ -459,7 +449,8 @@ class Item(db.Model):
             elif process_lower == 'polishing':
                 process_wip = self.qty_wip_polishing or 0
             else:
-                process_wip = self.qty_wip or 0
+                # Unknown process, check cutting as default
+                process_wip = self.qty_wip_cutting or 0
             
             if process_wip >= total_received:
                 # Deduct from process-specific WIP
@@ -480,60 +471,47 @@ class Item(db.Model):
                 elif process_lower == 'polishing':
                     self.qty_wip_polishing -= total_received
                 else:
-                    self.qty_wip -= total_received
+                    # Unknown process, deduct from cutting as default
+                    self.qty_wip_cutting -= total_received
                 
                 # Add to finished and scrap
                 self.qty_finished += finished_qty
                 self.qty_scrap += scrap_qty
-                # Update legacy current_stock for compatibility
-                self.current_stock = self.available_stock
                 return True
         else:
-            # Legacy behavior - use total WIP
+            # No process specified - deduct from total WIP proportionally
             if self.total_wip >= total_received:
-                # Try to deduct from legacy WIP first
-                if self.qty_wip >= total_received:
-                    self.qty_wip -= total_received
-                else:
-                    # Need to deduct from process-specific WIPs
-                    remaining = total_received
-                    if self.qty_wip > 0:
-                        deduct = min(self.qty_wip, remaining)
-                        self.qty_wip -= deduct
+                remaining = total_received
+                
+                # Deduct from process WIPs proportionally
+                for process_attr in ['qty_wip_cutting', 'qty_wip_bending', 'qty_wip_welding', 
+                                   'qty_wip_zinc', 'qty_wip_painting', 'qty_wip_assembly', 
+                                   'qty_wip_machining', 'qty_wip_polishing']:
+                    if remaining <= 0:
+                        break
+                    process_qty = getattr(self, process_attr) or 0
+                    if process_qty > 0:
+                        deduct = min(process_qty, remaining)
+                        setattr(self, process_attr, process_qty - deduct)
                         remaining -= deduct
-                    
-                    # Deduct from process WIPs proportionally
-                    if remaining > 0:
-                        for process_attr in ['qty_wip_cutting', 'qty_wip_bending', 'qty_wip_welding', 
-                                           'qty_wip_zinc', 'qty_wip_painting', 'qty_wip_assembly', 
-                                           'qty_wip_machining', 'qty_wip_polishing']:
-                            if remaining <= 0:
-                                break
-                            process_qty = getattr(self, process_attr) or 0
-                            if process_qty > 0:
-                                deduct = min(process_qty, remaining)
-                                setattr(self, process_attr, process_qty - deduct)
-                                remaining -= deduct
                 
                 # Add to finished and scrap
                 self.qty_finished += finished_qty
                 self.qty_scrap += scrap_qty
-                # Update legacy current_stock for compatibility
-                self.current_stock = self.available_stock
                 return True
         
         return False
     
-    def sync_legacy_stock(self):
-        """Sync legacy current_stock field with new multi-state system"""
-        self.current_stock = self.available_stock
+    def sync_stock(self):
+        """Sync current_stock with multi-state total for display compatibility"""
+        self.current_stock = self.total_stock
     
     @property
     def stock_breakdown(self):
         """Return stock breakdown as dictionary"""
         return {
             'raw': self.qty_raw or 0,
-            'wip': self.qty_wip or 0,
+            'wip': self.total_wip,
             'finished': self.qty_finished or 0,
             'scrap': self.qty_scrap or 0,
             'total': self.total_stock,
