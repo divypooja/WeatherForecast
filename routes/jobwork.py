@@ -1173,6 +1173,7 @@ def handle_multi_process_submission(form):
         # Parse and validate processes
         total_quantity = 0
         total_cost = 0
+        total_scrap = 0
         processes = []
         
         for process_json in processes_data:
@@ -1180,6 +1181,7 @@ def handle_multi_process_submission(form):
                 process_data = json.loads(process_json)
                 processes.append(process_data)
                 total_quantity += process_data.get('quantity_input', 0)
+                total_scrap += process_data.get('expected_scrap', 0)
                 total_cost += process_data.get('quantity_input', 0) * process_data.get('rate_per_unit', 0)
             except json.JSONDecodeError:
                 flash('Invalid process data format', 'danger')
@@ -1217,13 +1219,17 @@ def handle_multi_process_submission(form):
         # In a full implementation, these would go in a separate processes table
         process_summary = []
         for i, process in enumerate(processes, 1):
-            process_summary.append(f"Process {i}: {process.get('process_name')} - {process.get('quantity_input')} units - ₹{process.get('rate_per_unit', 0)}/unit")
+            scrap_note = f" (Expected Scrap: {process.get('expected_scrap', 0)})" if process.get('expected_scrap', 0) > 0 else ""
+            process_summary.append(f"Process {i}: {process.get('process_name')} - {process.get('quantity_input')} units - ₹{process.get('rate_per_unit', 0)}/unit{scrap_note}")
         
         job.notes += f"\n\nProcess Breakdown:\n" + "\n".join(process_summary)
+        if total_scrap > 0:
+            job.notes += f"\n\nTotal Expected Scrap: {total_scrap} units"
         
         db.session.commit()
         
-        flash(f'Multi-Process Job Work {job_number} created successfully with {len(processes)} processes. Total quantity: {total_quantity} {item.unit_of_measure}, Total cost: ₹{total_cost:.2f}', 'success')
+        scrap_message = f" (Expected scrap: {total_scrap} {item.unit_of_measure})" if total_scrap > 0 else ""
+        flash(f'Multi-Process Job Work {job_number} created successfully with {len(processes)} processes. Total quantity: {total_quantity} {item.unit_of_measure}{scrap_message}, Total cost: ₹{total_cost:.2f}', 'success')
         return redirect(url_for('jobwork.dashboard'))
         
     except Exception as e:

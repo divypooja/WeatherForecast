@@ -858,6 +858,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         process_name: card.querySelector('.process-name').value,
                         sequence_number: parseInt(card.querySelector('.sequence-number').value),
                         quantity_input: parseFloat(card.querySelector('.quantity-input').value),
+                        expected_scrap: parseFloat(card.querySelector('.expected-scrap').value) || 0,
                         work_type: card.querySelector('.work-type').value,
                         customer_name: card.querySelector('.customer-name').value,
                         department: card.querySelector('.department').value,
@@ -965,7 +966,7 @@ function addProcess() {
                             <option value="Polishing">Polishing</option>
                         </select>
                     </div>
-                    <div class="col-md-2 mb-3">
+                    <div class="col-md-1 mb-3">
                         <label class="form-label">Sequence</label>
                         <input type="number" class="form-control sequence-number" value="${processCounter}" min="1" required>
                     </div>
@@ -973,7 +974,12 @@ function addProcess() {
                         <label class="form-label">Quantity</label>
                         <input type="number" class="form-control quantity-input" min="0" step="0.01" required onchange="updateMultiProcessCostSummary()">
                     </div>
-                    <div class="col-md-3 mb-3">
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">Expected Scrap</label>
+                        <input type="number" class="form-control expected-scrap" min="0" step="0.01" placeholder="Optional" onchange="updateMultiProcessCostSummary()">
+                        <div class="form-text">Estimated waste/scrap quantity</div>
+                    </div>
+                    <div class="col-md-2 mb-3">
                         <label class="form-label">Work Type</label>
                         <select class="form-select work-type" onchange="toggleProcessFields(${processCounter})" required>
                             <option value="outsourced">Outsourced</option>
@@ -1077,16 +1083,19 @@ function updateMultiProcessCostSummary() {
     let totalProcesses = processCards.length;
     let totalCost = 0;
     let totalQuantity = 0;
+    let totalScrap = 0;
     
     processCards.forEach(card => {
         const quantity = parseFloat(card.querySelector('.quantity-input').value) || 0;
+        const scrap = parseFloat(card.querySelector('.expected-scrap').value) || 0;
         const rate = parseFloat(card.querySelector('.rate-per-unit').value) || 0;
         totalCost += quantity * rate;
         totalQuantity += quantity;
+        totalScrap += scrap;
     });
     
     document.getElementById('total-processes').textContent = totalProcesses;
-    document.getElementById('total-quantity-summary').textContent = `${totalQuantity} pcs`;
+    document.getElementById('total-quantity-summary').textContent = `${totalQuantity} pcs (${totalScrap} scrap)`;
     document.getElementById('total-cost-multi').textContent = `₹${totalCost.toFixed(2)}`;
 }
 
