@@ -267,7 +267,6 @@ class Item(db.Model):
     unit_price = db.Column(db.Float, default=0.0)
     unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
     weight_unit = db.Column(db.String(10), default='kg')  # Weight unit (kg, g, lbs, oz, ton)
-    material_classification = db.Column(db.String(50), nullable=False, default='raw_material')  # raw_material, production_use, finished_goods
     item_type = db.Column(db.String(20), default='material')  # Legacy field for backward compatibility
     item_type_id = db.Column(db.Integer, db.ForeignKey('item_types.id'))  # New foreign key to ItemType
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -1260,7 +1259,6 @@ class MaterialInspection(db.Model):
     process_id = db.Column(db.Integer, db.ForeignKey('job_work_processes.id'), nullable=True)
     inspection_type = db.Column(db.String(50), default='general')  # general, job_work_process
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
-    material_classification = db.Column(db.String(50), nullable=False, default='raw_material')  # raw_material, production_use, finished_goods
     received_quantity = db.Column(db.Float, nullable=False)
     inspected_quantity = db.Column(db.Float, nullable=False)
     passed_quantity = db.Column(db.Float, nullable=False)

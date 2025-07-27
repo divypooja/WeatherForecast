@@ -144,21 +144,7 @@
                                     </div>
                                 {% endif %}
                             </div>
-                            
-                            <div class="col-md-4 mb-3">
-                                {{ form.material_classification.label(class="form-label") }}
-                                {{ form.material_classification(class="form-select") }}
-                                {% if form.material_classification.errors %}
-                                    <div class="text-danger small">
-                                        {% for error in form.material_classification.errors %}
-                                            <div>{{ error }}</div>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                                <div class="form-text">
-                                    <i class="fas fa-tag me-1"></i>
-                                    Track material state and usage purpose
-                                </div>
+
                             </div>
                         </div>
                         
