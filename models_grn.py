@@ -61,7 +61,7 @@ class GRN(db.Model):
     @staticmethod
     def generate_grn_number():
         """Generate next GRN number in format GRN-YYYY-0001"""
-        return generate_next_number('GRN', 'grns', 'grn_number')
+        return generate_next_number('GRN', 'grn', 'grn_number')
     
     @property
     def total_quantity_received(self):
