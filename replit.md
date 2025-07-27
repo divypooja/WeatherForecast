@@ -12,7 +12,9 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **WIP Management Correction**: Corrected WIP clearing logic to remove input materials from process-specific WIP fields when transformation is complete
 - **Automatic Status Updates**: Enhanced multi-process GRN completion to automatically calculate total expected vs received output quantities and update job work status accordingly
 - **Pending Receipt Display Fix**: Improved pending receipt display logic to show expected output materials (3000 Pcs Mounted Plate) instead of confusing input/output mix
-- **Database Consistency**: Manually corrected JOB-2025-0001 data inconsistencies and added comprehensive job work completion logic to prevent future issues
+- **Database Consistency**: Manually corrected JOB-2025-0001 and JOB-2025-0002 data inconsistencies and added comprehensive job work completion logic to prevent future issues
+- **Legacy Inventory Code Removal**: Completely eliminated `receive_from_wip` method calls and `current_stock` updates from all GRN completion logic, ensuring pure multi-state inventory system
+- **Universal GRN Inventory Fix**: Fixed inventory update logic in all three GRN types (regular job work, multi-process job work, purchase order) to properly use multi-state fields (qty_raw, qty_finished, qty_scrap)
 - **Comprehensive Activity Logging**: Added detailed completion notes to job work records with timestamps and GRN references for complete audit trail
 
 ### Complete Multi-State Migration and Legacy Removal (July 27, 2025)

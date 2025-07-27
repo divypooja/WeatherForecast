@@ -342,12 +342,11 @@ def quick_receive(job_work_id):
             
             # Update inventory if adding to stock
             if form.add_to_inventory.data and quantity_passed > 0:
-                # Move from WIP to Finished
-                if hasattr(job_work.item, 'receive_from_wip'):
-                    job_work.item.receive_from_wip(quantity_passed, form.quantity_rejected.data or 0)
-                else:
-                    # Fallback for items without multi-state inventory
-                    job_work.item.current_stock = (job_work.item.current_stock or 0) + quantity_passed
+                # Move from WIP to Finished (multi-state system)
+                job_work.item.qty_finished = (job_work.item.qty_finished or 0) + quantity_passed
+                # Add rejected quantity to scrap if any
+                if form.quantity_rejected.data and form.quantity_rejected.data > 0:
+                    job_work.item.qty_scrap = (job_work.item.qty_scrap or 0) + form.quantity_rejected.data
                 grn.add_to_inventory = True  # Set the flag to True when inventory is updated
             else:
                 grn.add_to_inventory = False  # Set the flag to False when inventory is not updated
@@ -465,11 +464,11 @@ def quick_receive_multi_process(job_work_id):
             
             # Update inventory if requested and materials passed inspection
             if form.add_to_inventory.data and quantity_passed > 0:
-                # Add to the output item's inventory (not the original raw material)
-                if hasattr(receiving_item, 'receive_from_wip'):
-                    receiving_item.receive_from_wip(quantity_passed, form.quantity_rejected.data or 0)
-                else:
-                    receiving_item.current_stock = (receiving_item.current_stock or 0) + quantity_passed
+                # Add to the output item's finished inventory (multi-state system)
+                receiving_item.qty_finished = (receiving_item.qty_finished or 0) + quantity_passed
+                # Add rejected quantity to scrap if any
+                if form.quantity_rejected.data and form.quantity_rejected.data > 0:
+                    receiving_item.qty_scrap = (receiving_item.qty_scrap or 0) + form.quantity_rejected.data
                 grn.add_to_inventory = True
             else:
                 grn.add_to_inventory = False
@@ -625,8 +624,9 @@ def quick_receive_po(purchase_order_id, item_id):
             if form.add_to_inventory.data and quantity_passed > 0:
                 # Add to multi-state inventory (raw materials from PO)
                 item.qty_raw = (item.qty_raw or 0) + quantity_passed
-                # Also update legacy current_stock for backward compatibility
-                item.current_stock = (item.current_stock or 0) + quantity_passed
+                # Add rejected quantity to scrap if any
+                if form.quantity_rejected.data and form.quantity_rejected.data > 0:
+                    item.qty_scrap = (item.qty_scrap or 0) + form.quantity_rejected.data
                 grn.add_to_inventory = True  # Set the flag to True when inventory is updated
             else:
                 grn.add_to_inventory = False  # Set the flag to False when inventory is not updated
