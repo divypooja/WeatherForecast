@@ -47,91 +47,117 @@ def add_multi_process_job():
         print("Form data received:", request.form)
         print("Form validation errors:", form.errors)
         
-        if form.validate_on_submit():
+        # Handle form submission manually due to CSRF issues with dynamic process data
+        try:
+            # Basic validation
+            if not request.form.get('item_id') or not request.form.get('total_quantity'):
+                flash('Please select an item and enter total quantity', 'danger')
+                return render_template('multi_process_jobwork/form.html', form=form, title='Add Multi-Process Job Work')
+            
+            # Validate CSRF token manually
+            from flask_wtf.csrf import validate_csrf
             try:
-                # Create the main job work
-                item = Item.query.get(form.item_id.data)
-                if not item:
-                    flash('Selected item not found', 'danger')
-                    return render_template('multi_process_jobwork/form.html', form=form, title='Add Multi-Process Job Work')
-                
-                # Initialize multi-state inventory if not set
-                if item.qty_raw is None or item.qty_raw == 0.0:
-                    item.qty_raw = item.current_stock or 0.0
-                    item.qty_wip = 0.0
-                    item.qty_finished = 0.0
-                    item.qty_scrap = 0.0
-                    db.session.commit()
-                
-                # Check if enough raw materials available
-                if item.qty_raw < form.total_quantity.data:
-                    flash(f'Insufficient raw materials. Available: {item.qty_raw}, Required: {form.total_quantity.data}', 'danger')
-                    return render_template('multi_process_jobwork/form.html', form=form, title='Add Multi-Process Job Work')
-                
-                # Generate unique job number
-                job_number = generate_job_number()
-                
-                # Create main job work record
-                job = JobWork(
-                    job_number=job_number,
-                    customer_name="Multi-Process Job",  # Will be handled by individual processes
-                    item_id=form.item_id.data,
-                    process="Multi-Process",  # Indicates this is a multi-process job
-                    work_type="multi_process",  # New work type for multi-process jobs
-                    quantity_sent=form.total_quantity.data,
-                    rate_per_unit=0.0,  # Total cost will be sum of all processes
-                    sent_date=form.sent_date.data,
-                    expected_return=form.expected_return.data,
-                    notes=form.notes.data,
-                    created_by=current_user.id
-                )
-                
-                db.session.add(job)
-                db.session.flush()  # Get the job ID
-                
-                # Parse processes from form data
-                processes_data = request.form.getlist('processes')
-                if not processes_data:
-                    flash('At least one process must be defined', 'danger')
-                    return render_template('multi_process_jobwork/form.html', form=form, title='Add Multi-Process Job Work')
-                
-                # Create individual processes
-                for i, process_json in enumerate(processes_data):
-                    try:
-                        process_data = json.loads(process_json)
-                        
-                        process = JobWorkProcess(
-                            job_work_id=job.id,
-                            process_name=process_data['process_name'],
-                            sequence_number=process_data.get('sequence_number', i + 1),
-                            quantity_input=process_data['quantity_input'],
-                            work_type=process_data['work_type'],
-                            customer_name=process_data.get('customer_name', ''),
-                            department=process_data.get('department', ''),
-                            rate_per_unit=process_data.get('rate_per_unit', 0.0),
-                            start_date=datetime.strptime(process_data['start_date'], '%Y-%m-%d').date() if process_data.get('start_date') else None,
-                            expected_completion=datetime.strptime(process_data['expected_completion'], '%Y-%m-%d').date() if process_data.get('expected_completion') else None,
-                            notes=process_data.get('notes', '')
-                        )
-                        
-                        db.session.add(process)
-                    except (json.JSONDecodeError, KeyError, ValueError) as e:
-                        flash(f'Error processing process {i+1}: {str(e)}', 'danger')
-                        return render_template('multi_process_jobwork/form.html', form=form, title='Add Multi-Process Job Work')
-                
-                # Move materials from Raw to WIP
-                if item.move_to_wip(form.total_quantity.data):
-                    db.session.commit()
-                    flash(f'Multi-process job work {job_number} created successfully! {form.total_quantity.data} units moved to WIP state.', 'success')
-                    return redirect(url_for('multi_process_jobwork.detail', id=job.id))
-                else:
-                    flash('Failed to move materials to WIP state', 'danger')
-                    
+                validate_csrf(request.form.get('csrf_token'))
             except Exception as e:
-                db.session.rollback()
-                flash(f'Error creating job work: {str(e)}', 'danger')
-        else:
-            flash('Please correct the errors below', 'danger')
+                print(f"CSRF validation error: {e}")
+                flash('Security token validation failed. Please refresh and try again.', 'danger')
+                return render_template('multi_process_jobwork/form.html', form=form, title='Add Multi-Process Job Work')
+            # Get form data
+            item_id = int(request.form.get('item_id'))
+            total_quantity = float(request.form.get('total_quantity'))
+            sent_date_str = request.form.get('sent_date')
+            expected_return_str = request.form.get('expected_return')
+            notes = request.form.get('notes', '')
+            
+            # Parse dates
+            from datetime import datetime
+            sent_date = datetime.strptime(sent_date_str, '%Y-%m-%d').date() if sent_date_str else None
+            expected_return = datetime.strptime(expected_return_str, '%Y-%m-%d').date() if expected_return_str else None
+            
+            # Create the main job work
+            item = Item.query.get(item_id)
+            if not item:
+                flash('Selected item not found', 'danger')
+                return render_template('multi_process_jobwork/form.html', form=form, title='Add Multi-Process Job Work')
+                
+            # Initialize multi-state inventory if not set
+            if item.qty_raw is None or item.qty_raw == 0.0:
+                item.qty_raw = item.current_stock or 0.0
+                item.qty_wip = 0.0
+                item.qty_finished = 0.0
+                item.qty_scrap = 0.0
+                db.session.commit()
+                
+            # Check if enough raw materials available
+            if item.qty_raw < total_quantity:
+                flash(f'Insufficient raw materials. Available: {item.qty_raw}, Required: {total_quantity}', 'danger')
+                return render_template('multi_process_jobwork/form.html', form=form, title='Add Multi-Process Job Work')
+            
+            # Generate unique job number
+            job_number = generate_job_number()
+                
+            # Create main job work record
+            job = JobWork(
+                job_number=job_number,
+                customer_name="Multi-Process Job",  # Will be handled by individual processes
+                item_id=item_id,
+                process="Multi-Process",  # Indicates this is a multi-process job
+                work_type="multi_process",  # New work type for multi-process jobs
+                quantity_sent=total_quantity,
+                rate_per_unit=0.0,  # Total cost will be sum of all processes
+                sent_date=sent_date,
+                expected_return=expected_return,
+                notes=notes,
+                created_by=current_user.id
+            )
+            
+            db.session.add(job)
+            db.session.flush()  # Get the job ID
+            
+            # Parse processes from form data
+            processes_data = request.form.getlist('processes')
+            if not processes_data:
+                flash('At least one process must be defined', 'danger')
+                return render_template('multi_process_jobwork/form.html', form=form, title='Add Multi-Process Job Work')
+            
+            # Create individual processes
+            for i, process_json in enumerate(processes_data):
+                try:
+                    process_data = json.loads(process_json)
+                    
+                    process = JobWorkProcess(
+                        job_work_id=job.id,
+                        process_name=process_data['process_name'],
+                        sequence_number=process_data.get('sequence_number', i + 1),
+                        quantity_input=process_data['quantity_input'],
+                        work_type=process_data['work_type'],
+                        customer_name=process_data.get('customer_name', ''),
+                        department=process_data.get('department', ''),
+                        rate_per_unit=process_data.get('rate_per_unit', 0.0),
+                        start_date=datetime.strptime(process_data['start_date'], '%Y-%m-%d').date() if process_data.get('start_date') else None,
+                        expected_completion=datetime.strptime(process_data['expected_completion'], '%Y-%m-%d').date() if process_data.get('expected_completion') else None,
+                        notes=process_data.get('notes', '')
+                    )
+                    
+                    db.session.add(process)
+                except (json.JSONDecodeError, KeyError, ValueError) as e:
+                    flash(f'Error processing process {i+1}: {str(e)}', 'danger')
+                    return render_template('multi_process_jobwork/form.html', form=form, title='Add Multi-Process Job Work')
+                
+            # Move materials from Raw to WIP
+            if item.move_to_wip(total_quantity):
+                db.session.commit()
+                flash(f'Multi-process job work {job_number} created successfully! {total_quantity} units moved to WIP state.', 'success')
+                return redirect(url_for('multi_process_jobwork.detail', id=job.id))
+            else:
+                flash('Failed to move materials to WIP state', 'danger')
+                
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error creating job work: {str(e)}', 'danger')
+            print(f"Exception details: {e}")
+            import traceback
+            traceback.print_exc()
     
     return render_template('multi_process_jobwork/form.html', form=form, title='Add Multi-Process Job Work')
 

@@ -6,7 +6,17 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (July 26, 2025)
 
-### Complete Multi-State Inventory Tracking System Implementation (Latest - July 26, 2025)
+### Multi-Process Job Work System with Auto-Generated Numbers (Latest - July 27, 2025)
+- **Auto-Generated Job Numbers**: Implemented MPJOB-YYYY-0001 format for multi-process job work numbers with automatic sequential generation
+- **Enhanced Form Processing**: Fixed CSRF token validation issues by implementing manual form processing for complex multi-process data
+- **Complete Process Management**: JobWorkProcess model with comprehensive tracking fields including quantity input/output/scrap, work type, vendor/department assignment, rates, and completion tracking
+- **Professional UI Templates**: Multi-process form with dynamic process addition, timeline visualization, progress tracking, and cost calculation summaries
+- **Inventory Integration**: Automatic material state transitions from Raw → WIP during job work creation with proper validation and error handling
+- **Process Workflow**: Sequential process management with status tracking, completion percentages, and visual progress indicators
+- **Dashboard Integration**: Added multi-process job work buttons to existing job work dashboard for easy access
+- **Validation & Security**: Comprehensive form validation with CSRF protection, process requirement checks, and inventory availability verification
+
+### Complete Multi-State Inventory Tracking System Implementation (July 26, 2025)
 - **Multi-State Inventory Architecture**: Implemented comprehensive inventory tracking with Raw Material, WIP (Work in Progress), Finished Goods, and Scrap states for complete manufacturing workflow visibility
 - **Database Schema Enhancement**: Added qty_raw, qty_wip, qty_finished, and qty_scrap columns to items table supporting your workflow requirements (Raw: 50 → WIP: 50 → Finished: 48 + Scrap: 2)
 - **Smart Inventory Methods**: Created move_to_wip() and receive_from_wip() methods for seamless material state transitions with automatic validation and error handling
