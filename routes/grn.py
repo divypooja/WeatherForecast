@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_required, current_user
 from app import db
-from models import JobWork, Item, User
+from models import JobWork, Item, User, PurchaseOrder, PurchaseOrderItem
 from models_grn import GRN, GRNLineItem
 from forms_grn import GRNForm, GRNLineItemForm, QuickReceiveForm, GRNSearchForm
 from datetime import datetime, date
@@ -26,10 +26,11 @@ def dashboard():
     
     # Apply filters
     if search:
-        grn_query = grn_query.join(JobWork).filter(
+        grn_query = grn_query.outerjoin(JobWork).outerjoin(PurchaseOrder).filter(
             or_(
                 GRN.grn_number.ilike(f'%{search}%'),
-                JobWork.job_number.ilike(f'%{search}%')
+                JobWork.job_number.ilike(f'%{search}%'),
+                PurchaseOrder.po_number.ilike(f'%{search}%')
             )
         )
     
@@ -70,6 +71,11 @@ def dashboard():
         JobWork.work_type.in_(['outsourced', 'multi_process'])
     ).order_by(JobWork.sent_date.desc()).limit(20).all()
     
+    # Get purchase orders pending GRN creation
+    pending_purchase_orders = PurchaseOrder.query.filter(
+        PurchaseOrder.status.in_(['approved', 'partial'])
+    ).order_by(PurchaseOrder.order_date.desc()).limit(20).all()
+    
     # Calculate monthly trends
     current_month = date.today().replace(day=1)
     monthly_grns = GRN.query.filter(GRN.received_date >= current_month).count()
@@ -79,10 +85,11 @@ def dashboard():
                          grns=grns,
                          stats=stats,
                          pending_job_works=pending_job_works,
+                         pending_purchase_orders=pending_purchase_orders,
                          monthly_grns=monthly_grns)
 
 
-@grn_bp.route('/create/<int:job_work_id>')
+@grn_bp.route('/create/job_work/<int:job_work_id>')
 @login_required
 def create_grn(job_work_id):
     """Create a new GRN for a job work"""
@@ -124,10 +131,58 @@ def create_grn(job_work_id):
             db.session.rollback()
             flash(f'Error creating GRN: {str(e)}', 'error')
     
-    return render_template('grn/create.html',
+    return render_template('grn/create_grn.html',
                          title='Create GRN',
                          form=form,
                          job_work=job_work)
+
+
+@grn_bp.route('/create/purchase_order/<int:purchase_order_id>')
+@login_required
+def create_grn_for_po(purchase_order_id):
+    """Create a new GRN for a purchase order"""
+    purchase_order = PurchaseOrder.query.get_or_404(purchase_order_id)
+    
+    # Check if user can create GRN for this PO
+    if purchase_order.status not in ['approved', 'partial']:
+        flash('Cannot create GRN for this purchase order. Invalid status.', 'error')
+        return redirect(url_for('purchase.detail', id=purchase_order_id))
+    
+    form = GRNForm()
+    if not form.grn_number.data:
+        form.grn_number.data = GRN.generate_grn_number()
+    form.purchase_order_id.data = purchase_order_id
+    
+    if form.validate_on_submit():
+        try:
+            # Create GRN for PO
+            grn = GRN(
+                grn_number=form.grn_number.data,
+                purchase_order_id=purchase_order_id,
+                received_date=form.received_date.data,
+                received_by=current_user.id,
+                delivery_note=form.delivery_note.data,
+                transporter_name=form.transporter_name.data,
+                vehicle_number=form.vehicle_number.data,
+                inspection_required=form.inspection_required.data,
+                status=form.status.data,
+                remarks=form.remarks.data
+            )
+            
+            db.session.add(grn)
+            db.session.commit()
+            
+            flash(f'GRN {grn.grn_number} created successfully for PO {purchase_order.po_number}!', 'success')
+            return redirect(url_for('grn.add_line_items', grn_id=grn.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error creating GRN: {str(e)}', 'error')
+    
+    return render_template('grn/create_grn.html',
+                         title='Create GRN for Purchase Order',
+                         form=form,
+                         purchase_order=purchase_order)
 
 
 @grn_bp.route('/quick_receive/<int:job_work_id>', methods=['GET', 'POST'])

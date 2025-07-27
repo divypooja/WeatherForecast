@@ -160,6 +160,11 @@
                                         <a href="{{ url_for('documents.upload_document', transaction_type='purchase_order', transaction_id=po.id) }}" class="btn btn-outline-warning btn-sm" title="Upload Documents">
                                             <i class="fas fa-paperclip"></i>
                                         </a>
+                                        {% if po.status in ['approved', 'partial'] %}
+                                        <a href="{{ url_for('grn.create_grn_for_po', purchase_order_id=po.id) }}" class="btn btn-outline-success btn-sm" title="Create GRN">
+                                            <i class="fas fa-truck"></i>
+                                        </a>
+                                        {% endif %}
                                         {% if current_user.role == 'admin' %}
                                         <div class="btn-group btn-group-sm">
                                             <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" title="Change Status">
