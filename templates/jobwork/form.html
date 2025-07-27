@@ -963,7 +963,7 @@ function addProcess() {
                 <div class="row">
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Process Name</label>
-                        <select class="form-select process-name" required>
+                        <select class="form-select process-name" id="process_name_${processCounter}" required>
                             <option value="">Select Process</option>
                             <option value="Zinc">Zinc</option>
                             <option value="Cutting">Cutting</option>
@@ -981,7 +981,7 @@ function addProcess() {
                     </div>
                     <div class="col-md-3 mb-3">
                         <label class="form-label">Work Type</label>
-                        <select class="form-select work-type" onchange="toggleProcessFields(${processCounter})" required>
+                        <select class="form-select work-type" id="work_type_${processCounter}" onchange="toggleProcessFields(${processCounter})" required>
                             <option value="outsourced">Outsourced</option>
                             <option value="in_house">In-House</option>
                         </select>
@@ -1010,15 +1010,15 @@ function addProcess() {
                 
                 <!-- Third Row: Assignment and Timeline -->
                 <div class="row">
-                    <div class="col-md-6 mb-3 customer-field">
+                    <div class="col-md-6 mb-3 customer-field" id="customer_field_${processCounter}">
                         <label class="form-label">Customer/Vendor</label>
-                        <select class="form-select customer-name">
+                        <select class="form-select customer-name" id="customer_name_${processCounter}">
                             <option value="">Select Customer/Vendor</option>
                         </select>
                     </div>
-                    <div class="col-md-6 mb-3 department-field" style="display: none;">
+                    <div class="col-md-6 mb-3 department-field" id="department_field_${processCounter}" style="display: none;">
                         <label class="form-label">Department</label>
-                        <select class="form-select department">
+                        <select class="form-select department" id="department_${processCounter}">
                             <option value="">Select Department</option>
                             <option value="production">Production</option>
                             <option value="assembly">Assembly</option>
@@ -1061,10 +1061,9 @@ function removeProcess(processId) {
 
 // Function to toggle fields based on work type for individual processes
 function toggleProcessFields(processId) {
-    const processCard = document.getElementById(`process-${processId}`);
-    const workType = processCard.querySelector('.work-type').value;
-    const customerField = processCard.querySelector('.customer-field');
-    const departmentField = processCard.querySelector('.department-field');
+    const workType = document.getElementById(`work_type_${processId}`).value;
+    const customerField = document.getElementById(`customer_field_${processId}`);
+    const departmentField = document.getElementById(`department_field_${processId}`);
     
     if (workType === 'in_house') {
         customerField.style.display = 'none';
@@ -1081,8 +1080,8 @@ function populateCustomerDropdown(processId) {
     const existingCustomerSelect = document.getElementById('customer_name');
     if (!existingCustomerSelect) return;
     
-    const processCard = document.getElementById(`process-${processId}`);
-    const customerSelect = processCard.querySelector('.customer-name');
+    const customerSelect = document.getElementById(`customer_name_${processId}`);
+    if (!customerSelect) return;
     
     // Copy options from existing dropdown
     Array.from(existingCustomerSelect.options).forEach(option => {
