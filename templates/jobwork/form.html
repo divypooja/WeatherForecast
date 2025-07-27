@@ -845,9 +845,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.querySelector('form');
     if (form) {
         form.addEventListener('submit', function(e) {
+            console.log('Form submission triggered');
             const multiProcess = document.getElementById('multiProcess');
+            const singleProcess = document.getElementById('singleProcess');
+            
+            console.log('Multi-process checked:', multiProcess ? multiProcess.checked : 'not found');
+            console.log('Single-process checked:', singleProcess ? singleProcess.checked : 'not found');
             
             if (multiProcess && multiProcess.checked) {
+                console.log('Handling multi-process submission');
                 e.preventDefault();
                 
                 // Disable HTML5 validation entirely for this form
@@ -855,6 +861,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Validate multi-process specific requirements
                 const processCards = document.querySelectorAll('.process-card');
+                console.log('Found process cards:', processCards.length);
+                
                 if (processCards.length === 0) {
                     alert('Please add at least one process for multi-process job work.');
                     return false;
@@ -892,8 +900,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     return false;
                 }
                 
+                console.log('Multi-process validation passed, submitting form');
                 // Submit via JavaScript to bypass form validation
                 submitMultiProcessForm();
+            } else {
+                console.log('Allowing normal single-process form submission');
+                // Allow normal form submission for single-process mode
+                return true;
             }
         });
     }
