@@ -43,7 +43,7 @@ def dashboard():
     stats = {
         'total_pos': PurchaseOrder.query.count(),
         'draft_pos': PurchaseOrder.query.filter_by(status='draft').count(),
-        'open_pos': PurchaseOrder.query.filter_by(status='open').count(),
+        'sent_pos': PurchaseOrder.query.filter_by(status='sent').count(),
         'partial_pos': PurchaseOrder.query.filter_by(status='partial').count(),
         'closed_pos': PurchaseOrder.query.filter_by(status='closed').count(),
         'cancelled_pos': PurchaseOrder.query.filter_by(status='cancelled').count(),

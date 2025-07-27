@@ -343,7 +343,7 @@ class PurchaseOrder(db.Model):
     freight_terms = db.Column(db.String(100))  # Freight terms
     delivery_notes = db.Column(db.Text)  # Special delivery instructions
     validity_months = db.Column(db.Integer, default=6)  # PO validity in months
-    status = db.Column(db.String(20), default='open')  # draft, open, partial, closed, cancelled
+    status = db.Column(db.String(20), default='sent')  # draft, sent, partial, closed, cancelled
     subtotal = db.Column(db.Float, default=0.0)
     gst_amount = db.Column(db.Float, default=0.0)
     total_amount = db.Column(db.Float, default=0.0)
