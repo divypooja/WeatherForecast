@@ -86,10 +86,9 @@
                             <div class="col-md-6">
                                 <label class="form-label">Inspected Quantity</label>
                                 <div class="input-group">
-                                    <input type="number" class="form-control" id="quantity_inspected" readonly>
+                                    <input type="number" class="form-control" id="quantity_inspected" step="0.01" min="0">
                                     <span class="input-group-text">{{ po_item.uom or item.unit_of_measure }}</span>
                                 </div>
-                                <small class="text-muted">Same as received quantity</small>
                             </div>
                         </div>
                         
@@ -205,19 +204,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const quantityInspected = document.getElementById('quantity_inspected');
     
     function updateCalculations() {
-        const received = parseFloat(quantityReceived.value) || 0;
+        const inspected = parseFloat(quantityInspected.value) || 0;
         const passed = parseFloat(quantityPassed.value) || 0;
         
-        // Update inspected quantity to match received
-        quantityInspected.value = received.toFixed(2);
-        
         // Auto-calculate rejected quantity: Inspected - Passed
-        const rejected = Math.max(0, received - passed);
+        const rejected = Math.max(0, inspected - passed);
         quantityRejected.value = rejected.toFixed(2);
     }
     
-    // Listen for changes in received and passed quantities
-    quantityReceived.addEventListener('input', updateCalculations);
+    // Listen for changes in inspected and passed quantities
+    quantityInspected.addEventListener('input', updateCalculations);
     quantityPassed.addEventListener('input', updateCalculations);
     
     // Initial calculation
