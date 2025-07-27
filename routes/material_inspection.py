@@ -218,6 +218,105 @@ def inspect_job_work(job_id):
                          title=f'Inspect Job Work {job_work.job_number}',
                          job_work=job_work)
 
+@material_inspection.route('/inspect/process/<int:process_id>')
+@login_required
+def inspect_process(process_id):
+    """Inspect a specific process from a multi-process job work"""
+    from models import JobWorkProcess
+    process = JobWorkProcess.query.get_or_404(process_id)
+    job_work = process.job_work
+    
+    # Verify this is a multi-process job work
+    if job_work.work_type != 'multi_process':
+        flash('This is not a multi-process job work.', 'error')
+        return redirect(url_for('material_inspection.dashboard'))
+    
+    return render_template('material_inspection/process_inspection.html',
+                         title=f'Inspect Process: {process.process_name} - {job_work.job_number}',
+                         process=process,
+                         job_work=job_work)
+
+@material_inspection.route('/inspect/process/<int:process_id>/submit', methods=['POST'])
+@login_required
+def submit_process_inspection(process_id):
+    """Submit inspection results for a specific process"""
+    from models import JobWorkProcess
+    process = JobWorkProcess.query.get_or_404(process_id)
+    job_work = process.job_work
+    
+    # Get form data
+    received_quantity = float(request.form.get('received_quantity', 0))
+    inspected_quantity = float(request.form.get('inspected_quantity', 0))
+    passed_quantity = float(request.form.get('passed_quantity', 0))
+    rejected_quantity = inspected_quantity - passed_quantity
+    material_classification = request.form.get('material_classification')
+    inspection_date_str = request.form.get('inspection_date')
+    if inspection_date_str:
+        inspection_date = datetime.strptime(inspection_date_str, '%Y-%m-%d').date()
+    else:
+        inspection_date = datetime.now().date()
+    inspection_notes = request.form.get('inspection_notes', '')
+    
+    # Validate quantities
+    if received_quantity > process.quantity_input:
+        flash(f'Received quantity cannot exceed input quantity ({process.quantity_input})', 'error')
+        return redirect(url_for('material_inspection.inspect_process', process_id=process_id))
+    
+    if inspected_quantity > received_quantity:
+        flash('Inspected quantity cannot exceed received quantity', 'error')
+        return redirect(url_for('material_inspection.inspect_process', process_id=process_id))
+    
+    if passed_quantity > inspected_quantity:
+        flash('Passed quantity cannot exceed inspected quantity', 'error')
+        return redirect(url_for('material_inspection.inspect_process', process_id=process_id))
+    
+    # Create material inspection record
+    inspection_number = generate_next_number('MaterialInspection')
+    
+    inspection = MaterialInspection(
+        inspection_number=inspection_number,
+        inspection_date=inspection_date,
+        inspection_type='job_work_process',
+        job_work_id=job_work.id,
+        process_id=process_id,
+        item_id=job_work.item_id,
+        received_quantity=received_quantity,
+        inspected_quantity=inspected_quantity,
+        passed_quantity=passed_quantity,
+        damaged_quantity=rejected_quantity,
+        rejected_quantity=rejected_quantity,
+        acceptance_rate=round((passed_quantity / inspected_quantity * 100) if inspected_quantity > 0 else 0, 2),
+        material_classification=material_classification,
+        inspection_notes=inspection_notes,
+        inspector_id=current_user.id
+    )
+    
+    db.session.add(inspection)
+    
+    # Update process status and output quantity
+    process.quantity_output = received_quantity
+    process.status = 'completed' if received_quantity == process.quantity_input else 'partial_received'
+    
+    # Add passed materials back to inventory
+    item = job_work.item
+    if passed_quantity > 0:
+        if material_classification == 'finished_goods':
+            item.qty_finished = (item.qty_finished or 0) + passed_quantity
+        elif material_classification == 'production_use':
+            item.qty_wip = (item.qty_wip or 0) + passed_quantity
+        else:  # raw_material
+            item.qty_raw = (item.qty_raw or 0) + passed_quantity
+    
+    # Add rejected materials to scrap
+    if rejected_quantity > 0:
+        item.qty_scrap = (item.qty_scrap or 0) + rejected_quantity
+    
+    db.session.commit()
+    
+    classification_display = material_classification.replace("_", " ") if material_classification else "inventory"
+    flash(f'Process inspection completed! {passed_quantity} {item.unit_of_measure} added to {classification_display} inventory. {rejected_quantity} {item.unit_of_measure} moved to scrap.', 'success')
+    return redirect(url_for('material_inspection.log_inspection', job_id=job_work.id))
+
 @material_inspection.route('/log', methods=['GET', 'POST'])
 @login_required
 def log_inspection():

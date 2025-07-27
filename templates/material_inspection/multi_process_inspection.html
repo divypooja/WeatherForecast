@@ -93,13 +93,11 @@
                                 <button class="btn btn-success btn-sm" disabled>
                                     <i class="fas fa-check"></i> Completed
                                 </button>
-                            {% elif process.status == 'in_progress' %}
-                                <a href="{{ url_for('material_inspection.log_inspection') }}?job_id={{ job_work.id }}&process_id={{ process.id }}" 
-                                   class="btn btn-warning btn-sm">
-                                    <i class="fas fa-search"></i> Inspect
-                                </a>
                             {% else %}
-                                <span class="text-muted small">Pending</span>
+                                <a href="{{ url_for('material_inspection.inspect_process', process_id=process.id) }}" 
+                                   class="btn btn-warning btn-sm">
+                                    <i class="fas fa-search"></i> Inspect Process
+                                </a>
                             {% endif %}
                         </div>
                     </div>
