@@ -4,22 +4,9 @@
 
 This is a comprehensive Flask-based Factory Management System designed for small to medium manufacturing companies. The application provides modular dashboards for managing various aspects of factory operations including inventory, purchase orders, sales, HR, job work, production, and reporting.
 
-## Recent Changes (July 27, 2025)
-
-### Multi-Process Job Work with Scrap Tracking Integration (Latest - July 27, 2025)
-- **Scrap Tracking per Process**: Added "Expected Scrap (kg)" field to each process in multi-process job work workflows, allowing precise waste estimation for every manufacturing step with standardized kilogram units
-- **Enhanced Process Form Layout**: Optimized column widths to accommodate scrap field while maintaining clean, professional interface (Process Name: 3 cols, Sequence: 1 col, Quantity: 2 cols, Scrap: 2 cols, Work Type: 2 cols, Rate: 2 cols)
-- **Real-time Scrap Calculations**: Updated cost summary to display total scrap across all processes alongside quantity and cost totals with kg units (e.g., "25 pcs (5 kg scrap)")
-- **Backend Scrap Processing**: Enhanced multi-process submission handler to capture, validate, and store scrap quantities with detailed process breakdown in job notes
-- **Comprehensive Scrap Reporting**: Job work details now include process-specific scrap expectations and total scrap estimates for complete material planning
-- **Form Validation Enhancement**: Added scrap quantity handling to JavaScript form submission with proper data validation and error handling
-- **Professional UI Feedback**: Success messages now include scrap information when applicable, providing complete process visibility to users
-- **Complete Multi-Process Integration**: Unified single/multi-process job work functionality in main Add Job Work form with radio button selection and dynamic form sections
-- **Standardized Scrap Units**: All scrap quantities consistently use kilograms (kg) as the standard unit across forms, calculations, summaries, and database storage for accurate material waste tracking
-
 ## Recent Changes (July 26, 2025)
 
-### Complete Multi-State Inventory Tracking System Implementation (July 26, 2025)
+### Complete Multi-State Inventory Tracking System Implementation (Latest - July 26, 2025)
 - **Multi-State Inventory Architecture**: Implemented comprehensive inventory tracking with Raw Material, WIP (Work in Progress), Finished Goods, and Scrap states for complete manufacturing workflow visibility
 - **Database Schema Enhancement**: Added qty_raw, qty_wip, qty_finished, and qty_scrap columns to items table supporting your workflow requirements (Raw: 50 → WIP: 50 → Finished: 48 + Scrap: 2)
 - **Smart Inventory Methods**: Created move_to_wip() and receive_from_wip() methods for seamless material state transitions with automatic validation and error handling

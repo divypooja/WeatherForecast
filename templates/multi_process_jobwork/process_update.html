@@ -98,10 +98,10 @@
                             </div>
                             
                             <div class="col-md-4 mb-3">
-                                {{ form.quantity_scrap.label(class="form-label") }} (kg)
+                                {{ form.quantity_scrap.label(class="form-label") }}
                                 <div class="input-group">
-                                    {{ form.quantity_scrap(class="form-control", onchange="updateProgress()", step="0.001") }}
-                                    <span class="input-group-text">kg</span>
+                                    {{ form.quantity_scrap(class="form-control", onchange="updateProgress()") }}
+                                    <span class="input-group-text">pcs</span>
                                 </div>
                                 {% if form.quantity_scrap.errors %}
                                     <div class="text-danger small">
@@ -110,7 +110,7 @@
                                         {% endfor %}
                                     </div>
                                 {% endif %}
-                                <small class="text-muted">Waste/defective quantity in kilograms</small>
+                                <small class="text-muted">Waste/defective quantity</small>
                             </div>
                             
                             <div class="col-md-4 mb-3">

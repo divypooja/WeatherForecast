@@ -119,10 +119,10 @@ class ProcessProgressForm(FlaskForm):
                                 validators=[DataRequired(), NumberRange(min=0)],
                                 render_kw={'placeholder': 'Quantity completed'})
     
-    quantity_scrap = FloatField('Scrap Quantity (kg)', 
+    quantity_scrap = FloatField('Scrap Quantity', 
                                validators=[Optional(), NumberRange(min=0)],
                                default=0.0,
-                               render_kw={'placeholder': 'Scrap/waste in kg generated'})
+                               render_kw={'placeholder': 'Scrap/waste generated'})
     
     status = SelectField('Process Status',
                         validators=[DataRequired()],
