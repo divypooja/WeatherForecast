@@ -181,10 +181,8 @@ def add_job_work():
         
         return redirect(url_for('jobwork.dashboard'))
     elif request.method == 'POST':
-        # Debug form validation errors
-        print("Form validation failed:")
+        # Flash form validation errors
         for field, errors in form.errors.items():
-            print(f"  {field}: {errors}")
             flash(f'{field}: {", ".join(errors)}', 'danger')
     
     return render_template('jobwork/form.html', form=form, title='Add Job Work')
