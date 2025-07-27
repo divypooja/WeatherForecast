@@ -879,6 +879,11 @@ class JobWorkProcess(db.Model):
     expected_completion = db.Column(db.Date)
     actual_completion = db.Column(db.Date)
     
+    # Team assignment fields (for in-house processes)
+    is_team_work = db.Column(db.Boolean, default=False)  # Whether this process allows team assignment
+    max_team_members = db.Column(db.Integer, default=1)  # Maximum team members allowed
+    team_lead_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=True)  # Team lead for this process
+    
     # Notes and timestamps
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -887,6 +892,7 @@ class JobWorkProcess(db.Model):
     # Define the back-relationship here to avoid forward reference issues
     job_work = db.relationship('JobWork', backref='processes')
     output_item = db.relationship('Item', foreign_keys=[output_item_id], backref='processes_output')
+    team_lead = db.relationship('Employee', foreign_keys=[team_lead_id], backref='processes_led')
     
     @property
     def process_cost(self):

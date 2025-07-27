@@ -206,7 +206,10 @@ def add_multi_process_job():
                         expected_completion=datetime.strptime(process_data['expected_completion'], '%Y-%m-%d').date() if process_data.get('expected_completion') else None,
                         notes=process_data.get('notes', ''),
                         output_item_id=int(process_data['output_item_id']) if process_data.get('output_item_id') else None,
-                        output_quantity=float(process_data.get('output_quantity', 0))
+                        output_quantity=float(process_data.get('output_quantity', 0)),
+                        is_team_work=process_data.get('is_team_work', False),
+                        max_team_members=int(process_data.get('max_team_members', 1)) if process_data.get('max_team_members') else 1,
+                        team_lead_id=int(process_data['team_lead']) if process_data.get('team_lead') else None
                     )
                     
                     db.session.add(process)
@@ -337,6 +340,30 @@ def get_all_items():
         return jsonify({
             'success': True,
             'items': items_data
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@multi_process_jobwork_bp.route('/api/employees')
+@login_required
+def get_employees():
+    """API endpoint to get all active employees for team lead selection"""
+    try:
+        from models import Employee
+        employees = Employee.query.filter_by(status='active').order_by(Employee.name).all()
+        employees_data = []
+        for emp in employees:
+            employees_data.append({
+                'id': emp.id,
+                'employee_code': emp.employee_code,
+                'name': emp.name,
+                'department': emp.department,
+                'position': emp.position
+            })
+        
+        return jsonify({
+            'success': True,
+            'employees': employees_data
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
