@@ -239,15 +239,31 @@
 let currentJobId = null;
 
 function cancelJobWork(jobId, jobNumber) {
+    // Clear any existing modals first
+    const existingModals = document.querySelectorAll('.modal.show');
+    existingModals.forEach(modal => {
+        bootstrap.Modal.getInstance(modal)?.hide();
+    });
+    
     currentJobId = jobId;
     document.getElementById('cancelJobNumber').textContent = jobNumber;
-    new bootstrap.Modal(document.getElementById('cancelJobWorkModal')).show();
+    setTimeout(() => {
+        new bootstrap.Modal(document.getElementById('cancelJobWorkModal')).show();
+    }, 100);
 }
 
 function deleteJobWork(jobId, jobNumber) {
+    // Clear any existing modals first
+    const existingModals = document.querySelectorAll('.modal.show');
+    existingModals.forEach(modal => {
+        bootstrap.Modal.getInstance(modal)?.hide();
+    });
+    
     currentJobId = jobId;
     document.getElementById('deleteJobNumber').textContent = jobNumber;
-    new bootstrap.Modal(document.getElementById('deleteJobWorkModal')).show();
+    setTimeout(() => {
+        new bootstrap.Modal(document.getElementById('deleteJobWorkModal')).show();
+    }, 100);
 }
 
 // Cancel job work
@@ -294,6 +310,43 @@ document.getElementById('confirmDeleteBtn').addEventListener('click', function()
         .catch(error => {
             console.error('Error:', error);
             alert('Error deleting job work. Please try again.');
+        });
+    }
+});
+
+// Clear any stuck modals on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Hide all modal backdrops and modals
+    const modals = document.querySelectorAll('.modal');
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    
+    modals.forEach(modal => {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+        modal.removeAttribute('aria-modal');
+        modal.removeAttribute('role');
+    });
+    
+    backdrops.forEach(backdrop => {
+        backdrop.remove();
+    });
+    
+    // Reset body classes
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+});
+
+// Add escape key handler to close modals
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        const openModals = document.querySelectorAll('.modal.show');
+        openModals.forEach(modal => {
+            const modalInstance = bootstrap.Modal.getInstance(modal);
+            if (modalInstance) {
+                modalInstance.hide();
+            }
         });
     }
 });
