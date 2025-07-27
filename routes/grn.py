@@ -463,10 +463,38 @@ def quick_receive_multi_process(job_work_id):
             else:
                 grn.add_to_inventory = False
             
+            # Process individual process scrap tracking
+            process_scrap_updates = {}
+            scrap_update_notes = []
+            for key, value in request.form.items():
+                if key.startswith('scrap_process_') and value:
+                    try:
+                        sequence_number = int(key.replace('scrap_process_', ''))
+                        scrap_quantity = float(value)
+                        if scrap_quantity > 0:
+                            process_scrap_updates[sequence_number] = scrap_quantity
+                    except (ValueError, TypeError):
+                        continue
+            
+            # Update individual process scrap quantities
+            for seq_num, scrap_qty in process_scrap_updates.items():
+                process = JobWorkProcess.query.filter_by(
+                    job_work_id=job_work_id,
+                    sequence_number=seq_num
+                ).first()
+                if process:
+                    old_scrap = process.quantity_scrap or 0
+                    process.quantity_scrap = scrap_qty
+                    scrap_update_notes.append(
+                        f"Process {seq_num} ({process.process_name}): {old_scrap} → {scrap_qty} {receiving_item.unit_of_measure} scrap"
+                    )
+            
             # Update process completion status
             if form.inspection_status.data == 'passed':
                 selected_process.quantity_output = (selected_process.quantity_output or 0) + quantity_passed
-                selected_process.quantity_scrap = (selected_process.quantity_scrap or 0) + (form.quantity_rejected.data or 0)
+                # Add rejected quantity to current process scrap only if no individual scrap tracking was done
+                if selected_process.sequence_number not in process_scrap_updates:
+                    selected_process.quantity_scrap = (selected_process.quantity_scrap or 0) + (form.quantity_rejected.data or 0)
                 if selected_process.quantity_output >= selected_process.quantity_input:
                     selected_process.status = 'completed'
                     selected_process.actual_completion = datetime.utcnow()
@@ -480,7 +508,12 @@ def quick_receive_multi_process(job_work_id):
             
             db.session.commit()
             
-            flash(f'Materials received from {selected_process.process_name} process! GRN {grn.grn_number} created.', 'success')
+            # Create success message with scrap tracking info
+            success_message = f'Materials received from {selected_process.process_name} process! GRN {grn.grn_number} created.'
+            if scrap_update_notes:
+                success_message += f' Individual process scrap updated: {"; ".join(scrap_update_notes)}.'
+            
+            flash(success_message, 'success')
             return redirect(url_for('multi_process_jobwork.detail', id=job_work_id))
             
         except Exception as e:

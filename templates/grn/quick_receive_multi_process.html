@@ -179,6 +179,25 @@
                             </div>
                         </div>
 
+                        <!-- Individual Process Scrap Tracking -->
+                        <div class="card mb-3 border-warning">
+                            <div class="card-header bg-warning bg-opacity-10">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Individual Process Scrap Tracking
+                                </h6>
+                                <small class="text-muted">Track scrap quantities from each process step independently</small>
+                            </div>
+                            <div class="card-body">
+                                <div id="scrap-tracking-section">
+                                    <!-- This will be populated by JavaScript based on selected process -->
+                                    <div class="text-muted text-center" id="scrap-placeholder">
+                                        <i class="fas fa-arrow-up me-2"></i>
+                                        Select a process above to track individual process scrap
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
@@ -310,6 +329,9 @@ document.getElementById('process_selection').addEventListener('change', function
         } else {
             showProcessInfo(`First Process: ${process.flowDescription} | Creates intermediate product for next process`);
         }
+        
+        // Show individual process scrap tracking
+        showProcessScrapTracking(processId);
     }
 });
 
@@ -328,6 +350,78 @@ function showProcessInfo(message) {
         document.querySelector('.card-body').insertBefore(alert, document.querySelector('form'));
     }
     document.getElementById('process-info-text').textContent = message;
+}
+
+function showProcessScrapTracking(selectedProcessId) {
+    const scrapSection = document.getElementById('scrap-tracking-section');
+    const scrapPlaceholder = document.getElementById('scrap-placeholder');
+    
+    if (scrapPlaceholder) {
+        scrapPlaceholder.remove();
+    }
+    
+    // Get all processes up to and including the selected process
+    const selectedProcess = processData[selectedProcessId];
+    if (!selectedProcess) return;
+    
+    let scrapTrackingHTML = '<div class="row">';
+    
+    // Show scrap tracking for all processes in sequence up to selected process
+    const processesArray = Object.values(processData).sort((a, b) => a.sequenceNumber - b.sequenceNumber);
+    
+    processesArray.forEach((process, index) => {
+        if (process.sequenceNumber <= selectedProcess.sequenceNumber) {
+            const colClass = processesArray.length <= 2 ? 'col-md-6' : 'col-md-4';
+            
+            scrapTrackingHTML += `
+                <div class="${colClass} mb-3">
+                    <div class="card border-warning">
+                        <div class="card-header bg-warning bg-opacity-10 py-2">
+                            <small class="fw-bold">
+                                <span class="badge bg-secondary me-1">${process.sequenceNumber}</span>
+                                ${process.name} Scrap
+                            </small>
+                        </div>
+                        <div class="card-body py-2">
+                            <div class="input-group input-group-sm">
+                                <input type="number" 
+                                       class="form-control" 
+                                       id="scrap_process_${process.sequenceNumber}" 
+                                       name="scrap_process_${process.sequenceNumber}"
+                                       placeholder="0.0" 
+                                       min="0" 
+                                       step="0.1"
+                                       value="0">
+                                <span class="input-group-text">${process.outputUnit}</span>
+                            </div>
+                            <div class="form-text">
+                                <small class="text-muted">
+                                    ${process.sequenceNumber === selectedProcess.sequenceNumber ? 
+                                        'Current process scrap' : 
+                                        'Previous process scrap'}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    });
+    
+    scrapTrackingHTML += '</div>';
+    
+    // Add explanation text
+    scrapTrackingHTML += `
+        <div class="alert alert-warning mt-2">
+            <i class="fas fa-lightbulb me-2"></i>
+            <strong>Sequential Scrap Tracking:</strong> 
+            When receiving from Process ${selectedProcess.sequenceNumber} (${selectedProcess.name}), 
+            you can track scrap from all previous processes plus the current process. 
+            This ensures no scrap quantities are lost in the sequential manufacturing flow.
+        </div>
+    `;
+    
+    scrapSection.innerHTML = scrapTrackingHTML;
 }
 
 // Initialize calculation on page load

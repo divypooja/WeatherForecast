@@ -6,17 +6,18 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (July 27, 2025)
 
-### Sequential Process-Aware GRN System for Multi-Process Job Works (Latest - July 27, 2025)
+### Sequential Process-Aware GRN System with Individual Process Scrap Tracking (Latest - July 27, 2025)
 - **Sequential Process Understanding**: GRN system now fully understands manufacturing flow where Process 1 (Cutting: Ms sheet → Mounted Plate) feeds into Process 2 (Zinc: Mounted Plate → Zinc-coated Mounted Plate)
+- **Individual Process Scrap Tracking**: Revolutionary scrap tracking system allows recording scrap from each individual process step (Process 1: Cutting scrap, Process 2: Zinc scrap) preventing scrap data loss in sequential manufacturing
 - **Flow-Aware Process Selection**: GRN dropdown shows complete sequential flow (e.g., "Seq 2: Zinc - outsourced (pending) | Mounted Plate → Mounted Plate (3490 pcs)") indicating material transformation at each step
+- **Dynamic Scrap Interface**: When selecting Process 2, system shows scrap tracking for both Process 1 (Cutting) and Process 2 (Zinc), ensuring no intermediate process scrap is lost
 - **Visual Sequential Flow Display**: Process summary shows numbered sequence with input sources, visual flow arrows, and clear indication of which process outputs feed into subsequent processes
 - **Intelligent Input Source Recognition**: System automatically identifies that later processes use outputs from previous processes, not original raw materials (Zinc process uses Mounted Plate from Cutting, not Ms sheet)
-- **Dynamic Unit Management**: GRN form automatically updates unit labels based on the selected process's output product unit of measure, understanding material transformations
-- **Smart Item Handling**: System creates GRN line items using the process's output_item_id, ensuring materials are added to correct product inventory after sequential transformation
+- **Smart Scrap Management**: Backend automatically updates individual JobWorkProcess.quantity_scrap fields for each process, maintaining comprehensive scrap audit trail
 - **Process-Specific Inventory Updates**: Materials received are added to the final output product inventory (Mounted Plate after Zinc coating) rather than intermediate or raw material stock
 - **Enhanced Sequential UI**: JavaScript-powered interface provides real-time feedback distinguishing between first processes (create intermediate products) and final processes (ready for inventory)
-- **Comprehensive Flow Visualization**: GRN template displays complete manufacturing flow with sequence numbers, input/output relationships, and visual process arrows
-- **Manufacturing Intelligence**: System recognizes that multi-process jobs create finished products through sequential transformation rather than parallel processing
+- **Comprehensive Scrap Documentation**: Success messages and activity logs include detailed scrap tracking information showing old vs new scrap quantities for each process
+- **Manufacturing Intelligence**: System recognizes that multi-process jobs create finished products through sequential transformation with proper scrap accounting at each step
 - **Database Connection Resilience**: Resolved SSL connection issues through workflow restart maintaining system stability during enhancements
 
 ### Unified Job Work System - Single Form for All Job Types (July 27, 2025)
