@@ -30,17 +30,20 @@ def dashboard():
         material_flow = intelligence.get_real_time_material_flow()
         
         # Get active alerts
-        active_alerts = ManufacturingAlert.query.filter_by(status='active').order_by(
-            ManufacturingAlert.severity.desc(),
-            ManufacturingAlert.created_at.desc()
-        ).limit(10).all()
+        try:
+            active_alerts = ManufacturingAlert.query.filter_by(status='active').order_by(
+                ManufacturingAlert.severity.desc(),
+                ManufacturingAlert.created_at.desc()
+            ).limit(10).all()
+        except:
+            active_alerts = []
         
-        # Dashboard statistics
+        # Dashboard statistics  
         stats = {
             'total_processes': len(bottleneck_analysis.get('processes', [])),
             'active_bottlenecks': bottleneck_analysis.get('processes_with_bottlenecks', 0),
             'active_alerts': len(active_alerts),
-            'material_flow_velocity': material_flow.get('flow_velocity', {}).get('recent_completions', 0)
+            'material_flow_velocity': material_flow.get('flow_velocity', {}).get('recent_completions', 0) if isinstance(material_flow, dict) else 0
         }
         
         return render_template('manufacturing_intelligence/dashboard.html',

@@ -39,7 +39,7 @@ class ManufacturingIntelligence:
             for process_name in processes:
                 # Get active job work processes
                 active_processes = JobWorkProcess.query.join(JobWork).filter(
-                    JobWorkProcess.process_type == process_name,
+                    JobWorkProcess.process_name == process_name,
                     JobWork.created_at >= start_date,
                     JobWorkProcess.status.in_(['pending', 'in_progress'])
                 ).all()
@@ -115,7 +115,8 @@ class ManufacturingIntelligence:
         Get real-time material flow across all manufacturing stages
         """
         try:
-            from models import Item, JobWork, Production, GRN
+            from models import Item, JobWork, Production
+            from models_grn import GRN
             from app import db
             
             # Get material states
