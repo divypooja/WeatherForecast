@@ -341,7 +341,7 @@ class Item(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
-    purchase_order_items = db.relationship('PurchaseOrderItem', backref='item', lazy=True)
+    purchase_order_items = db.relationship('PurchaseOrderItem', backref='item_ref', lazy=True)
     sales_order_items = db.relationship('SalesOrderItem', backref='item', lazy=True)
     bom_items = db.relationship('BOMItem', backref='item', lazy=True)
     item_type_obj = db.relationship('ItemType', backref='items', lazy=True)
@@ -589,6 +589,9 @@ class PurchaseOrderItem(db.Model):
     total_weight = db.Column(db.Float, default=0.0)  # Total weight (qty × unit_weight)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
+    # Relationships  
+    item = db.relationship('Item')
+    
     @property
     def calculated_total_weight(self):
         """Calculate total weight based on quantity and unit weight"""
@@ -742,7 +745,9 @@ class JobWork(db.Model):
     item = db.relationship('Item', backref='job_works')
     creator = db.relationship('User', foreign_keys=[created_by], backref='created_job_works')
     inspector = db.relationship('User', foreign_keys=[inspected_by], backref='inspected_job_works')
-    # processes relationship will be defined in JobWorkProcess model to avoid forward reference issues
+    processes = db.relationship('JobWorkProcess', backref='job_work', lazy=True, cascade='all, delete-orphan')
+    team_assignments = db.relationship('JobWorkTeamAssignment', backref='job_work', lazy=True, cascade='all, delete-orphan')
+    grn_receipts = db.relationship('GRN', backref='job_work', lazy=True)
     
     @property
     def total_cost(self):
@@ -1025,8 +1030,7 @@ class JobWorkTeamAssignment(db.Model):
     assigned_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Relationships
-    job_work = db.relationship('JobWork', backref='team_assignments')
+    # Relationships  
     employee = db.relationship('Employee', backref='team_assignments')
     assigner = db.relationship('User', backref='team_assignments_created')
     
@@ -1149,8 +1153,7 @@ class JobWorkProcess(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Define the back-relationship here to avoid forward reference issues
-    job_work = db.relationship('JobWork', backref='processes')
+    # Relationships
     output_item = db.relationship('Item', foreign_keys=[output_item_id], backref='processes_output')
     team_lead = db.relationship('Employee', foreign_keys=[team_lead_id], backref='processes_led')
     

@@ -6,7 +6,15 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (July 27, 2025)
 
-### Universal Scrap Weight Tracking Implementation (Latest - July 28, 2025)
+### Critical Technical Issues Resolution (Latest - July 28, 2025)
+- **Fixed Missing Model Relationships**: Resolved critical LSP errors by properly defining missing relationships between JobWork.processes, GRN.line_items, and PurchaseOrderItem.item
+- **Database Relationship Integrity**: Fixed broken backref relationships that were causing multi-process job work calculations to fail and GRN line item totals to break
+- **Application Context Resolution**: Fixed scheduler service application context issues preventing proper background job execution for low stock alerts and system health checks
+- **SQLAlchemy Relationship Conflicts**: Resolved naming conflicts in model relationships ensuring clean database operations without blocking application startup
+- **Model Consistency**: Updated JobWorkTeamAssignment relationship mapping and GRN line item associations for proper data flow throughout manufacturing workflow
+- **System Stability**: Application now starts reliably with all model relationships properly configured and background services functioning correctly
+
+### Universal Scrap Weight Tracking Implementation (July 28, 2025)
 - **Complete Scrap Weight Conversion**: Implemented comprehensive scrap tracking in weight units (kg) across entire application replacing piece-based tracking
 - **Universal Weight Units**: Updated all scrap quantity fields and labels throughout system to display "kg" instead of "pcs" or "units" for consistent weight-based tracking
 - **Template-Wide Updates**: Modified all form templates (daily_entry_form.html, process_update.html, job work forms, GRN templates) to show weight units for scrap

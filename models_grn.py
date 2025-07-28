@@ -38,10 +38,10 @@ class GRN(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    job_work = db.relationship('JobWork', backref='grn_receipts')
-    purchase_order = db.relationship('PurchaseOrder', backref='grn_receipts')
+    purchase_order = db.relationship('PurchaseOrder', backref='grn_receipts_po')
     receiver = db.relationship('User', foreign_keys=[received_by], backref='received_grns')
     inspector = db.relationship('User', foreign_keys=[inspected_by], backref='inspected_grns')
+    line_items = db.relationship('GRNLineItem', backref='grn_parent', lazy=True, cascade='all, delete-orphan')
     
     @property
     def source_document(self):
@@ -140,7 +140,7 @@ class GRNLineItem(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    grn = db.relationship('GRN', backref='line_items')
+    grn = db.relationship('GRN')
     item = db.relationship('Item', backref='grn_line_items')
     
     @property
