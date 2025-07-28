@@ -312,6 +312,7 @@ class Item(db.Model):
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     unit_of_measure = db.Column(db.String(20), nullable=False)  # kg, pcs, meter, etc.
+    uom_conversion_factor = db.Column(db.Float)  # Custom conversion factor for purchase to inventory UOM
     hsn_code = db.Column(db.String(20))  # HSN Code for GST
     gst_rate = db.Column(db.Float, default=0.0)  # GST rate (can be 0%, 5%, 12%, 18%, 28% etc.)
     current_stock = db.Column(db.Float, default=0.0)  # Legacy total stock field
