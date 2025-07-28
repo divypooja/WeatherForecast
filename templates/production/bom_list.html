@@ -9,6 +9,13 @@
             <h1><i class="fas fa-sitemap"></i> Bill of Materials (BOM)</h1>
         </div>
         <div class="col-auto">
+            <div class="btn-group me-2">
+                <select class="form-select" onchange="window.location.href='{{ url_for('production.list_bom') }}?status=' + this.value">
+                    <option value="all" {{ 'selected' if status_filter == 'all' else '' }}>All BOMs</option>
+                    <option value="active" {{ 'selected' if status_filter == 'active' else '' }}>Active Only</option>
+                    <option value="inactive" {{ 'selected' if status_filter == 'inactive' else '' }}>Inactive Only</option>
+                </select>
+            </div>
             <a href="{{ url_for('production.add_bom') }}" class="btn btn-primary">
                 <i class="fas fa-plus"></i> Add New BOM
             </a>
@@ -50,6 +57,20 @@
                                         </a>
                                         <a href="{{ url_for('production.edit_bom', id=bom.id) }}" class="btn btn-outline-secondary btn-sm">
                                             <i class="fas fa-edit"></i> Edit
+                                        </a>
+                                        {% if bom.is_active %}
+                                            <a href="{{ url_for('production.deactivate_bom', id=bom.id) }}" class="btn btn-outline-warning btn-sm" 
+                                               onclick="return confirm('Are you sure you want to deactivate this BOM?')">
+                                                <i class="fas fa-toggle-off"></i> Deactivate
+                                            </a>
+                                        {% else %}
+                                            <a href="{{ url_for('production.activate_bom', id=bom.id) }}" class="btn btn-outline-success btn-sm">
+                                                <i class="fas fa-toggle-on"></i> Activate
+                                            </a>
+                                        {% endif %}
+                                        <a href="{{ url_for('production.delete_bom', id=bom.id) }}" class="btn btn-outline-danger btn-sm" 
+                                           onclick="return confirm('Are you sure you want to permanently delete this BOM? This action cannot be undone.')">
+                                            <i class="fas fa-trash"></i> Delete
                                         </a>
                                     </div>
                                 </td>
