@@ -43,7 +43,12 @@
                             
                             <div class="col-md-4 mb-3">
                                 {{ form.item_id.label(class="form-label") }}
-                                {{ form.item_id(class="form-select") }}
+                                <div class="input-group">
+                                    {{ form.item_id(class="form-select", id="item_select") }}
+                                    <button type="button" class="btn btn-outline-primary" onclick="loadBOMData()" id="bomLoadBtn">
+                                        <i class="fas fa-list-ul"></i> Load BOM
+                                    </button>
+                                </div>
                                 {% if form.item_id.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.item_id.errors %}
@@ -51,6 +56,7 @@
                                         {% endfor %}
                                     </div>
                                 {% endif %}
+                                <div id="bom-info" class="mt-2"></div>
                             </div>
                             
                             <div class="col-md-4 mb-3">
@@ -615,6 +621,222 @@ document.getElementById('multiProcessForm').addEventListener('submit', function(
     // Submit the form normally (this will include CSRF token)
     this.submit();
 });
+
+// BOM Loading Functionality
+let currentBOMData = null;
+
+function loadBOMData() {
+    const itemSelect = document.getElementById('item_select');
+    const itemId = itemSelect.value;
+    const bomInfo = document.getElementById('bom-info');
+    const bomBtn = document.getElementById('bomLoadBtn');
+    
+    if (!itemId) {
+        alert('Please select an item first');
+        return;
+    }
+    
+    // Show loading state
+    bomBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+    bomBtn.disabled = true;
+    bomInfo.innerHTML = '';
+    
+    // Fetch BOM data
+    fetch(`/jobwork/multi-process/api/item-bom/${itemId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.has_bom) {
+                currentBOMData = data;
+                displayBOMInfo(data);
+                showBOMLoadOptions(data);
+            } else {
+                bomInfo.innerHTML = `
+                    <div class="alert alert-warning alert-sm">
+                        <i class="fas fa-exclamation-triangle"></i> ${data.message || 'No BOM found for this item'}
+                    </div>`;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading BOM:', error);
+            bomInfo.innerHTML = `
+                <div class="alert alert-danger alert-sm">
+                    <i class="fas fa-exclamation-circle"></i> Error loading BOM data
+                </div>`;
+        })
+        .finally(() => {
+            bomBtn.innerHTML = '<i class="fas fa-list-ul"></i> Load BOM';
+            bomBtn.disabled = false;
+        });
+}
+
+function displayBOMInfo(bomData) {
+    const bomInfo = document.getElementById('bom-info');
+    bomInfo.innerHTML = `
+        <div class="card border-success">
+            <div class="card-header bg-light-success text-success py-2">
+                <h6 class="mb-0">
+                    <i class="fas fa-list-ul"></i> BOM Found - ${bomData.item_name} (v${bomData.bom_version})
+                </h6>
+            </div>
+            <div class="card-body py-2">
+                <div class="row">
+                    <div class="col-6">
+                        <small><strong>Total Cost:</strong> ₹${bomData.total_cost_per_unit}/unit</small><br>
+                        <small><strong>Material Cost:</strong> ₹${bomData.material_cost}</small><br>
+                        <small><strong>Labor Cost:</strong> ₹${bomData.labor_cost}</small>
+                    </div>
+                    <div class="col-6">
+                        <small><strong>Labor Hours:</strong> ${bomData.labor_hours} hrs</small><br>
+                        <small><strong>Labor Rate:</strong> ₹${bomData.labor_rate_per_hour}/hr</small><br>
+                        <small><strong>Materials:</strong> ${bomData.materials.length} items</small>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <button type="button" class="btn btn-success btn-sm" onclick="applyBOMRates()">
+                        <i class="fas fa-magic"></i> Apply BOM Rates to Processes
+                    </button>
+                    <button type="button" class="btn btn-info btn-sm" onclick="showBOMDetails()">
+                        <i class="fas fa-eye"></i> View BOM Details
+                    </button>
+                </div>
+            </div>
+        </div>`;
+}
+
+function showBOMLoadOptions(bomData) {
+    // This function could show modal with BOM breakdown, for now just show success message
+    console.log('BOM Data Loaded:', bomData);
+}
+
+function applyBOMRates() {
+    if (!currentBOMData) {
+        alert('No BOM data available. Please load BOM first.');
+        return;
+    }
+    
+    const processCards = document.querySelectorAll('.process-card');
+    let appliedCount = 0;
+    
+    processCards.forEach(card => {
+        const rateInput = card.querySelector('.rate-per-unit');
+        if (rateInput && currentBOMData.total_cost_per_unit > 0) {
+            // Apply BOM rate to each process
+            rateInput.value = currentBOMData.total_cost_per_unit.toFixed(2);
+            appliedCount++;
+        }
+    });
+    
+    if (appliedCount > 0) {
+        // Update cost summary
+        updateCostSummary();
+        
+        // Show success message
+        const bomInfo = document.getElementById('bom-info');
+        const successAlert = document.createElement('div');
+        successAlert.className = 'alert alert-success alert-sm mt-2';
+        successAlert.innerHTML = `
+            <i class="fas fa-check-circle"></i> BOM rates applied to ${appliedCount} process(es) - ₹${currentBOMData.total_cost_per_unit}/unit
+        `;
+        bomInfo.appendChild(successAlert);
+        
+        // Remove success message after 3 seconds
+        setTimeout(() => {
+            if (successAlert.parentNode) {
+                successAlert.remove();
+            }
+        }, 3000);
+    } else {
+        alert('No processes found to apply rates. Please add processes first.');
+    }
+}
+
+function showBOMDetails() {
+    if (!currentBOMData || !currentBOMData.materials) {
+        alert('No BOM details available');
+        return;
+    }
+    
+    let materialsTable = `
+        <div class="modal fade" id="bomDetailsModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">BOM Details - ${currentBOMData.item_name}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <h6>Cost Breakdown:</h6>
+                                <ul class="list-unstyled">
+                                    <li><strong>Material Cost:</strong> ₹${currentBOMData.material_cost}</li>
+                                    <li><strong>Labor Cost:</strong> ₹${currentBOMData.labor_cost}</li>
+                                    <li><strong>Overhead Cost:</strong> ₹${currentBOMData.overhead_cost}</li>
+                                    <li><strong>Freight Cost:</strong> ₹${currentBOMData.freight_cost}</li>
+                                    <li><strong>Markup (${currentBOMData.markup_percentage}%):</strong> ₹${currentBOMData.markup_amount}</li>
+                                    <li class="border-top pt-2"><strong>Total Cost:</strong> ₹${currentBOMData.total_cost_per_unit}</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Labor Information:</h6>
+                                <ul class="list-unstyled">
+                                    <li><strong>Labor Hours:</strong> ${currentBOMData.labor_hours} hrs</li>
+                                    <li><strong>Labor Rate:</strong> ₹${currentBOMData.labor_rate_per_hour}/hr</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <h6>Materials Required:</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Item Code</th>
+                                        <th>Item Name</th>
+                                        <th>Quantity</th>
+                                        <th>Unit</th>
+                                        <th>Unit Cost</th>
+                                        <th>Total Cost</th>
+                                    </tr>
+                                </thead>
+                                <tbody>`;
+    
+    currentBOMData.materials.forEach(material => {
+        materialsTable += `
+            <tr>
+                <td>${material.item_code}</td>
+                <td>${material.item_name}</td>
+                <td>${material.quantity_required}</td>
+                <td>${material.unit}</td>
+                <td>₹${material.unit_cost}</td>
+                <td>₹${material.total_cost}</td>
+            </tr>`;
+    });
+    
+    materialsTable += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('bomDetailsModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', materialsTable);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('bomDetailsModal'));
+    modal.show();
+}
 
 // Initialize with one process
 document.addEventListener('DOMContentLoaded', function() {
