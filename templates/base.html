@@ -210,6 +210,11 @@
                     <i class="fas fa-cubes"></i>
                     Packing Optimization
                 </a>
+                <a class="nav-link {{ 'active' if 'manufacturing_intelligence' in request.endpoint }}" href="{{ url_for('manufacturing_intelligence.dashboard') }}">
+                    <i class="fas fa-brain text-success"></i>
+                    <span class="fw-bold">Manufacturing Intelligence</span>
+                    <span class="badge bg-success ms-2">NEW</span>
+                </a>
 
                 <hr class="my-2">
                 

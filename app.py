@@ -114,6 +114,10 @@ def create_app():
     from routes.department import department_bp
     app.register_blueprint(department_bp, url_prefix='/departments')
     
+    # Register Manufacturing Intelligence blueprint
+    from routes.manufacturing_intelligence import manufacturing_intelligence_bp
+    app.register_blueprint(manufacturing_intelligence_bp)
+    
     # Register placeholder routes for new dashboard modules
     from routes.module_placeholders import register_placeholder_routes
     register_placeholder_routes(app)
@@ -130,6 +134,7 @@ def create_app():
         import models  # Main models (already imported)
         import models_dashboard  # Dashboard preference models
         import models_custom_reports  # Custom report models
+        import models_intelligence  # Manufacturing intelligence models
         
         db.create_all()
         
