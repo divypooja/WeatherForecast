@@ -496,7 +496,7 @@ def quick_receive_multi_process(job_work_id):
                     old_scrap = process.quantity_scrap or 0
                     process.quantity_scrap = scrap_qty
                     scrap_update_notes.append(
-                        f"Process {seq_num} ({process.process_name}): {old_scrap} → {scrap_qty} {receiving_item.unit_of_measure} scrap"
+                        f"Process {seq_num} ({process.process_name}): {old_scrap} → {scrap_qty} kg scrap"
                     )
             
             # Update process completion status

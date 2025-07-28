@@ -149,9 +149,9 @@
                                 {{ form.scrap_quantity.label(class="form-label") }}
                                 <div class="input-group">
                                     {{ form.scrap_quantity(class="form-control") }}
-                                    <span class="input-group-text" id="scrap_unit">units</span>
+                                    <span class="input-group-text" id="scrap_unit">kg</span>
                                 </div>
-                                <small class="text-muted">Scrap/waste quantity produced today (optional)</small>
+                                <small class="text-muted">Scrap/waste weight produced today (optional)</small>
                                 {% if form.scrap_quantity.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.scrap_quantity.errors %}
