@@ -223,6 +223,7 @@ def add_bom():
             product_id=form.product_id.data,
             version=form.version.data,
             is_active=True,
+            output_quantity=form.output_quantity.data or 1.0,
             labor_cost_per_unit=form.labor_cost_per_unit.data or 0.0,
             labor_hours_per_unit=form.labor_hours_per_unit.data or 0.0,
             labor_rate_per_hour=form.labor_rate_per_hour.data or 0.0,
@@ -259,6 +260,7 @@ def edit_bom(id):
     if request.method == 'GET':
         form.product_id.data = bom.product_id
         form.version.data = bom.version
+        form.output_quantity.data = bom.output_quantity
         form.labor_cost_per_unit.data = bom.labor_cost_per_unit
         form.labor_hours_per_unit.data = bom.labor_hours_per_unit
         form.labor_rate_per_hour.data = bom.labor_rate_per_hour
@@ -281,6 +283,7 @@ def edit_bom(id):
         
         bom.product_id = form.product_id.data
         bom.version = form.version.data
+        bom.output_quantity = form.output_quantity.data or 1.0
         bom.labor_cost_per_unit = form.labor_cost_per_unit.data or 0.0
         bom.labor_hours_per_unit = form.labor_hours_per_unit.data or 0.0
         bom.labor_rate_per_hour = form.labor_rate_per_hour.data or 0.0

@@ -1346,6 +1346,7 @@ class BOM(db.Model):
     product_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     version = db.Column(db.String(20), default='1.0')
     is_active = db.Column(db.Boolean, default=True)
+    output_quantity = db.Column(db.Float, default=1.0)  # How many units this BOM produces (e.g., 1 sheet = 400 pieces)
     
     # Labor and Overhead costs
     labor_cost_per_unit = db.Column(db.Float, default=0.0)

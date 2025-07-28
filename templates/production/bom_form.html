@@ -50,6 +50,20 @@
                                     {% endfor %}
                                 </div>
                             {% endif %}
+                            <small class="text-muted">Version number for this BOM (e.g., 1.0, 1.1, 2.0)</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.output_quantity.label(class="form-label") }}
+                            {{ form.output_quantity(class="form-control", step="0.001") }}
+                            {% if form.output_quantity.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.output_quantity.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="text-muted">Number of units this BOM produces (e.g., 1 MS Sheet produces 400 Mounted Plates)</small>
                         </div>
 
                         <!-- Labor Cost Section -->

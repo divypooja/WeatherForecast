@@ -542,6 +542,8 @@ class BOMForm(FlaskForm):
     product_id = SelectField('Product', validators=[DataRequired()], coerce=int)
     version = StringField('Version', validators=[DataRequired(), Length(max=20)], default='1.0')
     is_active = BooleanField('Active', default=True)
+    output_quantity = FloatField('Output Quantity', validators=[NumberRange(min=0.001)], default=1.0,
+                                render_kw={"placeholder": "How many units this BOM produces (e.g., 400 pieces from 1 sheet)"})
     
     # Labor and Overhead fields
     labor_cost_per_unit = FloatField('Labor Cost per Unit', validators=[NumberRange(min=0)], default=0.0)
