@@ -76,8 +76,8 @@
                                         <strong>{{ "%.2f"|format(item.qty_raw or 0) }}</strong>
                                     </td>
                                     <td class="text-warning">
-                                        <strong>{{ "%.2f"|format(item.qty_wip or 0) }}</strong>
-                                        {% if item.qty_wip > 0 %}
+                                        <strong>{{ "%.2f"|format(item.total_wip or 0) }}</strong>
+                                        {% if item.total_wip > 0 %}
                                         <i class="fas fa-tools ms-1" title="In production"></i>
                                         {% endif %}
                                     </td>

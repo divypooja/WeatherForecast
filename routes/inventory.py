@@ -58,7 +58,7 @@ def multi_state_view():
     
     # Calculate totals
     total_raw = sum(item.qty_raw or 0 for item in items)
-    total_wip = sum(item.qty_wip or 0 for item in items)
+    total_wip = sum(item.total_wip or 0 for item in items)
     total_finished = sum(item.qty_finished or 0 for item in items)
     total_scrap = sum(item.qty_scrap or 0 for item in items)
     
