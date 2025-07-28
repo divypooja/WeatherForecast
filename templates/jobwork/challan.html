@@ -231,7 +231,7 @@
                         <tr>
                             <td>1</td>
                             <td>{{ job.item.name }}</td>
-                            <td>{{ job.item.code or 'ITEM-' + job.item.id|string.zfill(4) }}</td>
+                            <td>{{ job.item.code or 'ITEM-' + ('%04d'|format(job.item.id)) }}</td>
                             <td>{{ job.quantity_sent }}</td>
                             <td>{{ job.item.unit_of_measure }}</td>
                             <td>{{ job.item.unit_of_measure }}</td>
@@ -243,7 +243,7 @@
                                 <tr>
                                     <td>{{ loop.index + 1 }}</td>
                                     <td>{{ process.output_item.name }}</td>
-                                    <td>{{ process.output_item.code or 'ITEM-' + process.output_item.id|string.zfill(4) }}</td>
+                                    <td>{{ process.output_item.code or 'ITEM-' + ('%04d'|format(process.output_item.id)) }}</td>
                                     <td>-</td>
                                     <td>{{ process.output_item.unit_of_measure }}</td>
                                     <td>Output</td>
