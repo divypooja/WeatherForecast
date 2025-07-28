@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}Add Job Work - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-tools"></i> Add Job Work</h1>
+            <p class="text-muted">Create a new job work order</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Job Works
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-plus-circle"></i> Job Work Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="jobWorkForm">
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary border-bottom pb-2 mb-3">
+                                    <i class="fas fa-info-circle"></i> Basic Information
+                                </h6>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Job Number</label>
+                                <input type="text" class="form-control" id="job_number" name="job_number" readonly>
+                                <small class="text-muted">Job number will be automatically generated</small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Work Type</label>
+                                <select class="form-select" id="work_type" name="work_type" required>
+                                    <option value="">Select Work Type</option>
+                                    <option value="in_house">In-House</option>
+                                    <option value="outsourced">Outsourced</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Item</label>
+                                <select class="form-select" id="item_id" name="item_id" required>
+                                    <option value="">Select Item</option>
+                                    {% for item in items %}
+                                    <option value="{{ item.id }}">{{ item.code }} - {{ item.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Process</label>
+                                <select class="form-select" id="process" name="process" required>
+                                    <option value="">Select Process</option>
+                                    <option value="Cutting">Cutting</option>
+                                    <option value="Bending">Bending</option>
+                                    <option value="Welding">Welding</option>
+                                    <option value="Zinc">Zinc Plating</option>
+                                    <option value="Painting">Painting</option>
+                                    <option value="Assembly">Assembly</option>
+                                    <option value="Machining">Machining</option>
+                                    <option value="Polishing">Polishing</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Customer Name (Outsourced only) -->
+                        <div class="row mb-4" id="customer_section" style="display: none;">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Customer Name</label>
+                                <select class="form-select" id="customer_name" name="customer_name">
+                                    <option value="">Select Customer</option>
+                                    {% for supplier in suppliers %}
+                                    <option value="{{ supplier.name }}">{{ supplier.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Rate per Unit</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    <input type="number" class="form-control" id="rate_per_unit" name="rate_per_unit" step="0.01" min="0">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Department (In-House only) -->
+                        <div class="row mb-4" id="department_section" style="display: none;">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Department</label>
+                                <select class="form-select" id="department" name="department">
+                                    <option value="">Select Department</option>
+                                    {% for dept in departments %}
+                                    <option value="{{ dept.name }}">{{ dept.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Quantity Sent</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="quantity_sent" name="quantity_sent" step="0.01" min="0" required>
+                                    <span class="input-group-text">pcs</span>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Sent Date</label>
+                                <input type="date" class="form-control" id="sent_date" name="sent_date" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Expected Return Date</label>
+                                <input type="date" class="form-control" id="expected_return" name="expected_return">
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-12 mb-3">
+                                <label class="form-label">Notes</label>
+                                <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Additional notes or instructions"></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-secondary">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> Create Job Work
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Generate job number when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Set today's date as default
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('sent_date').value = today;
+    
+    // Generate job number
+    generateJobNumber();
+});
+
+// Show/hide fields based on work type
+document.getElementById('work_type').addEventListener('change', function() {
+    const workType = this.value;
+    const customerSection = document.getElementById('customer_section');
+    const departmentSection = document.getElementById('department_section');
+    const customerName = document.getElementById('customer_name');
+    const ratePerUnit = document.getElementById('rate_per_unit');
+    const department = document.getElementById('department');
+    
+    if (workType === 'outsourced') {
+        customerSection.style.display = 'block';
+        departmentSection.style.display = 'none';
+        customerName.required = true;
+        ratePerUnit.required = true;
+        department.required = false;
+    } else if (workType === 'in_house') {
+        customerSection.style.display = 'none';
+        departmentSection.style.display = 'block';
+        customerName.required = false;
+        ratePerUnit.required = false;
+        department.required = true;
+        // Set rate to 0 for in-house work
+        ratePerUnit.value = 0;
+    } else {
+        customerSection.style.display = 'none';
+        departmentSection.style.display = 'none';
+        customerName.required = false;
+        ratePerUnit.required = false;
+        department.required = false;
+    }
+});
+
+function generateJobNumber() {
+    fetch('/api/generate-job-number')
+        .then(response => response.json())
+        .then(data => {
+            if (data.job_number) {
+                document.getElementById('job_number').value = data.job_number;
+            }
+        })
+        .catch(error => {
+            console.error('Error generating job number:', error);
+        });
+}
+</script>
+{% endblock %}
