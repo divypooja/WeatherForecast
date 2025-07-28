@@ -6,13 +6,21 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (July 27, 2025)
 
-### WIP Breakdown Multi-Process Output Display Fix (Latest - July 28, 2025)
+### Multi-Process Job Work Quantity Calculation Fix (Latest - July 28, 2025)
+- **Critical Calculation Fix**: Resolved negative pending quantity issue (-499.0) for multi-process jobs by fixing pending_quantity and completion_percentage calculations
+- **Smart Multi-Process Logic**: Updated JobWork model to calculate pending quantities based on expected output vs received output rather than input vs output
+- **Accurate Progress Tracking**: Multi-process jobs now show correct completion percentages based on total expected output (1000 units) vs received (500 units) = 50%
+- **Data Consistency**: Fixed JOB-2025-0008 to show correct values: 500 Units received, 500 Units pending (instead of -499.0 Units pending)
+- **Universal Application**: Fixed calculations apply to both 'multi_process' and 'unified' work types with fallback to standard calculation for regular jobs
+- **Manufacturing Intelligence**: System now properly handles material transformation ratios (1 Ms sheet → 1000 Mounted Plates) in all calculations
+- **UI Navigation Cleanup**: Removed "Material Inspection (Legacy)" from sidebar navigation as it's no longer required with unified GRN workflow
+
+### WIP Breakdown Multi-Process Output Display Fix (July 28, 2025)
 - **Multi-Process Output Visibility**: Fixed WIP breakdown table to display expected output quantities for ALL processes regardless of current WIP distribution
 - **Template Logic Separation**: Separated WIP quantity display logic from output quantity display logic ensuring complete process visibility
 - **Universal Process Coverage**: Applied fix to all 8 manufacturing processes (Cutting, Bending, Welding, Zinc, Painting, Assembly, Machining, Polishing)
 - **Sequential Flow Understanding**: System correctly shows material flow where Cutting WIP (1.0) will produce outputs for both Cutting and subsequent Zinc processes
 - **Enhanced Manufacturing Visibility**: WIP breakdown now shows expected transformations even when no current WIP exists in specific process columns
-- **UI Navigation Cleanup**: Removed "Material Inspection (Legacy)" from sidebar navigation as it's no longer required with unified GRN workflow
 
 ### Process Information Display Enhancement (July 28, 2025)
 - **Output Products Display**: Added comprehensive output product information to Process Information section in job work detail pages
