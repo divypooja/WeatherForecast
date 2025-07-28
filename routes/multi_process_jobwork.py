@@ -68,6 +68,15 @@ def add_multi_process_job():
     """Create a new multi-process job work"""
     form = MultiProcessJobWorkForm()
     
+    # Get all items for output product dropdowns
+    all_items = Item.query.order_by(Item.name).all()
+    items_json = json.dumps([{
+        'id': item.id,
+        'code': item.code,
+        'name': item.name,
+        'unit_of_measure': item.unit_of_measure
+    } for item in all_items])
+    
     if request.method == 'POST':
         # Debug: Print form data and validation errors
         print("Form data received:", request.form)
@@ -242,7 +251,7 @@ def add_multi_process_job():
             import traceback
             traceback.print_exc()
     
-    return render_template('multi_process_jobwork/form.html', form=form, title='Add Multi-Process Job Work')
+    return render_template('multi_process_jobwork/form.html', form=form, title='Add Multi-Process Job Work', items_json=items_json)
 
 
 @multi_process_jobwork_bp.route('/detail/<int:id>')
