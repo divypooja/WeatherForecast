@@ -31,8 +31,35 @@ def process_dashboard():
 @live_status_bp.route('/wip-breakdown')
 @login_required  
 def wip_breakdown():
-    """Show WIP breakdown by process across all items"""
+    """Show WIP breakdown by process across all items with output quantities"""
     items = Item.query.all()
+    
+    # Get job work processes with output information for WIP items
+    from models import JobWorkProcess, JobWork
+    wip_processes = {}  # item_id -> {process_name -> [output_info]}
+    
+    active_processes = JobWorkProcess.query.join(JobWork).filter(
+        JobWork.status.in_(['sent', 'partial_received'])
+    ).all()
+    
+    for process in active_processes:
+        job_work = process.job_work
+        input_item_id = job_work.item_id
+        
+        if input_item_id not in wip_processes:
+            wip_processes[input_item_id] = {}
+        
+        process_name = process.process_name.lower()
+        if process_name not in wip_processes[input_item_id]:
+            wip_processes[input_item_id][process_name] = []
+        
+        # Add output information
+        output_info = {
+            'output_item': process.output_item,
+            'output_quantity': process.output_quantity,
+            'job_number': job_work.job_number
+        }
+        wip_processes[input_item_id][process_name].append(output_info)
     
     # Calculate process totals
     process_totals = {
@@ -52,7 +79,8 @@ def wip_breakdown():
     return render_template('inventory/wip_breakdown.html',
                          items=items, 
                          process_totals=process_totals,
-                         total_wip_items=total_wip_items)
+                         total_wip_items=total_wip_items,
+                         wip_processes=wip_processes)
 
 @live_status_bp.route('/update-process-status', methods=['POST'])
 @login_required
