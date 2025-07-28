@@ -43,7 +43,7 @@
                             
                             <div class="col-md-4 mb-3">
                                 {{ form.item_id.label(class="form-label") }}
-                                {{ form.item_id(class="form-select", id="item_select") }}
+                                {{ form.item_id(class="form-select") }}
                                 {% if form.item_id.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.item_id.errors %}
@@ -188,7 +188,7 @@ let processCounter = 0;
 
 // Function to check inventory stock
 function checkInventoryStock() {
-    const itemSelect = document.getElementById('item_select'); // Fixed ID
+    const itemSelect = document.getElementById('item_id');
     const quantityInput = document.getElementById('total_quantity');
     const stockInfo = document.getElementById('stock-info');
     
@@ -199,7 +199,7 @@ function checkInventoryStock() {
     
     const quantity = parseFloat(quantityInput.value) || 0;
     
-    // Fetch item stock information with BOM data
+    // Fetch item stock information
     fetch(`/inventory/api/item-stock/${itemSelect.value}`)
         .then(response => response.json())
         .then(data => {
@@ -220,16 +220,6 @@ function checkInventoryStock() {
                     message += `<br><small class="text-muted">WIP: ${wipStock} ${unit} (in process)</small>`;
                 }
                 
-                // Add BOM information if available
-                if (data.bom && data.bom.has_bom) {
-                    const bomInfo = data.bom;
-                    message += `<br><div class="mt-2 p-2 bg-light border rounded">
-                        <strong><i class="fas fa-sitemap"></i> BOM Available:</strong> 
-                        ${bomInfo.material_count} materials, Output: ${bomInfo.output_quantity} units
-                        <br><small class="text-success">Cost: ₹${bomInfo.total_cost_per_unit.toFixed(2)} per unit</small>
-                    </div>`;
-                }
-                
                 if (quantity > rawStock) {
                     alertClass = 'alert-danger';
                     icon = 'fas fa-exclamation-triangle';
@@ -247,7 +237,6 @@ function checkInventoryStock() {
             }
         })
         .catch(error => {
-            console.error('Stock check error:', error);
             stockInfo.innerHTML = '<div class="alert alert-danger"><i class="fas fa-times-circle"></i> Error checking stock</div>';
         });
 }
@@ -316,22 +305,16 @@ function addProcess() {
                     
                     <div class="col-md-8 mb-3">
                         <label class="form-label">Output Product</label>
-                        <div class="input-group">
-                            <select class="form-select output-product-select" onchange="onOutputProductChange(${processCounter})">
-                                <option value="">Select Output Product</option>
-                                <!-- Options will be populated dynamically -->
-                            </select>
-                            <button type="button" class="btn btn-outline-success load-bom-btn" onclick="loadBOMForProcess(${processCounter})" disabled>
-                                <i class="fas fa-list-ul"></i> Load BOM
-                            </button>
-                        </div>
-                        <small class="text-muted">Select output product to auto-calculate input quantities from BOM</small>
-                        <div class="bom-info-container" id="bom-info-${processCounter}"></div>
+                        <select class="form-select output-product-select">
+                            <option value="">Select Output Product</option>
+                            <!-- Options will be populated dynamically -->
+                        </select>
+                        <small class="text-muted">Select the finished product that will be created from this process</small>
                     </div>
                     
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Output Quantity</label>
-                        <input type="number" class="form-control output-quantity" step="0.01" min="0" value="0.0" placeholder="Expected output" data-process-id="${processCounter}">
+                        <input type="number" class="form-control output-quantity" step="0.01" min="0" value="0.0" placeholder="Expected output">
                         <small class="text-muted">How many units expected</small>
                     </div>
                 </div>
@@ -412,24 +395,13 @@ function addProcess() {
     // Populate customer dropdown for new process
     populateCustomerDropdown(processCounter);
     
-    // Populate output product dropdown
+    updateCostSummary();
+    
+    // Populate output product dropdown for this process
     populateOutputProductDropdown(processCounter);
     
     // Populate team lead dropdown for this process
     populateTeamLeadDropdown(processCounter);
-    
-    // Add event listener for output quantity changes to trigger BOM calculation
-    setTimeout(() => {
-        const outputQuantityInput = document.querySelector(`#process-${processCounter} .output-quantity`);
-        if (outputQuantityInput) {
-            outputQuantityInput.addEventListener('input', function() {
-                const processId = this.getAttribute('data-process-id');
-                calculateInputQuantityFromBOM(processId);
-            });
-        }
-    }, 100); // Small delay to ensure DOM is ready
-    
-    updateCostSummary();
 }
 
 // Function to populate output product dropdown
@@ -497,131 +469,6 @@ function removeProcess(processId) {
     updateCostSummary();
 }
 
-// Function to load BOM data for a process
-function loadBOMForProcess(processId) {
-    const outputSelect = document.querySelector(`#process-${processId} .output-product-select`);
-    const bomInfoContainer = document.getElementById(`bom-info-${processId}`);
-    
-    if (!outputSelect || !outputSelect.value) {
-        alert('Please select an output product first');
-        return;
-    }
-    
-    bomInfoContainer.innerHTML = '<div class="text-info"><i class="fas fa-spinner fa-spin"></i> Loading BOM data...</div>';
-    
-    // Fetch BOM data from API
-    fetch(`/jobwork/multi-process/api/item-bom/${outputSelect.value}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.has_bom) {
-                // Store BOM data for calculations
-                window.bomData = window.bomData || {};
-                window.bomData[processId] = data;
-                
-                // Display BOM information
-                bomInfoContainer.innerHTML = `
-                    <div class="mt-2 p-2 bg-light border rounded">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <strong><i class="fas fa-sitemap text-primary"></i> BOM Available</strong>
-                            <button type="button" class="btn btn-sm btn-success" onclick="applyBOMData(${processId})">
-                                <i class="fas fa-magic"></i> Apply BOM
-                            </button>
-                        </div>
-                        <small class="text-muted">
-                            ${data.material_count} materials • Output: ${data.output_quantity} units • Cost: ₹${data.total_cost_per_unit.toFixed(2)}/unit
-                        </small>
-                        <div class="mt-1">
-                            <small class="text-success">Materials Required: ${data.total_material_required} units</small>
-                        </div>
-                    </div>
-                `;
-                
-            } else {
-                bomInfoContainer.innerHTML = `
-                    <div class="mt-2 p-2 bg-warning border rounded">
-                        <small><i class="fas fa-exclamation-triangle"></i> No BOM found for this product</small>
-                    </div>
-                `;
-            }
-        })
-        .catch(error => {
-            console.error('BOM fetch error:', error);
-            bomInfoContainer.innerHTML = `
-                <div class="mt-2 p-2 bg-danger text-white border rounded">
-                    <small><i class="fas fa-times"></i> Error loading BOM data</small>
-                </div>
-            `;
-        });
-}
-
-// Function to apply BOM data to process fields
-function applyBOMData(processId) {
-    const bomData = window.bomData?.[processId];
-    if (!bomData) return;
-    
-    const rateInput = document.querySelector(`#process-${processId} .rate-per-unit`);
-    
-    // Apply BOM rate
-    if (rateInput && bomData.total_cost_per_unit) {
-        rateInput.value = bomData.total_cost_per_unit.toFixed(2);
-        
-        // Show success notification
-        const bomInfoContainer = document.getElementById(`bom-info-${processId}`);
-        bomInfoContainer.innerHTML += `
-            <div class="alert alert-success alert-dismissible fade show mt-2" role="alert">
-                <i class="fas fa-check"></i> BOM rate applied: ₹${bomData.total_cost_per_unit.toFixed(2)}/unit
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        `;
-        
-        // Auto-dismiss after 3 seconds
-        setTimeout(() => {
-            const alert = bomInfoContainer.querySelector('.alert');
-            if (alert) alert.remove();
-        }, 3000);
-    }
-    
-    // Trigger input quantity calculation if output quantity is set
-    calculateInputQuantityFromBOM(processId);
-    updateCostSummary();
-}
-
-// Function to calculate input quantity based on BOM and output quantity
-function calculateInputQuantityFromBOM(processId) {
-    const bomData = window.bomData?.[processId];
-    if (!bomData) return;
-    
-    const outputQuantityInput = document.querySelector(`#process-${processId} .output-quantity`);
-    const inputQuantityInput = document.querySelector(`#process-${processId} .quantity-input`);
-    
-    if (!outputQuantityInput || !inputQuantityInput) return;
-    
-    const outputQuantity = parseFloat(outputQuantityInput.value) || 0;
-    
-    if (outputQuantity > 0) {
-        // Calculate input quantity: (Output Qty ÷ BOM Output Qty) × Total BOM Materials
-        const bomOutputQty = bomData.output_quantity || 1.0;
-        const totalMaterialRequired = bomData.total_material_required || 1.0;
-        
-        const inputQuantity = (outputQuantity / bomOutputQty) * totalMaterialRequired;
-        
-        inputQuantityInput.value = inputQuantity.toFixed(2);
-        
-        // Show calculation info
-        const bomInfoContainer = document.getElementById(`bom-info-${processId}`);
-        const calcInfo = bomInfoContainer.querySelector('.calculation-info');
-        if (calcInfo) calcInfo.remove();
-        
-        bomInfoContainer.innerHTML += `
-            <div class="calculation-info mt-1 p-1 bg-info text-white rounded">
-                <small><i class="fas fa-calculator"></i> Auto-calculated: ${outputQuantity} ÷ ${bomOutputQty} × ${totalMaterialRequired} = ${inputQuantity.toFixed(2)} input units</small>
-            </div>
-        `;
-        
-        updateCostSummary();
-    }
-}
-
 // Function to toggle fields based on work type
 function toggleProcessFields(processId) {
     const processCard = document.getElementById(`process-${processId}`);
@@ -676,40 +523,6 @@ function populateCustomerDropdown(processId) {
         option.textContent = customer;
         customerSelect.appendChild(option);
     });
-}
-
-// Function to populate output product dropdown
-function populateOutputProductDropdown(processId) {
-    const processCard = document.getElementById(`process-${processId}`);
-    const outputSelect = processCard.querySelector('.output-product-select');
-    
-    // Use server-side data passed from the route
-    const itemsData = {{ items_json|safe }};
-    
-    if (itemsData && itemsData.length > 0) {
-        itemsData.forEach(item => {
-            const option = document.createElement('option');
-            option.value = item.id;
-            option.textContent = `${item.code} - ${item.name}`;
-            outputSelect.appendChild(option);
-        });
-        console.log(`Loaded ${itemsData.length} items for process ${processId}`);
-    } else {
-        console.error('No items data available from server');
-        // Fallback: Add some common products for testing
-        const fallbackItems = [
-            {id: 1, code: 'MP001', name: 'Mounted Plate'},
-            {id: 2, code: 'BP002', name: 'Base Plate'},
-            {id: 3, code: 'CW003', name: 'Castor Wheel'},
-            {id: 4, code: 'BR004', name: 'Bracket'}
-        ];
-        fallbackItems.forEach(item => {
-            const option = document.createElement('option');
-            option.value = item.id;
-            option.textContent = `${item.code} - ${item.name}`;
-            outputSelect.appendChild(option);
-        });
-    }
 }
 
 // Function to update cost summary
@@ -802,302 +615,6 @@ document.getElementById('multiProcessForm').addEventListener('submit', function(
     // Submit the form normally (this will include CSRF token)
     this.submit();
 });
-
-// Function to calculate input quantity when output quantity changes
-function calculateInputQuantityFromBOM(processId) {
-    const processCard = document.getElementById(`process-${processId}`);
-    const bomData = processBOMData[processId];
-    
-    if (!bomData || !bomData.materials) {
-        console.log(`Process ${processId}: No BOM data available for calculation`);
-        return; // No BOM data available
-    }
-    
-    const outputQuantityInput = processCard.querySelector('.output-quantity');
-    const quantityInput = processCard.querySelector('.quantity-input');
-    const outputQuantity = parseFloat(outputQuantityInput.value) || 0;
-    
-    console.log(`Process ${processId}: Output quantity changed to ${outputQuantity}`);
-    
-    if (outputQuantity > 0 && bomData.materials.length > 0) {
-        // Use BOM output quantity as factor
-        const bomOutputQuantity = bomData.output_quantity || 1.0;
-        const bomFactor = outputQuantity / bomOutputQuantity;
-        
-        // Calculate total input quantity needed (sum of all BOM materials × factor)
-        let totalInputQuantity = 0;
-        bomData.materials.forEach(material => {
-            totalInputQuantity += material.quantity_required * bomFactor;
-        });
-        
-        quantityInput.value = totalInputQuantity.toFixed(2);
-        
-        // Update cost summary
-        updateCostSummary();
-        
-        console.log(`Process ${processId}: Calculated input quantity ${totalInputQuantity.toFixed(2)} for output quantity ${outputQuantity} (BOM output qty: ${bomOutputQuantity}, factor: ${bomFactor})`);
-    } else if (outputQuantity === 0) {
-        quantityInput.value = "0.00";
-        updateCostSummary();
-        console.log(`Process ${processId}: Reset input quantity to 0`);
-    }
-}
-
-// Global event listener for output quantity changes
-document.addEventListener('input', function(e) {
-    if (e.target && e.target.classList.contains('output-quantity')) {
-        const processId = e.target.getAttribute('data-process-id');
-        if (processId) {
-            calculateInputQuantityFromBOM(processId);
-        }
-    }
-});
-
-// BOM Loading Functionality
-let processBOMData = {}; // Store BOM data per process
-
-function onOutputProductChange(processId) {
-    const processCard = document.getElementById(`process-${processId}`);
-    const outputSelect = processCard.querySelector('.output-product-select');
-    const bomBtn = processCard.querySelector('.load-bom-btn');
-    const bomInfo = processCard.querySelector('.bom-info-container');
-    
-    if (outputSelect.value) {
-        bomBtn.disabled = false;
-        bomInfo.innerHTML = '';
-    } else {
-        bomBtn.disabled = true;
-        bomInfo.innerHTML = '';
-        delete processBOMData[processId];
-    }
-}
-
-function loadBOMForProcess(processId) {
-    const processCard = document.getElementById(`process-${processId}`);
-    const outputSelect = processCard.querySelector('.output-product-select');
-    const bomBtn = processCard.querySelector('.load-bom-btn');
-    const bomInfo = processCard.querySelector('.bom-info-container');
-    
-    const outputItemId = outputSelect.value;
-    
-    if (!outputItemId) {
-        alert('Please select an output product first');
-        return;
-    }
-    
-    // Show loading state
-    bomBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
-    bomBtn.disabled = true;
-    bomInfo.innerHTML = '';
-    
-    // Fetch BOM data for output product
-    fetch(`/jobwork/multi-process/api/item-bom/${outputItemId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.has_bom) {
-                processBOMData[processId] = data;
-                displayProcessBOMInfo(processId, data);
-            } else {
-                bomInfo.innerHTML = `
-                    <div class="alert alert-warning alert-sm mt-2">
-                        <i class="fas fa-exclamation-triangle"></i> ${data.message || 'No BOM found for this output product'}
-                    </div>`;
-            }
-        })
-        .catch(error => {
-            console.error('Error loading BOM:', error);
-            bomInfo.innerHTML = `
-                <div class="alert alert-danger alert-sm mt-2">
-                    <i class="fas fa-exclamation-circle"></i> Error loading BOM data
-                </div>`;
-        })
-        .finally(() => {
-            bomBtn.innerHTML = '<i class="fas fa-list-ul"></i> Load BOM';
-            bomBtn.disabled = false;
-        });
-}
-
-function displayProcessBOMInfo(processId, bomData) {
-    const bomInfo = document.querySelector(`#bom-info-${processId}`);
-    bomInfo.innerHTML = `
-        <div class="card border-success mt-2">
-            <div class="card-header bg-light text-success py-2">
-                <h6 class="mb-0">
-                    <i class="fas fa-list-ul"></i> BOM Found - ${bomData.item_name} (v${bomData.bom_version})
-                </h6>
-            </div>
-            <div class="card-body py-2">
-                <div class="row">
-                    <div class="col-6">
-                        <small><strong>Total Cost:</strong> ₹${bomData.total_cost_per_unit}/unit</small><br>
-                        <small><strong>Material Cost:</strong> ₹${bomData.material_cost}</small><br>
-                        <small><strong>Labor Cost:</strong> ₹${bomData.labor_cost}</small>
-                    </div>
-                    <div class="col-6">
-                        <small><strong>Labor Hours:</strong> ${bomData.labor_hours} hrs</small><br>
-                        <small><strong>Labor Rate:</strong> ₹${bomData.labor_rate_per_hour}/hr</small><br>
-                        <small><strong>Materials:</strong> ${bomData.materials.length} items</small>
-                    </div>
-                </div>
-                <div class="mt-2">
-                    <button type="button" class="btn btn-success btn-sm" onclick="applyBOMToProcess(${processId})">
-                        <i class="fas fa-magic"></i> Apply BOM Data
-                    </button>
-                    <button type="button" class="btn btn-info btn-sm" onclick="showProcessBOMDetails(${processId})">
-                        <i class="fas fa-eye"></i> View Details
-                    </button>
-                </div>
-            </div>
-        </div>`;
-}
-
-function showBOMLoadOptions(bomData) {
-    // This function could show modal with BOM breakdown, for now just show success message
-    console.log('BOM Data Loaded:', bomData);
-}
-
-function applyBOMToProcess(processId) {
-    const bomData = processBOMData[processId];
-    if (!bomData) {
-        alert('No BOM data available for this process. Please load BOM first.');
-        return;
-    }
-    
-    const processCard = document.getElementById(`process-${processId}`);
-    const rateInput = processCard.querySelector('.rate-per-unit');
-    const quantityInput = processCard.querySelector('.quantity-input');
-    const outputQuantityInput = processCard.querySelector('.output-quantity');
-    
-    // Apply BOM rate
-    if (rateInput && bomData.total_cost_per_unit > 0) {
-        rateInput.value = bomData.total_cost_per_unit.toFixed(2);
-    }
-    
-    // Calculate input quantity based on output quantity and BOM factor
-    const outputQuantity = parseFloat(outputQuantityInput.value) || 0;
-    if (outputQuantity > 0 && bomData.materials && bomData.materials.length > 0) {
-        // Use BOM output quantity as factor - if BOM produces 2 units, but we want 10 units,
-        // we need (10 ÷ 2) = 5 times the BOM material quantities
-        const bomOutputQuantity = bomData.output_quantity || 1.0;
-        const bomFactor = outputQuantity / bomOutputQuantity;
-        
-        // Calculate total input quantity needed (sum of all BOM materials × factor)
-        let totalInputQuantity = 0;
-        bomData.materials.forEach(material => {
-            totalInputQuantity += material.quantity_required * bomFactor;
-        });
-        
-        quantityInput.value = totalInputQuantity.toFixed(2);
-    }
-    
-    // Update cost summary
-    updateCostSummary();
-    
-    // Show success message
-    const bomInfo = document.querySelector(`#bom-info-${processId}`);
-    const successAlert = document.createElement('div');
-    successAlert.className = 'alert alert-success alert-sm mt-2';
-    successAlert.innerHTML = `
-        <i class="fas fa-check-circle"></i> BOM data applied! Rate: ₹${bomData.total_cost_per_unit}/unit, Input qty calculated from output qty
-    `;
-    bomInfo.appendChild(successAlert);
-    
-    // Remove success message after 4 seconds
-    setTimeout(() => {
-        if (successAlert.parentNode) {
-            successAlert.remove();
-        }
-    }, 4000);
-}
-
-function showProcessBOMDetails(processId) {
-    const bomData = processBOMData[processId];
-    if (!bomData || !bomData.materials) {
-        alert('No BOM details available for this process');
-        return;
-    }
-    
-    let materialsTable = `
-        <div class="modal fade" id="bomDetailsModal-${processId}" tabindex="-1">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">BOM Details - ${bomData.item_name} (Process ${processId})</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <h6>Cost Breakdown:</h6>
-                                <ul class="list-unstyled">
-                                    <li><strong>Material Cost:</strong> ₹${bomData.material_cost}</li>
-                                    <li><strong>Labor Cost:</strong> ₹${bomData.labor_cost}</li>
-                                    <li><strong>Overhead Cost:</strong> ₹${bomData.overhead_cost}</li>
-                                    <li><strong>Freight Cost:</strong> ₹${bomData.freight_cost}</li>
-                                    <li><strong>Markup (${bomData.markup_percentage}%):</strong> ₹${bomData.markup_amount}</li>
-                                    <li class="border-top pt-2"><strong>Total Cost:</strong> ₹${bomData.total_cost_per_unit}</li>
-                                </ul>
-                            </div>
-                            <div class="col-md-6">
-                                <h6>Labor Information:</h6>
-                                <ul class="list-unstyled">
-                                    <li><strong>Labor Hours:</strong> ${bomData.labor_hours} hrs</li>
-                                    <li><strong>Labor Rate:</strong> ₹${bomData.labor_rate_per_hour}/hr</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <h6>Materials Required:</h6>
-                        <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Item Code</th>
-                                        <th>Item Name</th>
-                                        <th>Quantity</th>
-                                        <th>Unit</th>
-                                        <th>Unit Cost</th>
-                                        <th>Total Cost</th>
-                                    </tr>
-                                </thead>
-                                <tbody>`;
-    
-    bomData.materials.forEach(material => {
-        materialsTable += `
-            <tr>
-                <td>${material.item_code}</td>
-                <td>${material.item_name}</td>
-                <td>${material.quantity_required}</td>
-                <td>${material.unit}</td>
-                <td>₹${material.unit_cost}</td>
-                <td>₹${material.total_cost}</td>
-            </tr>`;
-    });
-    
-    materialsTable += `
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    </div>
-                </div>
-            </div>
-        </div>`;
-    
-    // Remove existing modal if any
-    const existingModal = document.getElementById(`bomDetailsModal-${processId}`);
-    if (existingModal) {
-        existingModal.remove();
-    }
-    
-    // Add modal to body
-    document.body.insertAdjacentHTML('beforeend', materialsTable);
-    
-    // Show modal
-    const modal = new bootstrap.Modal(document.getElementById(`bomDetailsModal-${processId}`));
-    modal.show();
-}
 
 // Initialize with one process
 document.addEventListener('DOMContentLoaded', function() {

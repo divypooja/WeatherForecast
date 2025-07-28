@@ -6,21 +6,7 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (July 27, 2025)
 
-### Smart BOM Lookup Integration for Process-Based Manufacturing (Latest - July 28, 2025)
-- **Output Product-Triggered BOM Lookup**: Revolutionary BOM lookup system triggered by Output Product selection in each process rather than main item selection
-- **Intelligent Input Quantity Calculation**: When Output Quantity is specified, system automatically calculates required Input Quantity based on BOM factors and material transformation ratios
-- **BOM Output Quantity Field**: Added critical "Output Quantity" field to BOM forms specifying how many finished units the BOM produces, enabling accurate material consumption calculations
-- **Process-Specific BOM Integration**: Each manufacturing process can load BOM data for its specific output product, enabling multi-product job works with different BOMs per process
-- **Auto-Rate Population**: BOM lookup automatically populates process rates (₹/unit) from comprehensive BOM cost calculations including material, labor, overhead, freight, and markup costs
-- **Enhanced BOM API Endpoint**: Created `/jobwork/multi-process/api/item-bom/<item_id>` endpoint providing complete BOM breakdown with cost analysis and material requirements
-- **Smart Material Calculation**: Input quantity = (Output Quantity ÷ BOM Output Quantity) × Total BOM Material Requirements for precise material planning
-- **Dynamic Process Cost Management**: Real-time cost summary updates as BOM rates are applied to processes, ensuring accurate job work costing
-- **Visual BOM Integration**: Each process displays BOM information card with cost breakdown, material count, and quick actions for applying BOM data
-- **Items API Enhancement**: Added `/inventory/api/items` endpoint for populating output product dropdowns with all active inventory items
-- **Database Schema Update**: Added output_quantity column to boms table with proper migration and form integration
-- **Workflow Logic Enhancement**: BOM lookup follows manufacturing logic: Output Product → Load BOM → Calculate Input Quantity → Apply Rates, matching real-world production planning
-
-### WIP Breakdown Multi-Process Output Display Fix (July 28, 2025)
+### WIP Breakdown Multi-Process Output Display Fix (Latest - July 28, 2025)
 - **Multi-Process Output Visibility**: Fixed WIP breakdown table to display expected output quantities for ALL processes regardless of current WIP distribution
 - **Template Logic Separation**: Separated WIP quantity display logic from output quantity display logic ensuring complete process visibility
 - **Universal Process Coverage**: Applied fix to all 8 manufacturing processes (Cutting, Bending, Welding, Zinc, Painting, Assembly, Machining, Polishing)
