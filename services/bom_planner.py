@@ -35,7 +35,7 @@ class BOMPlanner:
                 return {'error': 'Item not found'}
             
             # Get BOM for the item
-            bom = BOM.query.filter_by(item_id=item_id, is_active=True).first()
+            bom = BOM.query.filter_by(product_id=item_id, is_active=True).first()
             if not bom:
                 return {
                     'item': item.name,
@@ -50,9 +50,9 @@ class BOMPlanner:
             shortages = []
             total_shortage_value = 0
             
-            for bom_item in bom.bom_items:
+            for bom_item in bom.items:
                 material = bom_item.item
-                required_qty = bom_item.quantity * planned_quantity
+                required_qty = bom_item.quantity_required * planned_quantity
                 
                 # Convert BOM quantity to inventory UOM if needed
                 if bom_item.unit != material.unit_of_measure:
@@ -62,8 +62,8 @@ class BOMPlanner:
                     if converted_qty:
                         required_qty = converted_qty
                 
-                # Check availability
-                available_qty = material.available_stock
+                # Check availability  
+                available_qty = material.total_stock or 0
                 shortage_qty = max(0, required_qty - available_qty)
                 
                 requirement = {
@@ -276,10 +276,10 @@ class BOMPlanner:
             material_demand = defaultdict(float)
             
             for production in planned_productions:
-                bom = BOM.query.filter_by(item_id=production.item_id, is_active=True).first()
+                bom = BOM.query.filter_by(product_id=production.item_id, is_active=True).first()
                 if bom:
-                    for bom_item in bom.bom_items:
-                        required_qty = bom_item.quantity * production.planned_quantity
+                    for bom_item in bom.items:
+                        required_qty = bom_item.quantity_required * production.planned_quantity
                         material_demand[bom_item.item_id] += required_qty
             
             # Generate forecast report
