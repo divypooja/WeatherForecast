@@ -186,6 +186,12 @@
                     <i class="fas fa-clipboard-check text-warning"></i>
                     Admin Approvals
                 </a>
+                
+                <!-- TEST: Manufacturing Intelligence should appear here -->
+                <a class="nav-link" href="/manufacturing-intelligence/dashboard" style="background-color: red; color: white; font-weight: bold;">
+                    <i class="fas fa-brain"></i>
+                    ⚡ MANUFACTURING INTELLIGENCE TEST ⚡
+                </a>
                 <a class="nav-link {{ 'active' if 'reports' in request.endpoint }}" href="{{ url_for('reports.dashboard') }}">
                     <i class="fas fa-chart-bar"></i>
                     Reports
@@ -214,11 +220,14 @@
                     <i class="fas fa-cubes"></i>
                     Packing Optimization
                 </a>
-                <a class="nav-link {{ 'active' if 'manufacturing_intelligence' in request.endpoint }}" href="{{ url_for('manufacturing_intelligence.dashboard') }}">
+                
+                <!-- Manufacturing Intelligence Section -->
+                <a class="nav-link {{ 'active' if 'manufacturing_intelligence' in request.endpoint }}" href="{{ url_for('manufacturing_intelligence.dashboard') }}" style="background-color: #f0f8ff; border: 2px solid #007bff;">
                     <i class="fas fa-brain text-success"></i>
                     <span class="fw-bold">Manufacturing Intelligence</span>
                     <span class="badge bg-success ms-2">NEW</span>
                 </a>
+                <!-- End Manufacturing Intelligence -->
 
                 <hr class="my-2">
                 
