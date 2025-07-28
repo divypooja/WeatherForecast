@@ -257,7 +257,7 @@ function addProcess() {
                 <div class="row">
                     <div class="col-md-2 mb-3">
                         <label class="form-label">Process Name</label>
-                        <select name="processes-${processCounter}-process_name" class="form-select process-name" required>
+                        <select class="form-select process-name" required>
                             <option value="">Select Process</option>
                             <option value="Zinc">Zinc</option>
                             <option value="Cutting">Cutting</option>
@@ -271,46 +271,41 @@ function addProcess() {
                     </div>
                     <div class="col-md-2 mb-3">
                         <label class="form-label">Sequence</label>
-                        <input type="number" name="processes-${processCounter}-sequence_number" class="form-control sequence-number" value="${processCounter}" min="1" required>
+                        <input type="number" class="form-control sequence-number" value="${processCounter}" min="1" required>
                     </div>
                     <div class="col-md-2 mb-3">
                         <label class="form-label">Quantity</label>
-                        <input type="number" name="processes-${processCounter}-quantity_input" class="form-control quantity-input" min="0" step="0.01" required onchange="updateCostSummary()">
+                        <input type="number" class="form-control quantity-input" min="0" step="0.01" required onchange="updateCostSummary()">
                     </div>
                     <div class="col-md-2 mb-3">
                         <label class="form-label">Scrap</label>
-                        <input type="number" name="processes-${processCounter}-expected_scrap" class="form-control expected-scrap" min="0" step="0.01" placeholder="0" onchange="updateCostSummary()">
+                        <input type="number" class="form-control expected-scrap" min="0" step="0.01" placeholder="0" onchange="updateCostSummary()">
                     </div>
                     <div class="col-md-2 mb-3">
                         <label class="form-label">Work Type</label>
-                        <select name="processes-${processCounter}-work_type" class="form-select work-type" onchange="toggleProcessFields(${processCounter})" required>
+                        <select class="form-select work-type" onchange="toggleProcessFields(${processCounter})" required>
                             <option value="outsourced">Outsourced</option>
                             <option value="in_house">In-House</option>
                         </select>
                     </div>
                     <div class="col-md-2 mb-3">
                         <label class="form-label">Rate/Unit</label>
-                        <input type="number" name="processes-${processCounter}-rate_per_unit" class="form-control rate-per-unit" min="0" step="0.01" onchange="updateCostSummary()">
+                        <input type="number" class="form-control rate-per-unit" min="0" step="0.01" onchange="updateCostSummary()">
                     </div>
                 </div>
                 
-                <!-- Output Products Section (REQUIRED FOR CALCULATIONS) -->
+                <!-- Output Products Section -->
                 <div class="row">
                     <div class="col-12 mb-3">
                         <h6 class="text-success border-bottom pb-1">
-                            <i class="fas fa-arrow-right"></i> Output Products <span class="badge bg-danger ms-2">REQUIRED</span>
-                            <small class="text-muted">(Critical for accurate quantity calculations)</small>
+                            <i class="fas fa-arrow-right"></i> Output Products
+                            <small class="text-muted">(What finished products will be created?)</small>
                         </h6>
-                        <div class="alert alert-warning">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            <strong>Important:</strong> Output product and quantity are required for accurate pending quantity calculations.
-                            <br><small>Example: 1 Ms sheet → 1000 Mounted Plates (transformation ratio needed for calculations)</small>
-                        </div>
                     </div>
                     
                     <div class="col-md-8 mb-3">
                         <label class="form-label">Output Product</label>
-                        <select name="processes-${processCounter}-output_item_id" class="form-select output-product-select">
+                        <select class="form-select output-product-select">
                             <option value="">Select Output Product</option>
                             <!-- Options will be populated dynamically -->
                         </select>
@@ -319,7 +314,7 @@ function addProcess() {
                     
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Output Quantity</label>
-                        <input type="number" name="processes-${processCounter}-output_quantity" class="form-control output-quantity" step="0.01" min="0" value="0.0" placeholder="Expected output">
+                        <input type="number" class="form-control output-quantity" step="0.01" min="0" value="0.0" placeholder="Expected output">
                         <small class="text-muted">How many units expected</small>
                     </div>
                 </div>
@@ -327,14 +322,14 @@ function addProcess() {
                 <div class="row">
                     <div class="col-md-4 mb-3 customer-field">
                         <label class="form-label">Customer/Vendor</label>
-                        <select name="processes-${processCounter}-customer_name" class="form-select customer-name">
+                        <select class="form-select customer-name">
                             <option value="">Select Customer/Vendor</option>
                             <!-- Options will be populated via JavaScript -->
                         </select>
                     </div>
                     <div class="col-md-4 mb-3 department-field" style="display: none;">
                         <label class="form-label">Department</label>
-                        <select name="processes-${processCounter}-department" class="form-select department">
+                        <select class="form-select department">
                             <option value="">Select Department</option>
                             <option value="production">Production</option>
                             <option value="assembly">Assembly</option>
@@ -346,7 +341,7 @@ function addProcess() {
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Expected Completion</label>
-                        <input type="date" name="processes-${processCounter}-expected_completion" class="form-control expected-completion">
+                        <input type="date" class="form-control expected-completion">
                     </div>
                 </div>
                 
@@ -363,7 +358,7 @@ function addProcess() {
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Team Work?</label>
                             <div class="form-check form-switch">
-                                <input name="processes-${processCounter}-is_team_work" class="form-check-input" type="checkbox" id="team-work-${processCounter}" onchange="toggleTeamFields(${processCounter})">
+                                <input class="form-check-input" type="checkbox" id="team-work-${processCounter}" onchange="toggleTeamFields(${processCounter})">
                                 <label class="form-check-label" for="team-work-${processCounter}">
                                     Enable team assignment for this process
                                 </label>
@@ -372,12 +367,12 @@ function addProcess() {
                         
                         <div class="col-md-3 mb-3 team-fields" style="display: none;">
                             <label class="form-label">Max Team Members</label>
-                            <input type="number" name="processes-${processCounter}-max_team_members" class="form-control max-team-members" min="1" max="10" value="1" placeholder="Maximum team size">
+                            <input type="number" class="form-control max-team-members" min="1" max="10" value="1" placeholder="Maximum team size">
                         </div>
                         
                         <div class="col-md-3 mb-3 team-fields" style="display: none;">
                             <label class="form-label">Team Lead</label>
-                            <select name="processes-${processCounter}-team_lead" class="form-select team-lead">
+                            <select class="form-select team-lead">
                                 <option value="">Select Team Lead</option>
                                 <!-- Options will be populated from employees -->
                             </select>
@@ -388,7 +383,7 @@ function addProcess() {
                 <div class="row">
                     <div class="col-12 mb-3">
                         <label class="form-label">Process Notes</label>
-                        <textarea name="processes-${processCounter}-notes" class="form-control process-notes" rows="2" placeholder="Specific instructions for this process"></textarea>
+                        <textarea class="form-control process-notes" rows="2" placeholder="Specific instructions for this process"></textarea>
                     </div>
                 </div>
             </div>
@@ -551,45 +546,74 @@ function updateCostSummary() {
     document.getElementById('total-cost').textContent = `₹${totalCost.toFixed(2)}`;
 }
 
-// Enhanced form validation with output product requirements
+// Function to collect all process data for form submission
 document.getElementById('multiProcessForm').addEventListener('submit', function(e) {
-    const processCards = document.querySelectorAll('.process-card');
+    e.preventDefault();
     
+    const processCards = document.querySelectorAll('.process-card');
     if (processCards.length === 0) {
         alert('Please add at least one process before submitting.');
-        e.preventDefault();
         return;
     }
     
-    // Validate all processes have required fields including output configuration
+    // Validate all processes have required fields
     let isValid = true;
     processCards.forEach((card, index) => {
         const processName = card.querySelector('.process-name').value;
         const quantity = card.querySelector('.quantity-input').value;
-        const outputProduct = card.querySelector('.output-product-select').value;
-        const outputQuantity = card.querySelector('.output-quantity').value;
         
-        // Basic validation
         if (!processName || !quantity || parseFloat(quantity) <= 0) {
             alert(`Process ${index + 1}: Please fill in process name and valid quantity.`);
             isValid = false;
             return;
         }
-        
-        // CRITICAL: Validate output product and quantity for proper calculation
-        if (!outputProduct || !outputQuantity || parseFloat(outputQuantity) <= 0) {
-            alert(`Process ${index + 1}: REQUIRED - Please select output product and enter expected output quantity.\n\nThis is needed for accurate pending quantity calculations!\n\nExample: Process creates 1000 Mounted Plates from 1 Ms sheet`);
-            isValid = false;
-            return;
-        }
     });
     
-    if (!isValid) {
-        e.preventDefault();
-        return;
-    }
+    if (!isValid) return;
     
-    // Form will submit naturally with all named fields - no custom JSON needed
+    const processesData = [];
+    
+    processCards.forEach(card => {
+        const processId = card.id.split('-')[1]; // Extract process ID from card ID
+        const teamWorkCheckbox = card.querySelector(`#team-work-${processId}`);
+        
+        const processData = {
+            process_name: card.querySelector('.process-name').value,
+            sequence_number: parseInt(card.querySelector('.sequence-number').value),
+            quantity_input: parseFloat(card.querySelector('.quantity-input').value),
+            expected_scrap: parseFloat(card.querySelector('.expected-scrap').value) || 0,
+            work_type: card.querySelector('.work-type').value,
+            customer_name: card.querySelector('.customer-name').value,
+            department: card.querySelector('.department').value,
+            rate_per_unit: parseFloat(card.querySelector('.rate-per-unit').value) || 0,
+            start_date: document.getElementById('sent_date').value,
+            expected_completion: card.querySelector('.expected-completion').value,
+            notes: '',
+            output_item_id: card.querySelector('.output-product-select').value,
+            output_quantity: parseFloat(card.querySelector('.output-quantity').value) || 0,
+            is_team_work: teamWorkCheckbox ? teamWorkCheckbox.checked : false,
+            max_team_members: parseInt(card.querySelector('.max-team-members')?.value) || 1,
+            team_lead: card.querySelector('.team-lead')?.value || ''
+        };
+        
+        processesData.push(JSON.stringify(processData));
+    });
+    
+    // Remove any existing hidden process inputs to avoid duplicates
+    const existingInputs = this.querySelectorAll('input[name="processes"]');
+    existingInputs.forEach(input => input.remove());
+    
+    // Add hidden inputs for processes data
+    processesData.forEach(processJson => {
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'processes';
+        hiddenInput.value = processJson;
+        this.appendChild(hiddenInput);
+    });
+    
+    // Submit the form normally (this will include CSRF token)
+    this.submit();
 });
 
 // Initialize with one process
