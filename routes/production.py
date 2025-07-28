@@ -200,10 +200,21 @@ def update_status(id, status):
 @login_required
 def list_bom():
     page = request.args.get('page', 1, type=int)
-    boms = BOM.query.filter_by(is_active=True).paginate(
+    status_filter = request.args.get('status', 'all', type=str)
+    
+    query = BOM.query
+    if status_filter == 'active':
+        query = query.filter_by(is_active=True)
+    elif status_filter == 'inactive':
+        query = query.filter_by(is_active=False)
+    # 'all' shows both active and inactive
+    
+    boms = query.order_by(BOM.created_at.desc()).paginate(
         page=page, per_page=20, error_out=False)
     
-    return render_template('production/bom_list.html', boms=boms)
+    return render_template('production/bom_list.html', boms=boms, status_filter=status_filter)
+
+
 
 @production_bp.route('/bom/add', methods=['GET', 'POST'])
 @login_required
@@ -351,16 +362,47 @@ def delete_bom_item(id):
     
     return redirect(url_for('production.edit_bom', id=bom_id))
 
+@production_bp.route('/bom/deactivate/<int:id>')
+@login_required
+def deactivate_bom(id):
+    bom = BOM.query.get_or_404(id)
+    bom.is_active = False
+    db.session.commit()
+    flash(f'BOM for {bom.product.name} has been deactivated successfully', 'success')
+    return redirect(url_for('production.list_bom'))
+
+@production_bp.route('/bom/activate/<int:id>')
+@login_required
+def activate_bom(id):
+    bom = BOM.query.get_or_404(id)
+    bom.is_active = True
+    db.session.commit()
+    flash(f'BOM for {bom.product.name} has been activated successfully', 'success')
+    return redirect(url_for('production.list_bom'))
+
 @production_bp.route('/bom/delete/<int:id>')
 @login_required
 def delete_bom(id):
     bom = BOM.query.get_or_404(id)
+    product_name = bom.product.name
     
-    # Set BOM as inactive instead of deleting
-    bom.is_active = False
+    # Check if BOM is being used in any production orders
+    active_productions = Production.query.filter_by(item_id=bom.product_id).filter(
+        Production.status.in_(['planned', 'in_progress'])
+    ).count()
+    
+    if active_productions > 0:
+        flash(f'Cannot delete BOM for {product_name}. It is being used in {active_productions} active production order(s). Please complete or cancel these productions first.', 'danger')
+        return redirect(url_for('production.list_bom'))
+    
+    # Delete all BOM items first (foreign key constraint)
+    BOMItem.query.filter_by(bom_id=bom.id).delete()
+    
+    # Delete the BOM
+    db.session.delete(bom)
     db.session.commit()
-    flash('BOM deactivated successfully', 'success')
     
+    flash(f'BOM for {product_name} has been permanently deleted', 'success')
     return redirect(url_for('production.list_bom'))
 
 @production_bp.route('/api/item_details/<int:item_id>')
