@@ -6,7 +6,17 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (July 27, 2025)
 
-### Multi-Process Job Work Quantity Calculation Fix (Latest - July 28, 2025)
+### Multi-Process Job Work Expected Output Configuration Enhancement (Latest - July 28, 2025)
+- **Critical Form Enhancement**: Enhanced multi-process job work form to enforce expected output product and quantity configuration for accurate calculations
+- **Mandatory Output Fields**: Added validation requiring users to specify output product and output quantity for each process preventing calculation errors
+- **Form Field Naming Fix**: Fixed JavaScript form generation to use proper name attributes matching backend expectations (processes-{index}-output_item_id, processes-{index}-output_quantity)
+- **Enhanced User Guidance**: Added prominent warning messages and REQUIRED badges to output product section explaining why this configuration is critical
+- **Calculation Validation**: Form now validates that both output product and output quantity are specified before allowing submission
+- **Educational Alerts**: Added informational messages showing transformation examples (1 Ms sheet → 1000 Mounted Plates) to guide proper configuration
+- **Simplified Submission**: Removed complex JSON form processing in favor of standard form field submission for better reliability
+- **Backend Calculation Ready**: Form now properly sends all required data for accurate pending quantity and completion percentage calculations
+
+### Multi-Process Job Work Quantity Calculation Fix (July 28, 2025)
 - **Critical Calculation Fix**: Resolved negative pending quantity issue (-499.0) for multi-process jobs by fixing pending_quantity and completion_percentage calculations
 - **Smart Multi-Process Logic**: Updated JobWork model to calculate pending quantities based on expected output vs received output rather than input vs output
 - **Accurate Progress Tracking**: Multi-process jobs now show correct completion percentages based on total expected output (1000 units) vs received (500 units) = 50%
