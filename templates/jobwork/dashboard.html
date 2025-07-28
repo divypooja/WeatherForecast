@@ -419,7 +419,7 @@
                                         <td>{{ job.customer_name }}</td>
                                         <td>{{ job.expected_return.strftime('%m/%d/%Y') if job.expected_return else '-' }}</td>
                                         <td>
-                                            {% if job.work_type in ['outsourced', 'multi_process'] and job.has_pending_quantity %}
+                                            {% if job.work_type in ['outsourced', 'multi_process', 'unified'] and job.has_pending_quantity %}
                                             <a href="{{ url_for('grn.quick_receive', job_work_id=job.id) }}" class="btn btn-outline-success btn-sm">
                                                 <i class="fas fa-truck"></i> Receive Materials
                                             </a>
@@ -427,7 +427,7 @@
                                             <a href="{{ url_for('jobwork.daily_job_work_entry') }}" class="btn btn-outline-info btn-sm">
                                                 <i class="fas fa-clock"></i> Daily Entry
                                             </a>
-                                            {% elif job.work_type in ['outsourced', 'multi_process'] and not job.has_pending_quantity %}
+                                            {% elif job.work_type in ['outsourced', 'multi_process', 'unified'] and not job.has_pending_quantity %}
                                             <span class="badge bg-success">Materials Received</span>
                                             {% else %}
                                             <span class="badge bg-success">Completed</span>
