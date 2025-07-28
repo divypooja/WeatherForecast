@@ -539,22 +539,33 @@ function populateOutputProductDropdown(processId) {
     const processCard = document.getElementById(`process-${processId}`);
     const outputSelect = processCard.querySelector('.output-product-select');
     
-    // Fetch available items for output products
-    fetch('/inventory/api/items')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.items) {
-                data.items.forEach(item => {
-                    const option = document.createElement('option');
-                    option.value = item.id;
-                    option.textContent = `${item.code} - ${item.name}`;
-                    outputSelect.appendChild(option);
-                });
-            }
-        })
-        .catch(error => {
-            console.error('Error loading items:', error);
+    // Use server-side data passed from the route
+    const itemsData = {{ items_json|safe }};
+    
+    if (itemsData && itemsData.length > 0) {
+        itemsData.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item.id;
+            option.textContent = `${item.code} - ${item.name}`;
+            outputSelect.appendChild(option);
         });
+        console.log(`Loaded ${itemsData.length} items for process ${processId}`);
+    } else {
+        console.error('No items data available from server');
+        // Fallback: Add some common products for testing
+        const fallbackItems = [
+            {id: 1, code: 'MP001', name: 'Mounted Plate'},
+            {id: 2, code: 'BP002', name: 'Base Plate'},
+            {id: 3, code: 'CW003', name: 'Castor Wheel'},
+            {id: 4, code: 'BR004', name: 'Bracket'}
+        ];
+        fallbackItems.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item.id;
+            option.textContent = `${item.code} - ${item.name}`;
+            outputSelect.appendChild(option);
+        });
+    }
 }
 
 // Function to update cost summary
