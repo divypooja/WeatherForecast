@@ -1,4 +1,5 @@
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileField, FileAllowed
 from wtforms import StringField, FloatField, DateField, SelectField, TextAreaField, IntegerField, BooleanField
 from wtforms.validators import DataRequired, NumberRange, Optional, Length
 from wtforms.widgets import HiddenInput
@@ -26,6 +27,13 @@ class GRNForm(FlaskForm):
     
     # Notes
     remarks = TextAreaField('Remarks', validators=[Optional()])
+    
+    # Supporting Documents
+    supporting_document = FileField('Supporting Document (Optional)', 
+                                   validators=[Optional(), 
+                                             FileAllowed(['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx'], 
+                                                       'Only PDF, images, Word, and Excel files are allowed!')])
+    document_description = StringField('Document Description', validators=[Optional(), Length(max=200)])
 
 
 class GRNLineItemForm(FlaskForm):
