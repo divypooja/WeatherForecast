@@ -267,6 +267,33 @@ def delete_item(id):
 
 
 # API Endpoints
+@inventory_bp.route('/api/items')
+@login_required
+def api_get_items():
+    """API endpoint to get all items for dropdown population"""
+    try:
+        items = Item.query.filter_by(is_active=True).order_by(Item.name).all()
+        items_data = []
+        
+        for item in items:
+            items_data.append({
+                'id': item.id,
+                'code': item.code,
+                'name': item.name,
+                'unit_of_measure': item.unit_of_measure
+            })
+        
+        return jsonify({
+            'success': True,
+            'items': items_data
+        })
+    
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error fetching items: {str(e)}'
+        }), 500
+
 @inventory_bp.route('/inventory/api/item-stock/<int:item_id>')
 @inventory_bp.route('/api/item-stock/<int:item_id>')
 @login_required
