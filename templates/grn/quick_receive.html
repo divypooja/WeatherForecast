@@ -87,11 +87,12 @@
                                 {{ form.quantity_rejected.label(class="form-label") }}
                                 <div class="input-group">
                                     {{ form.quantity_rejected(class="form-control", id="quantity_rejected") }}
-                                    <span class="input-group-text">{{ job_work.item.unit_of_measure }}</span>
+                                    <span class="input-group-text">kg</span>
                                 </div>
                                 {% if form.quantity_rejected.errors %}
                                     <div class="text-danger">{{ form.quantity_rejected.errors[0] }}</div>
                                 {% endif %}
+                                <small class="text-muted">Scrap/rejected weight in kg</small>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Quantity Passed</label>

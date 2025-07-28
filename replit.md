@@ -6,7 +6,18 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (July 27, 2025)
 
-### Multi-Process Job Work Quantity Calculation Fix (Latest - July 28, 2025)
+### Universal Scrap Weight Tracking Implementation (Latest - July 28, 2025)
+- **Complete Scrap Weight Conversion**: Implemented comprehensive scrap tracking in weight units (kg) across entire application replacing piece-based tracking
+- **Universal Weight Units**: Updated all scrap quantity fields and labels throughout system to display "kg" instead of "pcs" or "units" for consistent weight-based tracking
+- **Template-Wide Updates**: Modified all form templates (daily_entry_form.html, process_update.html, job work forms, GRN templates) to show weight units for scrap
+- **GRN Weight Integration**: Updated both quick_receive.html and quick_receive_multi_process.html templates to show rejected/scrap quantities in weight units (kg)
+- **Job Work Form Consistency**: Enhanced job work form to display expected scrap in weight units (kg) with appropriate help text
+- **Backend Route Updates**: Updated GRN routes to properly handle scrap tracking notes with weight units for accurate audit trail
+- **Professional Challan Format**: Job Work Challan template matches exact user specifications with blue headers, company details layout, material dispatch tables, process flow sections, and weight-based scrap acknowledgment
+- **System-Wide Consistency**: All scrap tracking now uniformly uses weight measurement (kg) ensuring manufacturing accuracy and material cost analysis
+- **Multi-Process Weight Support**: Extended weight-based scrap tracking to multi-process job work operations with individual process scrap weight monitoring
+
+### Multi-Process Job Work Quantity Calculation Fix (July 28, 2025)
 - **Critical Calculation Fix**: Resolved negative pending quantity issue (-499.0) for multi-process jobs by fixing pending_quantity and completion_percentage calculations
 - **Smart Multi-Process Logic**: Updated JobWork model to calculate pending quantities based on expected output vs received output rather than input vs output
 - **Accurate Progress Tracking**: Multi-process jobs now show correct completion percentages based on total expected output (1000 units) vs received (500 units) = 50%
@@ -15,7 +26,6 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **Manufacturing Intelligence**: System now properly handles material transformation ratios (1 Ms sheet → 1000 Mounted Plates) in all calculations
 - **UI Navigation Cleanup**: Removed "Material Inspection (Legacy)" from sidebar navigation as it's no longer required with unified GRN workflow
 - **Multi-Process GRN Form Redesign**: Redesigned "Receive Multi-Process Materials" form to match clean Quick Receive layout with proper sectioning, consistent styling, and Receipt Summary sidebar for better user experience
-- **Job Work Challan Generation**: Added comprehensive Job Work Challan generation system with professional PDF format including company details, material dispatch information, process flow, scrap acknowledgment, and signatures following the user's specified format
 
 ### WIP Breakdown Multi-Process Output Display Fix (July 28, 2025)
 - **Multi-Process Output Visibility**: Fixed WIP breakdown table to display expected output quantities for ALL processes regardless of current WIP distribution
