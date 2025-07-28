@@ -188,7 +188,7 @@ let processCounter = 0;
 
 // Function to check inventory stock
 function checkInventoryStock() {
-    const itemSelect = document.getElementById('item_id');
+    const itemSelect = document.getElementById('item_select'); // Fixed ID
     const quantityInput = document.getElementById('total_quantity');
     const stockInfo = document.getElementById('stock-info');
     
@@ -199,7 +199,7 @@ function checkInventoryStock() {
     
     const quantity = parseFloat(quantityInput.value) || 0;
     
-    // Fetch item stock information
+    // Fetch item stock information with BOM data
     fetch(`/inventory/api/item-stock/${itemSelect.value}`)
         .then(response => response.json())
         .then(data => {
@@ -220,6 +220,16 @@ function checkInventoryStock() {
                     message += `<br><small class="text-muted">WIP: ${wipStock} ${unit} (in process)</small>`;
                 }
                 
+                // Add BOM information if available
+                if (data.bom && data.bom.has_bom) {
+                    const bomInfo = data.bom;
+                    message += `<br><div class="mt-2 p-2 bg-light border rounded">
+                        <strong><i class="fas fa-sitemap"></i> BOM Available:</strong> 
+                        ${bomInfo.material_count} materials, Output: ${bomInfo.output_quantity} units
+                        <br><small class="text-success">Cost: ₹${bomInfo.total_cost_per_unit.toFixed(2)} per unit</small>
+                    </div>`;
+                }
+                
                 if (quantity > rawStock) {
                     alertClass = 'alert-danger';
                     icon = 'fas fa-exclamation-triangle';
@@ -237,6 +247,7 @@ function checkInventoryStock() {
             }
         })
         .catch(error => {
+            console.error('Stock check error:', error);
             stockInfo.innerHTML = '<div class="alert alert-danger"><i class="fas fa-times-circle"></i> Error checking stock</div>';
         });
 }
@@ -484,6 +495,131 @@ function populateTeamLeadDropdown(processIndex) {
 function removeProcess(processId) {
     document.getElementById(`process-${processId}`).remove();
     updateCostSummary();
+}
+
+// Function to load BOM data for a process
+function loadBOMForProcess(processId) {
+    const outputSelect = document.querySelector(`#process-${processId} .output-product-select`);
+    const bomInfoContainer = document.getElementById(`bom-info-${processId}`);
+    
+    if (!outputSelect || !outputSelect.value) {
+        alert('Please select an output product first');
+        return;
+    }
+    
+    bomInfoContainer.innerHTML = '<div class="text-info"><i class="fas fa-spinner fa-spin"></i> Loading BOM data...</div>';
+    
+    // Fetch BOM data from API
+    fetch(`/jobwork/multi-process/api/item-bom/${outputSelect.value}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.has_bom) {
+                // Store BOM data for calculations
+                window.bomData = window.bomData || {};
+                window.bomData[processId] = data;
+                
+                // Display BOM information
+                bomInfoContainer.innerHTML = `
+                    <div class="mt-2 p-2 bg-light border rounded">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <strong><i class="fas fa-sitemap text-primary"></i> BOM Available</strong>
+                            <button type="button" class="btn btn-sm btn-success" onclick="applyBOMData(${processId})">
+                                <i class="fas fa-magic"></i> Apply BOM
+                            </button>
+                        </div>
+                        <small class="text-muted">
+                            ${data.material_count} materials • Output: ${data.output_quantity} units • Cost: ₹${data.total_cost_per_unit.toFixed(2)}/unit
+                        </small>
+                        <div class="mt-1">
+                            <small class="text-success">Materials Required: ${data.total_material_required} units</small>
+                        </div>
+                    </div>
+                `;
+                
+            } else {
+                bomInfoContainer.innerHTML = `
+                    <div class="mt-2 p-2 bg-warning border rounded">
+                        <small><i class="fas fa-exclamation-triangle"></i> No BOM found for this product</small>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('BOM fetch error:', error);
+            bomInfoContainer.innerHTML = `
+                <div class="mt-2 p-2 bg-danger text-white border rounded">
+                    <small><i class="fas fa-times"></i> Error loading BOM data</small>
+                </div>
+            `;
+        });
+}
+
+// Function to apply BOM data to process fields
+function applyBOMData(processId) {
+    const bomData = window.bomData?.[processId];
+    if (!bomData) return;
+    
+    const rateInput = document.querySelector(`#process-${processId} .rate-per-unit`);
+    
+    // Apply BOM rate
+    if (rateInput && bomData.total_cost_per_unit) {
+        rateInput.value = bomData.total_cost_per_unit.toFixed(2);
+        
+        // Show success notification
+        const bomInfoContainer = document.getElementById(`bom-info-${processId}`);
+        bomInfoContainer.innerHTML += `
+            <div class="alert alert-success alert-dismissible fade show mt-2" role="alert">
+                <i class="fas fa-check"></i> BOM rate applied: ₹${bomData.total_cost_per_unit.toFixed(2)}/unit
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        
+        // Auto-dismiss after 3 seconds
+        setTimeout(() => {
+            const alert = bomInfoContainer.querySelector('.alert');
+            if (alert) alert.remove();
+        }, 3000);
+    }
+    
+    // Trigger input quantity calculation if output quantity is set
+    calculateInputQuantityFromBOM(processId);
+    updateCostSummary();
+}
+
+// Function to calculate input quantity based on BOM and output quantity
+function calculateInputQuantityFromBOM(processId) {
+    const bomData = window.bomData?.[processId];
+    if (!bomData) return;
+    
+    const outputQuantityInput = document.querySelector(`#process-${processId} .output-quantity`);
+    const inputQuantityInput = document.querySelector(`#process-${processId} .quantity-input`);
+    
+    if (!outputQuantityInput || !inputQuantityInput) return;
+    
+    const outputQuantity = parseFloat(outputQuantityInput.value) || 0;
+    
+    if (outputQuantity > 0) {
+        // Calculate input quantity: (Output Qty ÷ BOM Output Qty) × Total BOM Materials
+        const bomOutputQty = bomData.output_quantity || 1.0;
+        const totalMaterialRequired = bomData.total_material_required || 1.0;
+        
+        const inputQuantity = (outputQuantity / bomOutputQty) * totalMaterialRequired;
+        
+        inputQuantityInput.value = inputQuantity.toFixed(2);
+        
+        // Show calculation info
+        const bomInfoContainer = document.getElementById(`bom-info-${processId}`);
+        const calcInfo = bomInfoContainer.querySelector('.calculation-info');
+        if (calcInfo) calcInfo.remove();
+        
+        bomInfoContainer.innerHTML += `
+            <div class="calculation-info mt-1 p-1 bg-info text-white rounded">
+                <small><i class="fas fa-calculator"></i> Auto-calculated: ${outputQuantity} ÷ ${bomOutputQty} × ${totalMaterialRequired} = ${inputQuantity.toFixed(2)} input units</small>
+            </div>
+        `;
+        
+        updateCostSummary();
+    }
 }
 
 // Function to toggle fields based on work type
