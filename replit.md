@@ -6,6 +6,13 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (July 27, 2025)
 
+### BOM System Enhancement for Universal Product Type Support (July 28, 2025)
+- **Universal Product Selection**: Enhanced BOM system to accept any product type rather than restricting to item_type='product' only
+- **Flexible Manufacturing Planning**: Users can now create BOMs for materials, consumables, tools, spare parts, or any custom item types
+- **Database Query Optimization**: Updated BOMForm, add_bom, and edit_bom routes to query all items ordered by name instead of filtering by product type
+- **Enhanced User Experience**: Product dropdown now shows complete inventory catalog enabling BOMs for sub-assemblies, finished products, and complex manufacturing workflows
+- **Manufacturing Intelligence Template Cache Resolution**: Fixed template caching issue where Manufacturing Intelligence navigation wasn't visible, resolved by removing browser cache forcing elements
+
 ### Manufacturing Intelligence System Implementation (Latest - July 28, 2025)
 
 #### **✅ COMPLETED: Manufacturing Intelligence Platform**

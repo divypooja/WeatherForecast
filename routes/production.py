@@ -209,8 +209,8 @@ def list_bom():
 @login_required
 def add_bom():
     form = BOMForm()
-    # Only show products (finished goods)
-    form.product_id.choices = [(i.id, f"{i.code} - {i.name}") for i in Item.query.filter(Item.item_type == 'product').all()]
+    # Allow any product type for BOM creation - no restrictions
+    form.product_id.choices = [(i.id, f"{i.code} - {i.name}") for i in Item.query.order_by(Item.name).all()]
     
     if form.validate_on_submit():
         # Check if BOM already exists for this product
@@ -250,7 +250,8 @@ def add_bom():
 def edit_bom(id):
     bom = BOM.query.get_or_404(id)
     form = BOMForm(obj=bom)
-    form.product_id.choices = [(i.id, f"{i.code} - {i.name}") for i in Item.query.filter(Item.item_type == 'product').all()]
+    # Allow any product type for BOM creation - no restrictions  
+    form.product_id.choices = [(i.id, f"{i.code} - {i.name}") for i in Item.query.order_by(Item.name).all()]
     
     if form.validate_on_submit():
         # Check if BOM already exists for this product (excluding current BOM)
