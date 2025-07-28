@@ -26,6 +26,7 @@
                                 <th>Product</th>
                                 <th>Product Code</th>
                                 <th>Version</th>
+                                <th>Output Qty</th>
                                 <th>Status</th>
                                 <th>Created Date</th>
                                 <th>Actions</th>
@@ -37,6 +38,7 @@
                                 <td><strong>{{ bom.product.name }}</strong></td>
                                 <td>{{ bom.product.code }}</td>
                                 <td>{{ bom.version }}</td>
+                                <td><span class="badge bg-info">{{ bom.output_quantity or 1.0 }} units</span></td>
                                 <td>
                                     <span class="badge bg-{{ 'success' if bom.is_active else 'secondary' }}">
                                         {{ 'Active' if bom.is_active else 'Inactive' }}
