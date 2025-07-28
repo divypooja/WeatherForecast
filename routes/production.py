@@ -249,9 +249,24 @@ def add_bom():
 @login_required
 def edit_bom(id):
     bom = BOM.query.get_or_404(id)
-    form = BOMForm(obj=bom)
+    
+    # Initialize form and populate choices first
+    form = BOMForm()
     # Allow any product type for BOM creation - no restrictions  
     form.product_id.choices = [(i.id, f"{i.code} - {i.name}") for i in Item.query.order_by(Item.name).all()]
+    
+    # For GET request, populate form with existing BOM data
+    if request.method == 'GET':
+        form.product_id.data = bom.product_id
+        form.version.data = bom.version
+        form.labor_cost_per_unit.data = bom.labor_cost_per_unit
+        form.labor_hours_per_unit.data = bom.labor_hours_per_unit
+        form.labor_rate_per_hour.data = bom.labor_rate_per_hour
+        form.overhead_cost_per_unit.data = bom.overhead_cost_per_unit
+        form.overhead_percentage.data = bom.overhead_percentage
+        form.freight_cost_per_unit.data = bom.freight_cost_per_unit
+        form.freight_unit_type.data = bom.freight_unit_type
+        form.markup_percentage.data = bom.markup_percentage
     
     if form.validate_on_submit():
         # Check if BOM already exists for this product (excluding current BOM)
