@@ -6,7 +6,7 @@ one job work can have multiple processes in different stages.
 """
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
-from models import JobWork, JobWorkProcess, Item, Supplier, db
+from models import JobWork, JobWorkProcess, Item, Supplier, BOM, BOMItem, db
 from forms_jobwork_process import MultiProcessJobWorkForm, JobWorkProcessForm, ProcessProgressForm
 from datetime import datetime, date
 import json
@@ -318,6 +318,65 @@ def update_process(process_id):
 
 
 
+
+@multi_process_jobwork_bp.route('/api/item-bom/<int:item_id>')
+@login_required
+def get_item_bom(item_id):
+    """Get BOM data for an item to populate job work rates"""
+    try:
+        item = Item.query.get_or_404(item_id)
+        
+        # Find active BOM for this item
+        bom = BOM.query.filter_by(product_id=item_id, is_active=True).first()
+        
+        if not bom:
+            return jsonify({
+                'success': False,
+                'message': 'No active BOM found for this item',
+                'item_name': item.name,
+                'has_bom': False
+            })
+        
+        # Calculate BOM costs
+        bom_data = {
+            'success': True,
+            'has_bom': True,
+            'item_name': item.name,
+            'item_code': item.code,
+            'bom_id': bom.id,
+            'bom_version': bom.version,
+            'total_cost_per_unit': round(bom.total_cost_per_unit, 2),
+            'material_cost': round(bom.total_material_cost, 2),
+            'labor_cost': round(bom.labor_cost_per_unit or 0, 2),
+            'overhead_cost': round(bom.overhead_cost_per_unit or 0, 2),
+            'freight_cost': round(bom.calculated_freight_cost_per_unit, 2),
+            'markup_percentage': bom.markup_percentage or 0,
+            'markup_amount': round(bom.markup_amount_per_unit, 2),
+            'labor_hours': bom.labor_hours_per_unit or 0,
+            'labor_rate_per_hour': bom.labor_rate_per_hour or 0,
+            'materials': []
+        }
+        
+        # Add BOM items/materials
+        for bom_item in bom.items:
+            material_data = {
+                'item_name': bom_item.item.name,
+                'item_code': bom_item.item.code,
+                'quantity_required': bom_item.quantity_required,
+                'unit': bom_item.unit,
+                'unit_cost': bom_item.unit_cost,
+                'total_cost': round(bom_item.quantity_required * bom_item.unit_cost, 2)
+            }
+            bom_data['materials'].append(material_data)
+        
+        return jsonify(bom_data)
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error retrieving BOM data: {str(e)}',
+            'has_bom': False
+        }), 500
 
 @multi_process_jobwork_bp.route('/api/process-template')
 @login_required
