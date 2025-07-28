@@ -185,7 +185,7 @@
                                             {% endif %}
                                         </td>
                                         <td>{{ process.quantity_input }} pcs</td>
-                                        <td>{{ process.quantity_output or 0 }} pcs</td>
+                                        <td>{{ process.output_quantity or 0 }} pcs</td>
                                         <td>{{ process.quantity_scrap or 0 }} pcs</td>
                                         <td>₹{{ "%.2f"|format(process.rate_per_unit) }}</td>
                                         <td>₹{{ "%.2f"|format(process.process_cost) }}</td>
@@ -253,7 +253,7 @@
                                     {{ process.process_name }}
                                     <small class="text-muted">
                                         ({{ process.quantity_input }} pcs → 
-                                        {% if process.quantity_output %}{{ process.quantity_output }} pcs completed{% else %}Pending{% endif %})
+                                        {% if process.quantity_output %}{{ process.quantity_output }} pcs completed{% else %}{{ process.output_quantity }} pcs expected{% endif %})
                                     </small>
                                 </h6>
                                 <p class="mb-1">
