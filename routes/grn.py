@@ -528,8 +528,29 @@ def quick_receive_multi_process(job_work_id):
                 job_work.quantity_received = job_work.quantity_sent  # Mark input as fully processed
                 
                 # Remove input material from WIP since it's been transformed
-                if hasattr(job_work.item, 'qty_wip_cutting'):
-                    job_work.item.qty_wip_cutting = max(0, (job_work.item.qty_wip_cutting or 0) - job_work.quantity_sent)
+                # Use the Item model's receive_from_wip method to properly clear WIP from the correct process
+                if processes:
+                    # For multi-process jobs, clear from first process
+                    first_process = min(processes, key=lambda p: p.sequence_number)
+                    process_name = first_process.process_name.lower()
+                    job_work.item.receive_from_wip(0, 0, process=process_name)  # Just clear WIP, no finished/scrap added here
+                    # Manually adjust to only clear the WIP amount without adding to finished (since output products were already added)
+                    if process_name == 'cutting':
+                        job_work.item.qty_wip_cutting = max(0, (job_work.item.qty_wip_cutting or 0) - job_work.quantity_sent)
+                    elif process_name == 'bending':
+                        job_work.item.qty_wip_bending = max(0, (job_work.item.qty_wip_bending or 0) - job_work.quantity_sent)
+                    elif process_name == 'welding':
+                        job_work.item.qty_wip_welding = max(0, (job_work.item.qty_wip_welding or 0) - job_work.quantity_sent)
+                    elif process_name == 'zinc':
+                        job_work.item.qty_wip_zinc = max(0, (job_work.item.qty_wip_zinc or 0) - job_work.quantity_sent)
+                    elif process_name == 'painting':
+                        job_work.item.qty_wip_painting = max(0, (job_work.item.qty_wip_painting or 0) - job_work.quantity_sent)
+                    elif process_name == 'assembly':
+                        job_work.item.qty_wip_assembly = max(0, (job_work.item.qty_wip_assembly or 0) - job_work.quantity_sent)
+                    elif process_name == 'machining':
+                        job_work.item.qty_wip_machining = max(0, (job_work.item.qty_wip_machining or 0) - job_work.quantity_sent)
+                    elif process_name == 'polishing':
+                        job_work.item.qty_wip_polishing = max(0, (job_work.item.qty_wip_polishing or 0) - job_work.quantity_sent)
                 
                 completion_note = f"[{datetime.utcnow().strftime('%Y-%m-%d %H:%M')}] Completed via GRN {grn.grn_number} - All expected output materials received"
             else:
