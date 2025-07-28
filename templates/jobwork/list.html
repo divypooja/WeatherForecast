@@ -90,6 +90,9 @@
                                         <a href="{{ url_for('jobwork.send_job_work', job_id=job.id) }}" class="btn btn-outline-success btn-sm" title="Send via Email/WhatsApp">
                                             <i class="fas fa-paper-plane"></i>
                                         </a>
+                                        <a href="{{ url_for('jobwork.generate_challan', job_id=job.id) }}" class="btn btn-outline-info btn-sm" title="Generate Job Work Challan" target="_blank">
+                                            <i class="fas fa-file-invoice"></i>
+                                        </a>
                                         <a href="{{ url_for('documents.upload_document', transaction_type='job_work', transaction_id=job.id) }}" class="btn btn-outline-warning btn-sm" title="Upload Documents">
                                             <i class="fas fa-paperclip"></i>
                                         </a>

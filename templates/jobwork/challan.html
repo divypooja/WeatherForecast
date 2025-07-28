@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Work Challan - {{ job.job_number }}</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+            background: white;
+        }
+        .challan-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border: 2px solid #2c3e50;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #3498db, #2c3e50);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .header .challan-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        .section {
+            padding: 20px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        .section:last-child {
+            border-bottom: none;
+        }
+        .section-title {
+            background: #34495e;
+            color: white;
+            margin: -20px -20px 15px -20px;
+            padding: 10px 20px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .company-info {
+            display: flex;
+            justify-content: space-between;
+            gap: 30px;
+        }
+        .sender, .recipient {
+            flex: 1;
+        }
+        .sender h3, .recipient h3 {
+            color: #2c3e50;
+            margin: 0 0 10px 0;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #3498db;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        table th, table td {
+            border: 1px solid #bdc3c7;
+            padding: 12px 8px;
+            text-align: left;
+            font-size: 13px;
+        }
+        table th {
+            background: #ecf0f1;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .table-responsive {
+            overflow-x: auto;
+        }
+        .process-flow {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .process-step {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-left: 4px solid #3498db;
+            border-radius: 4px;
+        }
+        .process-number {
+            background: #3498db;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #3498db;
+            color: white;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .badge.outsourced { background: #e74c3c; }
+        .badge.in-house { background: #27ae60; }
+        .declarations {
+            background: #fff5f5;
+            border-left: 4px solid #e74c3c;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .signature-section {
+            display: flex;
+            justify-content: space-between;
+            gap: 30px;
+            margin-top: 30px;
+        }
+        .signature-box {
+            flex: 1;
+            border: 1px solid #bdc3c7;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px;
+        }
+        .signature-line {
+            border-bottom: 1px solid #bdc3c7;
+            margin: 20px 0 10px 0;
+            height: 40px;
+        }
+        @media print {
+            body { margin: 0; padding: 10px; }
+            .challan-container { border: none; box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="challan-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🧾 {{ company_settings.company_name if company_settings else 'AK Innovations' }} – Job Work Challan</h1>
+            <div class="challan-info">
+                <div>
+                    <strong>Document Type:</strong> Job Work Challan<br>
+                    <strong>Challan No:</strong> JW-{{ job.job_number.replace('JOB-', '') }}
+                </div>
+                <div>
+                    <strong>Date:</strong> {{ job.created_at.strftime('%d-%b-%Y') }}<br>
+                    <strong>Job Work Type:</strong> {{ job.work_type|title }} {% if processes|length > 1 %}(Multi-Process){% endif %}<br>
+                    <strong>Reference Job No:</strong> {{ job.job_number }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Company Information -->
+        <div class="section">
+            <div class="section-title">🔹 Company Details</div>
+            <div class="company-info">
+                <div class="sender">
+                    <h3>Sender (Factory Details)</h3>
+                    <strong>{{ company_settings.company_name if company_settings else 'AK Innovations' }}</strong><br>
+                    {% if company_settings and company_settings.address %}
+                        {{ company_settings.address }}<br>
+                    {% else %}
+                        Plot No. XX, XYZ Industrial Estate,<br>
+                        Delhi - 11000X, India<br>
+                    {% endif %}
+                    {% if company_settings and company_settings.phone %}
+                        📞 {{ company_settings.phone }}
+                    {% else %}
+                        📞 +91-9760034433
+                    {% endif %}
+                    {% if company_settings and company_settings.email %}
+                         | ✉️ {{ company_settings.email }}
+                    {% else %}
+                         | ✉️ akinnovations.info@gmail.com
+                    {% endif %}
+                </div>
+                <div class="recipient">
+                    <h3>Recipient (Vendor/Contractor Details)</h3>
+                    <strong>{{ job.customer_name or 'M/s ABC Works' }}</strong><br>
+                    {% if job.customer_name %}
+                        Address: (To be filled)<br>
+                        📞 (Contact Number)
+                    {% else %}
+                        GSTIN: 07ABCDE1234Z9<br>
+                        Address: B-12, Industrial Area<br>
+                        📞 9999XXXXXX
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Material Dispatched -->
+        <div class="section">
+            <div class="section-title">📦 Material Dispatched for Job Work</div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>S.No</th>
+                            <th>Item Name</th>
+                            <th>Item Code</th>
+                            <th>Qty Sent</th>
+                            <th>Unit</th>
+                            <th>UOM</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>{{ job.item.name }}</td>
+                            <td>{{ job.item.code or 'ITEM-' + job.item.id|string.zfill(4) }}</td>
+                            <td>{{ job.quantity_sent }}</td>
+                            <td>{{ job.item.unit_of_measure }}</td>
+                            <td>{{ job.item.unit_of_measure }}</td>
+                            <td>For {{ job.process|title if job.process else 'Job Work' }}</td>
+                        </tr>
+                        {% if processes %}
+                            {% for process in processes %}
+                                {% if process.output_item_id %}
+                                <tr>
+                                    <td>{{ loop.index + 1 }}</td>
+                                    <td>{{ process.output_item.name }}</td>
+                                    <td>{{ process.output_item.code or 'ITEM-' + process.output_item.id|string.zfill(4) }}</td>
+                                    <td>-</td>
+                                    <td>{{ process.output_item.unit_of_measure }}</td>
+                                    <td>Output</td>
+                                    <td>Will be generated from {{ process.process_name }}</td>
+                                </tr>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Job Work Process Flow -->
+        {% if processes and processes|length > 1 %}
+        <div class="section">
+            <div class="section-title">🔄 Job Work Process Flow (Sequential)</div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Process Seq</th>
+                            <th>Process Name</th>
+                            <th>From Item</th>
+                            <th>To Item</th>
+                            <th>Expected Qty</th>
+                            <th>Work Type</th>
+                            <th>Expected Return Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for process in processes %}
+                        <tr>
+                            <td>{{ process.sequence_number }}</td>
+                            <td>{{ process.process_name }}</td>
+                            <td>
+                                {% if loop.first %}
+                                    {{ job.item.name }} ({{ job.quantity_sent }} {{ job.item.unit_of_measure }})
+                                {% else %}
+                                    {% set prev_process = processes[loop.index0 - 1] %}
+                                    {% if prev_process.output_item_id %}
+                                        {{ prev_process.output_item.name }}
+                                    {% else %}
+                                        {{ job.item.name }}
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if process.output_item_id %}
+                                    {{ process.output_item.name }}
+                                {% else %}
+                                    Same as input
+                                {% endif %}
+                            </td>
+                            <td>{{ process.output_quantity or job.quantity_sent }}</td>
+                            <td><span class="badge {{ 'outsourced' if process.work_type == 'outsourced' else 'in-house' }}">{{ process.work_type|title }}</span></td>
+                            <td>{{ (job.expected_return.strftime('%d-%b-%Y') if job.expected_return else 'TBD') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Scrap Acknowledgment -->
+        {% if job.expected_scrap and job.expected_scrap > 0 %}
+        <div class="section">
+            <div class="section-title">⚖️ Scrap Acknowledgment</div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Process</th>
+                            <th>Expected Scrap</th>
+                            <th>Unit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>{{ job.process|title if job.process else 'Job Work' }}</td>
+                            <td>{{ job.expected_scrap }}</td>
+                            <td>{{ job.item.unit_of_measure }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Supporting Details -->
+        <div class="section">
+            <div class="section-title">📑 Supporting Details</div>
+            <ul style="list-style: none; padding: 0;">
+                <li><strong>Challan Created By:</strong> System Auto-Generated</li>
+                <li><strong>Created Date:</strong> {{ job.created_at.strftime('%d-%b-%Y %I:%M %p') }}</li>
+                {% if job.notes %}
+                <li><strong>Special Instructions:</strong> {{ job.notes }}</li>
+                {% endif %}
+                <li><strong>Delivery Mode:</strong> Road Transport</li>
+            </ul>
+        </div>
+
+        <!-- Declarations -->
+        <div class="section">
+            <div class="section-title">🔐 Declarations</div>
+            <div class="declarations">
+                <ul>
+                    <li>Goods are sent for job work only. No sale is intended.</li>
+                    <li>Goods will be returned within 180 days.</li>
+                    <li>The recipient is liable for any damage/loss during transit or job work.</li>
+                    <li>This challan is subject to terms and conditions of the job work agreement.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Signatures -->
+        <div class="section">
+            <div class="signature-section">
+                <div class="signature-box">
+                    <h4>✍️ Authorised Signatory (Sender)</h4>
+                    <div class="signature-line"></div>
+                    <div>
+                        <strong>Name:</strong> _________________________<br>
+                        <strong>Date:</strong> {{ job.created_at.strftime('%d-%b-%Y') }}<br>
+                        <strong>Designation:</strong> ____________________
+                    </div>
+                </div>
+                <div class="signature-box">
+                    <h4>📝 Acknowledgement by Vendor</h4>
+                    <p style="font-size: 12px; margin-bottom: 20px;">Received the above material in good condition for job work.</p>
+                    <div class="signature-line"></div>
+                    <div>
+                        <strong>Name:</strong> _________________________<br>
+                        <strong>Date:</strong> _________________________<br>
+                        <strong>Stamp & Signature:</strong> _______________
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="section" style="text-align: center; font-size: 12px; color: #7f8c8d;">
+            <strong>🔄 System Generated Document</strong><br>
+            Generated on {{ job.created_at.strftime('%d-%b-%Y at %I:%M %p') }} | Job Work Management System
+        </div>
+    </div>
+
+    <script>
+        // Auto-print when page loads
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                window.print();
+            }, 500);
+        });
+    </script>
+</body>
+</html>

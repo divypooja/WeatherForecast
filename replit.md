@@ -15,6 +15,7 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **Manufacturing Intelligence**: System now properly handles material transformation ratios (1 Ms sheet → 1000 Mounted Plates) in all calculations
 - **UI Navigation Cleanup**: Removed "Material Inspection (Legacy)" from sidebar navigation as it's no longer required with unified GRN workflow
 - **Multi-Process GRN Form Redesign**: Redesigned "Receive Multi-Process Materials" form to match clean Quick Receive layout with proper sectioning, consistent styling, and Receipt Summary sidebar for better user experience
+- **Job Work Challan Generation**: Added comprehensive Job Work Challan generation system with professional PDF format including company details, material dispatch information, process flow, scrap acknowledgment, and signatures following the user's specified format
 
 ### WIP Breakdown Multi-Process Output Display Fix (July 28, 2025)
 - **Multi-Process Output Visibility**: Fixed WIP breakdown table to display expected output quantities for ALL processes regardless of current WIP distribution
