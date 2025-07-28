@@ -6,7 +6,14 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (July 27, 2025)
 
-### Critical GRN-Job Work Completion Logic Fix (Latest - July 27, 2025)
+### Process Information Display Enhancement (Latest - July 28, 2025)
+- **Output Products Display**: Added comprehensive output product information to Process Information section in job work detail pages
+- **Process Name Display**: Added dedicated Process Name field showing all manufacturing processes involved in multi-process jobs
+- **Visual Enhancement**: Process names displayed with blue badges, output products with green badges for clear visual distinction
+- **Template Bug Fix**: Fixed Output Qty display showing expected output quantity (400/1000 pcs) instead of actual completed (0 pcs)
+- **Multi-Process Support**: Process Information section now properly handles unified/multi-process jobs with complete process and output details
+
+### Critical GRN-Job Work Completion Logic Fix (July 27, 2025)
 - **Fixed Job Work Status Update Bug**: Resolved critical issue where completed GRNs weren't properly updating job work status from 'sent' to 'completed'
 - **Inventory Transformation Logic**: Fixed multi-process job work completion to properly handle material transformation from input (Ms sheet) to output (Mounted Plate)
 - **WIP Management Correction**: Corrected WIP clearing logic to remove input materials from process-specific WIP fields when transformation is complete
