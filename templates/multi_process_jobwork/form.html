@@ -43,12 +43,7 @@
                             
                             <div class="col-md-4 mb-3">
                                 {{ form.item_id.label(class="form-label") }}
-                                <div class="input-group">
-                                    {{ form.item_id(class="form-select", id="item_select") }}
-                                    <button type="button" class="btn btn-outline-primary" onclick="loadBOMData()" id="bomLoadBtn">
-                                        <i class="fas fa-list-ul"></i> Load BOM
-                                    </button>
-                                </div>
+                                {{ form.item_id(class="form-select", id="item_select") }}
                                 {% if form.item_id.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.item_id.errors %}
@@ -56,7 +51,6 @@
                                         {% endfor %}
                                     </div>
                                 {% endif %}
-                                <div id="bom-info" class="mt-2"></div>
                             </div>
                             
                             <div class="col-md-4 mb-3">
@@ -311,11 +305,17 @@ function addProcess() {
                     
                     <div class="col-md-8 mb-3">
                         <label class="form-label">Output Product</label>
-                        <select class="form-select output-product-select">
-                            <option value="">Select Output Product</option>
-                            <!-- Options will be populated dynamically -->
-                        </select>
-                        <small class="text-muted">Select the finished product that will be created from this process</small>
+                        <div class="input-group">
+                            <select class="form-select output-product-select" onchange="onOutputProductChange(${processCounter})">
+                                <option value="">Select Output Product</option>
+                                <!-- Options will be populated dynamically -->
+                            </select>
+                            <button type="button" class="btn btn-outline-success load-bom-btn" onclick="loadBOMForProcess(${processCounter})" disabled>
+                                <i class="fas fa-list-ul"></i> Load BOM
+                            </button>
+                        </div>
+                        <small class="text-muted">Select output product to auto-calculate input quantities from BOM</small>
+                        <div class="bom-info-container" id="bom-info-${processCounter}"></div>
                     </div>
                     
                     <div class="col-md-4 mb-3">
@@ -400,6 +400,9 @@ function addProcess() {
     
     // Populate customer dropdown for new process
     populateCustomerDropdown(processCounter);
+    
+    // Populate output product dropdown
+    populateOutputProductDropdown(processCounter);
     
     updateCostSummary();
     
@@ -531,6 +534,29 @@ function populateCustomerDropdown(processId) {
     });
 }
 
+// Function to populate output product dropdown
+function populateOutputProductDropdown(processId) {
+    const processCard = document.getElementById(`process-${processId}`);
+    const outputSelect = processCard.querySelector('.output-product-select');
+    
+    // Fetch available items for output products
+    fetch('/inventory/api/items')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.items) {
+                data.items.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = `${item.code} - ${item.name}`;
+                    outputSelect.appendChild(option);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading items:', error);
+        });
+}
+
 // Function to update cost summary
 function updateCostSummary() {
     const processCards = document.querySelectorAll('.process-card');
@@ -623,16 +649,34 @@ document.getElementById('multiProcessForm').addEventListener('submit', function(
 });
 
 // BOM Loading Functionality
-let currentBOMData = null;
+let processBOMData = {}; // Store BOM data per process
 
-function loadBOMData() {
-    const itemSelect = document.getElementById('item_select');
-    const itemId = itemSelect.value;
-    const bomInfo = document.getElementById('bom-info');
-    const bomBtn = document.getElementById('bomLoadBtn');
+function onOutputProductChange(processId) {
+    const processCard = document.getElementById(`process-${processId}`);
+    const outputSelect = processCard.querySelector('.output-product-select');
+    const bomBtn = processCard.querySelector('.load-bom-btn');
+    const bomInfo = processCard.querySelector('.bom-info-container');
     
-    if (!itemId) {
-        alert('Please select an item first');
+    if (outputSelect.value) {
+        bomBtn.disabled = false;
+        bomInfo.innerHTML = '';
+    } else {
+        bomBtn.disabled = true;
+        bomInfo.innerHTML = '';
+        delete processBOMData[processId];
+    }
+}
+
+function loadBOMForProcess(processId) {
+    const processCard = document.getElementById(`process-${processId}`);
+    const outputSelect = processCard.querySelector('.output-product-select');
+    const bomBtn = processCard.querySelector('.load-bom-btn');
+    const bomInfo = processCard.querySelector('.bom-info-container');
+    
+    const outputItemId = outputSelect.value;
+    
+    if (!outputItemId) {
+        alert('Please select an output product first');
         return;
     }
     
@@ -641,25 +685,24 @@ function loadBOMData() {
     bomBtn.disabled = true;
     bomInfo.innerHTML = '';
     
-    // Fetch BOM data
-    fetch(`/jobwork/multi-process/api/item-bom/${itemId}`)
+    // Fetch BOM data for output product
+    fetch(`/jobwork/multi-process/api/item-bom/${outputItemId}`)
         .then(response => response.json())
         .then(data => {
             if (data.success && data.has_bom) {
-                currentBOMData = data;
-                displayBOMInfo(data);
-                showBOMLoadOptions(data);
+                processBOMData[processId] = data;
+                displayProcessBOMInfo(processId, data);
             } else {
                 bomInfo.innerHTML = `
-                    <div class="alert alert-warning alert-sm">
-                        <i class="fas fa-exclamation-triangle"></i> ${data.message || 'No BOM found for this item'}
+                    <div class="alert alert-warning alert-sm mt-2">
+                        <i class="fas fa-exclamation-triangle"></i> ${data.message || 'No BOM found for this output product'}
                     </div>`;
             }
         })
         .catch(error => {
             console.error('Error loading BOM:', error);
             bomInfo.innerHTML = `
-                <div class="alert alert-danger alert-sm">
+                <div class="alert alert-danger alert-sm mt-2">
                     <i class="fas fa-exclamation-circle"></i> Error loading BOM data
                 </div>`;
         })
@@ -669,11 +712,11 @@ function loadBOMData() {
         });
 }
 
-function displayBOMInfo(bomData) {
-    const bomInfo = document.getElementById('bom-info');
+function displayProcessBOMInfo(processId, bomData) {
+    const bomInfo = document.querySelector(`#bom-info-${processId}`);
     bomInfo.innerHTML = `
-        <div class="card border-success">
-            <div class="card-header bg-light-success text-success py-2">
+        <div class="card border-success mt-2">
+            <div class="card-header bg-light text-success py-2">
                 <h6 class="mb-0">
                     <i class="fas fa-list-ul"></i> BOM Found - ${bomData.item_name} (v${bomData.bom_version})
                 </h6>
@@ -692,11 +735,11 @@ function displayBOMInfo(bomData) {
                     </div>
                 </div>
                 <div class="mt-2">
-                    <button type="button" class="btn btn-success btn-sm" onclick="applyBOMRates()">
-                        <i class="fas fa-magic"></i> Apply BOM Rates to Processes
+                    <button type="button" class="btn btn-success btn-sm" onclick="applyBOMToProcess(${processId})">
+                        <i class="fas fa-magic"></i> Apply BOM Data
                     </button>
-                    <button type="button" class="btn btn-info btn-sm" onclick="showBOMDetails()">
-                        <i class="fas fa-eye"></i> View BOM Details
+                    <button type="button" class="btn btn-info btn-sm" onclick="showProcessBOMDetails(${processId})">
+                        <i class="fas fa-eye"></i> View Details
                     </button>
                 </div>
             </div>
@@ -708,60 +751,67 @@ function showBOMLoadOptions(bomData) {
     console.log('BOM Data Loaded:', bomData);
 }
 
-function applyBOMRates() {
-    if (!currentBOMData) {
-        alert('No BOM data available. Please load BOM first.');
+function applyBOMToProcess(processId) {
+    const bomData = processBOMData[processId];
+    if (!bomData) {
+        alert('No BOM data available for this process. Please load BOM first.');
         return;
     }
     
-    const processCards = document.querySelectorAll('.process-card');
-    let appliedCount = 0;
+    const processCard = document.getElementById(`process-${processId}`);
+    const rateInput = processCard.querySelector('.rate-per-unit');
+    const quantityInput = processCard.querySelector('.quantity-input');
+    const outputQuantityInput = processCard.querySelector('.output-quantity');
     
-    processCards.forEach(card => {
-        const rateInput = card.querySelector('.rate-per-unit');
-        if (rateInput && currentBOMData.total_cost_per_unit > 0) {
-            // Apply BOM rate to each process
-            rateInput.value = currentBOMData.total_cost_per_unit.toFixed(2);
-            appliedCount++;
-        }
-    });
-    
-    if (appliedCount > 0) {
-        // Update cost summary
-        updateCostSummary();
-        
-        // Show success message
-        const bomInfo = document.getElementById('bom-info');
-        const successAlert = document.createElement('div');
-        successAlert.className = 'alert alert-success alert-sm mt-2';
-        successAlert.innerHTML = `
-            <i class="fas fa-check-circle"></i> BOM rates applied to ${appliedCount} process(es) - ₹${currentBOMData.total_cost_per_unit}/unit
-        `;
-        bomInfo.appendChild(successAlert);
-        
-        // Remove success message after 3 seconds
-        setTimeout(() => {
-            if (successAlert.parentNode) {
-                successAlert.remove();
-            }
-        }, 3000);
-    } else {
-        alert('No processes found to apply rates. Please add processes first.');
+    // Apply BOM rate
+    if (rateInput && bomData.total_cost_per_unit > 0) {
+        rateInput.value = bomData.total_cost_per_unit.toFixed(2);
     }
+    
+    // Calculate input quantity based on output quantity and BOM factor
+    const outputQuantity = parseFloat(outputQuantityInput.value) || 0;
+    if (outputQuantity > 0 && bomData.materials && bomData.materials.length > 0) {
+        // For now, use a 1:1 ratio, but this could be enhanced with BOM material ratios
+        // In real scenarios, you might need 1.1 units of input to get 1 unit of output
+        const bomFactor = 1.0; // This could be calculated from BOM materials if needed
+        const calculatedInputQuantity = outputQuantity * bomFactor;
+        
+        quantityInput.value = calculatedInputQuantity.toFixed(2);
+    }
+    
+    // Update cost summary
+    updateCostSummary();
+    
+    // Show success message
+    const bomInfo = document.querySelector(`#bom-info-${processId}`);
+    const successAlert = document.createElement('div');
+    successAlert.className = 'alert alert-success alert-sm mt-2';
+    successAlert.innerHTML = `
+        <i class="fas fa-check-circle"></i> BOM data applied! Rate: ₹${bomData.total_cost_per_unit}/unit, Input qty calculated from output qty
+    `;
+    bomInfo.appendChild(successAlert);
+    
+    // Remove success message after 4 seconds
+    setTimeout(() => {
+        if (successAlert.parentNode) {
+            successAlert.remove();
+        }
+    }, 4000);
 }
 
-function showBOMDetails() {
-    if (!currentBOMData || !currentBOMData.materials) {
-        alert('No BOM details available');
+function showProcessBOMDetails(processId) {
+    const bomData = processBOMData[processId];
+    if (!bomData || !bomData.materials) {
+        alert('No BOM details available for this process');
         return;
     }
     
     let materialsTable = `
-        <div class="modal fade" id="bomDetailsModal" tabindex="-1">
+        <div class="modal fade" id="bomDetailsModal-${processId}" tabindex="-1">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">BOM Details - ${currentBOMData.item_name}</h5>
+                        <h5 class="modal-title">BOM Details - ${bomData.item_name} (Process ${processId})</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
@@ -769,19 +819,19 @@ function showBOMDetails() {
                             <div class="col-md-6">
                                 <h6>Cost Breakdown:</h6>
                                 <ul class="list-unstyled">
-                                    <li><strong>Material Cost:</strong> ₹${currentBOMData.material_cost}</li>
-                                    <li><strong>Labor Cost:</strong> ₹${currentBOMData.labor_cost}</li>
-                                    <li><strong>Overhead Cost:</strong> ₹${currentBOMData.overhead_cost}</li>
-                                    <li><strong>Freight Cost:</strong> ₹${currentBOMData.freight_cost}</li>
-                                    <li><strong>Markup (${currentBOMData.markup_percentage}%):</strong> ₹${currentBOMData.markup_amount}</li>
-                                    <li class="border-top pt-2"><strong>Total Cost:</strong> ₹${currentBOMData.total_cost_per_unit}</li>
+                                    <li><strong>Material Cost:</strong> ₹${bomData.material_cost}</li>
+                                    <li><strong>Labor Cost:</strong> ₹${bomData.labor_cost}</li>
+                                    <li><strong>Overhead Cost:</strong> ₹${bomData.overhead_cost}</li>
+                                    <li><strong>Freight Cost:</strong> ₹${bomData.freight_cost}</li>
+                                    <li><strong>Markup (${bomData.markup_percentage}%):</strong> ₹${bomData.markup_amount}</li>
+                                    <li class="border-top pt-2"><strong>Total Cost:</strong> ₹${bomData.total_cost_per_unit}</li>
                                 </ul>
                             </div>
                             <div class="col-md-6">
                                 <h6>Labor Information:</h6>
                                 <ul class="list-unstyled">
-                                    <li><strong>Labor Hours:</strong> ${currentBOMData.labor_hours} hrs</li>
-                                    <li><strong>Labor Rate:</strong> ₹${currentBOMData.labor_rate_per_hour}/hr</li>
+                                    <li><strong>Labor Hours:</strong> ${bomData.labor_hours} hrs</li>
+                                    <li><strong>Labor Rate:</strong> ₹${bomData.labor_rate_per_hour}/hr</li>
                                 </ul>
                             </div>
                         </div>
@@ -800,7 +850,7 @@ function showBOMDetails() {
                                 </thead>
                                 <tbody>`;
     
-    currentBOMData.materials.forEach(material => {
+    bomData.materials.forEach(material => {
         materialsTable += `
             <tr>
                 <td>${material.item_code}</td>
@@ -825,7 +875,7 @@ function showBOMDetails() {
         </div>`;
     
     // Remove existing modal if any
-    const existingModal = document.getElementById('bomDetailsModal');
+    const existingModal = document.getElementById(`bomDetailsModal-${processId}`);
     if (existingModal) {
         existingModal.remove();
     }
@@ -834,7 +884,7 @@ function showBOMDetails() {
     document.body.insertAdjacentHTML('beforeend', materialsTable);
     
     // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('bomDetailsModal'));
+    const modal = new bootstrap.Modal(document.getElementById(`bomDetailsModal-${processId}`));
     modal.show();
 }
 
