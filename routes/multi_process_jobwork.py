@@ -345,6 +345,7 @@ def get_item_bom(item_id):
             'item_code': item.code,
             'bom_id': bom.id,
             'bom_version': bom.version,
+            'output_quantity': bom.output_quantity or 1.0,
             'total_cost_per_unit': round(bom.total_cost_per_unit, 2),
             'material_cost': round(bom.total_material_cost, 2),
             'labor_cost': round(bom.labor_cost_per_unit or 0, 2),

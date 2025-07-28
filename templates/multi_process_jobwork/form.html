@@ -771,12 +771,18 @@ function applyBOMToProcess(processId) {
     // Calculate input quantity based on output quantity and BOM factor
     const outputQuantity = parseFloat(outputQuantityInput.value) || 0;
     if (outputQuantity > 0 && bomData.materials && bomData.materials.length > 0) {
-        // For now, use a 1:1 ratio, but this could be enhanced with BOM material ratios
-        // In real scenarios, you might need 1.1 units of input to get 1 unit of output
-        const bomFactor = 1.0; // This could be calculated from BOM materials if needed
-        const calculatedInputQuantity = outputQuantity * bomFactor;
+        // Use BOM output quantity as factor - if BOM produces 2 units, but we want 10 units,
+        // we need (10 ÷ 2) = 5 times the BOM material quantities
+        const bomOutputQuantity = bomData.output_quantity || 1.0;
+        const bomFactor = outputQuantity / bomOutputQuantity;
         
-        quantityInput.value = calculatedInputQuantity.toFixed(2);
+        // Calculate total input quantity needed (sum of all BOM materials × factor)
+        let totalInputQuantity = 0;
+        bomData.materials.forEach(material => {
+            totalInputQuantity += material.quantity_required * bomFactor;
+        });
+        
+        quantityInput.value = totalInputQuantity.toFixed(2);
     }
     
     // Update cost summary
