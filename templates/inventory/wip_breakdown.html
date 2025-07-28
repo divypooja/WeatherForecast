@@ -115,6 +115,13 @@
                                     <td>
                                         {% if item.qty_wip_cutting > 0 %}
                                             <span class="badge bg-info">{{ "%.2f"|format(item.qty_wip_cutting) }}</span>
+                                            {% if wip_processes.get(item.id, {}).get('cutting') %}
+                                                {% for output in wip_processes[item.id]['cutting'] %}
+                                                    {% if output.output_item %}
+                                                        <br><small class="text-success"><strong>→ {{ output.output_quantity }} {{ output.output_item.unit_of_measure }} {{ output.output_item.name }}</strong></small>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% endif %}
                                         {% else %}
                                             <span class="text-muted">-</span>
                                         {% endif %}
@@ -122,6 +129,13 @@
                                     <td>
                                         {% if item.qty_wip_bending > 0 %}
                                             <span class="badge bg-warning">{{ "%.2f"|format(item.qty_wip_bending) }}</span>
+                                            {% if wip_processes.get(item.id, {}).get('bending') %}
+                                                {% for output in wip_processes[item.id]['bending'] %}
+                                                    {% if output.output_item %}
+                                                        <br><small class="text-success"><strong>→ {{ output.output_quantity }} {{ output.output_item.unit_of_measure }} {{ output.output_item.name }}</strong></small>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% endif %}
                                         {% else %}
                                             <span class="text-muted">-</span>
                                         {% endif %}
@@ -129,6 +143,13 @@
                                     <td>
                                         {% if item.qty_wip_welding > 0 %}
                                             <span class="badge bg-danger">{{ "%.2f"|format(item.qty_wip_welding) }}</span>
+                                            {% if wip_processes.get(item.id, {}).get('welding') %}
+                                                {% for output in wip_processes[item.id]['welding'] %}
+                                                    {% if output.output_item %}
+                                                        <br><small class="text-success"><strong>→ {{ output.output_quantity }} {{ output.output_item.unit_of_measure }} {{ output.output_item.name }}</strong></small>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% endif %}
                                         {% else %}
                                             <span class="text-muted">-</span>
                                         {% endif %}
@@ -136,6 +157,13 @@
                                     <td>
                                         {% if item.qty_wip_zinc > 0 %}
                                             <span class="badge bg-success">{{ "%.2f"|format(item.qty_wip_zinc) }}</span>
+                                            {% if wip_processes.get(item.id, {}).get('zinc') %}
+                                                {% for output in wip_processes[item.id]['zinc'] %}
+                                                    {% if output.output_item %}
+                                                        <br><small class="text-success"><strong>→ {{ output.output_quantity }} {{ output.output_item.unit_of_measure }} {{ output.output_item.name }}</strong></small>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% endif %}
                                         {% else %}
                                             <span class="text-muted">-</span>
                                         {% endif %}
@@ -143,6 +171,13 @@
                                     <td>
                                         {% if item.qty_wip_painting > 0 %}
                                             <span class="badge bg-primary">{{ "%.2f"|format(item.qty_wip_painting) }}</span>
+                                            {% if wip_processes.get(item.id, {}).get('painting') %}
+                                                {% for output in wip_processes[item.id]['painting'] %}
+                                                    {% if output.output_item %}
+                                                        <br><small class="text-success"><strong>→ {{ output.output_quantity }} {{ output.output_item.unit_of_measure }} {{ output.output_item.name }}</strong></small>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% endif %}
                                         {% else %}
                                             <span class="text-muted">-</span>
                                         {% endif %}
@@ -150,6 +185,13 @@
                                     <td>
                                         {% if item.qty_wip_assembly > 0 %}
                                             <span class="badge bg-dark">{{ "%.2f"|format(item.qty_wip_assembly) }}</span>
+                                            {% if wip_processes.get(item.id, {}).get('assembly') %}
+                                                {% for output in wip_processes[item.id]['assembly'] %}
+                                                    {% if output.output_item %}
+                                                        <br><small class="text-success"><strong>→ {{ output.output_quantity }} {{ output.output_item.unit_of_measure }} {{ output.output_item.name }}</strong></small>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% endif %}
                                         {% else %}
                                             <span class="text-muted">-</span>
                                         {% endif %}
@@ -157,6 +199,13 @@
                                     <td>
                                         {% if item.qty_wip_machining > 0 %}
                                             <span class="badge bg-secondary">{{ "%.2f"|format(item.qty_wip_machining) }}</span>
+                                            {% if wip_processes.get(item.id, {}).get('machining') %}
+                                                {% for output in wip_processes[item.id]['machining'] %}
+                                                    {% if output.output_item %}
+                                                        <br><small class="text-success"><strong>→ {{ output.output_quantity }} {{ output.output_item.unit_of_measure }} {{ output.output_item.name }}</strong></small>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% endif %}
                                         {% else %}
                                             <span class="text-muted">-</span>
                                         {% endif %}
@@ -164,6 +213,13 @@
                                     <td>
                                         {% if item.qty_wip_polishing > 0 %}
                                             <span class="badge bg-light text-dark">{{ "%.2f"|format(item.qty_wip_polishing) }}</span>
+                                            {% if wip_processes.get(item.id, {}).get('polishing') %}
+                                                {% for output in wip_processes[item.id]['polishing'] %}
+                                                    {% if output.output_item %}
+                                                        <br><small class="text-success"><strong>→ {{ output.output_quantity }} {{ output.output_item.unit_of_measure }} {{ output.output_item.name }}</strong></small>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% endif %}
                                         {% else %}
                                             <span class="text-muted">-</span>
                                         {% endif %}

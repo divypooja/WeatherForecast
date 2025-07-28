@@ -12,6 +12,10 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **Visual Enhancement**: Process names displayed with blue badges, output products with green badges for clear visual distinction
 - **Template Bug Fix**: Fixed Output Qty display showing expected output quantity (400/1000 pcs) instead of actual completed (0 pcs)
 - **Multi-Process Support**: Process Information section now properly handles unified/multi-process jobs with complete process and output details
+- **Route Fix**: Updated job detail route to load processes for both 'multi_process' and 'unified' work types ensuring complete data display
+- **WIP Breakdown Enhancement**: Enhanced WIP Details by Item & Process table to show expected output quantities alongside input quantities
+- **Output Quantity Display**: WIP breakdown now shows "→ 1000 Pcs Mounted Plate" under each process column indicating expected transformation output
+- **Visual Process Flow**: Each WIP process column displays both input quantity (badge) and expected output (green text) for complete manufacturing visibility
 
 ### Critical GRN-Job Work Completion Logic Fix (July 27, 2025)
 - **Fixed Job Work Status Update Bug**: Resolved critical issue where completed GRNs weren't properly updating job work status from 'sent' to 'completed'
