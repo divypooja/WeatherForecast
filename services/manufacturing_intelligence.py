@@ -63,7 +63,7 @@ class ManufacturingIntelligence:
                     avg_throughput = sum(throughputs) / len(throughputs) if throughputs else 0
                 
                 # Calculate capacity utilization
-                capacity_utilization = (in_progress_jobs / max(total_jobs, 1)) * 100
+                capacity_utilization = (in_progress_jobs / max(total_jobs, 1)) * 100 if total_jobs > 0 else 0
                 
                 # Determine bottleneck status
                 is_bottleneck = (
