@@ -764,6 +764,22 @@ class JobWork(db.Model):
     @property
     def pending_quantity(self):
         """Calculate pending quantity to be received"""
+        # For multi-process jobs, calculate based on expected output vs received output
+        if self.work_type in ['multi_process', 'unified']:
+            try:
+                # Calculate total expected output from all processes
+                total_expected = 0
+                for process in self.processes:
+                    if process.output_quantity:
+                        total_expected += process.output_quantity * (self.quantity_sent or 0)
+                
+                # Return pending based on expected output vs received
+                return max(0, total_expected - (self.quantity_received or 0))
+            except:
+                # Fallback to standard calculation if process data unavailable
+                pass
+        
+        # For regular jobs, use standard calculation (sent - received)
         return max(0, (self.quantity_sent or 0) - (self.quantity_received or 0))
     
     @property
@@ -839,6 +855,23 @@ class JobWork(db.Model):
     @property
     def completion_percentage(self):
         """Calculate completion percentage for job work"""
+        # For multi-process jobs, calculate based on expected output vs received output
+        if self.work_type in ['multi_process', 'unified']:
+            try:
+                # Calculate total expected output from all processes
+                total_expected = 0
+                for process in self.processes:
+                    if process.output_quantity:
+                        total_expected += process.output_quantity * (self.quantity_sent or 0)
+                
+                # Return completion based on received vs expected output
+                if total_expected > 0:
+                    return min(((self.quantity_received or 0) / total_expected) * 100, 100)
+            except:
+                # Fallback to standard calculation if process data unavailable
+                pass
+        
+        # For regular jobs, use standard calculation (received / sent)
         if self.quantity_sent > 0:
             return min((self.quantity_received / self.quantity_sent) * 100, 100)
         return 0
