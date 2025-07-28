@@ -38,7 +38,7 @@ def create_app():
     login_manager.login_message_category = 'info'
     
     # Import models
-    from models import User, Item, Supplier, PurchaseOrder, SalesOrder, Employee, Production, BOM, NotificationSettings, NotificationLog, NotificationRecipient, CompanySettings, QualityIssue, QualityControlLog, FactoryExpense, Document
+    from models import User, Item, Supplier, PurchaseOrder, SalesOrder, Employee, JobWork, Production, BOM, NotificationSettings, NotificationLog, NotificationRecipient, CompanySettings, QualityIssue, QualityControlLog, FactoryExpense, Document
     from models_uom import UnitOfMeasure, UOMConversion, ItemUOMConversion, UOMConversionLog
     from models_department import Department
     
@@ -52,7 +52,8 @@ def create_app():
     from routes.inventory import inventory_bp
     from routes.purchase import purchase_bp
     from routes.sales import sales_bp
-
+    from routes.jobwork import jobwork_bp
+    from routes.jobwork_rates import jobwork_rates_bp
     from routes.production import production_bp
     from routes.hr import hr_bp
     from routes.reports import reports_bp
@@ -63,7 +64,12 @@ def create_app():
     from routes.expenses import expenses_bp
     from routes.documents import documents_bp
     
-
+    # Import GRN blueprint if available
+    try:
+        from routes.grn import grn_bp
+        from models_grn import GRN, GRNLineItem
+    except ImportError:
+        grn_bp = None
     from routes.uom import uom_bp
     from routes.tally import tally_bp
     from routes.packing import packing_bp
@@ -74,7 +80,8 @@ def create_app():
     app.register_blueprint(inventory_bp, url_prefix='/inventory')
     app.register_blueprint(purchase_bp, url_prefix='/purchase')
     app.register_blueprint(sales_bp, url_prefix='/sales')
-
+    app.register_blueprint(jobwork_bp, url_prefix='/jobwork')
+    app.register_blueprint(jobwork_rates_bp, url_prefix='/jobwork-rates')
     app.register_blueprint(production_bp, url_prefix='/production')
     app.register_blueprint(hr_bp, url_prefix='/hr')
     app.register_blueprint(reports_bp, url_prefix='/reports')
@@ -91,7 +98,13 @@ def create_app():
     from routes.backup import backup_bp
     app.register_blueprint(backup_bp, url_prefix='/backup')
     
-
+    # Register GRN blueprint if available
+    if grn_bp:
+        app.register_blueprint(grn_bp, url_prefix='/grn')
+    
+    # Register Multi-Process Job Work blueprint
+    from routes.multi_process_jobwork import multi_process_jobwork_bp
+    app.register_blueprint(multi_process_jobwork_bp)
     
     # Register Item Types blueprint
     from routes.item_types import item_types_bp
