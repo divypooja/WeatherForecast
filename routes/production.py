@@ -361,7 +361,7 @@ def delete_bom_item(id):
     
     db.session.delete(bom_item)
     db.session.commit()
-    flash('Item removed from BOM', 'success')
+    flash('Item removed from BOM successfully', 'success')
     
     return redirect(url_for('production.edit_bom', id=bom_id))
 
@@ -370,10 +370,18 @@ def delete_bom_item(id):
 def delete_bom(id):
     bom = BOM.query.get_or_404(id)
     
-    # Set BOM as inactive instead of deleting
-    bom.is_active = False
-    db.session.commit()
-    flash('BOM deactivated successfully', 'success')
+    # Check if BOM has items
+    if bom.items:
+        flash('Cannot delete BOM with existing items. Please remove all items first.', 'error')
+        return redirect(url_for('production.list_bom'))
+    
+    try:
+        db.session.delete(bom)
+        db.session.commit()
+        flash('BOM deleted successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting BOM: {str(e)}', 'error')
     
     return redirect(url_for('production.list_bom'))
 
