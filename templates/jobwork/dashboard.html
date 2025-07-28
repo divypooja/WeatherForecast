@@ -268,6 +268,9 @@
                                             <a href="{{ url_for('jobwork.detail', id=job.id) }}" class="btn btn-outline-primary btn-sm">
                                                 <i class="fas fa-eye"></i> View Details
                                             </a>
+                                            <a href="{{ url_for('jobwork.generate_challan', job_id=job.id) }}" class="btn btn-outline-info btn-sm" target="_blank">
+                                                <i class="fas fa-file-invoice"></i> Challan
+                                            </a>
                                             {% if job.is_team_work %}
                                             <a href="{{ url_for('jobwork.team_assignments', job_id=job.id) }}" class="btn btn-outline-success btn-sm">
                                                 <i class="fas fa-users"></i> Team Assignments

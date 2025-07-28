@@ -1294,3 +1294,26 @@ def delete_job_work(job_id):
             'success': False, 
             'message': f'Error deleting job work: {str(e)}'
         }), 500
+
+@jobwork_bp.route('/generate-challan/<int:job_id>')
+@login_required
+def generate_challan(job_id):
+    """Generate Job Work Challan PDF"""
+    from flask import make_response
+    job = JobWork.query.get_or_404(job_id)
+    
+    # Get company settings for sender information
+    company_settings = CompanySettings.query.first()
+    
+    # Get job work processes if it's a multi-process job
+    processes = []
+    try:
+        from models import JobWorkProcess
+        processes = JobWorkProcess.query.filter_by(job_work_id=job_id).order_by(JobWorkProcess.sequence_number).all()
+    except ImportError:
+        pass
+    
+    return render_template('jobwork/challan.html', 
+                         job=job, 
+                         company_settings=company_settings,
+                         processes=processes)
