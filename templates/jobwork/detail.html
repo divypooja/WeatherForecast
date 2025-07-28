@@ -211,11 +211,34 @@
                                         <tr>
                                             <td><strong>Process Type:</strong></td>
                                             <td>
-                                                <span class="badge bg-primary px-3 py-2">
-                                                    {{ job.process.replace('_', ' ').title() if job.process else 'Not specified' }}
-                                                </span>
+                                                {% if job.work_type == 'unified' and processes %}
+                                                    <span class="badge bg-info px-3 py-2">Multi-Process</span>
+                                                {% else %}
+                                                    <span class="badge bg-primary px-3 py-2">
+                                                        {{ job.process.replace('_', ' ').title() if job.process else 'Not specified' }}
+                                                    </span>
+                                                {% endif %}
                                             </td>
                                         </tr>
+                                        {% if job.work_type == 'unified' and processes %}
+                                        <tr>
+                                            <td><strong>Output Products:</strong></td>
+                                            <td>
+                                                {% for process in processes %}
+                                                    {% if process.output_item %}
+                                                        <div class="mb-2">
+                                                            <span class="badge bg-success me-2">{{ process.output_item.name }}</span>
+                                                            <strong>{{ process.output_quantity }}</strong> {{ process.output_item.unit_of_measure }}
+                                                            <small class="text-muted d-block">from {{ process.process_name }} process</small>
+                                                        </div>
+                                                    {% endif %}
+                                                {% endfor %}
+                                                {% if not processes|selectattr('output_item')|list %}
+                                                    <span class="text-muted">No output products specified</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endif %}
                                         <tr>
                                             <td><strong>Expected Finished:</strong></td>
                                             <td>
