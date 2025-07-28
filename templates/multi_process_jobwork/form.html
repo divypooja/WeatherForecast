@@ -404,13 +404,20 @@ function addProcess() {
     // Populate output product dropdown
     populateOutputProductDropdown(processCounter);
     
-    updateCostSummary();
-    
-    // Populate output product dropdown for this process
-    populateOutputProductDropdown(processCounter);
-    
     // Populate team lead dropdown for this process
     populateTeamLeadDropdown(processCounter);
+    
+    // Add event listener for output quantity changes to trigger BOM calculation
+    setTimeout(() => {
+        const outputQuantityInput = document.querySelector(`#process-${processCounter} .output-quantity`);
+        if (outputQuantityInput) {
+            outputQuantityInput.addEventListener('input', function() {
+                calculateInputQuantityFromBOM(processCounter);
+            });
+        }
+    }, 100); // Small delay to ensure DOM is ready
+    
+    updateCostSummary();
 }
 
 // Function to populate output product dropdown
@@ -658,6 +665,39 @@ document.getElementById('multiProcessForm').addEventListener('submit', function(
     // Submit the form normally (this will include CSRF token)
     this.submit();
 });
+
+// Function to calculate input quantity when output quantity changes
+function calculateInputQuantityFromBOM(processId) {
+    const processCard = document.getElementById(`process-${processId}`);
+    const bomData = processBOMData[processId];
+    
+    if (!bomData || !bomData.materials) {
+        return; // No BOM data available
+    }
+    
+    const outputQuantityInput = processCard.querySelector('.output-quantity');
+    const quantityInput = processCard.querySelector('.quantity-input');
+    const outputQuantity = parseFloat(outputQuantityInput.value) || 0;
+    
+    if (outputQuantity > 0 && bomData.materials.length > 0) {
+        // Use BOM output quantity as factor
+        const bomOutputQuantity = bomData.output_quantity || 1.0;
+        const bomFactor = outputQuantity / bomOutputQuantity;
+        
+        // Calculate total input quantity needed (sum of all BOM materials × factor)
+        let totalInputQuantity = 0;
+        bomData.materials.forEach(material => {
+            totalInputQuantity += material.quantity_required * bomFactor;
+        });
+        
+        quantityInput.value = totalInputQuantity.toFixed(2);
+        
+        // Update cost summary
+        updateCostSummary();
+        
+        console.log(`Process ${processId}: Calculated input quantity ${totalInputQuantity.toFixed(2)} for output quantity ${outputQuantity} (BOM output qty: ${bomOutputQuantity}, factor: ${bomFactor})`);
+    }
+}
 
 // BOM Loading Functionality
 let processBOMData = {}; // Store BOM data per process
