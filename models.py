@@ -684,9 +684,599 @@ class Employee(db.Model):
             next_num = 1
         return f"EMP-{next_num:04d}"
 
+class JobWorkRate(db.Model):
+    __tablename__ = 'job_work_rates'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
+    rate_per_unit = db.Column(db.Float, nullable=False, default=0.0)
+    process_type = db.Column(db.String(50), nullable=True)  # Optional process-specific rate
+    notes = db.Column(db.Text, nullable=True)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    
+    # Relationship
+    item = db.relationship('Item', backref='job_work_rates')
+    
+    def __repr__(self):
+        return f'<JobWorkRate {self.item.name}: ₹{self.rate_per_unit}>'
 
+class JobWork(db.Model):
+    __tablename__ = 'job_works'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    job_number = db.Column(db.String(50), unique=True, nullable=False)
+    customer_name = db.Column(db.String(100), nullable=False)
+    item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
+    process = db.Column(db.String(100), nullable=False)  # Process type: Zinc, Cutting, Bending, etc.
+    work_type = db.Column(db.String(20), nullable=False, default='outsourced')  # in_house or outsourced
+    department = db.Column(db.String(100), nullable=True)  # Department for in-house work
+    quantity_sent = db.Column(db.Float, nullable=False)
+    quantity_received = db.Column(db.Float, default=0.0)
+    expected_finished_material = db.Column(db.Float, default=0.0)  # Expected finished material quantity
+    expected_scrap = db.Column(db.Float, default=0.0)  # Expected scrap quantity
+    unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
+    total_weight_sent = db.Column(db.Float, default=0.0)  # Total weight sent
+    total_weight_received = db.Column(db.Float, default=0.0)  # Total weight received
+    rate_per_unit = db.Column(db.Float, nullable=False)
+    sent_date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date())
+    received_date = db.Column(db.Date)
+    expected_return = db.Column(db.Date)
+    status = db.Column(db.String(20), default='sent')  # sent, partial_received, completed
+    notes = db.Column(db.Text)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Team work settings
+    is_team_work = db.Column(db.Boolean, default=False)  # Whether this job can be divided among team members
+    max_team_members = db.Column(db.Integer, default=1)  # Maximum team members allowed
+    
+    # Inspection workflow fields
+    inspection_required = db.Column(db.Boolean, default=True)
+    inspection_status = db.Column(db.String(20), default='pending')  # pending, in_progress, completed, failed
+    inspected_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    inspected_at = db.Column(db.DateTime)
+    
+    # Relationships
+    item = db.relationship('Item', backref='job_works')
+    creator = db.relationship('User', foreign_keys=[created_by], backref='created_job_works')
+    inspector = db.relationship('User', foreign_keys=[inspected_by], backref='inspected_job_works')
+    # processes relationship will be defined in JobWorkProcess model to avoid forward reference issues
+    
+    @property
+    def total_cost(self):
+        """Calculate total job cost (quantity_sent × rate_per_unit). Returns 0 for in-house work."""
+        if self.work_type == 'in_house':
+            return 0.0  # In-house work has no direct cost
+        return (self.quantity_sent or 0.0) * (self.rate_per_unit or 0.0)
+    
+    @property
+    def total_cost_received(self):
+        """Calculate total cost for received quantity (quantity_received × rate_per_unit)"""
+        return (self.quantity_received or 0.0) * (self.rate_per_unit or 0.0)
+    
+    @property
+    def cost_per_unit_display(self):
+        """Return formatted cost per unit for display"""
+        return f"₹{self.rate_per_unit:.2f}" if self.rate_per_unit else "₹0.00"
+    
+    @property
+    def pending_quantity(self):
+        """Calculate pending quantity to be received"""
+        return max(0, (self.quantity_sent or 0) - (self.quantity_received or 0))
+    
+    @property
+    def pending_receipt_display(self):
+        """Get display text for pending material receipt, considering multi-process output"""
+        if self.work_type in ['multi_process', 'unified']:
+            # For multi-process jobs, show expected output materials
+            processes = self.processes.all() if hasattr(self, 'processes') else []
+            if processes:
+                pending_items = []
+                for process in processes:
+                    if process.output_item_id and process.output_quantity:
+                        pending_items.append(f"{process.output_quantity} {process.output_item.unit_of_measure} {process.output_item.name}")
+                
+                if pending_items:
+                    return " + ".join(pending_items[:2])  # Show first 2 outputs to avoid clutter
+                    
+        # For regular jobs, show pending input material
+        pending_qty = self.pending_quantity
+        if pending_qty > 0:
+            return f"{pending_qty} {self.item.unit_of_measure}"
+        return "No pending receipt"
+    
+    @property
+    def has_pending_quantity(self):
+        """Check if there's any pending quantity"""
+        return self.pending_quantity > 0
+    
+    @property
+    def total_grn_received(self):
+        """Calculate total quantity received through all GRNs"""
+        try:
+            from models_grn import GRN
+            total = 0
+            for grn in self.grn_receipts:
+                total += grn.total_quantity_received
+            return total
+        except:
+            return 0
+    
+    @property
+    def total_grn_passed(self):
+        """Calculate total quantity passed inspection through all GRNs"""
+        try:
+            from models_grn import GRN
+            total = 0
+            for grn in self.grn_receipts:
+                total += grn.total_quantity_passed
+            return total
+        except:
+            return 0
+    
+    @property
+    def total_grn_rejected(self):
+        """Calculate total quantity rejected through all GRNs"""
+        try:
+            from models_grn import GRN
+            total = 0
+            for grn in self.grn_receipts:
+                total += grn.total_quantity_rejected
+            return total
+        except:
+            return 0
+    
+    @property
+    def grn_acceptance_rate(self):
+        """Calculate overall acceptance rate from GRNs"""
+        total_received = self.total_grn_received
+        if total_received > 0:
+            return (self.total_grn_passed / total_received) * 100
+        return 0
+    
+    @property
+    def completion_percentage(self):
+        """Calculate completion percentage for job work"""
+        if self.quantity_sent > 0:
+            return min((self.quantity_received / self.quantity_sent) * 100, 100)
+        return 0
+    
+    @property
+    def total_cost_display(self):
+        """Return formatted total cost for display"""
+        if self.work_type == 'in_house':
+            return "Internal Cost"
+        return f"₹{self.total_cost:.2f}"
+    
+    @property
+    def work_type_display(self):
+        """Return user-friendly work type display"""
+        return "In-House" if self.work_type == 'in_house' else "Outsourced"
+    
+    @property
+    def work_type_badge_class(self):
+        """Return Bootstrap badge class for work type"""
+        return 'bg-success' if self.work_type == 'in_house' else 'bg-primary'
+    
+    @property
+    def calculated_quantity_received(self):
+        """Calculate quantity received from material inspections (source of truth)"""
+        # Import here to avoid circular imports
+        from sqlalchemy import func
+        
+        # Calculate sum of received quantities from material inspections
+        total_received = db.session.query(func.sum(MaterialInspection.received_quantity)).filter(
+            MaterialInspection.job_work_id == self.id
+        ).scalar() or 0.0
+        
+        return float(total_received)
+    
+    @property
+    def has_quantity_mismatch(self):
+        """Check if stored quantity_received differs from actual inspection data"""
+        return abs((self.quantity_received or 0) - self.calculated_quantity_received) > 0.01
+    
+    def sync_quantity_received(self):
+        """Sync quantity_received field with actual inspection data"""
+        calculated_qty = self.calculated_quantity_received
+        if abs((self.quantity_received or 0) - calculated_qty) > 0.01:
+            old_qty = self.quantity_received
+            self.quantity_received = calculated_qty
+            
+            # Update status based on corrected quantity
+            if self.quantity_received >= self.quantity_sent:
+                self.status = 'completed'
+            elif self.quantity_received > 0:
+                self.status = 'partial_received'
+            else:
+                self.status = 'sent'
+                
+            # Log the correction in notes
+            note = f"\n[SYSTEM] Quantity received corrected from {old_qty} to {calculated_qty} based on inspection records"
+            self.notes = (self.notes or "") + note
+            
+            return True  # Indicates correction was made
+        return False  # No correction needed
+    
+    @property
+    def assigned_team_members(self):
+        """Get list of assigned team members"""
+        return [assignment.member_name for assignment in self.team_assignments]
+    
+    @property
+    def team_member_count(self):
+        """Get count of assigned team members"""
+        return len(self.team_assignments)
+    
+    def check_and_update_completion_status(self):
+        """Check if all team members are completed and update job work status"""
+        if not self.is_team_work:
+            return
+            
+        # Get all team assignments for this job
+        assignments = JobWorkTeamAssignment.query.filter_by(job_work_id=self.id).all()
+        
+        if not assignments:
+            return
+            
+        # Check if all assignments are at 100% completion
+        all_completed = all(assignment.completion_percentage >= 100.0 for assignment in assignments)
+        
+        if all_completed and self.status != 'completed':
+            self.status = 'completed'
+            self.received_date = datetime.utcnow().date()
+            
+            # Calculate total received quantity as sum of completed quantities
+            total_completed = sum(assignment.completed_quantity for assignment in assignments)
+            self.quantity_received = total_completed
+    
+    @property
+    def remaining_team_slots(self):
+        """Get remaining team member slots available"""
+        return max(0, self.max_team_members - self.team_member_count)
+    
+    @property
+    def is_team_full(self):
+        """Check if team is at maximum capacity"""
+        return self.team_member_count >= self.max_team_members
+    
+    @property
+    def total_assigned_quantity(self):
+        """Get total quantity assigned to all team members"""
+        return sum(assignment.assigned_quantity for assignment in self.team_assignments)
+    
+    @property
+    def unassigned_quantity(self):
+        """Get quantity not yet assigned to team members"""
+        return max(0, self.quantity_sent - self.total_assigned_quantity)
+    
+    @staticmethod
+    def generate_job_number():
+        """Generate unique job work number"""
+        current_year = datetime.now().year
+        # Find last job work number for current year
+        last_job = JobWork.query.filter(JobWork.job_number.like(f'JOB-{current_year}-%')).order_by(JobWork.id.desc()).first()
+        if last_job:
+            # Extract sequence number from job number like "JOB-2024-0001"
+            try:
+                last_sequence = int(last_job.job_number.split('-')[-1])
+                next_sequence = last_sequence + 1
+            except (ValueError, IndexError):
+                next_sequence = 1
+        else:
+            next_sequence = 1
+        return f"JOB-{current_year}-{next_sequence:04d}"
 
+class JobWorkTeamAssignment(db.Model):
+    """Model for assigning job work to multiple team members"""
+    __tablename__ = 'job_work_team_assignments'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    job_work_id = db.Column(db.Integer, db.ForeignKey('job_works.id'), nullable=False)
+    employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=False)
+    member_name = db.Column(db.String(100), nullable=False)  # Keep for backward compatibility
+    assigned_quantity = db.Column(db.Float, nullable=False)  # Quantity assigned to this member
+    completion_percentage = db.Column(db.Float, default=0.0)  # Progress percentage (0-100)
+    estimated_hours = db.Column(db.Float, nullable=True)  # Estimated hours for this assignment
+    actual_hours_worked = db.Column(db.Float, default=0.0)  # Actual hours worked so far
+    member_role = db.Column(db.String(50), nullable=True)  # Role/responsibility of this member
+    start_date = db.Column(db.Date, nullable=True)
+    target_completion = db.Column(db.Date, nullable=True)
+    status = db.Column(db.String(20), default='assigned')  # assigned, in_progress, completed, paused
+    notes = db.Column(db.Text)
+    
+    # Audit fields
+    assigned_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    assigned_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    job_work = db.relationship('JobWork', backref='team_assignments')
+    employee = db.relationship('Employee', backref='team_assignments')
+    assigner = db.relationship('User', backref='team_assignments_created')
+    
+    # Unique constraint to prevent duplicate assignments
+    __table_args__ = (db.UniqueConstraint('job_work_id', 'employee_id', name='unique_job_employee'),)
+    
+    @property
+    def status_badge_class(self):
+        """Return Bootstrap badge class for status"""
+        status_classes = {
+            'assigned': 'bg-info',
+            'in_progress': 'bg-warning',
+            'completed': 'bg-success',
+            'paused': 'bg-secondary'
+        }
+        return status_classes.get(self.status, 'bg-secondary')
+    
+    @property
+    def completion_progress_class(self):
+        """Return Bootstrap progress bar class based on completion"""
+        if self.completion_percentage >= 100:
+            return 'bg-success'
+        elif self.completion_percentage >= 75:
+            return 'bg-info'
+        elif self.completion_percentage >= 50:
+            return 'bg-warning'
+        else:
+            return 'bg-danger'
+    
+    @property
+    def completed_quantity(self):
+        """Calculate completed quantity based on completion percentage"""
+        return (self.completion_percentage * self.assigned_quantity / 100) if self.assigned_quantity > 0 else 0
+    
+    def update_progress_from_daily_entries(self):
+        """Update progress based on cumulative daily work entries"""
+        from sqlalchemy import func
+        
+        # Find the employee's daily entries for this job work
+        employee = Employee.query.get(self.employee_id)
+        if not employee:
+            return
+            
+        # Get all daily entries for this employee on this job work
+        total_completed = db.session.query(func.sum(DailyJobWorkEntry.quantity_completed)).filter(
+            DailyJobWorkEntry.job_work_id == self.job_work_id,
+            DailyJobWorkEntry.worker_name == employee.name
+        ).scalar() or 0
+        
+        # Calculate completion percentage
+        if self.assigned_quantity > 0:
+            completion_percentage = min(100.0, (total_completed / self.assigned_quantity) * 100)
+            self.completion_percentage = round(completion_percentage, 2)
+            
+            # Update status based on completion
+            if completion_percentage >= 100:
+                self.status = 'completed'
+            elif completion_percentage > 0:
+                self.status = 'in_progress'
+            else:
+                self.status = 'assigned'
+        
+        # Update actual hours worked
+        total_hours = db.session.query(func.sum(DailyJobWorkEntry.hours_worked)).filter(
+            DailyJobWorkEntry.job_work_id == self.job_work_id,
+            DailyJobWorkEntry.worker_name == employee.name
+        ).scalar() or 0
+        
+        self.actual_hours_worked = total_hours
 
+class JobWorkProcess(db.Model):
+    """Model for tracking individual processes within a job work"""
+    __tablename__ = 'job_work_processes'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    job_work_id = db.Column(db.Integer, db.ForeignKey('job_works.id'), nullable=False)
+    process_name = db.Column(db.String(100), nullable=False)  # Zinc, Cutting, Bending, Welding, etc.
+    sequence_number = db.Column(db.Integer, nullable=False, default=1)  # Order of process execution
+    status = db.Column(db.String(20), default='pending')  # pending, in_progress, completed, on_hold
+    
+    # Process tracking fields
+    quantity_input = db.Column(db.Float, nullable=False, default=0.0)
+    quantity_output = db.Column(db.Float, default=0.0)
+    quantity_scrap = db.Column(db.Float, default=0.0)
+    expected_scrap = db.Column(db.Float, default=0.0)  # Expected scrap quantity for planning
+    
+    # Live status tracking with timestamps
+    status_history = db.Column(db.Text)  # JSON field to track status changes
+    started_at = db.Column(db.DateTime)  # When process actually started
+    completed_at = db.Column(db.DateTime)  # When process completed
+    on_hold_since = db.Column(db.DateTime)  # When process was put on hold
+    on_hold_reason = db.Column(db.String(200))  # Reason for hold
+    
+    # Batch tracking for this process
+    batch_number = db.Column(db.String(50))  # Batch/lot number for traceability
+    input_batch_ids = db.Column(db.Text)  # JSON array of input batch IDs
+    
+    # Output product specification
+    output_item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=True)  # What product is being created
+    output_quantity = db.Column(db.Float, default=0.0)  # How many units of output product expected
+    
+    # Work assignment fields
+    work_type = db.Column(db.String(20), default='outsourced')  # outsourced, in_house
+    customer_name = db.Column(db.String(100))  # For outsourced work
+    department = db.Column(db.String(100))  # For in-house work
+    rate_per_unit = db.Column(db.Float, default=0.0)
+    
+    # Date tracking
+    start_date = db.Column(db.Date)
+    expected_completion = db.Column(db.Date)
+    actual_completion = db.Column(db.Date)
+    
+    # Team assignment fields (for in-house processes)
+    is_team_work = db.Column(db.Boolean, default=False)  # Whether this process allows team assignment
+    max_team_members = db.Column(db.Integer, default=1)  # Maximum team members allowed
+    team_lead_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=True)  # Team lead for this process
+    
+    # Notes and timestamps
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Define the back-relationship here to avoid forward reference issues
+    job_work = db.relationship('JobWork', backref='processes')
+    output_item = db.relationship('Item', foreign_keys=[output_item_id], backref='processes_output')
+    team_lead = db.relationship('Employee', foreign_keys=[team_lead_id], backref='processes_led')
+    
+    @property
+    def process_cost(self):
+        """Calculate total cost for this process"""
+        return self.quantity_input * self.rate_per_unit
+    
+    @property
+    def completion_percentage(self):
+        """Calculate completion percentage based on output + scrap vs input"""
+        if self.quantity_input == 0:
+            return 0
+        processed = (self.quantity_output or 0) + (self.quantity_scrap or 0)
+        return min(100, (processed / self.quantity_input) * 100)
+    
+    @property
+    def status_badge_class(self):
+        """Return Bootstrap badge class for status"""
+        status_classes = {
+            'pending': 'bg-secondary',
+            'in_progress': 'bg-primary',
+            'completed': 'bg-success',
+            'on_hold': 'bg-warning'
+        }
+        return status_classes.get(self.status, 'bg-secondary')
+    
+    @property
+    def process_badge_class(self):
+        """Return Bootstrap badge class for process type"""
+        process_classes = {
+            'Zinc': 'bg-info',
+            'Cutting': 'bg-warning',
+            'Bending': 'bg-primary',
+            'Welding': 'bg-danger',
+            'Painting': 'bg-success',
+            'Assembly': 'bg-dark',
+            'Machining': 'bg-secondary',
+            'Polishing': 'bg-light text-dark'
+        }
+        return process_classes.get(self.process_name, 'bg-secondary')
+    
+    def update_status(self, new_status, user_id, reason=None):
+        """Update process status with tracking"""
+        import json
+        
+        old_status = self.status
+        self.status = new_status
+        
+        # Update timestamps based on status
+        now = datetime.utcnow()
+        if new_status == 'in_progress' and not self.started_at:
+            self.started_at = now
+        elif new_status == 'completed':
+            self.completed_at = now
+        elif new_status == 'on_hold':
+            self.on_hold_since = now
+            self.on_hold_reason = reason
+        elif new_status == 'in_progress' and old_status == 'on_hold':
+            # Resume from hold
+            self.on_hold_since = None
+            self.on_hold_reason = None
+        
+        # Track status history
+        try:
+            history = json.loads(self.status_history or '[]')
+        except (json.JSONDecodeError, TypeError):
+            history = []
+        
+        history.append({
+            'timestamp': now.isoformat(),
+            'old_status': old_status,
+            'new_status': new_status,
+            'user_id': user_id,
+            'reason': reason
+        })
+        
+        self.status_history = json.dumps(history)
+        self.updated_at = now
+        
+        return True
+    
+    @property
+    def time_in_current_status(self):
+        """Calculate time spent in current status"""
+        if self.status == 'in_progress' and self.started_at:
+            return datetime.utcnow() - self.started_at
+        elif self.status == 'completed' and self.completed_at and self.started_at:
+            return self.completed_at - self.started_at
+        elif self.status == 'on_hold' and self.on_hold_since:
+            return datetime.utcnow() - self.on_hold_since
+        return None
+    
+    @property
+    def is_delayed(self):
+        """Check if process is delayed based on expected completion"""
+        if self.expected_completion and self.status not in ['completed']:
+            return datetime.now().date() > self.expected_completion
+        return False
+    
+    # Quantity tracking for this specific process
+    quantity_input = db.Column(db.Float, nullable=False)  # Quantity received for this process
+    quantity_output = db.Column(db.Float, default=0.0)  # Quantity completed from this process
+    quantity_scrap = db.Column(db.Float, default=0.0)  # Scrap generated in this process
+    
+    # Process-specific details
+    customer_name = db.Column(db.String(100))  # Customer for this process (may differ per process)
+    rate_per_unit = db.Column(db.Float, default=0.0)  # Rate for this specific process
+    work_type = db.Column(db.String(20), default='outsourced')  # in_house or outsourced
+    department = db.Column(db.String(100))  # Department for in-house processes
+    
+    # Timing
+    start_date = db.Column(db.Date)  # When this process started
+    expected_completion = db.Column(db.Date)  # Expected completion date
+    actual_completion = db.Column(db.Date)  # Actual completion date
+    
+    # Process tracking
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    notes = db.Column(db.Text)
+    
+    @property
+    def process_cost(self):
+        """Calculate cost for this specific process"""
+        return (self.quantity_input or 0.0) * (self.rate_per_unit or 0.0)
+    
+    @property
+    def completion_percentage(self):
+        """Calculate completion percentage for this process"""
+        if not self.quantity_input or self.quantity_input == 0:
+            return 0.0
+        output_plus_scrap = (self.quantity_output or 0.0) + (self.quantity_scrap or 0.0)
+        return min(100.0, (output_plus_scrap / self.quantity_input) * 100)
+    
+    @property
+    def status_badge_class(self):
+        """Return Bootstrap badge class for status"""
+        status_classes = {
+            'pending': 'bg-secondary',
+            'in_progress': 'bg-primary',
+            'completed': 'bg-success',
+            'on_hold': 'bg-warning'
+        }
+        return status_classes.get(self.status, 'bg-secondary')
+    
+    @property
+    def process_badge_class(self):
+        """Return Bootstrap badge class for process type"""
+        process_classes = {
+            'Zinc': 'bg-info',
+            'Cutting': 'bg-danger',
+            'Bending': 'bg-warning',
+            'Welding': 'bg-dark',
+            'Painting': 'bg-success',
+            'Assembly': 'bg-primary',
+            'Machining': 'bg-secondary',
+            'Polishing': 'bg-light text-dark'
+        }
+        return process_classes.get(self.process_name, 'bg-secondary')
 
 class Production(db.Model):
     __tablename__ = 'productions'
@@ -711,27 +1301,6 @@ class Production(db.Model):
     produced_item = db.relationship('Item', backref='productions')
     creator = db.relationship('User', backref='created_productions')
     quality_issues = db.relationship('QualityIssue', backref='production', lazy=True, cascade='all, delete-orphan')
-
-    @staticmethod
-    def generate_production_number():
-        """Generate unique production number"""
-        current_year = datetime.now().year
-        # Find last production number for current year
-        last_prod = Production.query.filter(Production.production_number.like(f'PROD-{current_year}-%')).order_by(Production.id.desc()).first()
-        if last_prod:
-            # Extract sequence number from production number like "PROD-2024-0001"
-            try:
-                last_sequence = int(last_prod.production_number.split('-')[-1])
-                next_sequence = last_sequence + 1
-            except (ValueError, IndexError):
-                next_sequence = 1
-        else:
-            next_sequence = 1
-        return f"PROD-{current_year}-{next_sequence:04d}"
-
-
-# JobWork related classes have been completely removed from the system
-
 
 class BOM(db.Model):
     __tablename__ = 'boms'
@@ -763,30 +1332,78 @@ class BOM(db.Model):
         return sum(item.quantity_required * item.unit_cost for item in self.items)
     
     @property
+    def calculated_freight_cost_per_unit(self):
+        """Calculate actual freight cost per unit based on freight unit type"""
+        if not self.freight_cost_per_unit or self.freight_cost_per_unit == 0:
+            return 0.0
+            
+        # If freight is per piece/unit, return as-is
+        if not self.freight_unit_type or self.freight_unit_type == 'per_piece':
+            return self.freight_cost_per_unit
+        
+        # Calculate total weight per unit for weight-based freight
+        total_weight = 0.0
+        for item in self.items:
+            if item.item.unit_weight and item.item.unit_weight > 0:
+                total_weight += item.item.unit_weight * item.quantity_required
+        
+        if total_weight == 0:
+            return 0.0
+            
+        # Calculate freight cost based on unit type
+        if self.freight_unit_type == 'per_kg':
+            return self.freight_cost_per_unit * total_weight
+        elif self.freight_unit_type == 'per_ton':
+            return self.freight_cost_per_unit * (total_weight / 1000)  # Convert kg to tons
+        elif self.freight_unit_type in ['per_box', 'per_carton']:
+            # For box/carton, assume 1 unit = 1 box/carton (user can adjust freight cost accordingly)
+            return self.freight_cost_per_unit
+        
+        return self.freight_cost_per_unit
+    
+    @property
+    def total_weight_per_unit(self):
+        """Calculate total weight per unit for this BOM"""
+        total_weight = 0.0
+        for item in self.items:
+            if item.item.unit_weight and item.item.unit_weight > 0:
+                total_weight += item.item.unit_weight * item.quantity_required
+        return total_weight
+    
+    @property
     def total_cost_per_unit(self):
         """Calculate total cost per unit including materials, labor, overhead, freight, and markup"""
         material_cost = self.total_material_cost
         labor_cost = self.labor_cost_per_unit or 0
         overhead_cost = self.overhead_cost_per_unit or 0
-        freight_cost = self.freight_cost_per_unit or 0
+        freight_cost = self.calculated_freight_cost_per_unit
         
-        # Calculate overhead as percentage if specified
+        # If overhead is percentage-based, calculate from material cost
         if self.overhead_percentage and self.overhead_percentage > 0:
             overhead_cost = material_cost * (self.overhead_percentage / 100)
         
         subtotal = material_cost + labor_cost + overhead_cost + freight_cost
         
-        # Apply markup if specified
-        if self.markup_percentage and self.markup_percentage > 0:
-            markup_amount = subtotal * (self.markup_percentage / 100)
-            return subtotal + markup_amount
+        # Apply markup percentage
+        markup_amount = subtotal * (self.markup_percentage or 0) / 100
         
-        return subtotal
+        return subtotal + markup_amount
     
-    def __repr__(self):
-        return f'<BOM {self.product.name} v{self.version}>' if self.product else f'<BOM {self.id}>'
-
-# JobWorkProcess class has been completely removed
+    @property
+    def markup_amount_per_unit(self):
+        """Calculate markup amount per unit"""
+        material_cost = self.total_material_cost
+        labor_cost = self.labor_cost_per_unit or 0
+        overhead_cost = self.overhead_cost_per_unit or 0
+        freight_cost = self.calculated_freight_cost_per_unit
+        
+        # If overhead is percentage-based, calculate from material cost
+        if self.overhead_percentage and self.overhead_percentage > 0:
+            overhead_cost = material_cost * (self.overhead_percentage / 100)
+        
+        subtotal = material_cost + labor_cost + overhead_cost + freight_cost
+        
+        return subtotal * (self.markup_percentage or 0) / 100
 
 class BOMItem(db.Model):
     __tablename__ = 'bom_items'
@@ -795,24 +1412,20 @@ class BOMItem(db.Model):
     bom_id = db.Column(db.Integer, db.ForeignKey('boms.id'), nullable=False)
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     quantity_required = db.Column(db.Float, nullable=False)
-    unit = db.Column(db.String(20), default='pcs')  # Unit for this BOM item (independent of item's default unit)
+    unit = db.Column(db.String(20), nullable=False, default='pcs')  # Unit for this BOM item (pcs, kg, etc.)
     unit_cost = db.Column(db.Float, default=0.0)
-    notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
+    total_weight = db.Column(db.Float, default=0.0)  # Total weight (qty × unit_weight)
     
-    # Relationships
-    item = db.relationship('Item', backref='bom_items')
+    def __init__(self, **kwargs):
+        super(BOMItem, self).__init__(**kwargs)
+        # Auto-populate unit cost from item's unit price if not provided
+        if self.unit_cost == 0.0 and self.item_id:
+            item = Item.query.get(self.item_id)
+            if item and item.unit_price:
+                self.unit_cost = item.unit_price
     
-    @property
-    def total_cost_for_quantity(self):
-        """Calculate total cost for the required quantity"""
-        return self.quantity_required * self.unit_cost
-    
-    def __repr__(self):
-        return f'<BOMItem {self.item.name} ({self.quantity_required} {self.unit})>' if self.item else f'<BOMItem {self.id}>'
-
-
-# All duplicate BOM classes completely removed - keeping only the first clean definition
+    # No need for relationship here since Item already defines bom_items with backref
 
 class QualityIssue(db.Model):
     __tablename__ = 'quality_issues'
@@ -1350,4 +1963,67 @@ class Document(db.Model):
         import os
         return os.path.join('uploads', self.upload_path)
 
-# All JobWork related classes (DailyJobWorkEntry, JobWorkProcess, etc.) have been completely removed from the system
+class DailyJobWorkEntry(db.Model):
+    """Model for tracking daily job work progress by workers"""
+    __tablename__ = 'daily_job_work_entries'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    job_work_id = db.Column(db.Integer, db.ForeignKey('job_works.id'), nullable=False)
+    worker_name = db.Column(db.String(100), nullable=False)
+    work_date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date())
+    hours_worked = db.Column(db.Float, nullable=False)
+    quantity_completed = db.Column(db.Float, nullable=False)
+    scrap_quantity = db.Column(db.Float, default=0.0)  # Scrap/waste quantity produced
+    quality_status = db.Column(db.String(20), nullable=False, default='good')  # good, needs_rework, defective
+    process_stage = db.Column(db.String(20), nullable=False, default='in_progress')  # started, in_progress, completed, on_hold
+    notes = db.Column(db.Text)
+    
+    # Inspection fields for in-house job work entries
+    inspection_status = db.Column(db.String(20), default='pending')  # pending, passed, failed
+    inspection_notes = db.Column(db.Text)  # Inspection notes
+    inspected_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    inspected_at = db.Column(db.DateTime, nullable=True)
+    material_classification = db.Column(db.String(50), nullable=False, default='production_use')  # raw_material, production_use, finished_goods
+    
+    # Quality inspection quantity fields
+    inspected_quantity = db.Column(db.Float, default=0.0)  # Total quantity inspected
+    passed_quantity = db.Column(db.Float, default=0.0)  # Quantity that passed inspection
+    rejected_quantity = db.Column(db.Float, default=0.0)  # Quantity that was rejected
+    rejection_reasons = db.Column(db.Text)  # Reasons for rejection
+    
+    # Audit fields
+    logged_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    job_work = db.relationship('JobWork', backref='daily_entries')
+    logger = db.relationship('User', foreign_keys='DailyJobWorkEntry.logged_by', backref='logged_daily_work')
+    inspector = db.relationship('User', foreign_keys='DailyJobWorkEntry.inspected_by', backref='inspected_daily_entries')
+    
+    # Unique constraint to prevent duplicate entries for same worker/job/date
+    __table_args__ = (db.UniqueConstraint('job_work_id', 'worker_name', 'work_date', name='unique_worker_job_date'),)
+    
+    @property
+    def quality_badge_class(self):
+        """Return Bootstrap badge class for quality status"""
+        quality_classes = {
+            'good': 'bg-success',
+            'needs_rework': 'bg-warning',
+            'defective': 'bg-danger'
+        }
+        return quality_classes.get(self.quality_status, 'bg-light')
+    
+    @property
+    def stage_badge_class(self):
+        """Return Bootstrap badge class for process stage"""
+        stage_classes = {
+            'started': 'bg-info',
+            'in_progress': 'bg-primary',
+            'completed': 'bg-success',
+            'on_hold': 'bg-secondary'
+        }
+        return stage_classes.get(self.process_stage, 'bg-light')
+    
+    def __repr__(self):
+        return f'<DailyJobWorkEntry {self.worker_name} - {self.job_work.job_number} - {self.work_date}>'
