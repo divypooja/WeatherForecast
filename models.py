@@ -1308,7 +1308,6 @@ class BOM(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     product_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     version = db.Column(db.String(20), default='1.0')
-    output_quantity = db.Column(db.Float, default=1.0, nullable=False)  # How many finished units this BOM produces
     is_active = db.Column(db.Boolean, default=True)
     
     # Labor and Overhead costs

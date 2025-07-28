@@ -267,41 +267,12 @@ def delete_item(id):
 
 
 # API Endpoints
-@inventory_bp.route('/api/items')
-@login_required
-def api_get_items():
-    """API endpoint to get all items for dropdown population"""
-    try:
-        items = Item.query.filter_by(is_active=True).order_by(Item.name).all()
-        items_data = []
-        
-        for item in items:
-            items_data.append({
-                'id': item.id,
-                'code': item.code,
-                'name': item.name,
-                'unit_of_measure': item.unit_of_measure
-            })
-        
-        return jsonify({
-            'success': True,
-            'items': items_data
-        })
-    
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': f'Error fetching items: {str(e)}'
-        }), 500
-
 @inventory_bp.route('/inventory/api/item-stock/<int:item_id>')
 @inventory_bp.route('/api/item-stock/<int:item_id>')
 @login_required
 def get_item_stock(item_id):
-    """API endpoint to get item stock information with multi-state inventory and BOM data"""
+    """API endpoint to get item stock information with multi-state inventory"""
     try:
-        from models import BOM, BOMItem
-        
         item = Item.query.get_or_404(item_id)
         
         # Initialize multi-state fields if not set
@@ -311,35 +282,6 @@ def get_item_stock(item_id):
             item.qty_finished = 0.0
             item.qty_scrap = 0.0
             db.session.commit()
-        
-        # Check for BOM data
-        active_bom = BOM.query.filter_by(product_id=item_id, is_active=True).first()
-        bom_data = None
-        
-        if active_bom:
-            bom_items = BOMItem.query.filter_by(bom_id=active_bom.id).all()
-            total_material_cost = sum(
-                (bom_item.quantity_required * (bom_item.unit_cost or 0)) 
-                for bom_item in bom_items
-            )
-            
-            bom_data = {
-                'has_bom': True,
-                'bom_id': active_bom.id,
-                'output_quantity': active_bom.output_quantity or 1.0,
-                'total_material_cost': float(total_material_cost),
-                'total_cost_per_unit': float(active_bom.total_cost_per_unit or 0),
-                'material_count': len(bom_items),
-                'materials': [{
-                    'item_code': bom_item.item.code,
-                    'item_name': bom_item.item.name,
-                    'quantity_required': float(bom_item.quantity_required),
-                    'unit_cost': float(bom_item.unit_cost or 0),
-                    'unit': bom_item.unit or bom_item.item.unit_of_measure
-                } for bom_item in bom_items]
-            }
-        else:
-            bom_data = {'has_bom': False}
         
         return jsonify({
             'success': True,
@@ -357,8 +299,7 @@ def get_item_stock(item_id):
             'unit_of_measure': item.unit_of_measure or 'units',
             'unit_price': float(item.unit_price or 0),
             'unit_weight': float(item.unit_weight or 0),
-            'low_stock': (item.available_stock or 0) <= (item.minimum_stock or 0),
-            'bom': bom_data
+            'low_stock': (item.available_stock or 0) <= (item.minimum_stock or 0)
         })
     except Exception as e:
         return jsonify({

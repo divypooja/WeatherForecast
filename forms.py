@@ -541,7 +541,6 @@ class NotificationTestForm(FlaskForm):
 class BOMForm(FlaskForm):
     product_id = SelectField('Product', validators=[DataRequired()], coerce=int)
     version = StringField('Version', validators=[DataRequired(), Length(max=20)], default='1.0')
-    output_quantity = FloatField('Output Quantity', validators=[DataRequired(), NumberRange(min=0.01)], default=1.0)
     is_active = BooleanField('Active', default=True)
     
     # Labor and Overhead fields
