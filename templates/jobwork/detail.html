@@ -222,6 +222,14 @@
                                         </tr>
                                         {% if job.work_type == 'unified' and processes %}
                                         <tr>
+                                            <td><strong>Process Name:</strong></td>
+                                            <td>
+                                                {% for process in processes %}
+                                                    <span class="badge bg-primary me-2">{{ process.process_name }}</span>
+                                                {% endfor %}
+                                            </td>
+                                        </tr>
+                                        <tr>
                                             <td><strong>Output Products:</strong></td>
                                             <td>
                                                 {% for process in processes %}
