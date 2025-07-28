@@ -33,42 +33,46 @@ class NotificationScheduler:
     def check_low_stock_job(self):
         """Scheduled job to check for low stock items"""
         try:
-            alerts_sent = check_and_alert_low_stock()
-            if alerts_sent > 0:
-                logger.info(f"Low stock check completed - {alerts_sent} alerts sent")
+            from app import app
+            with app.app_context():
+                alerts_sent = check_and_alert_low_stock()
+                if alerts_sent > 0:
+                    logger.info(f"Low stock check completed - {alerts_sent} alerts sent")
         except Exception as e:
             logger.error(f"Error in low stock check job: {e}")
     
     def daily_health_check(self):
         """Daily system health check"""
         try:
-            from models import NotificationLog, Item, PurchaseOrder, SalesOrder
-            from datetime import datetime, timedelta
+            from app import app
+            with app.app_context():
+                from models import NotificationLog, Item, PurchaseOrder, SalesOrder
+                from datetime import datetime, timedelta
+                
+                # Check notification health
+                yesterday = datetime.utcnow() - timedelta(days=1)
+                failed_notifications = NotificationLog.query.filter(
+                    NotificationLog.sent_at >= yesterday,
+                    NotificationLog.success == False
+                ).count()
+                
+                if failed_notifications > 10:  # Threshold for concern
+                    send_system_alert(
+                        "High Notification Failure Rate",
+                        f"{failed_notifications} notifications failed in the last 24 hours. Please check notification settings.",
+                        'system_alert'
+                    )
             
-            # Check notification health
-            yesterday = datetime.utcnow() - timedelta(days=1)
-            failed_notifications = NotificationLog.query.filter(
-                NotificationLog.sent_at >= yesterday,
-                NotificationLog.success == False
-            ).count()
-            
-            if failed_notifications > 10:  # Threshold for concern
-                send_system_alert(
-                    "High Notification Failure Rate",
-                    f"{failed_notifications} notifications failed in the last 24 hours. Please check notification settings.",
-                    'system_alert'
-                )
-            
-            # Check for items with zero stock
-            zero_stock_items = Item.query.filter(Item.current_stock <= 0).count()
-            if zero_stock_items > 0:
-                send_system_alert(
-                    "Zero Stock Alert",
-                    f"{zero_stock_items} items are currently out of stock. Immediate attention required.",
-                    'system_alert'
-                )
-            
-            logger.info("Daily health check completed")
+                # Check for items with zero stock
+                zero_stock_items = Item.query.filter(Item.current_stock <= 0).count()
+                if zero_stock_items > 0:
+                    send_system_alert(
+                        "Zero Stock Alert",
+                        f"{zero_stock_items} items are currently out of stock. Immediate attention required.",
+                        'system_alert'
+                    )
+                
+                logger.info("Daily health check completed")
             
         except Exception as e:
             logger.error(f"Error in daily health check: {e}")
