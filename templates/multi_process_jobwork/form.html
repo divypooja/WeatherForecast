@@ -320,7 +320,7 @@ function addProcess() {
                     
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Output Quantity</label>
-                        <input type="number" class="form-control output-quantity" step="0.01" min="0" value="0.0" placeholder="Expected output">
+                        <input type="number" class="form-control output-quantity" step="0.01" min="0" value="0.0" placeholder="Expected output" data-process-id="${processCounter}">
                         <small class="text-muted">How many units expected</small>
                     </div>
                 </div>
@@ -412,7 +412,8 @@ function addProcess() {
         const outputQuantityInput = document.querySelector(`#process-${processCounter} .output-quantity`);
         if (outputQuantityInput) {
             outputQuantityInput.addEventListener('input', function() {
-                calculateInputQuantityFromBOM(processCounter);
+                const processId = this.getAttribute('data-process-id');
+                calculateInputQuantityFromBOM(processId);
             });
         }
     }, 100); // Small delay to ensure DOM is ready
@@ -672,12 +673,15 @@ function calculateInputQuantityFromBOM(processId) {
     const bomData = processBOMData[processId];
     
     if (!bomData || !bomData.materials) {
+        console.log(`Process ${processId}: No BOM data available for calculation`);
         return; // No BOM data available
     }
     
     const outputQuantityInput = processCard.querySelector('.output-quantity');
     const quantityInput = processCard.querySelector('.quantity-input');
     const outputQuantity = parseFloat(outputQuantityInput.value) || 0;
+    
+    console.log(`Process ${processId}: Output quantity changed to ${outputQuantity}`);
     
     if (outputQuantity > 0 && bomData.materials.length > 0) {
         // Use BOM output quantity as factor
@@ -696,8 +700,22 @@ function calculateInputQuantityFromBOM(processId) {
         updateCostSummary();
         
         console.log(`Process ${processId}: Calculated input quantity ${totalInputQuantity.toFixed(2)} for output quantity ${outputQuantity} (BOM output qty: ${bomOutputQuantity}, factor: ${bomFactor})`);
+    } else if (outputQuantity === 0) {
+        quantityInput.value = "0.00";
+        updateCostSummary();
+        console.log(`Process ${processId}: Reset input quantity to 0`);
     }
 }
+
+// Global event listener for output quantity changes
+document.addEventListener('input', function(e) {
+    if (e.target && e.target.classList.contains('output-quantity')) {
+        const processId = e.target.getAttribute('data-process-id');
+        if (processId) {
+            calculateInputQuantityFromBOM(processId);
+        }
+    }
+});
 
 // BOM Loading Functionality
 let processBOMData = {}; // Store BOM data per process
