@@ -194,10 +194,6 @@
                     <i class="fas fa-balance-scale"></i>
                     UOM Management
                 </a>
-                <a class="nav-link {{ 'active' if 'material_inspection' in request.endpoint }}" href="{{ url_for('material_inspection.dashboard') }}" title="Legacy inspection interface - Use GRN for new inspections">
-                    <i class="fas fa-search text-muted"></i>
-                    Material Inspection <small class="text-muted">(Legacy)</small>
-                </a>
                 <a class="nav-link {{ 'active' if 'grn' in request.endpoint }}" href="{{ url_for('grn.dashboard') }}">
                     <i class="fas fa-truck"></i>
                     GRN (Goods Receipt)
