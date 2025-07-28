@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
-from models import Item, PurchaseOrder, SalesOrder, Employee, JobWork, Production
+from models import Item, PurchaseOrder, SalesOrder, Employee, Production
 from models_dashboard import DashboardModule, UserDashboardPreference, get_user_dashboard_modules, init_user_default_preferences
 from sqlalchemy import func
 from app import db
@@ -23,7 +23,7 @@ def dashboard():
         'open_purchase_orders': PurchaseOrder.query.filter_by(status='open').count(),
         'pending_sales_orders': SalesOrder.query.filter_by(status='pending').count(),
         'active_employees': Employee.query.filter_by(is_active=True).count(),
-        'open_job_works': JobWork.query.filter_by(status='sent').count(),
+
         'planned_productions': Production.query.filter_by(status='planned').count()
     }
     
