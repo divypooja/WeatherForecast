@@ -6,7 +6,36 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (July 27, 2025)
 
-### Critical Technical Issues Resolution (Latest - July 28, 2025)
+### Next Phase Enhancement Roadmap (Latest - July 28, 2025)
+
+#### **Immediate High-Impact Improvements Available:**
+
+**1. Smart UOM Conversion Intelligence**
+- Automatic unit conversion across purchase → inventory → job work → GRN workflow
+- Example: Purchase 100kg wheels → Convert to 10,000 pieces automatically → Job work in pieces → GRN receipt validation
+- Eliminates manual conversion errors and streamlines material flow tracking
+
+**2. BOM-Driven Manufacturing Automation**
+- Automatic material reservation when production orders are created
+- Smart shortage detection and purchase suggestions based on BOM requirements
+- Automated inventory allocation: Raw materials → WIP → Finished goods based on BOM structure
+
+**3. Real-Time Manufacturing Intelligence Dashboard**
+- Live process efficiency tracking with bottleneck identification
+- Real-time material flow visualization across all manufacturing stages
+- Predictive inventory alerts based on production schedules and lead times
+
+**4. Advanced Process Optimization**
+- Automated scrap variance analysis with trend detection and quality alerts
+- Process-specific efficiency metrics with historical performance tracking
+- Smart scheduling suggestions based on material availability and process capacity
+
+**5. Enhanced GRN Intelligence**
+- Auto-quality assessment based on historical supplier performance
+- Smart rejection pattern detection with supplier feedback loops
+- Automated inventory state transitions with exception handling
+
+### Critical Technical Issues Resolution (July 28, 2025)
 - **Fixed Missing Model Relationships**: Resolved critical LSP errors by properly defining missing relationships between JobWork.processes, GRN.line_items, and PurchaseOrderItem.item
 - **Database Relationship Integrity**: Fixed broken backref relationships that were causing multi-process job work calculations to fail and GRN line item totals to break
 - **Application Context Resolution**: Fixed scheduler service application context issues preventing proper background job execution for low stock alerts and system health checks
