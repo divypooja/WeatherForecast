@@ -594,6 +594,18 @@
                         <strong>Add process steps to track the complete manufacturing workflow for this BOM.</strong>
                     </div>
                     {% endif %}
+                    
+                    <div class="mt-3">
+                        {% if bom %}
+                        <a href="{{ url_for('production.add_bom_process', bom_id=bom.id) }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Add Manufacturing Process
+                        </a>
+                        {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i> Save the BOM first to add manufacturing processes.
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
