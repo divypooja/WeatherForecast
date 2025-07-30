@@ -41,7 +41,7 @@
                                     <!-- Process 1 (Default) -->
                                     <div class="process-item border rounded p-3 mb-3" data-process="1">
                                         <div class="d-flex justify-content-between align-items-center mb-3">
-                                            <h6 class="text-primary mb-0">Process 1</h6>
+                                            <h6 class="text-primary mb-0">{% if edit_process %}Edit: {{ edit_process.process_name }}{% else %}Process 1{% endif %}</h6>
                                             <button type="button" class="btn btn-sm btn-outline-danger remove-process" style="display: none;">
                                                 <i class="fas fa-trash"></i>
                                             </button>
@@ -616,5 +616,50 @@ document.addEventListener('DOMContentLoaded', function() {
 document.getElementById('addProcessBtn').addEventListener('click', function() {
     setTimeout(updateUnitDisplays, 100); // Small delay to ensure DOM is updated
 });
+
+// Pre-populate form if editing existing process
+{% if edit_process %}
+document.addEventListener('DOMContentLoaded', function() {
+    // Get the first process container (index 0)
+    const firstProcess = document.querySelector('[data-process="1"]');
+    
+    // Pre-populate all fields
+    firstProcess.querySelector('[name="processes[0][process_name]"]').value = '{{ edit_process.process_name }}';
+    firstProcess.querySelector('[name="processes[0][step_number]"]').value = '{{ edit_process.step_number }}';
+    firstProcess.querySelector('[name="processes[0][process_code]"]').value = '{{ edit_process.process_code or "" }}';
+    firstProcess.querySelector('[name="processes[0][operation_description]"]').value = '{{ edit_process.operation_description or "" }}';
+    firstProcess.querySelector('[name="processes[0][is_outsourced]"]').value = '{{ edit_process.is_outsourced|lower }}';
+    firstProcess.querySelector('[name="processes[0][setup_time_minutes]"]').value = '{{ edit_process.setup_time_minutes or 0 }}';
+    firstProcess.querySelector('[name="processes[0][run_time_minutes]"]').value = '{{ edit_process.run_time_minutes or 0 }}';
+    firstProcess.querySelector('[name="processes[0][labor_rate_per_hour]"]').value = '{{ edit_process.labor_rate_per_hour or 0 }}';
+    firstProcess.querySelector('[name="processes[0][cost_per_unit]"]').value = '{{ edit_process.cost_per_unit or 0 }}';
+    firstProcess.querySelector('[name="processes[0][estimated_scrap_percent]"]').value = '{{ edit_process.estimated_scrap_percent or 0 }}';
+    
+    // Pre-populate transformation fields if they exist
+    {% if edit_process.input_product_id %}
+    firstProcess.querySelector('[name="processes[0][input_product_id]"]').value = '{{ edit_process.input_product_id }}';
+    {% endif %}
+    {% if edit_process.output_product_id %}
+    firstProcess.querySelector('[name="processes[0][output_product_id]"]').value = '{{ edit_process.output_product_id }}';
+    {% endif %}
+    firstProcess.querySelector('[name="processes[0][input_quantity]"]').value = '{{ edit_process.input_quantity or 1.0 }}';
+    firstProcess.querySelector('[name="processes[0][output_quantity]"]').value = '{{ edit_process.output_quantity or 1.0 }}';
+    {% if edit_process.transformation_type %}
+    firstProcess.querySelector('[name="processes[0][transformation_type]"]').value = '{{ edit_process.transformation_type }}';
+    {% endif %}
+    
+    // Update the submit button text for editing
+    document.querySelector('button[type="submit"]').innerHTML = '<i class="fas fa-save"></i> Update Process';
+    
+    // Hide add process button since we're editing a single process
+    document.getElementById('addProcessBtn').style.display = 'none';
+    
+    // Update help text
+    const helpCard = document.querySelector('.alert-info');
+    if (helpCard) {
+        helpCard.innerHTML = '<i class="fas fa-info-circle"></i> <strong>Editing Process:</strong> Update the fields below and click "Update Process" to save your changes.';
+    }
+});
+{% endif %}
 </script>
 {% endblock %}

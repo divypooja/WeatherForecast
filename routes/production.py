@@ -797,91 +797,132 @@ def process_integration_report(id):
 @production_bp.route('/bom/<int:bom_id>/add_multi_process', methods=['GET', 'POST'])
 @login_required
 def add_multi_bom_process(bom_id):
-    """Add multiple manufacturing processes to BOM at once"""
+    """Add multiple manufacturing processes to BOM or edit existing process"""
     bom = BOM.query.get_or_404(bom_id)
+    
+    # Check if we're editing an existing process
+    edit_process_id = request.args.get('edit_process_id', type=int)
+    edit_process = None
+    if edit_process_id:
+        edit_process = BOMProcess.query.get_or_404(edit_process_id)
     
     if request.method == 'POST':
         try:
-            processes_data = []
-            
-            # Extract process data from form
-            form_data = request.form
-            process_indices = set()
-            
-            # Find all process indices
-            for key in form_data.keys():
-                if key.startswith('processes[') and '][' in key:
-                    index = int(key.split('[')[1].split(']')[0])
-                    process_indices.add(index)
-            
-            # Process each process entry
-            for index in sorted(process_indices):
-                process_name = form_data.get(f'processes[{index}][process_name]')
-                if not process_name:  # Skip empty processes
-                    continue
+            # Check if we're editing an existing process vs adding new ones
+            if edit_process:
+                # Editing mode - update the existing process
+                form_data = request.form
                 
-                process_data = {
-                    'step_number': int(form_data.get(f'processes[{index}][step_number]', 1)),
-                    'process_name': process_name,
-                    'process_code': form_data.get(f'processes[{index}][process_code]', ''),
-                    'operation_description': form_data.get(f'processes[{index}][operation_description]', ''),
-                    'is_outsourced': form_data.get(f'processes[{index}][is_outsourced]') == 'true',
-                    'setup_time_minutes': float(form_data.get(f'processes[{index}][setup_time_minutes]') or 0),
-                    'run_time_minutes': float(form_data.get(f'processes[{index}][run_time_minutes]') or 0),
-                    'cost_per_unit': float(form_data.get(f'processes[{index}][cost_per_unit]') or 0),
-                    'labor_rate_per_hour': float(form_data.get(f'processes[{index}][labor_rate_per_hour]') or 0),
-                    'estimated_scrap_percent': float(form_data.get(f'processes[{index}][estimated_scrap_percent]') or 0),
-                    'quality_check_required': form_data.get(f'processes[{index}][quality_check_required]') == 'true',
-                    # Transformation fields
-                    'input_product_id': int(form_data.get(f'processes[{index}][input_product_id]') or 0) or None,
-                    'output_product_id': int(form_data.get(f'processes[{index}][output_product_id]') or 0) or None,
-                    'input_quantity': float(form_data.get(f'processes[{index}][input_quantity]') or 1.0),
-                    'output_quantity': float(form_data.get(f'processes[{index}][output_quantity]') or 1.0),
-                    'transformation_type': form_data.get(f'processes[{index}][transformation_type]', 'modify')
-                }
-                processes_data.append(process_data)
-            
-            if not processes_data:
-                flash('Please add at least one process', 'error')
-                return redirect(url_for('production.add_multi_bom_process', bom_id=bom_id))
-            
-            # Create all BOM processes
-            created_count = 0
-            for process_data in processes_data:
-                bom_process = BOMProcess(
-                    bom_id=bom_id,
-                    step_number=process_data['step_number'],
-                    process_name=process_data['process_name'],
-                    process_code=process_data['process_code'],
-                    operation_description=process_data['operation_description'],
-                    is_outsourced=process_data['is_outsourced'],
-                    setup_time_minutes=process_data['setup_time_minutes'],
-                    run_time_minutes=process_data['run_time_minutes'],
-                    cost_per_unit=process_data['cost_per_unit'],
-                    labor_rate_per_hour=process_data['labor_rate_per_hour'], 
-                    estimated_scrap_percent=process_data['estimated_scrap_percent'],
-                    quality_check_required=process_data['quality_check_required'],
-                    # Transformation fields
-                    input_product_id=process_data['input_product_id'],
-                    output_product_id=process_data['output_product_id'],
-                    input_quantity=process_data['input_quantity'],
-                    output_quantity=process_data['output_quantity'],
-                    transformation_type=process_data['transformation_type']
-                )
-                db.session.add(bom_process)
-                created_count += 1
-            
-            db.session.commit()
-            
-            # Trigger intelligent sync after adding processes
-            ProcessIntegrationService.sync_bom_from_processes(bom_id)
-            
-            flash(f'Successfully added {created_count} manufacturing processes. BOM costs automatically synchronized!', 'success')
-            return redirect(url_for('production.edit_bom', id=bom_id))
+                # Update the existing process with form data
+                edit_process.step_number = int(form_data.get('processes[0][step_number]', 1))
+                edit_process.process_name = form_data.get('processes[0][process_name]')
+                edit_process.process_code = form_data.get('processes[0][process_code]', '')
+                edit_process.operation_description = form_data.get('processes[0][operation_description]', '')
+                edit_process.is_outsourced = form_data.get('processes[0][is_outsourced]') == 'true'
+                edit_process.setup_time_minutes = float(form_data.get('processes[0][setup_time_minutes]') or 0)
+                edit_process.run_time_minutes = float(form_data.get('processes[0][run_time_minutes]') or 0)
+                edit_process.cost_per_unit = float(form_data.get('processes[0][cost_per_unit]') or 0)
+                edit_process.labor_rate_per_hour = float(form_data.get('processes[0][labor_rate_per_hour]') or 0)
+                edit_process.estimated_scrap_percent = float(form_data.get('processes[0][estimated_scrap_percent]') or 0)
+                edit_process.quality_check_required = form_data.get('processes[0][quality_check_required]') == 'true'
+                
+                # Update transformation fields
+                edit_process.input_product_id = int(form_data.get('processes[0][input_product_id]') or 0) or None
+                edit_process.output_product_id = int(form_data.get('processes[0][output_product_id]') or 0) or None
+                edit_process.input_quantity = float(form_data.get('processes[0][input_quantity]') or 1.0)
+                edit_process.output_quantity = float(form_data.get('processes[0][output_quantity]') or 1.0)
+                edit_process.transformation_type = form_data.get('processes[0][transformation_type]', 'modify')
+                
+                db.session.commit()
+                
+                # Trigger intelligent sync after editing process
+                ProcessIntegrationService.sync_bom_from_processes(bom_id)
+                
+                flash(f'Process "{edit_process.process_name}" updated successfully. BOM costs automatically synchronized!', 'success')
+                return redirect(url_for('production.edit_bom', id=bom_id))
+                
+            else:
+                # Adding mode - create new processes
+                processes_data = []
+                
+                # Extract process data from form
+                form_data = request.form
+                process_indices = set()
+                
+                # Find all process indices
+                for key in form_data.keys():
+                    if key.startswith('processes[') and '][' in key:
+                        index = int(key.split('[')[1].split(']')[0])
+                        process_indices.add(index)
+                
+                # Process each process entry
+                for index in sorted(process_indices):
+                    process_name = form_data.get(f'processes[{index}][process_name]')
+                    if not process_name:  # Skip empty processes
+                        continue
+                    
+                    process_data = {
+                        'step_number': int(form_data.get(f'processes[{index}][step_number]', 1)),
+                        'process_name': process_name,
+                        'process_code': form_data.get(f'processes[{index}][process_code]', ''),
+                        'operation_description': form_data.get(f'processes[{index}][operation_description]', ''),
+                        'is_outsourced': form_data.get(f'processes[{index}][is_outsourced]') == 'true',
+                        'setup_time_minutes': float(form_data.get(f'processes[{index}][setup_time_minutes]') or 0),
+                        'run_time_minutes': float(form_data.get(f'processes[{index}][run_time_minutes]') or 0),
+                        'cost_per_unit': float(form_data.get(f'processes[{index}][cost_per_unit]') or 0),
+                        'labor_rate_per_hour': float(form_data.get(f'processes[{index}][labor_rate_per_hour]') or 0),
+                        'estimated_scrap_percent': float(form_data.get(f'processes[{index}][estimated_scrap_percent]') or 0),
+                        'quality_check_required': form_data.get(f'processes[{index}][quality_check_required]') == 'true',
+                        # Transformation fields
+                        'input_product_id': int(form_data.get(f'processes[{index}][input_product_id]') or 0) or None,
+                        'output_product_id': int(form_data.get(f'processes[{index}][output_product_id]') or 0) or None,
+                        'input_quantity': float(form_data.get(f'processes[{index}][input_quantity]') or 1.0),
+                        'output_quantity': float(form_data.get(f'processes[{index}][output_quantity]') or 1.0),
+                        'transformation_type': form_data.get(f'processes[{index}][transformation_type]', 'modify')
+                    }
+                    processes_data.append(process_data)
+                
+                if not processes_data:
+                    flash('Please add at least one process', 'error')
+                    return redirect(url_for('production.add_multi_bom_process', bom_id=bom_id))
+                
+                # Create all BOM processes
+                created_count = 0
+                for process_data in processes_data:
+                    bom_process = BOMProcess(
+                        bom_id=bom_id,
+                        step_number=process_data['step_number'],
+                        process_name=process_data['process_name'],
+                        process_code=process_data['process_code'],
+                        operation_description=process_data['operation_description'],
+                        is_outsourced=process_data['is_outsourced'],
+                        setup_time_minutes=process_data['setup_time_minutes'],
+                        run_time_minutes=process_data['run_time_minutes'],
+                        cost_per_unit=process_data['cost_per_unit'],
+                        labor_rate_per_hour=process_data['labor_rate_per_hour'], 
+                        estimated_scrap_percent=process_data['estimated_scrap_percent'],
+                        quality_check_required=process_data['quality_check_required'],
+                        # Transformation fields
+                        input_product_id=process_data['input_product_id'],
+                        output_product_id=process_data['output_product_id'],
+                        input_quantity=process_data['input_quantity'],
+                        output_quantity=process_data['output_quantity'],
+                        transformation_type=process_data['transformation_type']
+                    )
+                    db.session.add(bom_process)
+                    created_count += 1
+                
+                db.session.commit()
+                
+                # Trigger intelligent sync after adding processes
+                ProcessIntegrationService.sync_bom_from_processes(bom_id)
+                
+                flash(f'Successfully added {created_count} manufacturing processes. BOM costs automatically synchronized!', 'success')
+                return redirect(url_for('production.edit_bom', id=bom_id))
             
         except Exception as e:
             db.session.rollback()
-            flash(f'Error adding processes: {str(e)}', 'error')
+            flash(f'Error processing request: {str(e)}', 'error')
             
     # Create a simple form for CSRF protection  
     form = FlaskForm()
@@ -889,11 +930,18 @@ def add_multi_bom_process(bom_id):
     # Get available items for transformation dropdowns
     available_items = Item.query.order_by(Item.name).all()
     
+    # Determine the title based on whether we're editing or adding
+    if edit_process:
+        title = f'Edit Process: {edit_process.process_name} - {bom.bom_code}'
+    else:
+        title = f'Add Multiple Process Routing - {bom.bom_code}'
+    
     return render_template('production/bom_multi_process_form.html',
                          bom=bom,
                          form=form,
                          available_items=available_items,
-                         title=f'Add Multiple Process Routing - {bom.bom_code}')
+                         edit_process=edit_process,
+                         title=title)
 
 @production_bp.route('/api/item/<int:item_id>/unit')
 @login_required
@@ -909,48 +957,14 @@ def get_item_unit(item_id):
 @production_bp.route('/bom_process/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_bom_process(id):
-    """Edit a BOM process"""
+    """Edit a BOM process - redirect to unified multi-process interface"""
     process = BOMProcess.query.get_or_404(id)
     bom = process.bom
     
-    form = BOMProcessForm(obj=process)
-    
-    # For GET request, ensure transformation fields are properly populated
-    if request.method == 'GET':
-        form.input_product_id.data = process.input_product_id
-        form.output_product_id.data = process.output_product_id
-        form.input_quantity.data = process.input_quantity or 1.0
-        form.output_quantity.data = process.output_quantity or 1.0
-        form.transformation_type.data = process.transformation_type or 'modify'
-    
-    if form.validate_on_submit():
-        form.populate_obj(process)
-        
-        # Handle transformation fields explicitly to ensure they're saved
-        process.input_product_id = form.input_product_id.data if form.input_product_id.data != 0 else None
-        process.output_product_id = form.output_product_id.data if form.output_product_id.data != 0 else None
-        process.input_quantity = form.input_quantity.data or 1.0
-        process.output_quantity = form.output_quantity.data or 1.0
-        process.transformation_type = form.transformation_type.data or 'modify'
-        
-        try:
-            db.session.commit()
-            
-            # Trigger intelligent sync after editing process
-            ProcessIntegrationService.sync_bom_from_processes(bom.id)
-            
-            flash(f'Process "{process.process_name}" updated successfully. BOM costs automatically synchronized!', 'success')
-            return redirect(url_for('production.edit_bom', id=bom.id))
-            
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Error updating process: {str(e)}', 'error')
-    
-    return render_template('production/bom_process_form.html',
-                         form=form,
-                         bom=bom,
-                         process=process,
-                         title=f'Edit Process: {process.process_name}')
+    # Since we now use unified interface, redirect to multi-process form
+    # with the specific process pre-selected for editing
+    flash(f'Editing process "{process.process_name}" in unified interface', 'info')
+    return redirect(url_for('production.add_multi_bom_process', bom_id=bom.id, edit_process_id=id))
 
 @production_bp.route('/bom_process/<int:id>/delete', methods=['POST'])
 @login_required
