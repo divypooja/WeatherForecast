@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-link"></i> {{ title }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('dynamic_forms.dashboard') }}">Dynamic Forms</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('workflow_logic.dashboard', template_id=template.id) }}">{{ template.name }} Logic</a></li>
+                    <li class="breadcrumb-item active">{{ title }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-cog"></i> Field Condition Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <!-- Source Field -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.source_field_id.label(class="form-label") }}
+                                {{ form.source_field_id(class="form-select", id="sourceField") }}
+                                {% if form.source_field_id.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.source_field_id.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">{{ form.source_field_id.description }}</small>
+                            </div>
+
+                            <!-- Target Field -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.target_field_id.label(class="form-label") }}
+                                {{ form.target_field_id(class="form-select", id="targetField") }}
+                                {% if form.target_field_id.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.target_field_id.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">{{ form.target_field_id.description }}</small>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Condition Type -->
+                            <div class="col-md-4 mb-3">
+                                {{ form.condition_type.label(class="form-label") }}
+                                {{ form.condition_type(class="form-select") }}
+                                {% if form.condition_type.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.condition_type.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Operator -->
+                            <div class="col-md-4 mb-3">
+                                {{ form.operator.label(class="form-label") }}
+                                {{ form.operator(class="form-select", id="operatorSelect") }}
+                                {% if form.operator.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.operator.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Condition Value -->
+                            <div class="col-md-4 mb-3">
+                                {{ form.condition_value.label(class="form-label") }}
+                                {{ form.condition_value(class="form-control", id="conditionValue") }}
+                                {% if form.condition_value.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.condition_value.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">{{ form.condition_value.description }}</small>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Action -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.action.label(class="form-label") }}
+                                {{ form.action(class="form-select", id="actionSelect") }}
+                                {% if form.action.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.action.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Action Value -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.action_value.label(class="form-label") }}
+                                {{ form.action_value(class="form-control", id="actionValue") }}
+                                {% if form.action_value.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.action_value.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">{{ form.action_value.description }}</small>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Condition Order -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.condition_order.label(class="form-label") }}
+                                {{ form.condition_order(class="form-control") }}
+                                {% if form.condition_order.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.condition_order.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">{{ form.condition_order.description }}</small>
+                            </div>
+
+                            <!-- Active Status -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Status</label>
+                                <div class="form-check">
+                                    {{ form.is_active(class="form-check-input") }}
+                                    {{ form.is_active.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Preview Section -->
+                        <div class="card mt-4 mb-4 bg-light">
+                            <div class="card-header">
+                                <h6><i class="fas fa-eye"></i> Logic Preview</h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="logicPreview" class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i> Select fields and conditions to see logic preview
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('workflow_logic.list_conditions', template_id=template.id) }}" 
+                               class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Conditions
+                            </a>
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save Condition
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Function to update logic preview
+    function updateLogicPreview() {
+        const sourceField = $('#sourceField option:selected').text();
+        const conditionType = $('#conditionType option:selected').text();
+        const operator = $('#operatorSelect option:selected').text();
+        const conditionValue = $('#conditionValue').val();
+        const targetField = $('#targetField option:selected').text();
+        const action = $('#actionSelect option:selected').text();
+        const actionValue = $('#actionValue').val();
+        
+        if (sourceField && targetField && sourceField !== '---' && targetField !== '---') {
+            let preview = `<strong>${conditionType.toUpperCase()}</strong> "${sourceField}" ${operator.toLowerCase()}`;
+            
+            if (conditionValue && !['empty', 'not_empty'].includes($('#operatorSelect').val())) {
+                preview += ` "${conditionValue}"`;
+            }
+            
+            preview += `<br><strong>THEN</strong> ${action.toLowerCase()} "${targetField}"`;
+            
+            if (actionValue && $('#actionSelect').val() === 'set_value') {
+                preview += ` to "${actionValue}"`;
+            }
+            
+            $('#logicPreview').html(`<i class="fas fa-check-circle text-success"></i> ${preview}`);
+            $('#logicPreview').removeClass('alert-info').addClass('alert-success');
+        } else {
+            $('#logicPreview').html('<i class="fas fa-info-circle"></i> Select fields and conditions to see logic preview');
+            $('#logicPreview').removeClass('alert-success').addClass('alert-info');
+        }
+    }
+    
+    // Function to toggle condition value field
+    function toggleConditionValue() {
+        const operator = $('#operatorSelect').val();
+        const conditionValueGroup = $('#conditionValue').closest('.col-md-4');
+        
+        if (['empty', 'not_empty'].includes(operator)) {
+            conditionValueGroup.hide();
+            $('#conditionValue').val('');
+        } else {
+            conditionValueGroup.show();
+        }
+    }
+    
+    // Function to toggle action value field
+    function toggleActionValue() {
+        const action = $('#actionSelect').val();
+        const actionValueGroup = $('#actionValue').closest('.col-md-6');
+        
+        if (action === 'set_value') {
+            actionValueGroup.show();
+        } else {
+            actionValueGroup.hide();
+            $('#actionValue').val('');
+        }
+    }
+    
+    // Event listeners
+    $('#sourceField, #targetField, #conditionType, #operatorSelect, #conditionValue, #actionSelect, #actionValue').on('change keyup', function() {
+        updateLogicPreview();
+    });
+    
+    $('#operatorSelect').on('change', function() {
+        toggleConditionValue();
+        updateLogicPreview();
+    });
+    
+    $('#actionSelect').on('change', function() {
+        toggleActionValue();
+        updateLogicPreview();
+    });
+    
+    // Initialize on page load
+    toggleConditionValue();
+    toggleActionValue();
+    updateLogicPreview();
+    
+    // Form validation
+    $('form').on('submit', function(e) {
+        const sourceField = $('#sourceField').val();
+        const targetField = $('#targetField').val();
+        
+        if (sourceField === targetField) {
+            e.preventDefault();
+            alert('Source field and target field cannot be the same!');
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

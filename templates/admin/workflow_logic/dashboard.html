@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}Workflow Logic - {{ template.name }} - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-project-diagram"></i> Workflow Logic - {{ template.name }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('dynamic_forms.dashboard') }}">Dynamic Forms</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('dynamic_forms.edit_template', template_id=template.id) }}">{{ template.name }}</a></li>
+                    <li class="breadcrumb-item active">Workflow Logic</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h3 class="mb-0">{{ conditions_count }}</h3>
+                            <p class="mb-0">Field Conditions</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-link fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h3 class="mb-0">{{ rules_count }}</h3>
+                            <p class="mb-0">Workflow Rules</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-sitemap fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h3 class="mb-0">{{ groups_count }}</h3>
+                            <p class="mb-0">Field Groups</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-layer-group fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h3 class="mb-0">{{ template.field_count }}</h3>
+                            <p class="mb-0">Available Fields</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-list fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <!-- Quick Actions -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-bolt"></i> Workflow Logic Management</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Field Conditions -->
+                        <div class="col-md-6 mb-3">
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('workflow_logic.list_conditions', template_id=template.id) }}" 
+                                   class="btn btn-outline-primary">
+                                    <i class="fas fa-link"></i> Manage Field Conditions
+                                </a>
+                                <small class="text-muted">Create if/else/elif logic between fields</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Visual Builder -->
+                        <div class="col-md-6 mb-3">
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('workflow_logic.visual_builder', template_id=template.id) }}" 
+                                   class="btn btn-outline-success">
+                                    <i class="fas fa-project-diagram"></i> Visual Workflow Builder
+                                </a>
+                                <small class="text-muted">Drag-and-drop workflow design</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Workflow Rules -->
+                        <div class="col-md-6 mb-3">
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('workflow_logic.list_rules', template_id=template.id) }}" 
+                                   class="btn btn-outline-info">
+                                    <i class="fas fa-sitemap"></i> Complex Workflow Rules
+                                </a>
+                                <small class="text-muted">Advanced multi-condition rules</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Test Workflow -->
+                        <div class="col-md-6 mb-3">
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('workflow_logic.test_workflow', template_id=template.id) }}" 
+                                   class="btn btn-outline-warning">
+                                    <i class="fas fa-vial"></i> Test Workflow Logic
+                                </a>
+                                <small class="text-muted">Test your conditions with sample data</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Field Groups -->
+                        <div class="col-md-6 mb-3">
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('workflow_logic.list_groups', template_id=template.id) }}" 
+                                   class="btn btn-outline-secondary">
+                                    <i class="fas fa-layer-group"></i> Field Groups
+                                </a>
+                                <small class="text-muted">Group fields for batch operations</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Export Configuration -->
+                        <div class="col-md-6 mb-3">
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('workflow_logic.export_workflow', template_id=template.id) }}" 
+                                   class="btn btn-outline-dark" target="_blank">
+                                    <i class="fas fa-download"></i> Export Configuration
+                                </a>
+                                <small class="text-muted">Export workflow as JSON</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-history"></i> Recent Conditions</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_conditions %}
+                        {% for condition in recent_conditions %}
+                        <div class="d-flex justify-content-between align-items-center mb-2 p-2 border-bottom">
+                            <div>
+                                <strong>{{ condition.source_field.label }}</strong>
+                                <i class="fas fa-arrow-right text-muted mx-2"></i>
+                                <strong>{{ condition.target_field.label }}</strong>
+                                <br>
+                                <small class="text-muted">
+                                    {{ condition.condition_type.title() }}: {{ condition.operator.replace('_', ' ').title() }}
+                                </small>
+                            </div>
+                            <div>
+                                <span class="badge bg-{{ 'success' if condition.is_active else 'secondary' }}">
+                                    {{ 'Active' if condition.is_active else 'Inactive' }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No field conditions created yet.</p>
+                        <a href="{{ url_for('workflow_logic.add_condition', template_id=template.id) }}" 
+                           class="btn btn-sm btn-primary">
+                            Create First Condition
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Help Card -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-question-circle"></i> How Workflow Logic Works</h5>
+                </div>
+                <div class="card-body">
+                    <ol class="small">
+                        <li><strong>Field Conditions:</strong> Create if/else logic between form fields</li>
+                        <li><strong>Actions:</strong> Show, hide, require fields based on other field values</li>
+                        <li><strong>Operators:</strong> Use equals, contains, greater than, etc.</li>
+                        <li><strong>Order:</strong> Conditions execute in order - lower numbers first</li>
+                        <li><strong>Testing:</strong> Always test your logic before deploying</li>
+                    </ol>
+                    
+                    <div class="mt-3">
+                        <h6>Example Workflow:</h6>
+                        <p class="small text-muted">
+                            <strong>IF</strong> "Order Type" equals "Custom"<br>
+                            <strong>THEN</strong> Show "Custom Specifications" field<br>
+                            <strong>AND</strong> Make it required
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Initialize tooltips
+    $('[data-bs-toggle="tooltip"]').tooltip();
+});
+</script>
+{% endblock %}
