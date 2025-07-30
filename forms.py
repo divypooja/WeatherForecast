@@ -814,6 +814,23 @@ class BOMProcessForm(FlaskForm):
     estimated_scrap_percent = FloatField('Expected Scrap %', validators=[NumberRange(min=0, max=100)], default=0.0)
     parallel_processes = StringField('Parallel Processes (comma-separated)')
     predecessor_processes = StringField('Predecessor Processes (comma-separated)')
+    
+    # Process transformation fields
+    input_product_id = SelectField('Input Product', validators=[Optional()], coerce=int)
+    output_product_id = SelectField('Output Product', validators=[Optional()], coerce=int)
+    input_quantity = FloatField('Input Quantity', validators=[NumberRange(min=0.001)], default=1.0)
+    output_quantity = FloatField('Output Quantity', validators=[NumberRange(min=0.001)], default=1.0)
+    transformation_type = SelectField('Transformation Type', validators=[Optional()],
+                                    choices=[
+                                        ('modify', 'Modify (same material, different form)'),
+                                        ('convert', 'Convert (change material properties)'),
+                                        ('assemble', 'Assemble (combine multiple inputs)'),
+                                        ('disassemble', 'Disassemble (split into parts)'),
+                                        ('coating', 'Coating/Surface Treatment'),
+                                        ('machining', 'Machining/Shaping')
+                                    ],
+                                    default='modify')
+    
     notes = TextAreaField('Notes', render_kw={"rows": 2})
     
     def __init__(self, *args, **kwargs):
@@ -841,12 +858,15 @@ class BOMProcessForm(FlaskForm):
         except Exception:
             self.vendor_id.choices = [(0, 'Select Vendor')]
         
-        # Populate vendor choices
+        # Populate input and output product choices
         try:
-            vendors = Supplier.query.filter_by(is_active=True).order_by(Supplier.name).all()
-            self.vendor_id.choices = [(0, 'Select Vendor')] + [(v.id, v.name) for v in vendors]
+            products = Item.query.order_by(Item.name).all()
+            product_choices = [(0, 'Select Product')] + [(p.id, f"{p.code} - {p.name}") for p in products]
+            self.input_product_id.choices = product_choices
+            self.output_product_id.choices = product_choices
         except Exception:
-            self.vendor_id.choices = [(0, 'Select Vendor')]
+            self.input_product_id.choices = [(0, 'Select Product')]
+            self.output_product_id.choices = [(0, 'Select Product')]
 
 class CompanySettingsForm(FlaskForm):
     company_name = StringField('Company Name', validators=[DataRequired(), Length(max=200)])

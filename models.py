@@ -1662,12 +1662,22 @@ class BOMProcess(db.Model):
     estimated_scrap_percent = db.Column(db.Float, default=0.0)  # Expected scrap for this process
     parallel_processes = db.Column(db.Text)  # JSON list of processes that can run in parallel
     predecessor_processes = db.Column(db.Text)  # JSON list of required predecessor processes
+    
+    # Process transformation fields
+    input_product_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=True)  # Input product for this process
+    output_product_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=True)  # Output product from this process
+    input_quantity = db.Column(db.Float, default=1.0)  # Input quantity per unit
+    output_quantity = db.Column(db.Float, default=1.0)  # Output quantity per unit
+    transformation_type = db.Column(db.String(50), default='modify')  # modify, convert, assemble, disassemble
+    
     notes = db.Column(db.Text)
     
     # Relationships
     machine = db.relationship('Item', foreign_keys=[machine_id])
     department = db.relationship('Department', foreign_keys=[department_id])
     vendor = db.relationship('Supplier', foreign_keys=[vendor_id])
+    input_product = db.relationship('Item', foreign_keys=[input_product_id])
+    output_product = db.relationship('Item', foreign_keys=[output_product_id])
     
     @property
     def total_time_minutes(self):
