@@ -168,28 +168,35 @@
                                                     <div class="col-md-4">
                                                         <div class="form-group mb-3">
                                                             <label class="form-label">Input Quantity</label>
-                                                            <input type="number" class="form-control" name="processes[0][input_quantity]" value="1.0" step="0.001">
+                                                            <div class="input-group">
+                                                                <input type="number" class="form-control" name="processes[0][input_quantity]" value="1.0" step="0.001">
+                                                                <span class="input-group-text">units</span>
+                                                            </div>
                                                             <small class="form-text text-muted">Quantity required as input</small>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-4">
                                                         <div class="form-group mb-3">
                                                             <label class="form-label">Output Quantity</label>
-                                                            <input type="number" class="form-control" name="processes[0][output_quantity]" value="1.0" step="0.001">
+                                                            <div class="input-group">
+                                                                <input type="number" class="form-control" name="processes[0][output_quantity]" value="1.0" step="0.001">
+                                                                <span class="input-group-text">units</span>
+                                                            </div>
                                                             <small class="form-text text-muted">Quantity produced as output</small>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-4">
                                                         <div class="form-group mb-3">
-                                                            <label class="form-label">Transformation Type</label>  
+                                                            <label class="form-label">Transformation Type <small class="text-muted">(Optional)</small></label>  
                                                             <select class="form-select" name="processes[0][transformation_type]">
+                                                                <option value="">Select Type (Optional)</option>
                                                                 <option value="modify">Modify</option>
                                                                 <option value="machining">Machining</option>
                                                                 <option value="assembly">Assembly</option>
                                                                 <option value="coating">Coating</option>
                                                                 <option value="forming">Forming</option>
                                                             </select>
-                                                            <small class="form-text text-muted">Type of transformation</small>
+                                                            <small class="form-text text-muted">Type of transformation (optional)</small>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -412,28 +419,35 @@ function createProcessItem(processNumber) {
                     <div class="col-md-4">
                         <div class="form-group mb-3">
                             <label class="form-label">Input Quantity</label>
-                            <input type="number" class="form-control" name="processes[${index}][input_quantity]" value="1.0" step="0.001">
+                            <div class="input-group">
+                                <input type="number" class="form-control" name="processes[${index}][input_quantity]" value="1.0" step="0.001">
+                                <span class="input-group-text">units</span>
+                            </div>
                             <small class="form-text text-muted">Quantity required as input</small>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="form-group mb-3">
                             <label class="form-label">Output Quantity</label>
-                            <input type="number" class="form-control" name="processes[${index}][output_quantity]" value="1.0" step="0.001">
+                            <div class="input-group">
+                                <input type="number" class="form-control" name="processes[${index}][output_quantity]" value="1.0" step="0.001">
+                                <span class="input-group-text">units</span>
+                            </div>
                             <small class="form-text text-muted">Quantity produced as output</small>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="form-group mb-3">
-                            <label class="form-label">Transformation Type</label>  
+                            <label class="form-label">Transformation Type <small class="text-muted">(Optional)</small></label>  
                             <select class="form-select" name="processes[${index}][transformation_type]">
+                                <option value="">Select Type (Optional)</option>
                                 <option value="modify">Modify</option>
                                 <option value="machining">Machining</option>
                                 <option value="assembly">Assembly</option>
                                 <option value="coating">Coating</option>
                                 <option value="forming">Forming</option>
                             </select>
-                            <small class="form-text text-muted">Type of transformation</small>
+                            <small class="form-text text-muted">Type of transformation (optional)</small>
                         </div>
                     </div>
                 </div>
