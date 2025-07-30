@@ -99,6 +99,11 @@
                         <a href="{{ url_for('dynamic_forms.init_default_templates') }}" class="btn btn-outline-info">
                             <i class="fas fa-download"></i> Initialize Default Templates
                         </a>
+                        <div class="text-center mt-3 p-3 bg-light rounded">
+                            <h6><i class="fas fa-project-diagram text-success"></i> Workflow Logic</h6>
+                            <p class="small text-muted mb-2">Create conditional field connections with if/else logic</p>
+                            <p class="small"><strong>Click the green workflow button</strong> <i class="fas fa-project-diagram text-success"></i> on any template to start!</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -116,10 +121,14 @@
                                     <strong>{{ template.name }}</strong><br>
                                     <small class="text-muted">{{ template.module|title }} • {{ template.field_count }} fields</small>
                                 </div>
-                                <div>
+                                <div class="btn-group btn-group-sm">
                                     <a href="{{ url_for('dynamic_forms.edit_template', id=template.id) }}" 
-                                       class="btn btn-sm btn-outline-primary">
+                                       class="btn btn-outline-primary" title="Edit Template">
                                         <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="/admin/workflow/dashboard/{{ template.id }}" 
+                                       class="btn btn-outline-success" title="Workflow Logic">
+                                        <i class="fas fa-project-diagram"></i>
                                     </a>
                                 </div>
                             </div>
@@ -166,6 +175,10 @@
                                                         <a href="{{ url_for('dynamic_forms.edit_template', id=template.id) }}" 
                                                            class="btn btn-outline-primary" title="Edit Template">
                                                             <i class="fas fa-edit"></i>
+                                                        </a>
+                                                        <a href="/admin/workflow/dashboard/{{ template.id }}" 
+                                                           class="btn btn-outline-success" title="Workflow Logic">
+                                                            <i class="fas fa-project-diagram"></i>
                                                         </a>
                                                         {% if template.field_count == 0 %}
                                                             <a href="{{ url_for('dynamic_forms.delete_template', id=template.id) }}" 
@@ -219,13 +232,13 @@
                             </ul>
                         </div>
                         <div class="col-md-6">
-                            <h6><i class="fas fa-lightbulb"></i> Usage Examples</h6>
+                            <h6><i class="fas fa-lightbulb"></i> Workflow Logic Examples</h6>
                             <ul class="list-unstyled">
-                                <li><i class="fas fa-arrow-right text-primary"></i> Add "Supplier Certification" to BOM items</li>
-                                <li><i class="fas fa-arrow-right text-primary"></i> Add "Priority Level" to Job Works</li>
-                                <li><i class="fas fa-arrow-right text-primary"></i> Add "Quality Notes" to GRN processes</li>
-                                <li><i class="fas fa-arrow-right text-primary"></i> Add custom cost breakdown fields</li>
-                                <li><i class="fas fa-arrow-right text-primary"></i> Add environmental impact tracking</li>
+                                <li><i class="fas fa-arrow-right text-success"></i> <strong>IF</strong> Order Type = "Custom" <strong>THEN</strong> show Custom Specifications field</li>
+                                <li><i class="fas fa-arrow-right text-success"></i> <strong>IF</strong> Priority Level = "Critical" <strong>THEN</strong> make Delivery Date required</li>
+                                <li><i class="fas fa-arrow-right text-success"></i> <strong>IF</strong> Quantity > 100 <strong>THEN</strong> show Bulk Discount field</li>
+                                <li><i class="fas fa-arrow-right text-success"></i> <strong>IF</strong> Material Type contains "Metal" <strong>THEN</strong> show Heat Treatment options</li>
+                                <li><i class="fas fa-arrow-right text-success"></i> <strong>IF</strong> Supplier is empty <strong>THEN</strong> hide Supplier Rating field</li>
                             </ul>
                         </div>
                     </div>
