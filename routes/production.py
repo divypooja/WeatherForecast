@@ -556,85 +556,7 @@ def add_bom_process(bom_id):
     
     return render_template('production/bom_process_form.html', form=form, bom=bom, title='Add Process Routing')
 
-@production_bp.route('/bom/process/edit/<int:id>', methods=['GET', 'POST'])
-@login_required
-def edit_bom_process(id):
-    """Edit BOM process"""
-    process = BOMProcess.query.get_or_404(id)
-    form = BOMProcessForm()
-    
-    if request.method == 'GET':
-        # Populate form with existing data
-        form.step_number.data = process.step_number
-        form.process_name.data = process.process_name
-        form.process_code.data = process.process_code
-        form.operation_description.data = process.operation_description
-        form.setup_time_minutes.data = process.setup_time_minutes
-        form.run_time_minutes.data = process.run_time_minutes
-        form.labor_rate_per_hour.data = process.labor_rate_per_hour
-        form.machine_id.data = process.machine_id
-        form.department_id.data = process.department_id
-        form.is_outsourced.data = process.is_outsourced
-        form.vendor_id.data = process.vendor_id
-        form.cost_per_unit.data = process.cost_per_unit
-        form.quality_check_required.data = process.quality_check_required
-        form.estimated_scrap_percent.data = process.estimated_scrap_percent
-        form.parallel_processes.data = process.parallel_processes
-        form.predecessor_processes.data = process.predecessor_processes
-        form.notes.data = process.notes
-    
-    if form.validate_on_submit():
-        # Check for duplicate step numbers (excluding current process)
-        existing_step = BOMProcess.query.filter(
-            BOMProcess.bom_id == process.bom_id, 
-            BOMProcess.step_number == form.step_number.data,
-            BOMProcess.id != id
-        ).first()
-        if existing_step:
-            flash('A process with this step number already exists', 'warning')
-            return render_template('production/bom_process_form.html', form=form, bom=process.bom, title='Edit Process')
-        
-        # Update process
-        process.step_number = form.step_number.data
-        process.process_name = form.process_name.data
-        process.process_code = form.process_code.data
-        process.operation_description = form.operation_description.data
-        process.setup_time_minutes = form.setup_time_minutes.data or 0.0
-        process.run_time_minutes = form.run_time_minutes.data or 0.0
-        process.labor_rate_per_hour = form.labor_rate_per_hour.data or 0.0
-        process.machine_id = form.machine_id.data if form.machine_id.data != 0 else None
-        process.department_id = form.department_id.data if form.department_id.data != 0 else None
-        process.is_outsourced = form.is_outsourced.data
-        process.vendor_id = form.vendor_id.data if form.vendor_id.data != 0 else None
-        process.cost_per_unit = form.cost_per_unit.data or 0.0
-        process.quality_check_required = form.quality_check_required.data
-        process.estimated_scrap_percent = form.estimated_scrap_percent.data or 0.0
-        process.parallel_processes = form.parallel_processes.data
-        process.predecessor_processes = form.predecessor_processes.data
-        process.notes = form.notes.data
-        
-        db.session.commit()
-        flash('Process routing updated successfully', 'success')
-        return redirect(url_for('production.edit_bom', id=process.bom_id))
-    
-    return render_template('production/bom_process_form.html', form=form, bom=process.bom, title='Edit Process Routing')
 
-@production_bp.route('/bom/process/delete/<int:id>')
-@login_required
-def delete_bom_process(id):
-    """Delete BOM process"""
-    process = BOMProcess.query.get_or_404(id)
-    bom_id = process.bom_id
-    
-    try:
-        db.session.delete(process)
-        db.session.commit()
-        flash('Process routing deleted successfully', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Error deleting process: {str(e)}', 'error')
-    
-    return redirect(url_for('production.edit_bom', id=bom_id))
 
 # Enhanced BOM Analysis Routes
 @production_bp.route('/bom/<int:id>/analysis')
@@ -878,3 +800,57 @@ def add_multi_bom_process(bom_id):
                          bom=bom,
                          form=form,
                          title=f'Add Multiple Process Routing - {bom.bom_code}')
+
+@production_bp.route('/bom_process/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_bom_process(id):
+    """Edit a BOM process"""
+    process = BOMProcess.query.get_or_404(id)
+    bom = process.bom
+    
+    form = BOMProcessForm(obj=process)
+    
+    if form.validate_on_submit():
+        form.populate_obj(process)
+        
+        try:
+            db.session.commit()
+            
+            # Trigger intelligent sync after editing process
+            ProcessIntegrationService.sync_bom_from_processes(bom.id)
+            
+            flash(f'Process "{process.process_name}" updated successfully. BOM costs automatically synchronized!', 'success')
+            return redirect(url_for('production.edit_bom', id=bom.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating process: {str(e)}', 'error')
+    
+    return render_template('production/bom_process_form.html',
+                         form=form,
+                         bom=bom,
+                         process=process,
+                         title=f'Edit Process: {process.process_name}')
+
+@production_bp.route('/bom_process/<int:id>/delete', methods=['POST'])
+@login_required
+def delete_bom_process(id):
+    """Delete a BOM process"""
+    process = BOMProcess.query.get_or_404(id)
+    bom_id = process.bom_id
+    process_name = process.process_name
+    
+    try:
+        db.session.delete(process)
+        db.session.commit()
+        
+        # Trigger intelligent sync after deleting process
+        ProcessIntegrationService.sync_bom_from_processes(bom_id)
+        
+        flash(f'Process "{process_name}" deleted successfully. BOM costs automatically synchronized!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting process: {str(e)}', 'error')
+    
+    return redirect(url_for('production.edit_bom', id=bom_id))
