@@ -177,8 +177,8 @@
                                                             <i class="fas fa-edit"></i>
                                                         </a>
                                                         <a href="/admin/workflow/dashboard/{{ template.id }}" 
-                                                           class="btn btn-outline-success" title="Workflow Logic">
-                                                            <i class="fas fa-project-diagram"></i>
+                                                           class="btn btn-success" title="Workflow Logic - Create Conditional Field Connections">
+                                                            <i class="fas fa-cogs"></i> 🔗
                                                         </a>
                                                         {% if template.field_count == 0 %}
                                                             <a href="{{ url_for('dynamic_forms.delete_template', id=template.id) }}" 
@@ -213,7 +213,21 @@
     </div>
 
     <!-- Information Panel -->
+    <!-- Workflow Logic Quick Access -->
     <div class="row mt-4">
+        <div class="col">
+            <div class="alert alert-success" role="alert">
+                <h4 class="alert-heading"><i class="fas fa-cogs"></i> 🔗 Workflow Logic Available!</h4>
+                <p>Click the <strong class="text-success">green workflow button (🔗)</strong> next to any template above to create conditional field connections with if/else/elif logic.</p>
+                <hr>
+                <p class="mb-0">
+                    <strong>Examples:</strong> IF Order Type = "Custom" THEN show specifications field • IF Quantity > 100 THEN make delivery date required
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
         <div class="col">
             <div class="card border-info">
                 <div class="card-header bg-info text-white">
