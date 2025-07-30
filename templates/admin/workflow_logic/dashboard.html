@@ -11,7 +11,7 @@
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
                     <li class="breadcrumb-item"><a href="{{ url_for('dynamic_forms.dashboard') }}">Dynamic Forms</a></li>
-                    <li class="breadcrumb-item"><a href="{{ url_for('dynamic_forms.edit_template', template_id=template.id) }}">{{ template.name }}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('dynamic_forms.edit_template', id=template.id) }}">{{ template.name }}</a></li>
                     <li class="breadcrumb-item active">Workflow Logic</li>
                 </ol>
             </nav>
