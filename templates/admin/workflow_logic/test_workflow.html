@@ -126,7 +126,7 @@
                     <h5><i class="fas fa-cogs"></i> Active Conditions</h5>
                 </div>
                 <div class="card-body">
-                    {% set conditions = template.field_conditions.filter_by(is_active=True).order_by(template.field_conditions.condition_order).all() %}
+                    {% set conditions = template.field_conditions|selectattr('is_active')|list %}
                     {% if conditions %}
                         {% for condition in conditions %}
                         <div class="border-bottom mb-2 pb-2">

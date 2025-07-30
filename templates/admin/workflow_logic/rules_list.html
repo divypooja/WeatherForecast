@@ -1,18 +1,18 @@
 {% extends "base.html" %}
 
-{% block title %}Field Conditions - {{ template.name }} - Factory Management System{% endblock %}
+{% block title %}Workflow Rules - {{ template.name }} - Factory Management System{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
     <div class="row mb-4">
         <div class="col">
-            <h1><i class="fas fa-link"></i> Field Conditions - {{ template.name }}</h1>
+            <h1><i class="fas fa-cogs"></i> Workflow Rules - {{ template.name }}</h1>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
                     <li class="breadcrumb-item"><a href="{{ url_for('dynamic_forms.dashboard') }}">Dynamic Forms</a></li>
                     <li class="breadcrumb-item"><a href="{{ url_for('workflow_logic.dashboard', template_id=template.id) }}">Workflow Logic</a></li>
-                    <li class="breadcrumb-item active">Field Conditions</li>
+                    <li class="breadcrumb-item active">Workflow Rules</li>
                 </ol>
             </nav>
         </div>
@@ -30,8 +30,8 @@
                         <a href="{{ url_for('workflow_logic.dashboard', template_id=template.id) }}" class="btn btn-outline-secondary">
                             <i class="fas fa-arrow-left"></i> Back to Dashboard
                         </a>
-                        <a href="{{ url_for('workflow_logic.add_condition', template_id=template.id) }}" class="btn btn-primary">
-                            <i class="fas fa-plus"></i> Add Condition
+                        <a href="{{ url_for('workflow_logic.list_conditions', template_id=template.id) }}" class="btn btn-outline-primary">
+                            <i class="fas fa-link"></i> Field Conditions
                         </a>
                         <a href="{{ url_for('workflow_logic.test_workflow', template_id=template.id) }}" class="btn btn-outline-success">
                             <i class="fas fa-flask"></i> Test Workflow
@@ -42,43 +42,36 @@
         </div>
     </div>
 
-    <!-- Conditions List -->
+    <!-- Rules List -->
     <div class="card">
         <div class="card-header">
-            <h5><i class="fas fa-list"></i> Field Conditions</h5>
+            <h5><i class="fas fa-list"></i> Workflow Rules</h5>
         </div>
         <div class="card-body">
-            {% if conditions %}
+            {% if rules %}
                 <div class="table-responsive">
                     <table class="table table-striped">
                         <thead>
                             <tr>
-                                <th>Condition</th>
-                                <th>Logic</th>
-                                <th>Action</th>
+                                <th>Rule Name</th>
+                                <th>Description</th>
+                                <th>Priority</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for condition in conditions %}
+                            {% for rule in rules %}
                                 <tr>
+                                    <td><strong>{{ rule.rule_name }}</strong></td>
+                                    <td>{{ rule.description or 'No description' }}</td>
                                     <td>
-                                        <strong>{{ condition.source_field_name }}</strong>
-                                        <span class="badge bg-info">{{ condition.operator }}</span>
-                                        <code>{{ condition.condition_value }}</code>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-{{ 'primary' if condition.logic_operator == 'AND' else 'warning' }}">
-                                            {{ condition.logic_operator or 'SIMPLE' }}
+                                        <span class="badge bg-{{ 'danger' if rule.priority <= 3 else 'warning' if rule.priority <= 7 else 'success' }}">
+                                            {{ rule.priority }}
                                         </span>
                                     </td>
                                     <td>
-                                        <span class="badge bg-success">{{ condition.action_type }}</span>
-                                        → <strong>{{ condition.target_field_name }}</strong>
-                                    </td>
-                                    <td>
-                                        {% if condition.is_active %}
+                                        {% if rule.is_active %}
                                             <span class="badge bg-success">Active</span>
                                         {% else %}
                                             <span class="badge bg-secondary">Inactive</span>
@@ -86,16 +79,12 @@
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm">
-                                            <a href="{{ url_for('workflow_logic.edit_condition', condition_id=condition.id) }}" 
-                                               class="btn btn-outline-primary" title="Edit Condition">
+                                            <button class="btn btn-outline-primary" title="Edit Rule">
                                                 <i class="fas fa-edit"></i>
-                                            </a>
-                                            <a href="{{ url_for('workflow_logic.delete_condition', condition_id=condition.id) }}" 
-                                               class="btn btn-outline-danger" 
-                                               onclick="return confirm('Delete this condition?')"
-                                               title="Delete Condition">
+                                            </button>
+                                            <button class="btn btn-outline-danger" title="Delete Rule">
                                                 <i class="fas fa-trash"></i>
-                                            </a>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -105,21 +94,15 @@
                 </div>
             {% else %}
                 <div class="text-center py-5">
-                    <i class="fas fa-link fa-3x text-muted mb-3"></i>
-                    <h5>No Field Conditions</h5>
-                    <p class="text-muted">Create field conditions to control when fields show, hide, or become required.</p>
-                    <a href="{{ url_for('workflow_logic.add_condition', template_id=template.id) }}" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Create First Condition
-                    </a>
+                    <i class="fas fa-cogs fa-3x text-muted mb-3"></i>
+                    <h5>No Workflow Rules</h5>
+                    <p class="text-muted">Create workflow rules to automate field behavior based on conditions.</p>
+                    <button class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create First Rule
+                    </button>
                 </div>
             {% endif %}
         </div>
     </div>
 </div>
-
-<style>
-.badge {
-    font-size: 0.75em;
-}
-</style>
 {% endblock %}
