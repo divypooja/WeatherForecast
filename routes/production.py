@@ -356,13 +356,7 @@ def edit_bom(id):
         form.freight_unit_type.data = bom.freight_unit_type
         form.markup_percentage.data = bom.markup_percentage
     
-    if request.method == 'POST':
-        print(f"DEBUG: BOM Edit form submitted for BOM {id} with data: {request.form}")
-        print(f"DEBUG: Form validation errors: {form.errors}")
-        print(f"DEBUG: Form validates: {form.validate()}")
-    
     if form.validate_on_submit():
-        print(f"DEBUG: BOM form validation passed, updating BOM {id}")
         # Check if BOM already exists for this product (excluding current BOM)
         existing_bom = BOM.query.filter(
             BOM.product_id == form.product_id.data, 
