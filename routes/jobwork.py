@@ -73,11 +73,18 @@ def list_job_works():
 @jobwork_bp.route('/add', methods=['GET', 'POST'])
 @login_required
 def add_job_work():
-    """Simple unified job work form without complex quantity logic"""
+    """Unified job work form with BOM integration"""
     if request.method == 'GET':
         # Load data for form dropdowns
         items = Item.query.filter_by(active=True).all()
         suppliers = Supplier.query.filter(Supplier.partner_type.in_(['customer', 'both'])).all()
+        
+        # Load BOMs for integration
+        try:
+            boms = BOM.query.filter_by(active=True).all()
+        except:
+            boms = []
+        
         try:
             from models_department import Department
             departments = Department.query.filter_by(active=True).all()
@@ -87,15 +94,15 @@ def add_job_work():
         return render_template('jobwork/simple_add.html', 
                              items=items, 
                              suppliers=suppliers, 
-                             departments=departments)
+                             departments=departments,
+                             boms=boms)
     
     # Handle form submission
     try:
         # Extract form data
         work_type = request.form.get('work_type')
-        item_id = int(request.form.get('item_id'))
-        process = request.form.get('process')
-        quantity_sent = float(request.form.get('quantity_sent'))
+        bom_id = request.form.get('bom_id')
+        production_quantity = request.form.get('production_quantity')
         sent_date_str = request.form.get('sent_date')
         expected_return_str = request.form.get('expected_return')
         notes = request.form.get('notes', '')
@@ -104,6 +111,67 @@ def add_job_work():
         customer_name = request.form.get('customer_name') if work_type == 'outsourced' else None
         rate_per_unit = float(request.form.get('rate_per_unit', 0)) if work_type == 'outsourced' else 0.0
         department = request.form.get('department') if work_type == 'in_house' else None
+        
+        # Handle BOM-based vs regular job work
+        if bom_id and production_quantity:
+            # BOM-based job work
+            bom = BOM.query.get(int(bom_id))
+            if not bom:
+                flash('Selected BOM not found', 'error')
+                return redirect(url_for('jobwork.add_job_work'))
+            
+            production_qty = int(production_quantity)
+            
+            # Check material availability
+            can_produce, shortages = bom.can_produce_quantity(production_qty)
+            if not can_produce:
+                shortage_msg = "Material shortages detected: " + ", ".join([f"{s['material'].name} (need {s['shortage']} more)" for s in shortages])
+                flash(shortage_msg, 'error')
+                return redirect(url_for('jobwork.add_job_work'))
+            
+            # Create BOM-based job work
+            job_number = generate_job_number()
+            job = JobWork(
+                job_number=job_number,
+                customer_name=customer_name,
+                work_type=work_type,
+                department=department,
+                rate_per_unit=rate_per_unit,
+                sent_date=datetime.strptime(sent_date_str, '%Y-%m-%d').date() if sent_date_str else None,
+                expected_return=datetime.strptime(expected_return_str, '%Y-%m-%d').date() if expected_return_str else None,
+                notes=f"BOM-based production: {bom.bom_code} - {production_qty} units\n{notes}",
+                created_by=current_user.id,
+                bom_id=bom_id,
+                production_quantity=production_qty
+            )
+            
+            # Move materials from inventory to WIP based on BOM requirements
+            for bom_item in bom.items:
+                material = bom_item.material or bom_item.item
+                if material:
+                    required_qty = (bom_item.qty_required or bom_item.quantity_required) * production_qty
+                    process_name = bom_item.process_name or 'General'
+                    
+                    # Move material to WIP
+                    if material.move_to_wip(required_qty, process_name):
+                        movement_note = f"[{datetime.utcnow().strftime('%d/%m/%Y %H:%M')}] {required_qty} {material.unit_of_measure} {material.name} moved to {process_name} WIP for BOM production"
+                        job.notes = (job.notes or '') + f"\n{movement_note}"
+            
+            db.session.add(job)
+            db.session.commit()
+            
+            flash(f'BOM-based Job Work {job_number} created successfully for producing {production_qty} units of {bom.product.name if bom.product else "product"}.', 'success')
+            return redirect(url_for('jobwork.list_job_works'))
+            
+        else:
+            # Regular job work (existing logic)
+            item_id = int(request.form.get('item_id', 0))
+            process = request.form.get('process')
+            quantity_sent = float(request.form.get('quantity_sent', 0))
+            
+            if not item_id or not process or not quantity_sent:
+                flash('Item, process, and quantity are required for regular job work', 'error')
+                return redirect(url_for('jobwork.add_job_work'))
         
         # Parse dates
         from datetime import datetime
@@ -178,6 +246,68 @@ def api_generate_job_number():
     try:
         job_number = generate_job_number()
         return jsonify({'job_number': job_number})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# BOM Integration API Routes
+@jobwork_bp.route('/api/bom/<int:bom_id>/materials')
+@login_required
+def api_bom_materials(bom_id):
+    """Get materials for a specific BOM"""
+    try:
+        bom = BOM.query.get_or_404(bom_id)
+        materials = []
+        
+        for bom_item in bom.items:
+            material = bom_item.material or bom_item.item
+            if material:
+                material_data = {
+                    'id': material.id,
+                    'material_name': material.name,
+                    'material_code': material.code,
+                    'qty_required': bom_item.qty_required or bom_item.quantity_required,
+                    'uom_name': bom_item.uom.name if bom_item.uom else material.unit_of_measure,
+                    'process_step': bom_item.process_step or 1,
+                    'process_name': bom_item.process_name,
+                    'is_critical': bom_item.is_critical or False,
+                    'current_stock': material.total_stock if hasattr(material, 'total_stock') else (material.current_stock or 0),
+                    'unit_cost': bom_item.unit_cost or 0.0
+                }
+                materials.append(material_data)
+        
+        return jsonify({
+            'bom_id': bom_id,
+            'bom_code': bom.bom_code,
+            'product_name': bom.product.name if bom.product else 'Unknown',
+            'materials': materials
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@jobwork_bp.route('/api/bom/<int:bom_id>/production_check/<int:qty>')
+@login_required  
+def api_bom_production_check(bom_id, qty):
+    """Check if BOM can produce specified quantity"""
+    try:
+        bom = BOM.query.get_or_404(bom_id)
+        can_produce, shortages = bom.can_produce_quantity(qty)
+        
+        return jsonify({
+            'bom_id': bom_id,
+            'production_quantity': qty,
+            'can_produce': can_produce,
+            'shortages': [
+                {
+                    'material_id': s['material'].id,
+                    'material_name': s['material'].name,
+                    'material_code': s['material'].code,
+                    'required': s['required'],
+                    'available': s['available'],
+                    'shortage': s['shortage']
+                }
+                for s in shortages
+            ]
+        })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

@@ -47,20 +47,63 @@
                             </div>
                         </div>
                         
+                        <!-- BOM Integration Section -->
                         <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-success border-bottom pb-2 mb-3">
+                                    <i class="fas fa-sitemap"></i> BOM Integration <span class="badge bg-success">NEW</span>
+                                </h6>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Production Item (with BOM)</label>
+                                <select class="form-select" id="bom_id" name="bom_id">
+                                    <option value="">Select Product BOM (Optional)</option>
+                                    {% for bom in boms %}
+                                    <option value="{{ bom.id }}" data-product-id="{{ bom.product_id }}">{{ bom.bom_code }} - {{ bom.product.name if bom.product else 'Unknown Product' }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted">Select if creating job work for BOM-based production</small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Production Quantity</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="production_quantity" name="production_quantity" step="1" min="1" placeholder="Units to produce">
+                                    <span class="input-group-text">units</span>
+                                </div>
+                                <small class="text-muted">Quantity of final product to manufacture</small>
+                            </div>
+                        </div>
+                        
+                        <!-- BOM Material Requirements -->
+                        <div id="bom_materials_section" style="display: none;" class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-info border-bottom pb-2 mb-3">
+                                    <i class="fas fa-list-ul"></i> Required Materials (From BOM)
+                                </h6>
+                                <div id="bom_materials_table">
+                                    <!-- Materials will be loaded via JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Regular Item Selection (if not using BOM) -->
+                        <div class="row mb-4" id="regular_item_section">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Item</label>
-                                <select class="form-select" id="item_id" name="item_id" required>
+                                <select class="form-select" id="item_id" name="item_id">
                                     <option value="">Select Item</option>
                                     {% for item in items %}
                                     <option value="{{ item.id }}">{{ item.code }} - {{ item.name }}</option>
                                     {% endfor %}
                                 </select>
+                                <small class="text-muted">For single-item job work (not BOM-based)</small>
                             </div>
                             
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Process</label>
-                                <select class="form-select" id="process" name="process" required>
+                                <select class="form-select" id="process" name="process">
                                     <option value="">Select Process</option>
                                     <option value="Cutting">Cutting</option>
                                     <option value="Bending">Bending</option>
@@ -108,18 +151,33 @@
                             </div>
                         </div>
                         
-                        <div class="row mb-4">
+                        <div class="row mb-4" id="quantity_section">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Quantity Sent</label>
                                 <div class="input-group">
-                                    <input type="number" class="form-control" id="quantity_sent" name="quantity_sent" step="0.01" min="0" required>
-                                    <span class="input-group-text">pcs</span>
+                                    <input type="number" class="form-control" id="quantity_sent" name="quantity_sent" step="0.01" min="0">
+                                    <span class="input-group-text" id="quantity_unit">pcs</span>
                                 </div>
+                                <small class="text-muted" id="quantity_help">For regular job work only</small>
                             </div>
                             
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Sent Date</label>
                                 <input type="date" class="form-control" id="sent_date" name="sent_date" required>
+                            </div>
+                        </div>
+                        
+                        <!-- BOM Material Availability Check -->
+                        <div id="material_availability_section" style="display: none;" class="row mb-4">
+                            <div class="col-12">
+                                <div class="card border-warning">
+                                    <div class="card-header bg-warning text-dark">
+                                        <h6 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Material Availability Check</h6>
+                                    </div>
+                                    <div class="card-body" id="availability_results">
+                                        <!-- Availability results will be shown here -->
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
@@ -165,7 +223,174 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Generate job number
     generateJobNumber();
+    
+    // Setup BOM integration handlers
+    setupBOMIntegration();
 });
+
+// BOM Integration Functions
+function setupBOMIntegration() {
+    const bomSelect = document.getElementById('bom_id');
+    const productionQtyInput = document.getElementById('production_quantity');
+    
+    bomSelect.addEventListener('change', handleBOMSelection);
+    productionQtyInput.addEventListener('input', handleProductionQuantityChange);
+}
+
+function handleBOMSelection() {
+    const bomSelect = document.getElementById('bom_id');
+    const bomId = bomSelect.value;
+    const materialsSection = document.getElementById('bom_materials_section');
+    const regularItemSection = document.getElementById('regular_item_section');
+    const quantitySection = document.getElementById('quantity_section');
+    
+    if (bomId) {
+        // Show BOM sections, hide regular item section
+        materialsSection.style.display = 'block';
+        regularItemSection.style.display = 'none';
+        quantitySection.style.display = 'none';
+        
+        // Load BOM materials
+        loadBOMMaterials(bomId);
+        
+        // Make BOM fields required
+        document.getElementById('production_quantity').required = true;
+        document.getElementById('item_id').required = false;
+        document.getElementById('process').required = false;
+        document.getElementById('quantity_sent').required = false;
+    } else {
+        // Show regular sections, hide BOM section
+        materialsSection.style.display = 'none';
+        regularItemSection.style.display = 'block';
+        quantitySection.style.display = 'block';
+        
+        // Make regular fields required
+        document.getElementById('production_quantity').required = false;
+        document.getElementById('item_id').required = true;
+        document.getElementById('process').required = true;
+        document.getElementById('quantity_sent').required = true;
+    }
+}
+
+function handleProductionQuantityChange() {
+    const bomId = document.getElementById('bom_id').value;
+    const productionQty = document.getElementById('production_quantity').value;
+    
+    if (bomId && productionQty) {
+        checkMaterialAvailability(bomId, productionQty);
+    }
+}
+
+function loadBOMMaterials(bomId) {
+    fetch(`/api/bom/${bomId}/materials`)
+        .then(response => response.json())
+        .then(data => {
+            const materialsTable = document.getElementById('bom_materials_table');
+            
+            if (data.materials && data.materials.length > 0) {
+                let tableHTML = `
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Material</th>
+                                    <th>Required per Unit</th>
+                                    <th>UOM</th>
+                                    <th>Process Step</th>
+                                    <th>Critical</th>
+                                    <th>Current Stock</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                data.materials.forEach(material => {
+                    const isCritical = material.is_critical ? '<span class="badge bg-danger">Critical</span>' : '';
+                    const stockStatus = material.current_stock >= material.qty_required ? 
+                        '<span class="badge bg-success">Available</span>' : 
+                        '<span class="badge bg-warning">Low Stock</span>';
+                    
+                    tableHTML += `
+                        <tr>
+                            <td><strong>${material.material_name}</strong><br><small class="text-muted">${material.material_code}</small></td>
+                            <td>${material.qty_required}</td>
+                            <td>${material.uom_name || 'pcs'}</td>
+                            <td><span class="badge bg-info">${material.process_name || 'Step ' + material.process_step}</span></td>
+                            <td>${isCritical}</td>
+                            <td>${material.current_stock || 0}</td>
+                            <td>${stockStatus}</td>
+                        </tr>
+                    `;
+                });
+                
+                tableHTML += '</tbody></table></div>';
+                materialsTable.innerHTML = tableHTML;
+            } else {
+                materialsTable.innerHTML = '<div class="alert alert-info">No materials found for this BOM.</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading BOM materials:', error);
+            document.getElementById('bom_materials_table').innerHTML = 
+                '<div class="alert alert-danger">Error loading BOM materials. Please try again.</div>';
+        });
+}
+
+function checkMaterialAvailability(bomId, productionQty) {
+    fetch(`/api/bom/${bomId}/production_check/${productionQty}`)
+        .then(response => response.json())
+        .then(data => {
+            const availabilitySection = document.getElementById('material_availability_section');
+            const resultsDiv = document.getElementById('availability_results');
+            
+            if (data.can_produce) {
+                resultsDiv.innerHTML = `
+                    <div class="alert alert-success mb-0">
+                        <i class="fas fa-check-circle"></i> <strong>Production Feasible!</strong> 
+                        All materials are available for producing ${productionQty} units.
+                    </div>
+                `;
+                availabilitySection.style.display = 'block';
+            } else if (data.shortages && data.shortages.length > 0) {
+                let shortageHTML = `
+                    <div class="alert alert-danger mb-3">
+                        <i class="fas fa-exclamation-triangle"></i> <strong>Material Shortages Detected!</strong>
+                        Cannot produce ${productionQty} units due to insufficient materials.
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Material</th>
+                                    <th>Required</th>
+                                    <th>Available</th>
+                                    <th>Shortage</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                data.shortages.forEach(shortage => {
+                    shortageHTML += `
+                        <tr>
+                            <td><strong>${shortage.material_name}</strong><br><small>${shortage.material_code}</small></td>
+                            <td>${shortage.required}</td>
+                            <td>${shortage.available}</td>
+                            <td class="text-danger"><strong>${shortage.shortage}</strong></td>
+                        </tr>
+                    `;
+                });
+                
+                shortageHTML += '</tbody></table></div>';
+                resultsDiv.innerHTML = shortageHTML;
+                availabilitySection.style.display = 'block';
+            }
+        })
+        .catch(error => {
+            console.error('Error checking material availability:', error);
+        });
+}
 
 // Show/hide fields based on work type
 document.getElementById('work_type').addEventListener('change', function() {
