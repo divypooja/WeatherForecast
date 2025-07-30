@@ -637,11 +637,14 @@
                         {% if bom %}
                         <div class="d-flex gap-2 mb-3">
                             <a href="{{ url_for('production.add_bom_process', bom_id=bom.id) }}" class="btn btn-primary">
-                                <i class="fas fa-plus"></i> Add Manufacturing Process
+                                <i class="fas fa-plus"></i> Add Single Process
+                            </a>
+                            <a href="{{ url_for('production.add_multi_bom_process', bom_id=bom.id) }}" class="btn btn-success">
+                                <i class="fas fa-layer-group"></i> Add Multiple Processes
                             </a>
                             {% if bom.processes %}
                             <form method="POST" action="{{ url_for('production.sync_bom_from_processes', id=bom.id) }}" style="display: inline;">
-                                <button type="submit" class="btn btn-success">
+                                <button type="submit" class="btn btn-warning">
                                     <i class="fas fa-sync"></i> Sync from Processes
                                 </button>
                             </form>
@@ -653,6 +656,10 @@
                         {% if bom.processes %}
                         <div class="alert alert-success">
                             <i class="fas fa-brain"></i> <strong>Smart Integration:</strong> Use "Sync from Processes" to automatically populate Labor Costs and Scrap Management from manufacturing process workflows.
+                        </div>
+                        {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-layer-group"></i> <strong>Quick Setup:</strong> Use "Add Multiple Processes" to configure complete manufacturing workflows efficiently, similar to Job Work form.
                         </div>
                         {% endif %}
                         {% else %}
