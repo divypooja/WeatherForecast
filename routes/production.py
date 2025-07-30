@@ -859,12 +859,16 @@ def add_multi_bom_process(bom_id):
             db.session.rollback()
             flash(f'Error adding processes: {str(e)}', 'error')
             
-    # Create a simple form for CSRF protection
+    # Create a simple form for CSRF protection  
     form = FlaskForm()
+    
+    # Get available items for transformation dropdowns
+    available_items = Item.query.order_by(Item.name).all()
     
     return render_template('production/bom_multi_process_form.html',
                          bom=bom,
                          form=form,
+                         available_items=available_items,
                          title=f'Add Multiple Process Routing - {bom.bom_code}')
 
 @production_bp.route('/bom_process/<int:id>/edit', methods=['GET', 'POST'])

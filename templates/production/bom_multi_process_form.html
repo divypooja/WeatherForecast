@@ -131,6 +131,71 @@
                                             <textarea class="form-control" name="processes[0][operation_description]" rows="2" placeholder="Detailed description of the operation"></textarea>
                                         </div>
                                         
+                                        <!-- Process Transformation Section -->
+                                        <div class="card mt-3 mb-3">
+                                            <div class="card-header bg-info text-white">
+                                                <small><i class="fas fa-exchange-alt"></i> Process Transformation <span class="badge badge-light ms-2">NEW</span></small>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <div class="form-group mb-3">
+                                                            <label class="form-label">Input Product</label>
+                                                            <select class="form-select" name="processes[0][input_product_id]">
+                                                                <option value="">Select Input Product</option>
+                                                                {% for item in available_items %}
+                                                                <option value="{{ item.id }}">{{ item.name }} ({{ item.code }})</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                            <small class="form-text text-muted">Material/product that enters this process</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-group mb-3">
+                                                            <label class="form-label">Output Product</label>
+                                                            <select class="form-select" name="processes[0][output_product_id]">
+                                                                <option value="">Select Output Product</option>
+                                                                {% for item in available_items %}
+                                                                <option value="{{ item.id }}">{{ item.name }} ({{ item.code }})</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                            <small class="form-text text-muted">Material/product that exits this process</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="row">
+                                                    <div class="col-md-4">
+                                                        <div class="form-group mb-3">
+                                                            <label class="form-label">Input Quantity</label>
+                                                            <input type="number" class="form-control" name="processes[0][input_quantity]" value="1.0" step="0.001">
+                                                            <small class="form-text text-muted">Quantity required as input</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="form-group mb-3">
+                                                            <label class="form-label">Output Quantity</label>
+                                                            <input type="number" class="form-control" name="processes[0][output_quantity]" value="1.0" step="0.001">
+                                                            <small class="form-text text-muted">Quantity produced as output</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="form-group mb-3">
+                                                            <label class="form-label">Transformation Type</label>  
+                                                            <select class="form-select" name="processes[0][transformation_type]">
+                                                                <option value="modify">Modify</option>
+                                                                <option value="machining">Machining</option>
+                                                                <option value="assembly">Assembly</option>
+                                                                <option value="coating">Coating</option>
+                                                                <option value="forming">Forming</option>
+                                                            </select>
+                                                            <small class="form-text text-muted">Type of transformation</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" name="processes[0][quality_check_required]" value="true">
                                             <label class="form-check-label">Quality Check Required</label>
@@ -308,6 +373,71 @@ function createProcessItem(processNumber) {
         <div class="form-group mb-3">
             <label class="form-label">Operation Description</label>
             <textarea class="form-control" name="processes[${index}][operation_description]" rows="2" placeholder="Detailed description of the operation"></textarea>
+        </div>
+        
+        <!-- Process Transformation Section -->
+        <div class="card mt-3 mb-3">
+            <div class="card-header bg-info text-white">
+                <small><i class="fas fa-exchange-alt"></i> Process Transformation <span class="badge badge-light ms-2">NEW</span></small>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label class="form-label">Input Product</label>
+                            <select class="form-select" name="processes[${index}][input_product_id]">
+                                <option value="">Select Input Product</option>
+                                {% for item in available_items %}
+                                <option value="{{ item.id }}">{{ item.name }} ({{ item.code }})</option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted">Material/product that enters this process</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label class="form-label">Output Product</label>
+                            <select class="form-select" name="processes[${index}][output_product_id]">
+                                <option value="">Select Output Product</option>
+                                {% for item in available_items %}
+                                <option value="{{ item.id }}">{{ item.name }} ({{ item.code }})</option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted">Material/product that exits this process</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group mb-3">
+                            <label class="form-label">Input Quantity</label>
+                            <input type="number" class="form-control" name="processes[${index}][input_quantity]" value="1.0" step="0.001">
+                            <small class="form-text text-muted">Quantity required as input</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group mb-3">
+                            <label class="form-label">Output Quantity</label>
+                            <input type="number" class="form-control" name="processes[${index}][output_quantity]" value="1.0" step="0.001">
+                            <small class="form-text text-muted">Quantity produced as output</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group mb-3">
+                            <label class="form-label">Transformation Type</label>  
+                            <select class="form-select" name="processes[${index}][transformation_type]">
+                                <option value="modify">Modify</option>
+                                <option value="machining">Machining</option>
+                                <option value="assembly">Assembly</option>
+                                <option value="coating">Coating</option>
+                                <option value="forming">Forming</option>
+                            </select>
+                            <small class="form-text text-muted">Type of transformation</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <div class="form-check">
