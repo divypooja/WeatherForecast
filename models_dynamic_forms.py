@@ -76,7 +76,7 @@ class CustomField(db.Model):
     def __repr__(self):
         return f'<CustomField {self.field_name} ({self.field_type})>'
     
-    @hybrid_property
+    @property
     def options_list(self):
         """Parse field_options JSON into Python list"""
         if self.field_options:
@@ -86,15 +86,14 @@ class CustomField(db.Model):
                 return []
         return []
     
-    @options_list.setter
-    def options_list(self, value):
+    def set_options_list(self, value):
         """Set field_options from Python list"""
         if value:
             self.field_options = json.dumps(value)
         else:
             self.field_options = None
     
-    @hybrid_property
+    @property
     def validation_dict(self):
         """Parse validation_rules JSON into Python dict"""
         if self.validation_rules:
@@ -104,8 +103,7 @@ class CustomField(db.Model):
                 return {}
         return {}
     
-    @validation_dict.setter
-    def validation_dict(self, value):
+    def set_validation_dict(self, value):
         """Set validation_rules from Python dict"""
         if value:
             self.validation_rules = json.dumps(value)
@@ -140,27 +138,37 @@ class CustomFieldValue(db.Model):
     )
     
     def __repr__(self):
-        return f'<CustomFieldValue {self.custom_field.field_name if self.custom_field else "Unknown"} for {self.record_type}:{self.record_id}>'
+        field_name = "Unknown"
+        if hasattr(self, 'custom_field') and self.custom_field:
+            field_name = self.custom_field.field_name
+        return f'<CustomFieldValue {field_name} for {self.record_type}:{self.record_id}>'
     
     @property
     def display_value(self):
         """Get the appropriate value based on field type"""
-        if self.custom_field.field_type in ['text', 'textarea', 'select', 'email', 'url']:
+        if not hasattr(self, 'custom_field') or not self.custom_field:
+            return None
+            
+        field_type = self.custom_field.field_type
+        if field_type in ['text', 'textarea', 'select', 'email', 'url']:
             return self.value_text
-        elif self.custom_field.field_type in ['number', 'decimal', 'currency']:
+        elif field_type in ['number', 'decimal', 'currency']:
             return self.value_number
-        elif self.custom_field.field_type == 'checkbox':
+        elif field_type == 'checkbox':
             return self.value_boolean
-        elif self.custom_field.field_type == 'date':
+        elif field_type == 'date':
             return self.value_date
-        elif self.custom_field.field_type == 'datetime':
+        elif field_type == 'datetime':
             return self.value_datetime
-        elif self.custom_field.field_type == 'json':
+        elif field_type == 'json':
             return json.loads(self.value_json) if self.value_json else None
         return None
     
     def set_value(self, value):
         """Set the appropriate value field based on field type"""
+        if not hasattr(self, 'custom_field') or not self.custom_field:
+            return
+            
         field_type = self.custom_field.field_type
         
         # Clear all value fields first

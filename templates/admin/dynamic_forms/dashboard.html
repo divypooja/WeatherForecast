@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block title %}Dynamic Forms Management - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-cogs"></i> Dynamic Forms Management <span class="badge bg-success">NEW</span></h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.settings') }}">Settings</a></li>
+                    <li class="breadcrumb-item active">Dynamic Forms</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Form Templates</h5>
+                            <h2 class="mb-0">{{ total_templates }}</h2>
+                        </div>
+                        <div>
+                            <i class="fas fa-file-alt fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Custom Fields</h5>
+                            <h2 class="mb-0">{{ total_fields }}</h2>
+                        </div>
+                        <div>
+                            <i class="fas fa-plus-square fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Field Values</h5>
+                            <h2 class="mb-0">{{ total_values }}</h2>
+                        </div>
+                        <div>
+                            <i class="fas fa-database fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Modules</h5>
+                            <h2 class="mb-0">{{ templates_by_module|length }}</h2>
+                        </div>
+                        <div>
+                            <i class="fas fa-cubes fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Quick Actions -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('dynamic_forms.add_template') }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Create Form Template
+                        </a>
+                        <a href="{{ url_for('dynamic_forms.list_templates') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-list"></i> Manage Templates
+                        </a>
+                        <a href="{{ url_for('dynamic_forms.init_default_templates') }}" class="btn btn-outline-info">
+                            <i class="fas fa-download"></i> Initialize Default Templates
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Templates -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-clock"></i> Recent Templates</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_templates %}
+                        {% for template in recent_templates %}
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <strong>{{ template.name }}</strong><br>
+                                    <small class="text-muted">{{ template.module|title }} • {{ template.field_count }} fields</small>
+                                </div>
+                                <div>
+                                    <a href="{{ url_for('dynamic_forms.edit_template', id=template.id) }}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </div>
+                            </div>
+                            {% if not loop.last %}<hr>{% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No templates created yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Templates by Module -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-layer-group"></i> Templates by Module</h5>
+                </div>
+                <div class="card-body">
+                    {% if templates_by_module %}
+                        <div class="row">
+                            {% for module, templates in templates_by_module.items() %}
+                                <div class="col-md-6 mb-4">
+                                    <div class="card border-left-primary">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-cube"></i> {{ module|title }}
+                                                <span class="badge bg-secondary">{{ templates|length }}</span>
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            {% for template in templates %}
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <div>
+                                                        <strong>{{ template.name }}</strong><br>
+                                                        <small class="text-muted">
+                                                            {{ template.field_count }} custom fields
+                                                            {% if not template.is_active %}
+                                                                <span class="badge bg-warning">Inactive</span>
+                                                            {% endif %}
+                                                        </small>
+                                                    </div>
+                                                    <div class="btn-group btn-group-sm">
+                                                        <a href="{{ url_for('dynamic_forms.edit_template', id=template.id) }}" 
+                                                           class="btn btn-outline-primary" title="Edit Template">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
+                                                        {% if template.field_count == 0 %}
+                                                            <a href="{{ url_for('dynamic_forms.delete_template', id=template.id) }}" 
+                                                               class="btn btn-outline-danger" 
+                                                               onclick="return confirm('Delete this template?')"
+                                                               title="Delete Template">
+                                                                <i class="fas fa-trash"></i>
+                                                            </a>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                {% if not loop.last %}<hr class="my-2">{% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                            <h5>No Form Templates</h5>
+                            <p class="text-muted">Create your first dynamic form template to get started.</p>
+                            <a href="{{ url_for('dynamic_forms.add_template') }}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Create Template
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Information Panel -->
+    <div class="row mt-4">
+        <div class="col">
+            <div class="card border-info">
+                <div class="card-header bg-info text-white">
+                    <h5><i class="fas fa-info-circle"></i> Dynamic Forms System</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-star"></i> Key Features</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success"></i> Add custom fields to any form</li>
+                                <li><i class="fas fa-check text-success"></i> Organize fields into sections</li>
+                                <li><i class="fas fa-check text-success"></i> Support for all field types (text, numbers, dropdowns, etc.)</li>
+                                <li><i class="fas fa-check text-success"></i> Cross-module integration</li>
+                                <li><i class="fas fa-check text-success"></i> Field validation and requirements</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-lightbulb"></i> Usage Examples</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-arrow-right text-primary"></i> Add "Supplier Certification" to BOM items</li>
+                                <li><i class="fas fa-arrow-right text-primary"></i> Add "Priority Level" to Job Works</li>
+                                <li><i class="fas fa-arrow-right text-primary"></i> Add "Quality Notes" to GRN processes</li>
+                                <li><i class="fas fa-arrow-right text-primary"></i> Add custom cost breakdown fields</li>
+                                <li><i class="fas fa-arrow-right text-primary"></i> Add environmental impact tracking</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.border-left-primary {
+    border-left: 4px solid #4e73df !important;
+}
+</style>
+{% endblock %}

@@ -42,6 +42,7 @@ def create_app():
     from models import User, Item, Supplier, PurchaseOrder, SalesOrder, Employee, JobWork, Production, BOM, NotificationSettings, NotificationLog, NotificationRecipient, CompanySettings, QualityIssue, QualityControlLog, FactoryExpense, Document
     from models_uom import UnitOfMeasure, UOMConversion, ItemUOMConversion, UOMConversionLog
     from models_department import Department
+    from models_dynamic_forms import FormTemplate, CustomField, CustomFieldValue, DynamicFormManager
 
     
     @login_manager.user_loader
@@ -119,6 +120,10 @@ def create_app():
     # Register Manufacturing Intelligence blueprint
     from routes.manufacturing_intelligence import manufacturing_intelligence_bp
     app.register_blueprint(manufacturing_intelligence_bp)
+    
+    # Register Dynamic Forms blueprint
+    from routes.dynamic_forms import dynamic_forms_bp
+    app.register_blueprint(dynamic_forms_bp)
     
 
     
