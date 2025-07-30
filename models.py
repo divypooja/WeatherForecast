@@ -1330,7 +1330,9 @@ class Production(db.Model):
     production_number = db.Column(db.String(50), unique=True, nullable=False)
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     quantity_planned = db.Column(db.Float, nullable=False)
+    planned_uom = db.Column(db.String(20), default='pcs')  # Unit of measure for planned quantity
     quantity_produced = db.Column(db.Float, default=0.0)
+    produced_uom = db.Column(db.String(20), default='pcs')  # Unit of measure for produced quantity
     quantity_good = db.Column(db.Float, default=0.0)  # Good quality items
     good_uom = db.Column(db.String(20), default='pcs')  # Unit of measure for good items
     quantity_damaged = db.Column(db.Float, default=0.0)  # Damaged/defective items
@@ -1363,6 +1365,9 @@ class BOM(db.Model):
     is_active = db.Column(db.Boolean, default=True)  # Keep for backward compatibility
     output_quantity = db.Column(db.Float, default=1.0)  # How many units this BOM produces (e.g., 1 sheet = 400 pieces)
     estimated_scrap_percent = db.Column(db.Float, default=0.0)  # Overall expected scrap percentage
+    scrap_quantity = db.Column(db.Float, default=0.0)  # Expected scrap quantity per unit produced
+    scrap_uom = db.Column(db.String(20), default='kg')  # Unit of measure for scrap (typically weight-based)
+    scrap_value_recovery_percent = db.Column(db.Float, default=15.0)  # Percentage of original material value recoverable from scrap
     description = db.Column(db.Text)  # BOM description
     remarks = db.Column(db.Text)  # Additional remarks
     
@@ -1470,6 +1475,39 @@ class BOM(db.Model):
     def total_bom_cost(self):
         """Total BOM cost per output quantity - alias for total_cost_per_unit"""
         return self.total_cost_per_unit
+    
+    @property
+    def expected_scrap_value(self):
+        """Calculate expected scrap value recovery"""
+        if self.scrap_quantity and self.scrap_value_recovery_percent:
+            # Estimate scrap value based on material cost and recovery percentage
+            material_cost = self.total_material_cost
+            scrap_value_per_kg = material_cost * (self.scrap_value_recovery_percent / 100)
+            return self.scrap_quantity * scrap_value_per_kg
+        return 0.0
+    
+    @property
+    def total_scrap_weight_per_unit(self):
+        """Calculate total expected scrap weight per unit including material and process scrap"""
+        total_scrap = self.scrap_quantity or 0.0
+        
+        # Add process-specific scrap if available
+        for process in self.processes:
+            if hasattr(process, 'estimated_scrap_percent') and process.estimated_scrap_percent:
+                # Estimate process scrap weight (this could be enhanced with specific calculations)
+                process_scrap_weight = 0.1 * (process.estimated_scrap_percent / 100)  # Rough estimate
+                total_scrap += process_scrap_weight
+        
+        return total_scrap
+    
+    def calculate_scrap_for_production(self, production_qty):
+        """Calculate expected scrap for a specific production quantity"""
+        return {
+            'total_scrap_weight': self.total_scrap_weight_per_unit * production_qty,
+            'scrap_uom': self.scrap_uom,
+            'estimated_scrap_value': self.expected_scrap_value * production_qty,
+            'scrap_percentage': self.estimated_scrap_percent
+        }
     
     def get_material_availability(self):
         """Check material availability for this BOM"""
