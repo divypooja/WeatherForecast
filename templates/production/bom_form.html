@@ -594,18 +594,103 @@
                         </div>
                     </div>
 
+                    <!-- Process Transformation Workflow -->
+                    <div class="alert alert-info mb-4">
+                        <h6><i class="fas fa-arrows-alt-h"></i> Manufacturing Process Transformation Flow</h6>
+                        <p class="mb-0">Shows how input products transform into different output products through sequential manufacturing steps</p>
+                    </div>
+                    
+                    {% if bom.processes and bom.processes|length > 0 %}
+                    <!-- Visual Process Flow Diagram -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="fas fa-sitemap"></i> Process Flow Transformation</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex flex-wrap align-items-center gap-3 justify-content-center">
+                                <!-- Raw Material Input -->
+                                <div class="text-center">
+                                    <div class="bg-secondary text-white px-3 py-2 rounded">
+                                        <i class="fas fa-cube"></i><br>
+                                        <strong>{{ bom.product.name }}</strong><br>
+                                        <small>Raw Input</small>
+                                    </div>
+                                </div>
+                                
+                                {% for process in bom.processes %}
+                                    <!-- Process Arrow -->
+                                    <i class="fas fa-arrow-right fa-2x text-primary"></i>
+                                    
+                                    <!-- Process Step -->
+                                    <div class="text-center">
+                                        <div class="bg-primary text-white px-3 py-2 rounded">
+                                            <i class="fas fa-cogs"></i><br>
+                                            <strong>{{ process.process_name }}</strong><br>
+                                            <small>Step {{ process.step_number }}</small>
+                                            {% if process.transformation_type and process.transformation_type != 'modify' %}
+                                                <br><span class="badge bg-light text-dark">{{ process.transformation_type.title() }}</span>
+                                            {% endif %}
+                                            {% if process.estimated_scrap_percent > 0 %}
+                                                <br><span class="badge bg-warning">{{ process.estimated_scrap_percent }}% Scrap</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    {% if not loop.last %}
+                                        <!-- Intermediate Product -->
+                                        <i class="fas fa-arrow-right fa-2x text-success"></i>
+                                        <div class="text-center">
+                                            <div class="bg-info text-white px-3 py-2 rounded">
+                                                <i class="fas fa-box"></i><br>
+                                                {% if process.output_product %}
+                                                    <strong>{{ process.output_product.name }}</strong><br>
+                                                    <small>{{ process.output_quantity }} units</small>
+                                                {% else %}
+                                                    <strong>Intermediate</strong><br>
+                                                    <small>After {{ process.process_name }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                <!-- Final Output -->
+                                <i class="fas fa-arrow-right fa-2x text-success"></i>
+                                <div class="text-center">
+                                    <div class="bg-success text-white px-3 py-2 rounded">
+                                        <i class="fas fa-check-circle"></i><br>
+                                        <strong>Final Product</strong><br>
+                                        <small>{{ bom.output_quantity }} {{ bom.output_uom.name if bom.output_uom else 'units' }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Process Summary -->
+                            <div class="mt-3 text-center">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle"></i> 
+                                    Complete transformation from <strong>{{ bom.product.name }}</strong> 
+                                    through {{ bom.processes|length }} sequential process steps 
+                                    to produce <strong>{{ bom.output_quantity }} {{ bom.output_uom.name if bom.output_uom else 'units' }}</strong>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
                     <div class="table-responsive">
                         <table class="table table-striped table-hover">
                             <thead>
                                 <tr>
                                     <th>Step</th>
                                     <th>Process Name</th>
-                                    <th>Description</th>
+                                    <th>Input Product</th>
+                                    <th>Output Product</th>
+                                    <th>Transformation</th>
                                     <th>Setup Time</th>
                                     <th>Runtime/Unit</th>
                                     <th>Cost/Unit</th>
                                     <th>Type</th>
-                                    <th>Quality Check</th>
                                     <th>Scrap %</th>
                                     <th>Actions</th>
                                 </tr>
@@ -619,22 +704,56 @@
                                         <br><small class="text-muted">{{ process.process_code }}</small>
                                         {% endif %}
                                     </td>
-                                    <td>{{ process.operation_description or '-' }}</td>
+                                    <td>
+                                        {% if process.input_product %}
+                                            <!-- Use specified input product -->
+                                            <span class="badge bg-secondary">{{ process.input_product.name }}</span>
+                                            <br><small class="text-muted">{{ process.input_quantity }} units</small>
+                                        {% elif loop.first %}
+                                            <!-- First process uses BOM base product -->
+                                            <span class="badge bg-secondary">{{ bom.product.name }}</span>
+                                            <br><small class="text-muted">Raw Material</small>
+                                        {% else %}
+                                            <!-- Subsequent processes use output from previous process -->
+                                            <span class="badge bg-info">From Step {{ process.step_number - 1 }}</span>
+                                            <br><small class="text-muted">Previous Output</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if process.output_product %}
+                                            <!-- Use specified output product -->
+                                            <span class="badge bg-success">{{ process.output_product.name }}</span>
+                                            <br><small class="text-muted">{{ process.output_quantity }} units</small>
+                                        {% elif process.operation_description %}
+                                            <span class="badge bg-success">{{ process.operation_description[:30] }}{% if process.operation_description|length > 30 %}...{% endif %}</span>
+                                            <br><small class="text-muted">After {{ process.process_name }}</small>
+                                        {% else %}
+                                            <span class="badge bg-success">Processed {{ bom.product.name }}</span>
+                                            <br><small class="text-muted">After {{ process.process_name }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <i class="fas fa-arrow-right text-primary"></i>
+                                        {% if process.estimated_scrap_percent > 0 %}
+                                            <br><small class="text-warning">{{ "%.1f"|format(process.estimated_scrap_percent) }}% Scrap</small>
+                                        {% else %}
+                                            <br><small class="text-success">No Scrap</small>
+                                        {% endif %}
+                                    </td>
                                     <td>{{ "%.1f"|format(process.setup_time_minutes or 0) }} min</td>
                                     <td>{{ "%.1f"|format(process.run_time_minutes or 0) }} min</td>
                                     <td>₹{{ "%.2f"|format(process.labor_cost_per_unit) }}</td>
                                     <td>
                                         {% if process.is_outsourced %}
                                         <span class="badge bg-warning">Outsourced</span>
+                                        {% if process.vendor %}
+                                            <br><small class="text-muted">{{ process.vendor.name }}</small>
+                                        {% endif %}
                                         {% else %}
                                         <span class="badge bg-info">In-House</span>
+                                        {% if process.department %}
+                                            <br><small class="text-muted">{{ process.department.name }}</small>
                                         {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if process.quality_check_required %}
-                                        <span class="badge bg-success">Required</span>
-                                        {% else %}
-                                        <span class="badge bg-secondary">Optional</span>
                                         {% endif %}
                                     </td>
                                     <td>{{ "%.1f"|format(process.estimated_scrap_percent or 0) }}%</td>

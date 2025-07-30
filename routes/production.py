@@ -594,6 +594,12 @@ def add_bom_process(bom_id):
             estimated_scrap_percent=form.estimated_scrap_percent.data or 0.0,
             parallel_processes=form.parallel_processes.data,
             predecessor_processes=form.predecessor_processes.data,
+            # New transformation fields
+            input_product_id=form.input_product_id.data if form.input_product_id.data != 0 else None,
+            output_product_id=form.output_product_id.data if form.output_product_id.data != 0 else None,
+            input_quantity=form.input_quantity.data or 1.0,
+            output_quantity=form.output_quantity.data or 1.0,
+            transformation_type=form.transformation_type.data or 'modify',
             notes=form.notes.data
         )
         
@@ -801,7 +807,13 @@ def add_multi_bom_process(bom_id):
                     'cost_per_unit': float(form_data.get(f'processes[{index}][cost_per_unit]') or 0),
                     'labor_rate_per_hour': float(form_data.get(f'processes[{index}][labor_rate_per_hour]') or 0),
                     'estimated_scrap_percent': float(form_data.get(f'processes[{index}][estimated_scrap_percent]') or 0),
-                    'quality_check_required': form_data.get(f'processes[{index}][quality_check_required]') == 'true'
+                    'quality_check_required': form_data.get(f'processes[{index}][quality_check_required]') == 'true',
+                    # Transformation fields
+                    'input_product_id': int(form_data.get(f'processes[{index}][input_product_id]') or 0) or None,
+                    'output_product_id': int(form_data.get(f'processes[{index}][output_product_id]') or 0) or None,
+                    'input_quantity': float(form_data.get(f'processes[{index}][input_quantity]') or 1.0),
+                    'output_quantity': float(form_data.get(f'processes[{index}][output_quantity]') or 1.0),
+                    'transformation_type': form_data.get(f'processes[{index}][transformation_type]', 'modify')
                 }
                 processes_data.append(process_data)
             
@@ -824,7 +836,13 @@ def add_multi_bom_process(bom_id):
                     cost_per_unit=process_data['cost_per_unit'],
                     labor_rate_per_hour=process_data['labor_rate_per_hour'], 
                     estimated_scrap_percent=process_data['estimated_scrap_percent'],
-                    quality_check_required=process_data['quality_check_required']
+                    quality_check_required=process_data['quality_check_required'],
+                    # Transformation fields
+                    input_product_id=process_data['input_product_id'],
+                    output_product_id=process_data['output_product_id'],
+                    input_quantity=process_data['input_quantity'],
+                    output_quantity=process_data['output_quantity'],
+                    transformation_type=process_data['transformation_type']
                 )
                 db.session.add(bom_process)
                 created_count += 1
@@ -858,8 +876,23 @@ def edit_bom_process(id):
     
     form = BOMProcessForm(obj=process)
     
+    # For GET request, ensure transformation fields are properly populated
+    if request.method == 'GET':
+        form.input_product_id.data = process.input_product_id
+        form.output_product_id.data = process.output_product_id
+        form.input_quantity.data = process.input_quantity or 1.0
+        form.output_quantity.data = process.output_quantity or 1.0
+        form.transformation_type.data = process.transformation_type or 'modify'
+    
     if form.validate_on_submit():
         form.populate_obj(process)
+        
+        # Handle transformation fields explicitly to ensure they're saved
+        process.input_product_id = form.input_product_id.data if form.input_product_id.data != 0 else None
+        process.output_product_id = form.output_product_id.data if form.output_product_id.data != 0 else None
+        process.input_quantity = form.input_quantity.data or 1.0
+        process.output_quantity = form.output_quantity.data or 1.0
+        process.transformation_type = form.transformation_type.data or 'modify'
         
         try:
             db.session.commit()
