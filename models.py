@@ -1262,8 +1262,11 @@ class JobWorkProcess(db.Model):
     
     # Quantity tracking for this specific process
     quantity_input = db.Column(db.Float, nullable=False)  # Quantity received for this process
+    input_uom = db.Column(db.String(20), default='pcs')  # Unit of measure for input
     quantity_output = db.Column(db.Float, default=0.0)  # Quantity completed from this process
+    output_uom = db.Column(db.String(20), default='pcs')  # Unit of measure for output
     quantity_scrap = db.Column(db.Float, default=0.0)  # Scrap generated in this process
+    scrap_uom = db.Column(db.String(20), default='kg')  # Unit of measure for scrap (typically weight-based)
     
     # Process-specific details
     customer_name = db.Column(db.String(100))  # Customer for this process (may differ per process)
@@ -1329,7 +1332,11 @@ class Production(db.Model):
     quantity_planned = db.Column(db.Float, nullable=False)
     quantity_produced = db.Column(db.Float, default=0.0)
     quantity_good = db.Column(db.Float, default=0.0)  # Good quality items
+    good_uom = db.Column(db.String(20), default='pcs')  # Unit of measure for good items
     quantity_damaged = db.Column(db.Float, default=0.0)  # Damaged/defective items
+    damaged_uom = db.Column(db.String(20), default='pcs')  # Unit of measure for damaged items
+    scrap_quantity = db.Column(db.Float, default=0.0)  # Scrap generated during production
+    scrap_uom = db.Column(db.String(20), default='kg')  # Unit of measure for scrap (typically weight-based)
     unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
     total_weight_planned = db.Column(db.Float, default=0.0)  # Total planned weight
     total_weight_produced = db.Column(db.Float, default=0.0)  # Total produced weight
@@ -1612,6 +1619,9 @@ class QualityIssue(db.Model):
     issue_type = db.Column(db.String(50), nullable=False)  # damage, malfunction, defect, contamination
     severity = db.Column(db.String(20), nullable=False)  # low, medium, high, critical
     quantity_affected = db.Column(db.Float, nullable=False)
+    affected_uom = db.Column(db.String(20), default='pcs')  # Unit of measure for affected quantity
+    scrap_quantity = db.Column(db.Float, default=0.0)  # Additional scrap generated due to quality issue
+    scrap_uom = db.Column(db.String(20), default='kg')  # Unit of measure for scrap
     unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
     total_weight_affected = db.Column(db.Float, default=0.0)  # Total weight affected
     description = db.Column(db.Text, nullable=False)
@@ -1640,8 +1650,13 @@ class QualityControlLog(db.Model):
     inspector_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     batch_number = db.Column(db.String(50))
     total_inspected = db.Column(db.Float, nullable=False)
+    inspected_uom = db.Column(db.String(20), default='pcs')  # Unit of measure for inspected
     passed_quantity = db.Column(db.Float, nullable=False)
+    passed_uom = db.Column(db.String(20), default='pcs')  # Unit of measure for passed
     failed_quantity = db.Column(db.Float, nullable=False)
+    failed_uom = db.Column(db.String(20), default='pcs')  # Unit of measure for failed
+    scrap_quantity = db.Column(db.Float, default=0.0)  # Scrap generated during inspection
+    scrap_uom = db.Column(db.String(20), default='kg')  # Unit of measure for scrap
     rejection_rate = db.Column(db.Float, nullable=False)  # Percentage
     inspection_notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -1731,10 +1746,17 @@ class MaterialInspection(db.Model):
     inspection_type = db.Column(db.String(50), default='general')  # general, job_work_process
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     received_quantity = db.Column(db.Float, nullable=False)
+    received_uom = db.Column(db.String(20), default='pcs')  # Unit of measure for received
     inspected_quantity = db.Column(db.Float, nullable=False)
+    inspected_uom = db.Column(db.String(20), default='pcs')  # Unit of measure for inspected
     passed_quantity = db.Column(db.Float, nullable=False)
+    passed_uom = db.Column(db.String(20), default='pcs')  # Unit of measure for passed
     damaged_quantity = db.Column(db.Float, nullable=False)
+    damaged_uom = db.Column(db.String(20), default='pcs')  # Unit of measure for damaged
     rejected_quantity = db.Column(db.Float, nullable=False)
+    rejected_uom = db.Column(db.String(20), default='pcs')  # Unit of measure for rejected
+    scrap_quantity = db.Column(db.Float, default=0.0)  # Scrap generated during inspection
+    scrap_uom = db.Column(db.String(20), default='kg')  # Unit of measure for scrap
     unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
     total_weight_inspected = db.Column(db.Float, default=0.0)  # Total weight inspected
     total_weight_passed = db.Column(db.Float, default=0.0)  # Total weight passed

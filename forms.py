@@ -280,8 +280,9 @@ class JobWorkForm(FlaskForm):
     quantity_sent = FloatField('Quantity Sent', validators=[DataRequired(), NumberRange(min=0)])
     quantity_uom = SelectField('Quantity Unit', validators=[DataRequired()], coerce=str)
     expected_finished_material = FloatField('Expected Finished Material', validators=[NumberRange(min=0)], default=0.0)
+    finished_uom = SelectField('Finished Unit', validators=[Optional()], coerce=str)
     expected_scrap = FloatField('Expected Scrap', validators=[NumberRange(min=0)], default=0.0)
-    scrap_uom = SelectField('Scrap Unit', validators=[Optional()], coerce=str)
+    expected_scrap_uom = SelectField('Scrap Unit', validators=[Optional()], coerce=str)
     rate_per_unit = FloatField('Rate per Unit', validators=[NumberRange(min=0)], default=0.0)
     sent_date = DateField('Sent Date', validators=[DataRequired()])
     expected_return = DateField('Expected Return Date', validators=[Optional()])
@@ -309,11 +310,13 @@ class JobWorkForm(FlaskForm):
             uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
             uom_choices = [('', 'Select Unit')] + [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
             self.quantity_uom.choices = uom_choices
-            self.scrap_uom.choices = uom_choices
+            self.finished_uom.choices = uom_choices
+            self.expected_scrap_uom.choices = uom_choices
         except Exception:
             fallback_choices = [('', 'Select Unit'), ('pcs', 'Pieces'), ('kg', 'Kilogram'), ('ltr', 'Liter')]
             self.quantity_uom.choices = fallback_choices
-            self.scrap_uom.choices = fallback_choices
+            self.finished_uom.choices = fallback_choices
+            self.expected_scrap_uom.choices = fallback_choices
     
     def validate(self, extra_validators=None):
         if not super().validate(extra_validators):
@@ -369,10 +372,13 @@ class DailyJobWorkForm(FlaskForm):
     # Inspection fields
     inspected_quantity = FloatField('Inspected Quantity', validators=[Optional(), NumberRange(min=0)],
                                    render_kw={'placeholder': 'Quantity inspected for quality'})
+    inspected_uom = SelectField('Inspected Unit', validators=[Optional()], coerce=str)
     passed_quantity = FloatField('Passed/Good Quantity', validators=[Optional(), NumberRange(min=0)],
                                 render_kw={'placeholder': 'Quantity that passed inspection'})
+    passed_uom = SelectField('Passed Unit', validators=[Optional()], coerce=str)
     rejected_quantity = FloatField('Rejected Quantity', validators=[Optional(), NumberRange(min=0)],
                                   render_kw={'placeholder': 'Quantity rejected in inspection', 'readonly': True})
+    rejected_uom = SelectField('Rejected Unit', validators=[Optional()], coerce=str)
     rejection_reasons = TextAreaField('Rejection Reasons', 
                                      render_kw={'rows': 3, 'placeholder': 'e.g., Scratches, Dents, Corrosion, Quality issues, etc.'})
     
@@ -407,10 +413,20 @@ class DailyJobWorkForm(FlaskForm):
             uom_choices = [('', 'Select Unit')] + [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
             self.completed_uom.choices = uom_choices
             self.scrap_uom.choices = uom_choices
+            self.inspected_uom.choices = uom_choices
+            self.passed_uom.choices = uom_choices
+            self.rejected_uom.choices = uom_choices
+            self.scrap_uom.choices = uom_choices
+            self.inspected_uom.choices = uom_choices
+            self.passed_uom.choices = uom_choices
+            self.rejected_uom.choices = uom_choices
         except Exception:
             fallback_choices = [('', 'Select Unit'), ('pcs', 'Pieces'), ('kg', 'Kilogram'), ('ltr', 'Liter')]
             self.completed_uom.choices = fallback_choices
             self.scrap_uom.choices = fallback_choices
+            self.inspected_uom.choices = fallback_choices
+            self.passed_uom.choices = fallback_choices
+            self.rejected_uom.choices = fallback_choices
 
 class JobWorkQuantityUpdateForm(FlaskForm):
     quantity_received = FloatField('Quantity Received', validators=[DataRequired(), NumberRange(min=0)])
@@ -474,6 +490,8 @@ class ProductionForm(FlaskForm):
     good_uom = SelectField('Good Unit', validators=[Optional()], coerce=str)
     quantity_damaged = FloatField('Damaged/Defective Quantity', validators=[NumberRange(min=0)], default=0.0)
     damaged_uom = SelectField('Damaged Unit', validators=[Optional()], coerce=str)
+    scrap_quantity = FloatField('Scrap Generated (Production waste)', validators=[NumberRange(min=0)], default=0.0)
+    scrap_uom = SelectField('Scrap Unit', validators=[Optional()], coerce=str)
     production_date = DateField('Production Date', validators=[DataRequired()])
     status = SelectField('Status', choices=[('planned', 'Planned'), ('in_progress', 'In Progress'), ('completed', 'Completed')], default='planned')
     notes = TextAreaField('Notes')
@@ -491,12 +509,14 @@ class ProductionForm(FlaskForm):
             self.produced_uom.choices = uom_choices
             self.good_uom.choices = uom_choices
             self.damaged_uom.choices = uom_choices
+            self.scrap_uom.choices = uom_choices
         except Exception:
             fallback_choices = [('', 'Select Unit'), ('pcs', 'Pieces'), ('kg', 'Kilogram'), ('ltr', 'Liter')]
             self.planned_uom.choices = fallback_choices
             self.produced_uom.choices = fallback_choices
             self.good_uom.choices = fallback_choices
             self.damaged_uom.choices = fallback_choices
+            self.scrap_uom.choices = fallback_choices
 
 class QualityIssueForm(FlaskForm):
     issue_number = StringField('Issue Number', validators=[DataRequired(), Length(max=50)])
@@ -512,6 +532,8 @@ class QualityIssueForm(FlaskForm):
                          validators=[DataRequired()])
     quantity_affected = FloatField('Quantity Affected', validators=[DataRequired(), NumberRange(min=0)])
     affected_uom = SelectField('Affected Unit', validators=[DataRequired()], coerce=str)
+    scrap_quantity = FloatField('Additional Scrap Generated (Due to quality issue)', validators=[NumberRange(min=0)], default=0.0)
+    quality_scrap_uom = SelectField('Scrap Unit', validators=[Optional()], coerce=str)
     description = TextAreaField('Description', validators=[DataRequired()])
     root_cause = TextAreaField('Root Cause Analysis')
     corrective_action = TextAreaField('Corrective Action')
@@ -533,9 +555,13 @@ class QualityIssueForm(FlaskForm):
         try:
             from models_uom import UnitOfMeasure
             uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
-            self.affected_uom.choices = [('', 'Select Unit')] + [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
+            uom_choices = [('', 'Select Unit')] + [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
+            self.affected_uom.choices = uom_choices
+            self.quality_scrap_uom.choices = uom_choices
         except Exception:
-            self.affected_uom.choices = [('', 'Select Unit'), ('pcs', 'Pieces'), ('kg', 'Kilogram'), ('ltr', 'Liter')]
+            fallback_choices = [('', 'Select Unit'), ('pcs', 'Pieces'), ('kg', 'Kilogram'), ('ltr', 'Liter')]
+            self.affected_uom.choices = fallback_choices
+            self.quality_scrap_uom.choices = fallback_choices
 
 class QualityControlLogForm(FlaskForm):
     production_id = SelectField('Production Order', validators=[DataRequired()], coerce=int)
@@ -546,6 +572,8 @@ class QualityControlLogForm(FlaskForm):
     passed_uom = SelectField('Passed Unit', validators=[DataRequired()], coerce=str)
     failed_quantity = FloatField('Failed Quantity', validators=[DataRequired(), NumberRange(min=0)])
     failed_uom = SelectField('Failed Unit', validators=[DataRequired()], coerce=str)
+    scrap_quantity = FloatField('Scrap Generated (During inspection)', validators=[NumberRange(min=0)], default=0.0)
+    scrap_uom = SelectField('Scrap Unit', validators=[Optional()], coerce=str)
     inspection_notes = TextAreaField('Inspection Notes')
     
     def __init__(self, *args, **kwargs):
@@ -560,11 +588,13 @@ class QualityControlLogForm(FlaskForm):
             self.inspected_uom.choices = uom_choices
             self.passed_uom.choices = uom_choices
             self.failed_uom.choices = uom_choices
+            self.scrap_uom.choices = uom_choices
         except Exception:
             fallback_choices = [('', 'Select Unit'), ('pcs', 'Pieces'), ('kg', 'Kilogram'), ('ltr', 'Liter')]
             self.inspected_uom.choices = fallback_choices
             self.passed_uom.choices = fallback_choices
             self.failed_uom.choices = fallback_choices
+            self.scrap_uom.choices = fallback_choices
 
 # ... rest of existing forms remain the same
 
