@@ -41,6 +41,22 @@
                         </div>
 
                         <div class="mb-3">
+                            {{ form.bom_code.label(class="form-label") }}
+                            <div class="input-group">
+                                {{ form.bom_code(class="form-control", placeholder="Leave empty for auto-generation (BOM-2025-0001)") }}
+                                <span class="input-group-text"><i class="fas fa-magic text-primary" title="Auto-generates if empty"></i></span>
+                            </div>
+                            {% if form.bom_code.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.bom_code.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="text-muted"><i class="fas fa-info-circle"></i> Leave empty to auto-generate unique BOM code (BOM-2025-0001)</small>
+                        </div>
+
+                        <div class="mb-3">
                             {{ form.version.label(class="form-label") }}
                             {{ form.version(class="form-control") }}
                             {% if form.version.errors %}
