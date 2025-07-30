@@ -368,7 +368,11 @@ def edit_bom(id):
                 uom_choices = [('pcs', 'Pieces (pcs)'), ('kg', 'Kilograms (kg)'), ('g', 'Grams (g)')]
             return render_template('production/bom_form.html', form=form, title='Edit BOM', bom=bom, uom_choices=uom_choices)
         
-        bom.bom_code = form.bom_code.data
+        # Ensure bom_code is never None or empty
+        if form.bom_code.data and form.bom_code.data.strip():
+            bom.bom_code = form.bom_code.data.strip()
+        # If empty, don't change the existing bom_code
+        
         bom.product_id = form.product_id.data
         bom.output_uom_id = form.output_uom_id.data if form.output_uom_id.data != 0 else None
         bom.version = form.version.data
@@ -380,7 +384,8 @@ def edit_bom(id):
         bom.scrap_uom = form.scrap_uom.data or 'kg'
         bom.scrap_value_recovery_percent = form.scrap_value_recovery_percent.data or 15.0
         bom.description = form.description.data
-        bom.remarks = form.remarks.data
+        # Ensure remarks is not None - use existing value if form data is None
+        bom.remarks = form.remarks.data if form.remarks.data is not None else bom.remarks
         bom.labor_cost_per_unit = form.labor_cost_per_unit.data or 0.0
         bom.labor_hours_per_unit = form.labor_hours_per_unit.data or 0.0
         bom.labor_rate_per_hour = form.labor_rate_per_hour.data or 0.0
