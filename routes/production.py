@@ -494,9 +494,7 @@ def delete_bom_item(id):
 @production_bp.route('/bom/delete/<int:id>', methods=['GET', 'POST'])
 @login_required
 def delete_bom(id):
-    print(f"DEBUG: Delete BOM route called for ID {id}")
     bom = BOM.query.get_or_404(id)
-    print(f"DEBUG: Found BOM {bom.bom_code}")
     
     try:
         # Delete all related BOM items first
@@ -518,12 +516,10 @@ def delete_bom(id):
         db.session.delete(bom)
         db.session.commit()
         
-        print(f"DEBUG: Successfully deleted BOM {bom_code} with {items_count} items and {processes_count} processes")
         flash(f'BOM {bom_code} and all its components deleted successfully ({items_count} items, {processes_count} processes)', 'success')
         
     except Exception as e:
         db.session.rollback()
-        print(f"DEBUG: Error deleting BOM: {str(e)}")
         flash(f'Error deleting BOM: {str(e)}', 'error')
     
     return redirect(url_for('production.list_bom'))
