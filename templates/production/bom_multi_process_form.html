@@ -170,7 +170,7 @@
                                                             <label class="form-label">Input Quantity</label>
                                                             <div class="input-group">
                                                                 <input type="number" class="form-control" name="processes[0][input_quantity]" value="1.0" step="0.001">
-                                                                <span class="input-group-text">units</span>
+                                                                <span class="input-group-text input-unit-display" data-unit-type="input">pcs</span>
                                                             </div>
                                                             <small class="form-text text-muted">Quantity required as input</small>
                                                         </div>
@@ -180,7 +180,7 @@
                                                             <label class="form-label">Output Quantity</label>
                                                             <div class="input-group">
                                                                 <input type="number" class="form-control" name="processes[0][output_quantity]" value="1.0" step="0.001">
-                                                                <span class="input-group-text">units</span>
+                                                                <span class="input-group-text output-unit-display" data-unit-type="output">pcs</span>
                                                             </div>
                                                             <small class="form-text text-muted">Quantity produced as output</small>
                                                         </div>
@@ -421,7 +421,7 @@ function createProcessItem(processNumber) {
                             <label class="form-label">Input Quantity</label>
                             <div class="input-group">
                                 <input type="number" class="form-control" name="processes[${index}][input_quantity]" value="1.0" step="0.001">
-                                <span class="input-group-text">units</span>
+                                <span class="input-group-text input-unit-display" data-unit-type="input">pcs</span>
                             </div>
                             <small class="form-text text-muted">Quantity required as input</small>
                         </div>
@@ -431,7 +431,7 @@ function createProcessItem(processNumber) {
                             <label class="form-label">Output Quantity</label>
                             <div class="input-group">
                                 <input type="number" class="form-control" name="processes[${index}][output_quantity]" value="1.0" step="0.001">
-                                <span class="input-group-text">units</span>
+                                <span class="input-group-text output-unit-display" data-unit-type="output">pcs</span>
                             </div>
                             <small class="form-text text-muted">Quantity produced as output</small>
                         </div>
@@ -554,6 +554,67 @@ document.getElementById('multiProcessForm').addEventListener('submit', function(
         alert('Please ensure all processes have unique step numbers.');
         return;
     }
+});
+
+// Function to update unit displays based on selected products
+function updateUnitDisplays() {
+    // Handle all input product dropdowns
+    document.querySelectorAll('select[name*="[input_product_id]"]').forEach(function(select) {
+        select.addEventListener('change', function() {
+            const itemId = this.value;
+            const processItem = this.closest('.process-item');
+            const unitDisplay = processItem.querySelector('.input-unit-display');
+            
+            if (itemId) {
+                // Fetch actual unit from API
+                fetch(`/production/api/item/${itemId}/unit`)
+                    .then(response => response.json())
+                    .then(data => {
+                        unitDisplay.textContent = data.unit || 'pcs';
+                    })
+                    .catch(error => {
+                        console.error('Error fetching unit:', error);
+                        unitDisplay.textContent = 'pcs';
+                    });
+            } else {
+                unitDisplay.textContent = 'pcs';
+            }
+        });
+    });
+    
+    // Handle all output product dropdowns
+    document.querySelectorAll('select[name*="[output_product_id]"]').forEach(function(select) {
+        select.addEventListener('change', function() {
+            const itemId = this.value;
+            const processItem = this.closest('.process-item');
+            const unitDisplay = processItem.querySelector('.output-unit-display');
+            
+            if (itemId) {
+                // Fetch actual unit from API
+                fetch(`/production/api/item/${itemId}/unit`)
+                    .then(response => response.json())
+                    .then(data => {
+                        unitDisplay.textContent = data.unit || 'pcs';
+                    })
+                    .catch(error => {
+                        console.error('Error fetching unit:', error);
+                        unitDisplay.textContent = 'pcs';
+                    });
+            } else {
+                unitDisplay.textContent = 'pcs';
+            }
+        });
+    });
+}
+
+// Initialize unit display updates
+document.addEventListener('DOMContentLoaded', function() {
+    updateUnitDisplays();
+});
+
+// Re-initialize when new processes are added
+document.getElementById('addProcessBtn').addEventListener('click', function() {
+    setTimeout(updateUnitDisplays, 100); // Small delay to ensure DOM is updated
 });
 </script>
 {% endblock %}

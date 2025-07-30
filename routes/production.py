@@ -871,6 +871,17 @@ def add_multi_bom_process(bom_id):
                          available_items=available_items,
                          title=f'Add Multiple Process Routing - {bom.bom_code}')
 
+@production_bp.route('/api/item/<int:item_id>/unit')
+@login_required
+def get_item_unit(item_id):
+    """Get unit of measure for an item"""
+    item = Item.query.get_or_404(item_id)
+    return jsonify({
+        'unit': item.unit_of_measure,
+        'name': item.name,
+        'code': item.code
+    })
+
 @production_bp.route('/bom_process/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_bom_process(id):
