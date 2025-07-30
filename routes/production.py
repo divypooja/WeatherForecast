@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
+from flask_wtf import FlaskForm
 from forms import ProductionForm, BOMForm, BOMItemForm, BOMProcessForm
 from models import Production, Item, BOM, BOMItem, BOMProcess, Supplier
 from services.process_integration import ProcessIntegrationService
@@ -792,3 +793,88 @@ def process_integration_report(id):
                          bom=bom, 
                          report=report,
                          title=f'Process Integration Report - {bom.bom_code}')
+
+@production_bp.route('/bom/<int:bom_id>/add_multi_process', methods=['GET', 'POST'])
+@login_required
+def add_multi_bom_process(bom_id):
+    """Add multiple manufacturing processes to BOM at once"""
+    bom = BOM.query.get_or_404(bom_id)
+    
+    if request.method == 'POST':
+        try:
+            processes_data = []
+            
+            # Extract process data from form
+            form_data = request.form
+            process_indices = set()
+            
+            # Find all process indices
+            for key in form_data.keys():
+                if key.startswith('processes[') and '][' in key:
+                    index = int(key.split('[')[1].split(']')[0])
+                    process_indices.add(index)
+            
+            # Process each process entry
+            for index in sorted(process_indices):
+                process_name = form_data.get(f'processes[{index}][process_name]')
+                if not process_name:  # Skip empty processes
+                    continue
+                
+                process_data = {
+                    'step_number': int(form_data.get(f'processes[{index}][step_number]', 1)),
+                    'process_name': process_name,
+                    'process_code': form_data.get(f'processes[{index}][process_code]', ''),
+                    'operation_description': form_data.get(f'processes[{index}][operation_description]', ''),
+                    'is_outsourced': form_data.get(f'processes[{index}][is_outsourced]') == 'true',
+                    'setup_time_minutes': float(form_data.get(f'processes[{index}][setup_time_minutes]') or 0),
+                    'run_time_minutes': float(form_data.get(f'processes[{index}][run_time_minutes]') or 0),
+                    'cost_per_unit': float(form_data.get(f'processes[{index}][cost_per_unit]') or 0),
+                    'labor_rate_per_hour': float(form_data.get(f'processes[{index}][labor_rate_per_hour]') or 0),
+                    'estimated_scrap_percent': float(form_data.get(f'processes[{index}][estimated_scrap_percent]') or 0),
+                    'quality_check_required': form_data.get(f'processes[{index}][quality_check_required]') == 'true'
+                }
+                processes_data.append(process_data)
+            
+            if not processes_data:
+                flash('Please add at least one process', 'error')
+                return redirect(url_for('production.add_multi_bom_process', bom_id=bom_id))
+            
+            # Create all BOM processes
+            created_count = 0
+            for process_data in processes_data:
+                bom_process = BOMProcess(
+                    bom_id=bom_id,
+                    step_number=process_data['step_number'],
+                    process_name=process_data['process_name'],
+                    process_code=process_data['process_code'],
+                    operation_description=process_data['operation_description'],
+                    is_outsourced=process_data['is_outsourced'],
+                    setup_time_minutes=process_data['setup_time_minutes'],
+                    run_time_minutes=process_data['run_time_minutes'],
+                    cost_per_unit=process_data['cost_per_unit'],
+                    labor_rate_per_hour=process_data['labor_rate_per_hour'], 
+                    estimated_scrap_percent=process_data['estimated_scrap_percent'],
+                    quality_check_required=process_data['quality_check_required']
+                )
+                db.session.add(bom_process)
+                created_count += 1
+            
+            db.session.commit()
+            
+            # Trigger intelligent sync after adding processes
+            ProcessIntegrationService.sync_bom_from_processes(bom_id)
+            
+            flash(f'Successfully added {created_count} manufacturing processes. BOM costs automatically synchronized!', 'success')
+            return redirect(url_for('production.edit_bom', id=bom_id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error adding processes: {str(e)}', 'error')
+            
+    # Create a simple form for CSRF protection
+    form = FlaskForm()
+    
+    return render_template('production/bom_multi_process_form.html',
+                         bom=bom,
+                         form=form,
+                         title=f'Add Multiple Process Routing - {bom.bom_code}')
