@@ -261,18 +261,43 @@ def api_bom_materials(bom_id):
         materials = []
         
         for bom_item in bom.items:
-            material = bom_item.material or bom_item.item
+            # Get the material reference
+            material = None
+            if hasattr(bom_item, 'material') and bom_item.material:
+                material = bom_item.material
+            elif hasattr(bom_item, 'item') and bom_item.item:
+                material = bom_item.item
+            elif bom_item.material_id:
+                from models import Item
+                material = Item.query.get(bom_item.material_id)
+            
             if material:
+                # Get UOM name safely
+                uom_name = 'pcs'  # Default
+                if hasattr(bom_item, 'uom') and bom_item.uom:
+                    uom_name = bom_item.uom.name
+                elif bom_item.unit:
+                    uom_name = bom_item.unit
+                elif material.unit_of_measure:
+                    uom_name = material.unit_of_measure
+                
+                # Get current stock safely
+                current_stock = 0
+                if hasattr(material, 'total_stock'):
+                    current_stock = material.total_stock or 0
+                elif hasattr(material, 'current_stock'):
+                    current_stock = material.current_stock or 0
+                
                 material_data = {
                     'id': material.id,
                     'material_name': material.name,
-                    'material_code': material.code,
-                    'qty_required': bom_item.qty_required or bom_item.quantity_required,
-                    'uom_name': bom_item.uom.name if bom_item.uom else material.unit_of_measure,
+                    'material_code': material.code or '',
+                    'qty_required': bom_item.qty_required or 0,
+                    'uom_name': uom_name,
                     'process_step': bom_item.process_step or 1,
-                    'process_name': bom_item.process_name,
+                    'process_name': bom_item.process_name or '',
                     'is_critical': bom_item.is_critical or False,
-                    'current_stock': material.total_stock if hasattr(material, 'total_stock') else (material.current_stock or 0),
+                    'current_stock': current_stock,
                     'unit_cost': bom_item.unit_cost or 0.0
                 }
                 materials.append(material_data)
