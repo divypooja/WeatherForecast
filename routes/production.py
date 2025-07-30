@@ -221,13 +221,27 @@ def add_bom():
         existing_bom_code = BOM.query.filter_by(bom_code=form.bom_code.data).first()
         if existing_bom_code:
             flash('BOM code already exists. Please use a unique code.', 'warning')
-            return render_template('production/bom_form.html', form=form, title='Add BOM')
+            # Get UOM choices for error case
+            try:
+                from models_uom import UnitOfMeasure
+                uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+                uom_choices = [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
+            except Exception:
+                uom_choices = [('pcs', 'Pieces (pcs)'), ('kg', 'Kilograms (kg)'), ('g', 'Grams (g)')]
+            return render_template('production/bom_form.html', form=form, title='Add BOM', uom_choices=uom_choices)
         
         # Check if active BOM already exists for this product
         existing_bom = BOM.query.filter_by(product_id=form.product_id.data, is_active=True).first()
         if existing_bom and form.status.data == 'active':
             flash('An active BOM already exists for this product. Please deactivate the existing BOM first.', 'warning')
-            return render_template('production/bom_form.html', form=form, title='Add BOM')
+            # Get UOM choices for error case
+            try:
+                from models_uom import UnitOfMeasure
+                uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+                uom_choices = [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
+            except Exception:
+                uom_choices = [('pcs', 'Pieces (pcs)'), ('kg', 'Kilograms (kg)'), ('g', 'Grams (g)')]
+            return render_template('production/bom_form.html', form=form, title='Add BOM', uom_choices=uom_choices)
         
         # Auto-generate BOM code if not provided
         bom_code = form.bom_code.data
@@ -287,7 +301,20 @@ def add_bom():
         else:
             return redirect(url_for('production.edit_bom', id=bom.id))
     
-    return render_template('production/bom_form.html', form=form, title='Add BOM')
+    # Get UOM choices for dynamic dropdown
+    try:
+        from models_uom import UnitOfMeasure
+        uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+        uom_choices = [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
+    except Exception:
+        uom_choices = [
+            ('pcs', 'Pieces (pcs)'), ('kg', 'Kilograms (kg)'), ('g', 'Grams (g)'),
+            ('nos', 'Numbers (nos)'), ('m', 'Meters (m)'), ('cm', 'Centimeters (cm)'),
+            ('l', 'Liters (l)'), ('ml', 'Milliliters (ml)'), ('sqft', 'Square Feet (sq.ft)'),
+            ('sqm', 'Square Meters (sq.m)')
+        ]
+    
+    return render_template('production/bom_form.html', form=form, title='Add BOM', uom_choices=uom_choices)
 
 @production_bp.route('/bom/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -332,7 +359,14 @@ def edit_bom(id):
         ).first()
         if existing_bom:
             flash('An active BOM already exists for this product. Please deactivate the existing BOM first.', 'warning')
-            return render_template('production/bom_form.html', form=form, title='Edit BOM', bom=bom)
+            # Get UOM choices for error case
+            try:
+                from models_uom import UnitOfMeasure
+                uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+                uom_choices = [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
+            except Exception:
+                uom_choices = [('pcs', 'Pieces (pcs)'), ('kg', 'Kilograms (kg)'), ('g', 'Grams (g)')]
+            return render_template('production/bom_form.html', form=form, title='Edit BOM', bom=bom, uom_choices=uom_choices)
         
         bom.bom_code = form.bom_code.data
         bom.product_id = form.product_id.data
@@ -371,6 +405,19 @@ def edit_bom(id):
     # Get materials for adding new items
     materials = Item.query.filter(Item.item_type.in_(['material', 'consumable'])).all()
     
+    # Get UOM choices for dynamic dropdown
+    try:
+        from models_uom import UnitOfMeasure
+        uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+        uom_choices = [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
+    except Exception:
+        uom_choices = [
+            ('pcs', 'Pieces (pcs)'), ('kg', 'Kilograms (kg)'), ('g', 'Grams (g)'),
+            ('nos', 'Numbers (nos)'), ('m', 'Meters (m)'), ('cm', 'Centimeters (cm)'),
+            ('l', 'Liters (l)'), ('ml', 'Milliliters (ml)'), ('sqft', 'Square Feet (sq.ft)'),
+            ('sqm', 'Square Meters (sq.m)')
+        ]
+    
     return render_template('production/bom_form.html', 
                          form=form, 
                          title='Edit BOM', 
@@ -378,7 +425,8 @@ def edit_bom(id):
                          bom_items=bom_items,
                          materials=materials,
                          material_cost=material_cost,
-                         total_cost_per_unit=total_cost_per_unit)
+                         total_cost_per_unit=total_cost_per_unit,
+                         uom_choices=uom_choices)
 
 @production_bp.route('/bom/<int:bom_id>/add_item', methods=['POST'])
 @login_required
