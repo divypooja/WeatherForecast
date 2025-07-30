@@ -6,6 +6,18 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (July 30, 2025)
 
+### Intelligent BOM-Process Workflow Integration System Implementation (July 30, 2025)
+- **Smart Integration Core**: Implemented comprehensive ProcessIntegrationService that automatically populates BOM Labor Costs and Scrap Management from Manufacturing Process Workflows as requested by user
+- **Calculated Properties System**: Enhanced BOM model with intelligent properties (calculated_labor_cost_per_unit, calculated_scrap_percent, total_process_cost_per_unit) that prioritize process-driven values over manual entries
+- **Manufacturing Intelligence Enhancement**: Added manufacturing_complexity property that automatically determines complexity (Simple/Moderate/Complex/Very Complex) based on process count and total manufacturing time
+- **Process-Driven Cost Calculation**: BOM total_cost_per_unit now uses calculated_labor_cost_per_unit instead of manual labor_cost_per_unit, ensuring process workflows drive final costs
+- **Smart Sync Functionality**: Added '/bom/<id>/sync_from_processes' route that automatically synchronizes BOM from process definitions with comprehensive logging and user feedback
+- **Integration Status Indicators**: Enhanced BOM form template with "Auto-Calculated" and "Process-Driven" badges showing when values come from process workflows vs manual entry
+- **Intelligent Integration Alerts**: Added smart alerts in BOM form showing active integration status and which values are automatically calculated from manufacturing processes
+- **Process Integration API**: Added '/api/bom/<id>/process_summary' endpoint providing real-time process-driven calculations for dynamic interfaces
+- **Integration Report System**: Created comprehensive process_integration_report route and template showing detailed analysis of workflow integration effectiveness
+- **Visual Workflow Integration**: Enhanced Manufacturing Process Workflow section with intelligent integration messaging and sync controls for seamless user experience
+
 ### Comprehensive BOM Process Management System Implementation (July 30, 2025)
 - **Step-by-Step Manufacturing Workflow Tracking**: Added complete BOMProcess model with 12-field database structure for detailed process routing including step numbers, process names, operation descriptions, timing, costs, and outsourcing capabilities
 - **Manufacturing Complexity Assessment**: Enhanced BOM model with properties calculating manufacturing complexity (Simple/Moderate/Complex/Very Complex) based on process count and workflow analysis

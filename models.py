@@ -1437,10 +1437,66 @@ class BOM(db.Model):
         return total_weight
     
     @property
+    def total_process_cost_per_unit(self):
+        """Calculate total process cost from all manufacturing processes"""
+        if not self.processes:
+            return self.labor_cost_per_unit or 0.0
+        
+        # Sum up all process costs from Manufacturing Process Workflow
+        process_cost = sum(process.labor_cost_per_unit for process in self.processes)
+        return process_cost
+    
+    @property
+    def calculated_labor_cost_per_unit(self):
+        """Get labor cost - from processes if available, otherwise from manual entry"""
+        process_labor = self.total_process_cost_per_unit
+        return process_labor if process_labor > 0 else (self.labor_cost_per_unit or 0.0)
+    
+    @property
+    def calculated_scrap_percent(self):
+        """Calculate total scrap percentage from all manufacturing processes"""
+        if not self.processes:
+            return self.estimated_scrap_percent or 0.0
+        
+        # Sum up scrap percentages from all processes
+        total_process_scrap = sum(process.estimated_scrap_percent or 0 for process in self.processes)
+        return total_process_scrap if total_process_scrap > 0 else (self.estimated_scrap_percent or 0.0)
+    
+    @property
+    def calculated_total_manufacturing_time(self):
+        """Calculate total manufacturing time from all processes"""
+        if not self.processes:
+            return self.labor_hours_per_unit or 0.0
+        
+        total_time_minutes = sum(process.total_time_minutes for process in self.processes)
+        return total_time_minutes / 60.0  # Convert to hours
+    
+    @property
+    def manufacturing_complexity(self):
+        """Determine manufacturing complexity based on processes"""
+        if not self.processes:
+            return "Simple"
+        
+        process_count = len(self.processes)
+        total_time = self.calculated_total_manufacturing_time
+        
+        if process_count <= 2 and total_time <= 1.0:
+            return "Simple"
+        elif process_count <= 4 and total_time <= 4.0:
+            return "Moderate"
+        elif process_count <= 6 and total_time <= 8.0:
+            return "Complex"
+        else:
+            return "Very Complex"
+    
+    @property
     def total_cost_per_unit(self):
         """Calculate total cost per unit including materials, labor, overhead, freight, and markup"""
         material_cost = self.total_material_cost
-        labor_cost = self.labor_cost_per_unit or 0
+        
+        # Use calculated labor cost from processes if available
+        labor_cost = self.calculated_labor_cost_per_unit
+        
         overhead_cost = self.overhead_cost_per_unit or 0
         freight_cost = self.calculated_freight_cost_per_unit
         

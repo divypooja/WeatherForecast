@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from forms import ProductionForm, BOMForm, BOMItemForm, BOMProcessForm
 from models import Production, Item, BOM, BOMItem, BOMProcess, Supplier
+from services.process_integration import ProcessIntegrationService
 from app import db
 from sqlalchemy import func
 from utils import generate_production_number
@@ -754,3 +755,40 @@ def check_material_availability():
         'has_shortages': has_shortages,
         'materials': material_data
     })
+
+# Process Integration Routes
+@production_bp.route('/bom/<int:id>/sync_from_processes', methods=['POST'])
+@login_required
+def sync_bom_from_processes(id):
+    """Intelligent synchronization: Update BOM labor costs and scrap from process workflows"""
+    try:
+        success = ProcessIntegrationService.sync_bom_from_processes(id)
+        if success:
+            bom = BOM.query.get(id)
+            flash(f'Successfully synchronized BOM from process workflow. Labor Cost: ₹{bom.calculated_labor_cost_per_unit:.2f}, Scrap Rate: {bom.calculated_scrap_percent:.2f}%', 'success')
+        else:
+            flash('No processes found or synchronization not needed', 'info')
+    except Exception as e:
+        flash(f'Error during synchronization: {str(e)}', 'error')
+    
+    return redirect(url_for('production.edit_bom', id=id))
+
+@production_bp.route('/api/bom/<int:id>/process_summary')
+@login_required
+def get_process_summary(id):
+    """API endpoint for process-driven BOM calculations"""
+    bom = BOM.query.get_or_404(id)
+    summary = ProcessIntegrationService.get_process_summary(bom)
+    return jsonify(summary)
+
+@production_bp.route('/bom/<int:id>/process_report')
+@login_required
+def process_integration_report(id):
+    """Generate detailed process workflow integration report"""
+    bom = BOM.query.get_or_404(id)
+    report = ProcessIntegrationService.generate_process_workflow_report(bom)
+    
+    return render_template('production/process_report.html', 
+                         bom=bom, 
+                         report=report,
+                         title=f'Process Integration Report - {bom.bom_code}')
