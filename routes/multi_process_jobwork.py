@@ -167,49 +167,53 @@ def add_multi_process_job():
             
             # Parse processes from form data
             print("Parsing processes...")
-            processes_data = request.form.getlist('processes')
-            print(f"Found {len(processes_data)} processes: {processes_data}")
+            processes_json = request.form.get('processes_json')
+            print(f"Found processes JSON: {processes_json}")
             
-            if not processes_data:
+            if not processes_json:
                 print("No processes found!")
                 flash('At least one process must be defined', 'danger')
                 return render_template('multi_process_jobwork/form.html', form=form, title='Add Multi-Process Job Work')
             
             # Parse and validate processes
             print("Processing individual processes...")
-            process_list = []
-            
-            for i, process_json in enumerate(processes_data):
-                try:
-                    process_data = json.loads(process_json)
-                    process_list.append(process_data)
+            try:
+                process_list = json.loads(processes_json)
+                print(f"Parsed {len(process_list)} processes")
+                for i, process_data in enumerate(process_list):
                     print(f"Process {i+1}: {process_data['process_name']} - Sequence: {process_data.get('sequence_number', i+1)}")
-                except (json.JSONDecodeError, KeyError, ValueError) as e:
-                    flash(f'Error processing process {i+1}: {str(e)}', 'danger')
-                    return render_template('multi_process_jobwork/form.html', form=form, title='Add Multi-Process Job Work')
+            except (json.JSONDecodeError, KeyError, ValueError) as e:
+                flash(f'Error processing processes: {str(e)}', 'danger')
+                return render_template('multi_process_jobwork/form.html', form=form, title='Add Multi-Process Job Work')
             
             # Create individual processes
             print("Creating individual processes...")
             for i, process_data in enumerate(process_list):
                 try:
+                    # Calculate scrap quantity from percentage
+                    scrap_quantity = (process_data.get('scrap_percent', 0) / 100.0) * process_data['quantity_input']
+                    
                     process = JobWorkProcess(
                         job_work_id=job.id,
                         process_name=process_data['process_name'],
                         sequence_number=process_data.get('sequence_number', i + 1),
                         quantity_input=process_data['quantity_input'],
-                        expected_scrap=process_data.get('expected_scrap', 0.0),
+                        expected_scrap=scrap_quantity,
                         work_type=process_data['work_type'],
-                        customer_name=process_data.get('customer_name', ''),
-                        department=process_data.get('department', ''),
+                        customer_name=process_data.get('department_or_vendor', ''),  # Use department_or_vendor for customer_name
+                        department=process_data.get('department_or_vendor', '') if process_data['work_type'] == 'in_house' else '',
                         rate_per_unit=process_data.get('rate_per_unit', 0.0),
-                        start_date=datetime.strptime(process_data['start_date'], '%Y-%m-%d').date() if process_data.get('start_date') else None,
-                        expected_completion=datetime.strptime(process_data['expected_completion'], '%Y-%m-%d').date() if process_data.get('expected_completion') else None,
+                        start_date=sent_date,  # Use job sent date for now
+                        expected_completion=expected_return,  # Use job expected return for now
                         notes=process_data.get('notes', ''),
-                        output_item_id=int(process_data['output_item_id']) if process_data.get('output_item_id') else None,
+                        output_item_id=int(process_data['output_item_id']) if process_data.get('output_item_id') and process_data['output_item_id'] != '' else None,
                         output_quantity=float(process_data.get('output_quantity', 0)),
-                        is_team_work=process_data.get('is_team_work', False),
-                        max_team_members=int(process_data.get('max_team_members', 1)) if process_data.get('max_team_members') else 1,
-                        team_lead_id=int(process_data['team_lead']) if process_data.get('team_lead') else None
+                        is_team_work=False,  # Default to False for now
+                        max_team_members=1,  # Default to 1
+                        team_lead_id=None,  # Default to None
+                        # Additional fields for enhanced tracking
+                        scrap_percent=process_data.get('scrap_percent', 0.0),
+                        expected_duration=process_data.get('expected_duration', 1)
                     )
                     
                     db.session.add(process)

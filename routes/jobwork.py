@@ -1449,3 +1449,67 @@ def generate_challan(job_id):
                          job=job, 
                          company_settings=company_settings,
                          processes=processes)
+
+# API Endpoints for Multi-Process Form
+
+@jobwork_bp.route('/api/items')
+@login_required
+def api_items():
+    """API endpoint to get all items for dropdowns"""
+    try:
+        items = Item.query.order_by(Item.name).all()
+        items_data = []
+        for item in items:
+            items_data.append({
+                'id': item.id,
+                'code': item.code,
+                'name': item.name
+            })
+        return jsonify({'items': items_data})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@jobwork_bp.route('/api/departments')
+@login_required
+def api_departments():
+    """API endpoint to get all departments for dropdowns"""
+    try:
+        # Import Department model
+        from models_department import Department
+        departments = Department.query.filter_by(active=True).order_by(Department.name).all()
+        departments_data = []
+        for dept in departments:
+            departments_data.append({
+                'id': dept.id,
+                'name': dept.name,
+                'code': dept.code
+            })
+        return jsonify({'departments': departments_data})
+    except Exception as e:
+        # Fallback to default departments if Department model not available
+        default_departments = [
+            {'id': 1, 'name': 'Production', 'code': 'PROD'},
+            {'id': 2, 'name': 'Quality Control', 'code': 'QC'},
+            {'id': 3, 'name': 'Assembly', 'code': 'ASSY'},
+            {'id': 4, 'name': 'Machining', 'code': 'MACH'},
+            {'id': 5, 'name': 'Welding', 'code': 'WELD'},
+            {'id': 6, 'name': 'Finishing', 'code': 'FINISH'}
+        ]
+        return jsonify({'departments': default_departments})
+
+@jobwork_bp.route('/api/suppliers')
+@login_required
+def api_suppliers():
+    """API endpoint to get all suppliers/vendors for dropdowns"""
+    try:
+        suppliers = Supplier.query.order_by(Supplier.name).all()
+        suppliers_data = []
+        for supplier in suppliers:
+            suppliers_data.append({
+                'id': supplier.id,
+                'name': supplier.name,
+                'partner_type': getattr(supplier, 'partner_type', 'supplier')
+            })
+        return jsonify({'suppliers': suppliers_data})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
