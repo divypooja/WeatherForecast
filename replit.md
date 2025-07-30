@@ -6,6 +6,16 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (July 30, 2025)
 
+### Multi-Process Form Process Transformation Enhancement (July 30, 2025)
+- **Process Transformation Section Addition**: Added comprehensive Process Transformation section to multi-process BOM form with "NEW" badge highlighting
+- **Input/Output Product Selection**: Implemented dropdown fields for selecting input and output products for each manufacturing process step
+- **Dynamic Unit Display**: Added intelligent unit display system that fetches actual unit of measure from database (kg, pcs, etc.) for quantity fields
+- **Optional Transformation Type**: Made transformation type field optional with clear "(Optional)" labeling and empty default selection
+- **API Integration**: Created `/api/item/<id>/unit` endpoint for real-time unit fetching to display accurate units based on selected products
+- **JavaScript Enhancement**: Enhanced form with dynamic unit updating when users select different input/output products
+- **Template Updates**: Updated both initial process form and JavaScript template generation to include transformation fields consistently
+- **Real-time Unit Updates**: System automatically updates unit displays (pcs, kg, m, etc.) when users change product selections
+
 ### Intelligent BOM-Process Workflow Integration System Implementation (July 30, 2025)
 - **Smart Integration Core**: Implemented comprehensive ProcessIntegrationService that automatically populates BOM Labor Costs and Scrap Management from Manufacturing Process Workflows as requested by user
 - **Calculated Properties System**: Enhanced BOM model with intelligent properties (calculated_labor_cost_per_unit, calculated_scrap_percent, total_process_cost_per_unit) that prioritize process-driven values over manual entries
