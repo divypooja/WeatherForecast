@@ -81,8 +81,9 @@ def add_job_work():
         
         # Load BOMs for integration
         try:
-            boms = BOM.query.order_by(BOM.bom_code).all()
-        except:
+            boms = BOM.query.all()
+        except Exception as e:
+            print(f"BOM query error: {e}")
             boms = []
         
         try:
