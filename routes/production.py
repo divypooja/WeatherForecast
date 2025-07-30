@@ -1,10 +1,12 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
-from forms import ProductionForm, BOMForm, BOMItemForm
-from models import Production, Item, BOM, BOMItem
+from forms import ProductionForm, BOMForm, BOMItemForm, BOMProcessForm
+from models import Production, Item, BOM, BOMItem, BOMProcess, Supplier
 from app import db
 from sqlalchemy import func
 from utils import generate_production_number
+from datetime import datetime
+import json
 
 production_bp = Blueprint('production', __name__)
 
@@ -213,17 +215,29 @@ def add_bom():
     form.product_id.choices = [(i.id, f"{i.code} - {i.name}") for i in Item.query.order_by(Item.name).all()]
     
     if form.validate_on_submit():
-        # Check if BOM already exists for this product
+        # Check if BOM code already exists
+        existing_bom_code = BOM.query.filter_by(bom_code=form.bom_code.data).first()
+        if existing_bom_code:
+            flash('BOM code already exists. Please use a unique code.', 'warning')
+            return render_template('production/bom_form.html', form=form, title='Add BOM')
+        
+        # Check if active BOM already exists for this product
         existing_bom = BOM.query.filter_by(product_id=form.product_id.data, is_active=True).first()
-        if existing_bom:
+        if existing_bom and form.status.data == 'active':
             flash('An active BOM already exists for this product. Please deactivate the existing BOM first.', 'warning')
             return render_template('production/bom_form.html', form=form, title='Add BOM')
         
         bom = BOM(
+            bom_code=form.bom_code.data,
             product_id=form.product_id.data,
+            output_uom_id=form.output_uom_id.data if form.output_uom_id.data != 0 else None,
             version=form.version.data,
-            is_active=True,
+            status=form.status.data,
+            is_active=form.is_active.data and form.status.data == 'active',
             output_quantity=form.output_quantity.data or 1.0,
+            estimated_scrap_percent=form.estimated_scrap_percent.data or 0.0,
+            description=form.description.data,
+            remarks=form.remarks.data,
             labor_cost_per_unit=form.labor_cost_per_unit.data or 0.0,
             labor_hours_per_unit=form.labor_hours_per_unit.data or 0.0,
             labor_rate_per_hour=form.labor_rate_per_hour.data or 0.0,
@@ -231,11 +245,18 @@ def add_bom():
             overhead_percentage=form.overhead_percentage.data or 0.0,
             freight_cost_per_unit=form.freight_cost_per_unit.data or 0.0,
             freight_unit_type=form.freight_unit_type.data or 'per_piece',
-            markup_percentage=form.markup_percentage.data or 0.0
+            markup_percentage=form.markup_percentage.data or 0.0,
+            created_by=current_user.id
         )
         db.session.add(bom)
+        db.session.flush()  # Get the BOM ID
+        
+        # Auto-generate BOM code if not provided
+        if not form.bom_code.data:
+            bom.bom_code = f"BOM-{datetime.now().year}-{bom.id:04d}"
+        
         db.session.commit()
-        flash('BOM created successfully', 'success')
+        flash('Advanced BOM created successfully with enhanced features', 'success')
         
         # Check which action was clicked
         action = request.form.get('action', 'save_and_continue')
@@ -258,9 +279,16 @@ def edit_bom(id):
     
     # For GET request, populate form with existing BOM data
     if request.method == 'GET':
+        form.bom_code.data = bom.bom_code
         form.product_id.data = bom.product_id
+        form.output_uom_id.data = bom.output_uom_id
         form.version.data = bom.version
+        form.status.data = bom.status
+        form.is_active.data = bom.is_active
         form.output_quantity.data = bom.output_quantity
+        form.estimated_scrap_percent.data = bom.estimated_scrap_percent
+        form.description.data = bom.description
+        form.remarks.data = bom.remarks
         form.labor_cost_per_unit.data = bom.labor_cost_per_unit
         form.labor_hours_per_unit.data = bom.labor_hours_per_unit
         form.labor_rate_per_hour.data = bom.labor_rate_per_hour
@@ -281,9 +309,16 @@ def edit_bom(id):
             flash('An active BOM already exists for this product. Please deactivate the existing BOM first.', 'warning')
             return render_template('production/bom_form.html', form=form, title='Edit BOM', bom=bom)
         
+        bom.bom_code = form.bom_code.data
         bom.product_id = form.product_id.data
+        bom.output_uom_id = form.output_uom_id.data if form.output_uom_id.data != 0 else None
         bom.version = form.version.data
+        bom.status = form.status.data
+        bom.is_active = form.is_active.data and form.status.data == 'active'
         bom.output_quantity = form.output_quantity.data or 1.0
+        bom.estimated_scrap_percent = form.estimated_scrap_percent.data or 0.0
+        bom.description = form.description.data
+        bom.remarks = form.remarks.data
         bom.labor_cost_per_unit = form.labor_cost_per_unit.data or 0.0
         bom.labor_hours_per_unit = form.labor_hours_per_unit.data or 0.0
         bom.labor_rate_per_hour = form.labor_rate_per_hour.data or 0.0
@@ -292,6 +327,7 @@ def edit_bom(id):
         bom.freight_cost_per_unit = form.freight_cost_per_unit.data or 0.0
         bom.freight_unit_type = form.freight_unit_type.data or 'per_piece'
         bom.markup_percentage = form.markup_percentage.data or 0.0
+        bom.updated_at = datetime.utcnow()
         
         db.session.commit()
         flash('BOM updated successfully', 'success')
@@ -373,20 +409,251 @@ def delete_bom_item(id):
 def delete_bom(id):
     bom = BOM.query.get_or_404(id)
     
-    # Check if BOM has items
-    if bom.items:
-        flash('Cannot delete BOM with existing items. Please remove all items first.', 'error')
+    # Check if BOM has items or processes
+    if bom.items or bom.processes:
+        flash('Cannot delete BOM with existing items or processes. Please remove all components first.', 'error')
         return redirect(url_for('production.list_bom'))
     
     try:
         db.session.delete(bom)
         db.session.commit()
-        flash('BOM deleted successfully', 'success')
+        flash('Advanced BOM deleted successfully', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Error deleting BOM: {str(e)}', 'error')
     
     return redirect(url_for('production.list_bom'))
+
+# Enhanced BOM Item Routes
+@production_bp.route('/bom/<int:bom_id>/add_item', methods=['GET', 'POST'])
+@login_required
+def add_bom_item_enhanced(bom_id):
+    """Add advanced BOM item with enhanced features"""
+    bom = BOM.query.get_or_404(bom_id)
+    form = BOMItemForm()
+    
+    if form.validate_on_submit():
+        # Handle both new and legacy field structures
+        material_id = form.material_id.data or form.item_id.data
+        qty_required = form.qty_required.data or form.quantity_required.data
+        
+        if not material_id or not qty_required:
+            flash('Material and quantity are required', 'error')
+            return render_template('production/bom_item_form.html', form=form, bom=bom, title='Add BOM Item')
+        
+        # Check for duplicate items
+        existing_item = BOMItem.query.filter_by(bom_id=bom_id, material_id=material_id).first()
+        if existing_item:
+            flash('This material is already in the BOM', 'warning')
+            return render_template('production/bom_item_form.html', form=form, bom=bom, title='Add BOM Item')
+        
+        # Create enhanced BOM item
+        bom_item = BOMItem(
+            bom_id=bom_id,
+            material_id=material_id,
+            qty_required=qty_required,
+            uom_id=form.uom_id.data if form.uom_id.data != 0 else None,
+            unit_cost=form.unit_cost.data or 0.0,
+            scrap_percent=form.scrap_percent.data or 0.0,
+            process_step=form.process_step.data or 1,
+            process_name=form.process_name.data,
+            is_critical=form.is_critical.data,
+            substitute_materials=form.substitute_materials.data,
+            default_supplier_id=form.default_supplier_id.data if form.default_supplier_id.data != 0 else None,
+            remarks=form.remarks.data,
+            # Legacy compatibility
+            item_id=material_id,
+            quantity_required=qty_required,
+            unit=form.unit.data or 'pcs'
+        )
+        
+        db.session.add(bom_item)
+        db.session.commit()
+        flash('Enhanced BOM item added successfully with advanced features', 'success')
+        return redirect(url_for('production.edit_bom', id=bom_id))
+    
+    return render_template('production/bom_item_form.html', form=form, bom=bom, title='Add Enhanced BOM Item')
+
+# BOM Process Routes
+@production_bp.route('/bom/<int:bom_id>/add_process', methods=['GET', 'POST'])
+@login_required
+def add_bom_process(bom_id):
+    """Add process routing to BOM"""
+    bom = BOM.query.get_or_404(bom_id)
+    form = BOMProcessForm()
+    
+    if form.validate_on_submit():
+        # Check for duplicate step numbers
+        existing_step = BOMProcess.query.filter_by(bom_id=bom_id, step_number=form.step_number.data).first()
+        if existing_step:
+            flash('A process with this step number already exists', 'warning')
+            return render_template('production/bom_process_form.html', form=form, bom=bom, title='Add Process')
+        
+        bom_process = BOMProcess(
+            bom_id=bom_id,
+            step_number=form.step_number.data,
+            process_name=form.process_name.data,
+            process_code=form.process_code.data,
+            operation_description=form.operation_description.data,
+            setup_time_minutes=form.setup_time_minutes.data or 0.0,
+            run_time_minutes=form.run_time_minutes.data or 0.0,
+            labor_rate_per_hour=form.labor_rate_per_hour.data or 0.0,
+            machine_id=form.machine_id.data if form.machine_id.data != 0 else None,
+            department_id=form.department_id.data if form.department_id.data != 0 else None,
+            is_outsourced=form.is_outsourced.data,
+            vendor_id=form.vendor_id.data if form.vendor_id.data != 0 else None,
+            cost_per_unit=form.cost_per_unit.data or 0.0,
+            quality_check_required=form.quality_check_required.data,
+            estimated_scrap_percent=form.estimated_scrap_percent.data or 0.0,
+            parallel_processes=form.parallel_processes.data,
+            predecessor_processes=form.predecessor_processes.data,
+            notes=form.notes.data
+        )
+        
+        db.session.add(bom_process)
+        db.session.commit()
+        flash('Process routing added successfully', 'success')
+        return redirect(url_for('production.edit_bom', id=bom_id))
+    
+    return render_template('production/bom_process_form.html', form=form, bom=bom, title='Add Process Routing')
+
+@production_bp.route('/bom/process/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_bom_process(id):
+    """Edit BOM process"""
+    process = BOMProcess.query.get_or_404(id)
+    form = BOMProcessForm()
+    
+    if request.method == 'GET':
+        # Populate form with existing data
+        form.step_number.data = process.step_number
+        form.process_name.data = process.process_name
+        form.process_code.data = process.process_code
+        form.operation_description.data = process.operation_description
+        form.setup_time_minutes.data = process.setup_time_minutes
+        form.run_time_minutes.data = process.run_time_minutes
+        form.labor_rate_per_hour.data = process.labor_rate_per_hour
+        form.machine_id.data = process.machine_id
+        form.department_id.data = process.department_id
+        form.is_outsourced.data = process.is_outsourced
+        form.vendor_id.data = process.vendor_id
+        form.cost_per_unit.data = process.cost_per_unit
+        form.quality_check_required.data = process.quality_check_required
+        form.estimated_scrap_percent.data = process.estimated_scrap_percent
+        form.parallel_processes.data = process.parallel_processes
+        form.predecessor_processes.data = process.predecessor_processes
+        form.notes.data = process.notes
+    
+    if form.validate_on_submit():
+        # Check for duplicate step numbers (excluding current process)
+        existing_step = BOMProcess.query.filter(
+            BOMProcess.bom_id == process.bom_id, 
+            BOMProcess.step_number == form.step_number.data,
+            BOMProcess.id != id
+        ).first()
+        if existing_step:
+            flash('A process with this step number already exists', 'warning')
+            return render_template('production/bom_process_form.html', form=form, bom=process.bom, title='Edit Process')
+        
+        # Update process
+        process.step_number = form.step_number.data
+        process.process_name = form.process_name.data
+        process.process_code = form.process_code.data
+        process.operation_description = form.operation_description.data
+        process.setup_time_minutes = form.setup_time_minutes.data or 0.0
+        process.run_time_minutes = form.run_time_minutes.data or 0.0
+        process.labor_rate_per_hour = form.labor_rate_per_hour.data or 0.0
+        process.machine_id = form.machine_id.data if form.machine_id.data != 0 else None
+        process.department_id = form.department_id.data if form.department_id.data != 0 else None
+        process.is_outsourced = form.is_outsourced.data
+        process.vendor_id = form.vendor_id.data if form.vendor_id.data != 0 else None
+        process.cost_per_unit = form.cost_per_unit.data or 0.0
+        process.quality_check_required = form.quality_check_required.data
+        process.estimated_scrap_percent = form.estimated_scrap_percent.data or 0.0
+        process.parallel_processes = form.parallel_processes.data
+        process.predecessor_processes = form.predecessor_processes.data
+        process.notes = form.notes.data
+        
+        db.session.commit()
+        flash('Process routing updated successfully', 'success')
+        return redirect(url_for('production.edit_bom', id=process.bom_id))
+    
+    return render_template('production/bom_process_form.html', form=form, bom=process.bom, title='Edit Process Routing')
+
+@production_bp.route('/bom/process/delete/<int:id>')
+@login_required
+def delete_bom_process(id):
+    """Delete BOM process"""
+    process = BOMProcess.query.get_or_404(id)
+    bom_id = process.bom_id
+    
+    try:
+        db.session.delete(process)
+        db.session.commit()
+        flash('Process routing deleted successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting process: {str(e)}', 'error')
+    
+    return redirect(url_for('production.edit_bom', id=bom_id))
+
+# Enhanced BOM Analysis Routes
+@production_bp.route('/bom/<int:id>/analysis')
+@login_required
+def bom_analysis(id):
+    """Show detailed BOM analysis including material availability and cost breakdown"""
+    bom = BOM.query.get_or_404(id)
+    
+    # Get material availability analysis
+    shortages = bom.get_material_availability()
+    
+    # Calculate production capacity based on current inventory
+    max_production_qty = float('inf')
+    for bom_item in bom.items:
+        material = bom_item.material or bom_item.item
+        if material:
+            available_qty = material.total_stock if hasattr(material, 'total_stock') else (material.current_stock or 0)
+            effective_qty_needed = bom_item.effective_quantity
+            if effective_qty_needed > 0:
+                possible_production = available_qty / effective_qty_needed
+                max_production_qty = min(max_production_qty, possible_production)
+    
+    if max_production_qty == float('inf'):
+        max_production_qty = 0
+    
+    # Get process information
+    processes = BOMProcess.query.filter_by(bom_id=bom.id).order_by(BOMProcess.step_number).all()
+    
+    # Calculate total process costs
+    total_process_cost = sum(p.labor_cost_per_unit for p in processes)
+    
+    return render_template('production/bom_analysis.html', 
+                         bom=bom, 
+                         shortages=shortages,
+                         max_production_qty=int(max_production_qty),
+                         processes=processes,
+                         total_process_cost=total_process_cost)
+
+@production_bp.route('/api/bom/<int:id>/production_check/<int:qty>')
+@login_required
+def check_bom_production_capacity(id, qty):
+    """API endpoint to check if BOM can produce specified quantity"""
+    bom = BOM.query.get_or_404(id)
+    can_produce, shortages = bom.can_produce_quantity(qty)
+    
+    return jsonify({
+        'can_produce': can_produce,
+        'shortages': [
+            {
+                'material_name': s['material'].name,
+                'material_code': s['material'].code,
+                'required': s['required'],
+                'available': s['available'],
+                'shortage': s['shortage']
+            }
+            for s in shortages
+        ]
+    })
 
 @production_bp.route('/api/item_details/<int:item_id>')
 @login_required  
