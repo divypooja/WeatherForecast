@@ -101,7 +101,14 @@
                 <div class="row mt-3">
                     <div class="col-md-12">
                         {{ form.supplier_id.label(class="form-label") }}
-                        {{ form.supplier_id(class="form-control") }}
+                        <div class="position-relative">
+                            <input type="text" id="supplier_search" class="form-control" placeholder="Search suppliers..." autocomplete="off">
+                            <div id="supplier_dropdown" class="dropdown-menu w-100" style="max-height: 200px; overflow-y: auto; display: none;">
+                                <!-- Suppliers will be populated here -->
+                            </div>
+                            {{ form.supplier_id(style="display: none;", id="supplier_id_hidden") }}
+                        </div>
+                        <small class="text-muted">Type to search suppliers by name</small>
                     </div>
                 </div>
                 
@@ -687,9 +694,89 @@ function removeRow(button) {
     calculateTotals();
 }
 
+// Searchable Supplier Dropdown
+function initializeSupplierSearch() {
+    const searchInput = document.getElementById('supplier_search');
+    const dropdown = document.getElementById('supplier_dropdown');
+    const hiddenSelect = document.getElementById('supplier_id_hidden');
+    
+    // Get suppliers from the hidden select options
+    const suppliers = Array.from(hiddenSelect.options).filter(option => option.value !== '0').map(option => ({
+        id: option.value,
+        name: option.text
+    }));
+    
+    function showDropdown(filteredSuppliers) {
+        dropdown.innerHTML = '';
+        dropdown.style.display = 'block';
+        
+        if (filteredSuppliers.length === 0) {
+            dropdown.innerHTML = '<div class="dropdown-item text-muted">No suppliers found</div>';
+            return;
+        }
+        
+        filteredSuppliers.forEach(supplier => {
+            const item = document.createElement('div');
+            item.className = 'dropdown-item';
+            item.style.cursor = 'pointer';
+            item.textContent = supplier.name;
+            
+            item.addEventListener('click', function() {
+                searchInput.value = supplier.name;
+                hiddenSelect.value = supplier.id;
+                dropdown.style.display = 'none';
+            });
+            
+            dropdown.appendChild(item);
+        });
+    }
+    
+    searchInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase().trim();
+        
+        if (query.length === 0) {
+            dropdown.style.display = 'none';
+            hiddenSelect.value = '0';
+            return;
+        }
+        
+        const filteredSuppliers = suppliers.filter(supplier => 
+            supplier.name.toLowerCase().includes(query)
+        );
+        
+        showDropdown(filteredSuppliers);
+    });
+    
+    searchInput.addEventListener('focus', function() {
+        if (this.value.trim().length > 0) {
+            const query = this.value.toLowerCase().trim();
+            const filteredSuppliers = suppliers.filter(supplier => 
+                supplier.name.toLowerCase().includes(query)
+            );
+            showDropdown(filteredSuppliers);
+        }
+    });
+    
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+        if (!searchInput.contains(event.target) && !dropdown.contains(event.target)) {
+            dropdown.style.display = 'none';
+        }
+    });
+    
+    // Set initial value if supplier is already selected (for edit mode)
+    if (hiddenSelect.value && hiddenSelect.value !== '0') {
+        const selectedOption = hiddenSelect.options[hiddenSelect.selectedIndex];
+        if (selectedOption) {
+            searchInput.value = selectedOption.text;
+        }
+    }
+}
+
 // Calculate totals on page load
 document.addEventListener('DOMContentLoaded', function() {
     calculateTotals();
+    initializeSupplierSearch();
 });
 </script>
 {% endblock %}
