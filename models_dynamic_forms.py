@@ -76,7 +76,7 @@ class CustomField(db.Model):
     def __repr__(self):
         return f'<CustomField {self.field_name} ({self.field_type})>'
     
-    @property
+    @hybrid_property
     def options_list(self):
         """Parse field_options JSON into Python list"""
         if self.field_options:
@@ -86,14 +86,15 @@ class CustomField(db.Model):
                 return []
         return []
     
-    def set_options_list(self, value):
+    @options_list.setter
+    def options_list(self, value):
         """Set field_options from Python list"""
         if value:
             self.field_options = json.dumps(value)
         else:
             self.field_options = None
     
-    @property
+    @hybrid_property
     def validation_dict(self):
         """Parse validation_rules JSON into Python dict"""
         if self.validation_rules:
@@ -103,7 +104,8 @@ class CustomField(db.Model):
                 return {}
         return {}
     
-    def set_validation_dict(self, value):
+    @validation_dict.setter
+    def validation_dict(self, value):
         """Set validation_rules from Python dict"""
         if value:
             self.validation_rules = json.dumps(value)
@@ -138,37 +140,28 @@ class CustomFieldValue(db.Model):
     )
     
     def __repr__(self):
-        return f'<CustomFieldValue for {self.record_type}:{self.record_id}>'
+        return f'<CustomFieldValue {self.custom_field.field_name if self.custom_field else "Unknown"} for {self.record_type}:{self.record_id}>'
     
     @property
     def display_value(self):
         """Get the appropriate value based on field type"""
-        field = CustomField.query.get(self.custom_field_id)
-        if not field:
-            return None
-            
-        field_type = field.field_type
-        if field_type in ['text', 'textarea', 'select', 'email', 'url']:
+        if self.custom_field.field_type in ['text', 'textarea', 'select', 'email', 'url']:
             return self.value_text
-        elif field_type in ['number', 'decimal', 'currency']:
+        elif self.custom_field.field_type in ['number', 'decimal', 'currency']:
             return self.value_number
-        elif field_type == 'checkbox':
+        elif self.custom_field.field_type == 'checkbox':
             return self.value_boolean
-        elif field_type == 'date':
+        elif self.custom_field.field_type == 'date':
             return self.value_date
-        elif field_type == 'datetime':
+        elif self.custom_field.field_type == 'datetime':
             return self.value_datetime
-        elif field_type == 'json':
+        elif self.custom_field.field_type == 'json':
             return json.loads(self.value_json) if self.value_json else None
         return None
     
     def set_value(self, value):
         """Set the appropriate value field based on field type"""
-        field = CustomField.query.get(self.custom_field_id)
-        if not field:
-            return
-            
-        field_type = field.field_type
+        field_type = self.custom_field.field_type
         
         # Clear all value fields first
         self.value_text = None
@@ -254,10 +247,11 @@ class DynamicFormManager:
             ).first()
             
             if not field_value:
-                field_value = CustomFieldValue()
-                field_value.custom_field_id = field.id
-                field_value.record_type = record_type
-                field_value.record_id = record_id
+                field_value = CustomFieldValue(
+                    custom_field_id=field.id,
+                    record_type=record_type,
+                    record_id=record_id
+                )
                 db.session.add(field_value)
             
             # Set the value
@@ -278,74 +272,29 @@ class DynamicFormManager:
     def create_default_templates():
         """Create default form templates for core modules"""
         default_templates = [
-            # Production Module Templates
             {
-                'name': 'Bill of Materials Management',
-                'code': 'bom_management',
-                'description': 'Custom fields for BOM creation and management',
+                'name': 'Bill of Materials',
+                'code': 'bom',
+                'description': 'Custom fields for BOM management',
                 'module': 'production'
             },
             {
-                'name': 'Production Management',
-                'code': 'production_management',
-                'description': 'Custom fields for production orders',
+                'name': 'BOM Items',
+                'code': 'bom_item',
+                'description': 'Custom fields for BOM material items',
                 'module': 'production'
             },
-            # Job Work Module Templates
             {
-                'name': 'Job Work Management',
-                'code': 'job_work_management',
-                'description': 'Custom fields for job work orders',
+                'name': 'BOM Processes',
+                'code': 'bom_process',
+                'description': 'Custom fields for BOM manufacturing processes',
+                'module': 'production'
+            },
+            {
+                'name': 'Job Work',
+                'code': 'job_work',
+                'description': 'Custom fields for job work management',
                 'module': 'job_work'
-            },
-            # GRN Module Templates
-            {
-                'name': 'GRN Management',
-                'code': 'grn_management',
-                'description': 'Custom fields for Goods Receipt Notes',
-                'module': 'grn'
-            },
-            # Purchase Module Templates
-            {
-                'name': 'Purchase Order Management',
-                'code': 'purchase_order_management',
-                'description': 'Custom fields for purchase orders',
-                'module': 'purchase'
-            },
-            # Sales Module Templates
-            {
-                'name': 'Sales Order Management',
-                'code': 'sales_order_management',
-                'description': 'Custom fields for sales orders',
-                'module': 'sales'
-            },
-            # Inventory Module Templates
-            {
-                'name': 'Inventory Management',
-                'code': 'inventory_management',
-                'description': 'Custom fields for inventory items',
-                'module': 'inventory'
-            },
-            # Employee Module Templates
-            {
-                'name': 'Employee Management',
-                'code': 'employee_management',
-                'description': 'Custom fields for employee records',
-                'module': 'hr'
-            },
-            # Factory Expense Templates
-            {
-                'name': 'Factory Expense Management',
-                'code': 'factory_expense_management',
-                'description': 'Custom fields for factory expenses',
-                'module': 'expenses'
-            },
-            # UOM Management Templates
-            {
-                'name': 'UOM Management',
-                'code': 'uom_management',
-                'description': 'Custom fields for Units of Measure',
-                'module': 'uom'
             },
             {
                 'name': 'Purchase Orders',
@@ -382,6 +331,7 @@ class DynamicFormManager:
         db.session.commit()
 
 # Create default templates when models are imported
-def create_default_templates_handler():
-    """Manually create default form templates to avoid circular imports"""
-    DynamicFormManager.create_default_templates()
+@event.listens_for(FormTemplate.__table__, 'after_create')
+def create_default_templates(target, connection, **kw):
+    """Automatically create default form templates after table creation"""
+    pass  # Will be called manually to avoid circular imports
