@@ -227,13 +227,34 @@ def add_bom():
             flash('An active BOM already exists for this product. Please deactivate the existing BOM first.', 'warning')
             return render_template('production/bom_form.html', form=form, title='Add BOM')
         
+        # Auto-generate BOM code if not provided
+        bom_code = form.bom_code.data
+        if not bom_code:
+            # Auto-generate BOM code: BOM-YYYY-####
+            year = datetime.now().year
+            last_bom = BOM.query.filter(
+                BOM.bom_code.like(f'BOM-{year}-%')
+            ).order_by(BOM.bom_code.desc()).first()
+            
+            if last_bom:
+                # Extract the number from the last BOM code
+                try:
+                    last_number = int(last_bom.bom_code.split('-')[-1])
+                    new_number = last_number + 1
+                except:
+                    new_number = 1
+            else:
+                new_number = 1
+            
+            bom_code = f'BOM-{year}-{new_number:04d}'
+
         bom = BOM(
-            bom_code=form.bom_code.data,
+            bom_code=bom_code,
             product_id=form.product_id.data,
             output_uom_id=form.output_uom_id.data if form.output_uom_id.data != 0 else None,
-            version=form.version.data,
-            status=form.status.data,
-            is_active=form.is_active.data and form.status.data == 'active',
+            version=form.version.data or '1.0',
+            status=form.status.data or 'active',
+            is_active=form.is_active.data and (form.status.data == 'active' if form.status.data else True),
             output_quantity=form.output_quantity.data or 1.0,
             estimated_scrap_percent=form.estimated_scrap_percent.data or 0.0,
             scrap_quantity=form.scrap_quantity.data or 0.0,
@@ -253,10 +274,6 @@ def add_bom():
         )
         db.session.add(bom)
         db.session.flush()  # Get the BOM ID
-        
-        # Auto-generate BOM code if not provided
-        if not form.bom_code.data:
-            bom.bom_code = f"BOM-{datetime.now().year}-{bom.id:04d}"
         
         db.session.commit()
         flash('Advanced BOM created successfully with enhanced features', 'success')
