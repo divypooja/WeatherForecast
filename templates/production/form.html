@@ -52,12 +52,24 @@
                         </div>
                         
                         <div class="row">
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 {{ form.quantity_planned.label(class="form-label") }}
                                 {{ form.quantity_planned(class="form-control") }}
                                 {% if form.quantity_planned.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.quantity_planned.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                {{ form.planned_uom.label(class="form-label") }}
+                                {{ form.planned_uom(class="form-select") }}
+                                {% if form.planned_uom.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.planned_uom.errors %}
                                             <div>{{ error }}</div>
                                         {% endfor %}
                                     </div>
@@ -94,7 +106,7 @@
                             <div class="col-12 mb-2">
                                 <h6 class="text-muted">Production Results (Fill during/after production)</h6>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 {{ form.quantity_produced.label(class="form-label") }}
                                 {{ form.quantity_produced(class="form-control") }}
                                 {% if form.quantity_produced.errors %}
@@ -106,7 +118,19 @@
                                 {% endif %}
                             </div>
                             
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
+                                {{ form.produced_uom.label(class="form-label") }}
+                                {{ form.produced_uom(class="form-select") }}
+                                {% if form.produced_uom.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.produced_uom.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
                                 {{ form.quantity_good.label(class="form-label") }}
                                 {{ form.quantity_good(class="form-control") }}
                                 {% if form.quantity_good.errors %}
@@ -118,7 +142,19 @@
                                 {% endif %}
                             </div>
                             
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
+                                {{ form.good_uom.label(class="form-label") }}
+                                {{ form.good_uom(class="form-select") }}
+                                {% if form.good_uom.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.good_uom.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
                                 {{ form.quantity_damaged.label(class="form-label") }}
                                 {{ form.quantity_damaged(class="form-control") }}
                                 {% if form.quantity_damaged.errors %}
@@ -128,6 +164,55 @@
                                         {% endfor %}
                                     </div>
                                 {% endif %}
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                {{ form.damaged_uom.label(class="form-label") }}
+                                {{ form.damaged_uom(class="form-select") }}
+                                {% if form.damaged_uom.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.damaged_uom.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Scrap Tracking Section -->
+                        <div class="row">
+                            <div class="col-12 mb-2">
+                                <h6 class="text-muted"><i class="fas fa-recycle text-warning"></i> Scrap & Waste Tracking</h6>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.scrap_quantity.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.scrap_quantity(class="form-control", placeholder="Weight-based scrap generated") }}
+                                    <span class="input-group-text text-muted">
+                                        <i class="fas fa-recycle"></i>
+                                    </span>
+                                </div>
+                                {% if form.scrap_quantity.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.scrap_quantity.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Track scrap material generated during production</small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.scrap_uom.label(class="form-label") }}
+                                {{ form.scrap_uom(class="form-select") }}
+                                {% if form.scrap_uom.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.scrap_uom.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Typically measured in weight units (kg, g)</small>
                             </div>
                         </div>
                         

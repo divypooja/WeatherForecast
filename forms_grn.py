@@ -48,6 +48,14 @@ class GRNLineItemForm(FlaskForm):
                                  default=0.0)
     rejected_uom = SelectField('Rejected Unit', validators=[Optional()], coerce=str)
     
+    # Scrap tracking
+    scrap_quantity = FloatField('Scrap Quantity (Generated during receipt/inspection)', 
+                               validators=[Optional(), NumberRange(min=0, message="Scrap quantity cannot be negative")],
+                               default=0.0)
+    scrap_uom = SelectField('Scrap Unit', validators=[Optional()], coerce=str)
+    scrap_reasons = TextAreaField('Scrap Reasons', 
+                                 render_kw={'rows': 2, 'placeholder': 'e.g., Material damage, Processing waste, Quality issues, etc.'})
+    
     # Unit information
     unit_of_measure = StringField('Unit', validators=[Optional(), Length(max=20)])
     unit_weight = FloatField('Unit Weight (kg)', validators=[Optional(), NumberRange(min=0)])
@@ -62,11 +70,13 @@ class GRNLineItemForm(FlaskForm):
             self.received_uom.choices = uom_choices
             self.passed_uom.choices = uom_choices
             self.rejected_uom.choices = uom_choices
+            self.scrap_uom.choices = uom_choices
         except Exception:
             fallback_choices = [('', 'Select Unit'), ('pcs', 'Pieces'), ('kg', 'Kilogram'), ('ltr', 'Liter')]
             self.received_uom.choices = fallback_choices
             self.passed_uom.choices = fallback_choices
             self.rejected_uom.choices = fallback_choices
+            self.scrap_uom.choices = fallback_choices
     
     # Quality control
     inspection_status = SelectField('Inspection Status', choices=[
