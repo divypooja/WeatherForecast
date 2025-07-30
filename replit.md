@@ -6,14 +6,22 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (July 30, 2025)
 
+### Unified BOM Process Management Interface (July 30, 2025)
+- **Eliminated Interface Redundancy**: Removed "Add Single Process" button as the "Add Multiple Processes" interface can handle both single and multiple process additions efficiently
+- **Streamlined User Experience**: Single "Add Manufacturing Processes" button that handles all process management scenarios (single or multiple processes)
+- **Enhanced Interface Logic**: Users can add one process or multiple processes through the same unified interface, eliminating confusion
+- **Clearer Messaging**: Updated help text to explain unified process management approach with workflow examples
+- **Button Enhancement**: Made the unified process button larger and more prominent with improved styling
+
 ### Complete BOM Creation and Deletion Fix (July 30, 2025)
-- **Critical BOM Creation Issue Resolved**: Fixed critical bug where BOMs were being saved as `is_active=False` due to faulty logic in add_bom route
+- **Critical BOM Creation Issue Resolved**: Fixed critical bug where BOMs were being saved as `is_active=False` due to faulty logic in both add_bom and edit_bom routes
 - **BOM Recovery**: Successfully recovered all 4 previously created BOMs by updating them to active status, making them visible in BOM list
 - **Delete Functionality Restoration**: Enhanced BOM deletion to handle cascade deletion of all BOM items and processes automatically
 - **Improved User Experience**: BOM deletion now removes all components (items, processes) before deleting the BOM itself, eliminating previous blocking errors
 - **Better Error Handling**: Added comprehensive transaction handling and user-friendly success messages for both creation and deletion
 - **Auto-Generation Confirmed**: BOM code auto-generation working correctly with format "BOM-YYYY-0001"
 - **Template Integration**: BOM Code field properly displayed with magic icon and auto-generation instructions
+- **Save Button Enhancement**: Moved save buttons to bottom of BOM form and converted from JavaScript onclick to proper HTML form submission for reliable saving
 
 ## Recent Changes (July 30, 2025)
 
