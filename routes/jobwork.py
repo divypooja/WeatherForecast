@@ -103,6 +103,7 @@ def add_job_work():
         work_type = request.form.get('work_type')
         bom_id = request.form.get('bom_id')
         production_quantity = request.form.get('production_quantity')
+        job_work_type = request.form.get('job_work_type', 'single')  # single or multi
         sent_date_str = request.form.get('sent_date')
         expected_return_str = request.form.get('expected_return')
         notes = request.form.get('notes', '')

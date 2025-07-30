@@ -102,6 +102,18 @@
                             </div>
                             
                             <div class="col-md-6 mb-3">
+                                <label class="form-label">Job Work Type</label>
+                                <select class="form-select" id="job_work_type" name="job_work_type">
+                                    <option value="single">Single Process</option>
+                                    <option value="multi">Multi-Process</option>
+                                </select>
+                                <small class="text-muted">Choose single or multiple manufacturing processes</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Single Process Section -->
+                        <div id="single_process_section" class="row mb-4">
+                            <div class="col-md-6 mb-3">
                                 <label class="form-label">Process</label>
                                 <select class="form-select" id="process" name="process">
                                     <option value="">Select Process</option>
@@ -114,6 +126,23 @@
                                     <option value="Machining">Machining</option>
                                     <option value="Polishing">Polishing</option>
                                 </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Multi-Process Section -->
+                        <div id="multi_process_section" style="display: none;" class="mb-4">
+                            <div class="card border-info">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0"><i class="fas fa-cogs"></i> Multi-Process Configuration</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="processes_container">
+                                        <!-- Dynamic processes will be added here -->
+                                    </div>
+                                    <button type="button" class="btn btn-success btn-sm" id="add_process_btn">
+                                        <i class="fas fa-plus"></i> Add Process
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         
@@ -226,7 +255,106 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Setup BOM integration handlers
     setupBOMIntegration();
+    
+    // Setup multi-process handlers
+    setupMultiProcessHandlers();
 });
+
+// Multi-Process Functions
+function setupMultiProcessHandlers() {
+    const jobWorkTypeSelect = document.getElementById('job_work_type');
+    const addProcessBtn = document.getElementById('add_process_btn');
+    
+    jobWorkTypeSelect.addEventListener('change', handleJobWorkTypeChange);
+    addProcessBtn.addEventListener('click', addNewProcess);
+    
+    // Add first process by default for multi-process
+    if (jobWorkTypeSelect.value === 'multi') {
+        addNewProcess();
+    }
+}
+
+function handleJobWorkTypeChange() {
+    const jobWorkType = document.getElementById('job_work_type').value;
+    const singleProcessSection = document.getElementById('single_process_section');
+    const multiProcessSection = document.getElementById('multi_process_section');
+    
+    if (jobWorkType === 'single') {
+        singleProcessSection.style.display = 'block';
+        multiProcessSection.style.display = 'none';
+        // Clear multi-process data
+        document.getElementById('processes_container').innerHTML = '';
+    } else {
+        singleProcessSection.style.display = 'none';
+        multiProcessSection.style.display = 'block';
+        // Add first process if none exist
+        if (document.getElementById('processes_container').children.length === 0) {
+            addNewProcess();
+        }
+    }
+}
+
+let processCounter = 0;
+
+function addNewProcess() {
+    const container = document.getElementById('processes_container');
+    const processDiv = document.createElement('div');
+    processDiv.className = 'card mb-3 border-secondary';
+    processDiv.innerHTML = `
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">Process ${processCounter + 1}</h6>
+            <button type="button" class="btn btn-danger btn-sm" onclick="removeProcess(this)">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Process Name</label>
+                    <select class="form-select" name="processes[${processCounter}][process_name]" required>
+                        <option value="">Select Process</option>
+                        <option value="Cutting">Cutting</option>
+                        <option value="Bending">Bending</option>
+                        <option value="Welding">Welding</option>
+                        <option value="Zinc">Zinc Plating</option>
+                        <option value="Painting">Painting</option>
+                        <option value="Assembly">Assembly</option>
+                        <option value="Machining">Machining</option>
+                        <option value="Polishing">Polishing</option>
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Sequence Number</label>
+                    <input type="number" class="form-control" name="processes[${processCounter}][sequence_number]" value="${processCounter + 1}" min="1" required>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Quantity Input</label>
+                    <input type="number" class="form-control" name="processes[${processCounter}][quantity_input]" step="0.01" min="0" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Work Type</label>
+                    <select class="form-select" name="processes[${processCounter}][work_type]" required>
+                        <option value="in_house">In-House</option>
+                        <option value="outsourced">Outsourced</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(processDiv);
+    processCounter++;
+}
+
+function removeProcess(btn) {
+    if (document.getElementById('processes_container').children.length > 1) {
+        btn.closest('.card').remove();
+    } else {
+        alert('At least one process is required for multi-process job work.');
+    }
+}
 
 // BOM Integration Functions
 function setupBOMIntegration() {
