@@ -491,22 +491,39 @@ def delete_bom_item(id):
     
     return redirect(url_for('production.edit_bom', id=bom_id))
 
-@production_bp.route('/bom/delete/<int:id>')
+@production_bp.route('/bom/delete/<int:id>', methods=['GET', 'POST'])
 @login_required
 def delete_bom(id):
+    print(f"DEBUG: Delete BOM route called for ID {id}")
     bom = BOM.query.get_or_404(id)
-    
-    # Check if BOM has items or processes
-    if bom.items or bom.processes:
-        flash('Cannot delete BOM with existing items or processes. Please remove all components first.', 'error')
-        return redirect(url_for('production.list_bom'))
+    print(f"DEBUG: Found BOM {bom.bom_code}")
     
     try:
+        # Delete all related BOM items first
+        items_count = 0
+        if bom.items:
+            items_count = len(bom.items)
+            for item in bom.items:
+                db.session.delete(item)
+        
+        # Delete all related BOM processes
+        processes_count = 0
+        if bom.processes:
+            processes_count = len(bom.processes)
+            for process in bom.processes:
+                db.session.delete(process)
+        
+        # Delete the BOM itself
+        bom_code = bom.bom_code
         db.session.delete(bom)
         db.session.commit()
-        flash('Advanced BOM deleted successfully', 'success')
+        
+        print(f"DEBUG: Successfully deleted BOM {bom_code} with {items_count} items and {processes_count} processes")
+        flash(f'BOM {bom_code} and all its components deleted successfully ({items_count} items, {processes_count} processes)', 'success')
+        
     except Exception as e:
         db.session.rollback()
+        print(f"DEBUG: Error deleting BOM: {str(e)}")
         flash(f'Error deleting BOM: {str(e)}', 'error')
     
     return redirect(url_for('production.list_bom'))
