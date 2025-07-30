@@ -494,8 +494,24 @@
             <div class="card">
                 <div class="card-header bg-info">
                     <h5><i class="fas fa-cogs"></i> Manufacturing Process Workflow <span class="badge bg-success">NEW</span></h5>
+                    <small class="text-white">Intelligent Integration: Process workflows automatically populate Scrap Management and Labor Costs</small>
                 </div>
                 <div class="card-body">
+                    <!-- Intelligent Integration Alert -->
+                    {% if bom.processes and (bom.total_process_cost_per_unit > 0 or bom.calculated_scrap_percent > 0) %}
+                    <div class="alert alert-success mb-3">
+                        <i class="fas fa-brain"></i> <strong>Smart Integration Active:</strong>
+                        {% if bom.total_process_cost_per_unit > 0 %}
+                            Labor Costs (₹{{ "%.2f"|format(bom.total_process_cost_per_unit) }}) 
+                        {% endif %}
+                        {% if bom.calculated_scrap_percent > 0 %}
+                            {% if bom.total_process_cost_per_unit > 0 %}and {% endif %}
+                            Scrap Management ({{ "%.2f"|format(bom.calculated_scrap_percent) }}%) 
+                        {% endif %}
+                        automatically calculated from manufacturing process workflow.
+                    </div>
+                    {% endif %}
+                    
                     {% if bom.processes %}
                     <div class="row mb-3">
                         <div class="col-md-3">
@@ -519,6 +535,9 @@
                                 <div class="card-body text-center">
                                     <h5 class="text-success">₹{{ "%.2f"|format(bom.total_process_cost_per_unit) }}</h5>
                                     <small>Process Cost per Unit</small>
+                                    {% if bom.processes and bom.total_process_cost_per_unit > 0 %}
+                                        <div class="badge bg-success mt-1">Auto-Calculated</div>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -527,6 +546,25 @@
                                 <div class="card-body text-center">
                                     <h5 class="text-warning">{{ bom.manufacturing_complexity }}</h5>
                                     <small>Manufacturing Complexity</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h5 class="text-info">{{ "%.2f"|format(bom.calculated_scrap_percent) }}%</h5>
+                                    <small>Process Scrap Rate</small>
+                                    {% if bom.processes and bom.calculated_scrap_percent > 0 %}
+                                        <div class="badge bg-info mt-1">Process-Driven</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h5 class="text-secondary">{{ "%.2f"|format(bom.calculated_total_manufacturing_time) }}h</h5>
+                                    <small>Total Process Time</small>
                                 </div>
                             </div>
                         </div>
@@ -597,9 +635,26 @@
                     
                     <div class="mt-3">
                         {% if bom %}
-                        <a href="{{ url_for('production.add_bom_process', bom_id=bom.id) }}" class="btn btn-primary">
-                            <i class="fas fa-plus"></i> Add Manufacturing Process
-                        </a>
+                        <div class="d-flex gap-2 mb-3">
+                            <a href="{{ url_for('production.add_bom_process', bom_id=bom.id) }}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Add Manufacturing Process
+                            </a>
+                            {% if bom.processes %}
+                            <form method="POST" action="{{ url_for('production.sync_bom_from_processes', id=bom.id) }}" style="display: inline;">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-sync"></i> Sync from Processes
+                                </button>
+                            </form>
+                            <a href="{{ url_for('production.process_integration_report', id=bom.id) }}" class="btn btn-info">
+                                <i class="fas fa-chart-line"></i> Integration Report
+                            </a>
+                            {% endif %}
+                        </div>
+                        {% if bom.processes %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-brain"></i> <strong>Smart Integration:</strong> Use "Sync from Processes" to automatically populate Labor Costs and Scrap Management from manufacturing process workflows.
+                        </div>
+                        {% endif %}
                         {% else %}
                         <div class="alert alert-warning">
                             <i class="fas fa-exclamation-triangle"></i> Save the BOM first to add manufacturing processes.
