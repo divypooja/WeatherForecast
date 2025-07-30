@@ -23,7 +23,7 @@
                     <h5><i class="fas fa-plus-circle"></i> Job Work Details</h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST" id="jobWorkForm">
+                    <form method="POST" id="jobWorkForm" onsubmit="return prepareFormSubmission()">
                         <div class="row mb-4">
                             <div class="col-12">
                                 <h6 class="text-primary border-bottom pb-2 mb-3">
@@ -341,10 +341,68 @@ function addNewProcess() {
                     </select>
                 </div>
             </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Output Product</label>
+                    <select class="form-select" name="processes[${processCounter}][output_item_id]" onchange="loadItemsForProcess(this)">
+                        <option value="">Select Output Product</option>
+                    </select>
+                    <small class="text-muted">What this process produces</small>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Expected Output Quantity</label>
+                    <input type="number" class="form-control" name="processes[${processCounter}][output_quantity]" step="0.01" min="0">
+                    <small class="text-muted">Quantity this process will produce</small>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Expected Scrap %</label>
+                    <input type="number" class="form-control" name="processes[${processCounter}][scrap_percent]" step="0.01" min="0" max="100" placeholder="0.00">
+                    <small class="text-muted">Expected scrap percentage for this process</small>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Process Rate (₹)</label>
+                    <input type="number" class="form-control" name="processes[${processCounter}][rate_per_unit]" step="0.01" min="0" placeholder="0.00">
+                    <small class="text-muted">Cost per unit for this process</small>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Department/Vendor</label>
+                    <select class="form-select" name="processes[${processCounter}][department_or_vendor]">
+                        <option value="">Select Department/Vendor</option>
+                    </select>
+                    <small class="text-muted">Who will handle this process</small>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Expected Duration (days)</label>
+                    <input type="number" class="form-control" name="processes[${processCounter}][expected_duration]" min="1" placeholder="1">
+                    <small class="text-muted">How long this process will take</small>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12 mb-3">
+                    <label class="form-label">Process Notes</label>
+                    <textarea class="form-control" name="processes[${processCounter}][notes]" rows="2" placeholder="Special instructions or notes for this process"></textarea>
+                </div>
+            </div>
         </div>
     `;
     
     container.appendChild(processDiv);
+    
+    // Populate dropdowns for the new process
+    const outputProductSelect = processDiv.querySelector(`select[name="processes[${processCounter}][output_item_id]"]`);
+    const departmentVendorSelect = processDiv.querySelector(`select[name="processes[${processCounter}][department_or_vendor]"]`);
+    
+    if (outputProductSelect) {
+        populateOutputProductDropdown(outputProductSelect);
+    }
+    if (departmentVendorSelect) {
+        populateDepartmentVendorDropdown(departmentVendorSelect);
+    }
+    
     processCounter++;
 }
 
@@ -563,6 +621,136 @@ function generateJobNumber() {
         .catch(error => {
             console.error('Error generating job number:', error);
         });
+}
+
+// Global variables to store dropdown options
+let globalItems = [];
+let globalDepartments = [];
+let globalSuppliers = [];
+
+// Load dropdown options when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadDropdownOptions();
+});
+
+function loadDropdownOptions() {
+    // Load items
+    fetch('/api/items')
+        .then(response => response.json())
+        .then(data => {
+            globalItems = data.items || [];
+        })
+        .catch(error => console.error('Error loading items:', error));
+    
+    // Load departments
+    fetch('/api/departments')
+        .then(response => response.json())
+        .then(data => {
+            globalDepartments = data.departments || [];
+        })
+        .catch(error => console.error('Error loading departments:', error));
+    
+    // Load suppliers
+    fetch('/api/suppliers')
+        .then(response => response.json())
+        .then(data => {
+            globalSuppliers = data.suppliers || [];
+        })
+        .catch(error => console.error('Error loading suppliers:', error));
+}
+
+function populateOutputProductDropdown(selectElement) {
+    // Clear existing options
+    selectElement.innerHTML = '<option value="">Select Output Product</option>';
+    
+    // Add items
+    globalItems.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.id;
+        option.textContent = `${item.code} - ${item.name}`;
+        selectElement.appendChild(option);
+    });
+}
+
+function populateDepartmentVendorDropdown(selectElement) {
+    // Clear existing options
+    selectElement.innerHTML = '<option value="">Select Department/Vendor</option>';
+    
+    // Add departments
+    globalDepartments.forEach(dept => {
+        const option = document.createElement('option');
+        option.value = dept.name;
+        option.textContent = `${dept.name} (Department)`;
+        selectElement.appendChild(option);
+    });
+    
+    // Add suppliers/vendors
+    globalSuppliers.forEach(supplier => {
+        const option = document.createElement('option');
+        option.value = supplier.name;
+        option.textContent = `${supplier.name} (Vendor)`;
+        selectElement.appendChild(option);
+    });
+}
+
+function prepareFormSubmission() {
+    const jobWorkType = document.getElementById('job_work_type').value;
+    
+    if (jobWorkType === 'multi') {
+        // Collect all process data and format it as JSON
+        const processesContainer = document.getElementById('processes_container');
+        const processCards = processesContainer.querySelectorAll('.card');
+        const processesData = [];
+        
+        if (processCards.length === 0) {
+            alert('Please add at least one process for multi-process job work.');
+            return false;
+        }
+        
+        processCards.forEach((card, index) => {
+            const processData = {
+                process_name: card.querySelector(`select[name*="[process_name]"]`)?.value || '',
+                sequence_number: parseInt(card.querySelector(`input[name*="[sequence_number]"]`)?.value) || (index + 1),
+                quantity_input: parseFloat(card.querySelector(`input[name*="[quantity_input]"]`)?.value) || 0,
+                work_type: card.querySelector(`select[name*="[work_type]"]`)?.value || 'in_house',
+                output_item_id: card.querySelector(`select[name*="[output_item_id]"]`)?.value || '',
+                output_quantity: parseFloat(card.querySelector(`input[name*="[output_quantity]"]`)?.value) || 0,
+                scrap_percent: parseFloat(card.querySelector(`input[name*="[scrap_percent]"]`)?.value) || 0,
+                rate_per_unit: parseFloat(card.querySelector(`input[name*="[rate_per_unit]"]`)?.value) || 0,
+                department_or_vendor: card.querySelector(`select[name*="[department_or_vendor]"]`)?.value || '',
+                expected_duration: parseInt(card.querySelector(`input[name*="[expected_duration]"]`)?.value) || 1,
+                notes: card.querySelector(`textarea[name*="[notes]"]`)?.value || ''
+            };
+            
+            // Validation
+            if (!processData.process_name) {
+                alert(`Process ${index + 1}: Please select a process name.`);
+                return false;
+            }
+            if (processData.quantity_input <= 0) {
+                alert(`Process ${index + 1}: Please enter a valid quantity input.`);
+                return false;
+            }
+            
+            processesData.push(processData);
+        });
+        
+        // Add hidden input with processes data
+        const existingProcessInput = document.getElementById('processes_json_data');
+        if (existingProcessInput) {
+            existingProcessInput.remove();
+        }
+        
+        const processInput = document.createElement('input');
+        processInput.type = 'hidden';
+        processInput.id = 'processes_json_data';
+        processInput.name = 'processes_json';
+        processInput.value = JSON.stringify(processesData);
+        
+        document.getElementById('jobWorkForm').appendChild(processInput);
+    }
+    
+    return true; // Allow form submission
 }
 </script>
 {% endblock %}
