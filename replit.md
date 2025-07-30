@@ -6,6 +6,16 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (July 30, 2025)
 
+### Comprehensive BOM Process Management System Implementation (July 30, 2025)
+- **Step-by-Step Manufacturing Workflow Tracking**: Added complete BOMProcess model with 12-field database structure for detailed process routing including step numbers, process names, operation descriptions, timing, costs, and outsourcing capabilities
+- **Manufacturing Complexity Assessment**: Enhanced BOM model with properties calculating manufacturing complexity (Simple/Moderate/Complex/Very Complex) based on process count and workflow analysis
+- **Process Cost and Time Calculations**: Implemented comprehensive process cost tracking with setup time, runtime per unit, labor rates, and total process cost calculations
+- **Database Migration Completed**: Successfully migrated bom_processes table with comprehensive process tracking including quality checkpoints, scrap tracking, and vendor integration
+- **Enhanced BOM Templates**: Added professional Manufacturing Process Workflow section to BOM form template showing process statistics, step-by-step workflow table, and manufacturing complexity indicators
+- **Process Classification System**: System categorizes processes as In-House vs Outsourced with department/vendor assignment and quality checkpoint requirements
+- **BOMProcessForm Integration**: Complete form system for process management with machine selection, department assignment, vendor selection, timing inputs, and cost tracking
+- **Manufacturing Intelligence**: BOM now calculates total process steps, total manufacturing time, total process costs, and complexity assessment with visual indicators
+
 ### Complete BOM Integration with Job Work and GRN System (July 30, 2025)
 - **Unified Job Work Form Enhancement**: Added comprehensive BOM integration to unified job work form allowing selection of BOMs for production-based job works
 - **BOM-Driven Material Planning**: System automatically calculates required materials from BOM and checks inventory availability before creating job works
