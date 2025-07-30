@@ -147,11 +147,19 @@ class PurchaseOrderForm(FlaskForm):
 class PurchaseOrderItemForm(FlaskForm):
     item_id = SelectField('Item', validators=[DataRequired()], coerce=int)
     quantity_ordered = FloatField('Quantity', validators=[DataRequired(), NumberRange(min=0)])
+    uom = SelectField('Unit of Measure', validators=[DataRequired()], coerce=str)
     unit_price = FloatField('Unit Price', validators=[DataRequired(), NumberRange(min=0)])
     
     def __init__(self, *args, **kwargs):
         super(PurchaseOrderItemForm, self).__init__(*args, **kwargs)
         self.item_id.choices = [(0, 'Select Item')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.all()]
+        # Load UOM choices
+        try:
+            from models_uom import UnitOfMeasure
+            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+            self.uom.choices = [('', 'Select Unit')] + [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
+        except Exception:
+            self.uom.choices = [('', 'Select Unit'), ('pcs', 'Pieces'), ('kg', 'Kilogram'), ('ltr', 'Liter')]
 
 class SalesOrderForm(FlaskForm):
     so_number = StringField('SO Number', validators=[DataRequired(), Length(max=50)])
@@ -177,11 +185,19 @@ class SalesOrderForm(FlaskForm):
 class SalesOrderItemForm(FlaskForm):
     item_id = SelectField('Item', validators=[DataRequired()], coerce=int)
     quantity_ordered = FloatField('Quantity', validators=[DataRequired(), NumberRange(min=0)])
+    uom = SelectField('Unit of Measure', validators=[DataRequired()], coerce=str)
     unit_price = FloatField('Unit Price', validators=[DataRequired(), NumberRange(min=0)])
     
     def __init__(self, *args, **kwargs):
         super(SalesOrderItemForm, self).__init__(*args, **kwargs)
         self.item_id.choices = [(0, 'Select Item')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.all()]
+        # Load UOM choices
+        try:
+            from models_uom import UnitOfMeasure
+            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+            self.uom.choices = [('', 'Select Unit')] + [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
+        except Exception:
+            self.uom.choices = [('', 'Select Unit'), ('pcs', 'Pieces'), ('kg', 'Kilogram'), ('ltr', 'Liter')]
 
 class EmployeeForm(FlaskForm):
     employee_code = StringField('Employee Code', validators=[DataRequired(), Length(max=50)])
@@ -262,8 +278,10 @@ class JobWorkForm(FlaskForm):
                                   ('maintenance', 'Maintenance'),
                                   ('research_development', 'Research & Development')])
     quantity_sent = FloatField('Quantity Sent', validators=[DataRequired(), NumberRange(min=0)])
+    quantity_uom = SelectField('Quantity Unit', validators=[DataRequired()], coerce=str)
     expected_finished_material = FloatField('Expected Finished Material', validators=[NumberRange(min=0)], default=0.0)
     expected_scrap = FloatField('Expected Scrap', validators=[NumberRange(min=0)], default=0.0)
+    scrap_uom = SelectField('Scrap Unit', validators=[Optional()], coerce=str)
     rate_per_unit = FloatField('Rate per Unit', validators=[NumberRange(min=0)], default=0.0)
     sent_date = DateField('Sent Date', validators=[DataRequired()])
     expected_return = DateField('Expected Return Date', validators=[Optional()])
@@ -284,6 +302,18 @@ class JobWorkForm(FlaskForm):
         # Populate customer choices from suppliers/vendors 
         suppliers = Supplier.query.order_by(Supplier.name).all()
         self.customer_name.choices = [('', 'Select Customer')] + [(s.name, s.name) for s in suppliers]
+        
+        # Load UOM choices for quantities
+        try:
+            from models_uom import UnitOfMeasure
+            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+            uom_choices = [('', 'Select Unit')] + [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
+            self.quantity_uom.choices = uom_choices
+            self.scrap_uom.choices = uom_choices
+        except Exception:
+            fallback_choices = [('', 'Select Unit'), ('pcs', 'Pieces'), ('kg', 'Kilogram'), ('ltr', 'Liter')]
+            self.quantity_uom.choices = fallback_choices
+            self.scrap_uom.choices = fallback_choices
     
     def validate(self, extra_validators=None):
         if not super().validate(extra_validators):
@@ -318,8 +348,10 @@ class DailyJobWorkForm(FlaskForm):
                              render_kw={'placeholder': 'Hours spent on this job work'})
     quantity_completed = FloatField('Quantity Completed', validators=[DataRequired(), NumberRange(min=0)],
                                    render_kw={'placeholder': 'Units completed today'})
+    completed_uom = SelectField('Completed Unit', validators=[DataRequired()], coerce=str)
     scrap_quantity = FloatField('Scrap Quantity', validators=[Optional(), NumberRange(min=0)],
                                render_kw={'placeholder': 'Scrap/waste quantity today'})
+    scrap_uom = SelectField('Scrap Unit', validators=[Optional()], coerce=str)
     quality_status = SelectField('Quality Status', 
                                 validators=[DataRequired()],
                                 choices=[('good', 'Good Quality'),
@@ -367,11 +399,34 @@ class DailyJobWorkForm(FlaskForm):
             (job.id, f"{job.job_number} - {job.item.name} ({job.process}) - {job.department.replace('_', ' ').title()}") 
             for job in active_jobs
         ]
+        
+        # Load UOM choices
+        try:
+            from models_uom import UnitOfMeasure
+            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+            uom_choices = [('', 'Select Unit')] + [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
+            self.completed_uom.choices = uom_choices
+            self.scrap_uom.choices = uom_choices
+        except Exception:
+            fallback_choices = [('', 'Select Unit'), ('pcs', 'Pieces'), ('kg', 'Kilogram'), ('ltr', 'Liter')]
+            self.completed_uom.choices = fallback_choices
+            self.scrap_uom.choices = fallback_choices
 
 class JobWorkQuantityUpdateForm(FlaskForm):
     quantity_received = FloatField('Quantity Received', validators=[DataRequired(), NumberRange(min=0)])
+    received_uom = SelectField('Received Unit', validators=[DataRequired()], coerce=str)
     received_date = DateField('Received Date', validators=[DataRequired()])
     notes = TextAreaField('Notes')
+    
+    def __init__(self, *args, **kwargs):
+        super(JobWorkQuantityUpdateForm, self).__init__(*args, **kwargs)
+        # Load UOM choices
+        try:
+            from models_uom import UnitOfMeasure
+            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+            self.received_uom.choices = [('', 'Select Unit')] + [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
+        except Exception:
+            self.received_uom.choices = [('', 'Select Unit'), ('pcs', 'Pieces'), ('kg', 'Kilogram'), ('ltr', 'Liter')]
 
 class JobWorkTeamAssignmentForm(FlaskForm):
     """Form for assigning job work to team members"""
@@ -382,6 +437,7 @@ class JobWorkTeamAssignmentForm(FlaskForm):
     assigned_quantity = FloatField('Assigned Quantity', 
                                   validators=[DataRequired(), NumberRange(min=0.1)],
                                   render_kw={'placeholder': 'Quantity to assign to this member'})
+    assigned_uom = SelectField('Assigned Unit', validators=[DataRequired()], coerce=str)
     estimated_hours = FloatField('Estimated Hours', 
                                 validators=[Optional(), NumberRange(min=0)],
                                 render_kw={'placeholder': 'Expected hours for this assignment'})
@@ -396,14 +452,28 @@ class JobWorkTeamAssignmentForm(FlaskForm):
     notes = TextAreaField('Assignment Notes',
                          render_kw={'rows': 3, 'placeholder': 'Any specific instructions or notes for this team member'})
     submit = SubmitField('Assign to Team')
+    
+    def __init__(self, *args, **kwargs):
+        super(JobWorkTeamAssignmentForm, self).__init__(*args, **kwargs)
+        # Load UOM choices
+        try:
+            from models_uom import UnitOfMeasure
+            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+            self.assigned_uom.choices = [('', 'Select Unit')] + [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
+        except Exception:
+            self.assigned_uom.choices = [('', 'Select Unit'), ('pcs', 'Pieces'), ('kg', 'Kilogram'), ('ltr', 'Liter')]
 
 class ProductionForm(FlaskForm):
     production_number = StringField('Production Number', validators=[DataRequired(), Length(max=50)])
     item_id = SelectField('Item to Produce', validators=[DataRequired()], coerce=int)
     quantity_planned = FloatField('Planned Quantity', validators=[DataRequired(), NumberRange(min=0)])
+    planned_uom = SelectField('Planned Unit', validators=[DataRequired()], coerce=str)
     quantity_produced = FloatField('Produced Quantity', validators=[NumberRange(min=0)], default=0.0)
+    produced_uom = SelectField('Produced Unit', validators=[Optional()], coerce=str)
     quantity_good = FloatField('Good Quality Quantity', validators=[NumberRange(min=0)], default=0.0)
+    good_uom = SelectField('Good Unit', validators=[Optional()], coerce=str)
     quantity_damaged = FloatField('Damaged/Defective Quantity', validators=[NumberRange(min=0)], default=0.0)
+    damaged_uom = SelectField('Damaged Unit', validators=[Optional()], coerce=str)
     production_date = DateField('Production Date', validators=[DataRequired()])
     status = SelectField('Status', choices=[('planned', 'Planned'), ('in_progress', 'In Progress'), ('completed', 'Completed')], default='planned')
     notes = TextAreaField('Notes')
@@ -411,6 +481,22 @@ class ProductionForm(FlaskForm):
     def __init__(self, *args, **kwargs):
         super(ProductionForm, self).__init__(*args, **kwargs)
         self.item_id.choices = [(0, 'Select Item')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.all()]
+        
+        # Load UOM choices
+        try:
+            from models_uom import UnitOfMeasure
+            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+            uom_choices = [('', 'Select Unit')] + [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
+            self.planned_uom.choices = uom_choices
+            self.produced_uom.choices = uom_choices
+            self.good_uom.choices = uom_choices
+            self.damaged_uom.choices = uom_choices
+        except Exception:
+            fallback_choices = [('', 'Select Unit'), ('pcs', 'Pieces'), ('kg', 'Kilogram'), ('ltr', 'Liter')]
+            self.planned_uom.choices = fallback_choices
+            self.produced_uom.choices = fallback_choices
+            self.good_uom.choices = fallback_choices
+            self.damaged_uom.choices = fallback_choices
 
 class QualityIssueForm(FlaskForm):
     issue_number = StringField('Issue Number', validators=[DataRequired(), Length(max=50)])
@@ -425,6 +511,7 @@ class QualityIssueForm(FlaskForm):
                          choices=[('low', 'Low'), ('medium', 'Medium'), ('high', 'High'), ('critical', 'Critical')],
                          validators=[DataRequired()])
     quantity_affected = FloatField('Quantity Affected', validators=[DataRequired(), NumberRange(min=0)])
+    affected_uom = SelectField('Affected Unit', validators=[DataRequired()], coerce=str)
     description = TextAreaField('Description', validators=[DataRequired()])
     root_cause = TextAreaField('Root Cause Analysis')
     corrective_action = TextAreaField('Corrective Action')
@@ -441,18 +528,43 @@ class QualityIssueForm(FlaskForm):
         self.item_id.choices = [(0, 'Select Item')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.all()]
         self.production_id.choices = [(0, 'Not linked to production')] + [(p.id, f"{p.production_number}") for p in Production.query.all()]
         self.assigned_to.choices = [(0, 'Unassigned')] + [(u.id, u.username) for u in User.query.all()]
+        
+        # Load UOM choices
+        try:
+            from models_uom import UnitOfMeasure
+            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+            self.affected_uom.choices = [('', 'Select Unit')] + [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
+        except Exception:
+            self.affected_uom.choices = [('', 'Select Unit'), ('pcs', 'Pieces'), ('kg', 'Kilogram'), ('ltr', 'Liter')]
 
 class QualityControlLogForm(FlaskForm):
     production_id = SelectField('Production Order', validators=[DataRequired()], coerce=int)
     batch_number = StringField('Batch Number', validators=[Length(max=50)])
     total_inspected = FloatField('Total Inspected', validators=[DataRequired(), NumberRange(min=0)])
+    inspected_uom = SelectField('Inspected Unit', validators=[DataRequired()], coerce=str)
     passed_quantity = FloatField('Passed Quantity', validators=[DataRequired(), NumberRange(min=0)])
+    passed_uom = SelectField('Passed Unit', validators=[DataRequired()], coerce=str)
     failed_quantity = FloatField('Failed Quantity', validators=[DataRequired(), NumberRange(min=0)])
+    failed_uom = SelectField('Failed Unit', validators=[DataRequired()], coerce=str)
     inspection_notes = TextAreaField('Inspection Notes')
     
     def __init__(self, *args, **kwargs):
         super(QualityControlLogForm, self).__init__(*args, **kwargs)
         self.production_id.choices = [(0, 'Select Production Order')] + [(p.id, f"{p.production_number} - {p.produced_item.name}") for p in Production.query.all()]
+        
+        # Load UOM choices
+        try:
+            from models_uom import UnitOfMeasure
+            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+            uom_choices = [('', 'Select Unit')] + [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
+            self.inspected_uom.choices = uom_choices
+            self.passed_uom.choices = uom_choices
+            self.failed_uom.choices = uom_choices
+        except Exception:
+            fallback_choices = [('', 'Select Unit'), ('pcs', 'Pieces'), ('kg', 'Kilogram'), ('ltr', 'Liter')]
+            self.inspected_uom.choices = fallback_choices
+            self.passed_uom.choices = fallback_choices
+            self.failed_uom.choices = fallback_choices
 
 # ... rest of existing forms remain the same
 
