@@ -1544,6 +1544,44 @@ class BOM(db.Model):
                         'shortage': required_qty - available_qty
                     })
         return len(shortages) == 0, shortages
+    
+    @property
+    def total_process_steps(self):
+        """Get total number of process steps in this BOM"""
+        return len(self.processes)
+    
+    @property
+    def total_process_time_per_unit(self):
+        """Calculate total process time per unit across all steps"""
+        return sum(process.total_time_minutes for process in self.processes)
+    
+    @property
+    def total_process_cost_per_unit(self):
+        """Calculate total process cost per unit across all steps"""
+        return sum(process.labor_cost_per_unit for process in self.processes)
+    
+    @property
+    def manufacturing_complexity(self):
+        """Determine manufacturing complexity based on number of processes"""
+        steps = self.total_process_steps
+        if steps <= 2:
+            return "Simple"
+        elif steps <= 5:
+            return "Moderate"
+        elif steps <= 8:
+            return "Complex"
+        else:
+            return "Very Complex"
+    
+    @property
+    def outsourced_processes(self):
+        """Get list of outsourced processes"""
+        return [p for p in self.processes if p.is_outsourced]
+    
+    @property
+    def in_house_processes(self):
+        """Get list of in-house processes"""
+        return [p for p in self.processes if not p.is_outsourced]
 
 # New model for BOM Process routing
 class BOMProcess(db.Model):

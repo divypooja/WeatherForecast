@@ -840,6 +840,13 @@ class BOMProcessForm(FlaskForm):
             self.vendor_id.choices = [(0, 'Select Vendor')] + [(v.id, v.name) for v in vendors]
         except Exception:
             self.vendor_id.choices = [(0, 'Select Vendor')]
+        
+        # Populate vendor choices
+        try:
+            vendors = Supplier.query.filter_by(is_active=True).order_by(Supplier.name).all()
+            self.vendor_id.choices = [(0, 'Select Vendor')] + [(v.id, v.name) for v in vendors]
+        except Exception:
+            self.vendor_id.choices = [(0, 'Select Vendor')]
 
 class CompanySettingsForm(FlaskForm):
     company_name = StringField('Company Name', validators=[DataRequired(), Length(max=200)])
