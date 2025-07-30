@@ -682,33 +682,33 @@ class NotificationTestForm(FlaskForm):
 
 class BOMForm(FlaskForm):
     # Basic BOM Information
-    bom_code = StringField('BOM Code', validators=[DataRequired(), Length(max=50)], 
+    bom_code = StringField('BOM Code', validators=[Optional(), Length(max=50)], 
                           render_kw={"placeholder": "e.g., BOM-2025-001"})
     product_id = SelectField('Product', validators=[DataRequired()], coerce=int)
     output_uom_id = SelectField('Output UOM', validators=[Optional()], coerce=int)
-    version = StringField('Version', validators=[DataRequired(), Length(max=20)], default='1.0')
-    status = SelectField('Status', validators=[DataRequired()], 
+    version = StringField('Version', validators=[Optional(), Length(max=20)], default='1.0')
+    status = SelectField('Status', validators=[Optional()], 
                         choices=[('active', 'Active'), ('inactive', 'Inactive'), ('draft', 'Draft')], 
                         default='active')
     is_active = BooleanField('Active', default=True)  # Keep for backward compatibility
-    output_quantity = FloatField('Output Quantity', validators=[NumberRange(min=0.001)], default=1.0,
+    output_quantity = FloatField('Output Quantity', validators=[Optional(), NumberRange(min=0.001)], default=1.0,
                                 render_kw={"placeholder": "How many units this BOM produces (e.g., 400 pieces from 1 sheet)"})
-    estimated_scrap_percent = FloatField('Overall Scrap %', validators=[NumberRange(min=0, max=100)], default=0.0)
-    scrap_quantity = FloatField('Expected Scrap Quantity per Unit', validators=[NumberRange(min=0)], default=0.0,
+    estimated_scrap_percent = FloatField('Overall Scrap %', validators=[Optional(), NumberRange(min=0, max=100)], default=0.0)
+    scrap_quantity = FloatField('Expected Scrap Quantity per Unit', validators=[Optional(), NumberRange(min=0)], default=0.0,
                                render_kw={"placeholder": "Weight-based scrap expected per unit produced"})
     scrap_uom = SelectField('Scrap UOM', validators=[Optional()], choices=[], default='kg')
-    scrap_value_recovery_percent = FloatField('Scrap Value Recovery %', validators=[NumberRange(min=0, max=100)], default=15.0,
+    scrap_value_recovery_percent = FloatField('Scrap Value Recovery %', validators=[Optional(), NumberRange(min=0, max=100)], default=15.0,
                                             render_kw={"placeholder": "Percentage of material value recoverable from scrap"})
     description = TextAreaField('BOM Description', render_kw={"rows": 3})
     remarks = TextAreaField('Remarks', render_kw={"rows": 2})
     
-    # Labor and Overhead fields
-    labor_cost_per_unit = FloatField('Labor Cost per Unit', validators=[NumberRange(min=0)], default=0.0)
-    labor_hours_per_unit = FloatField('Labor Hours per Unit', validators=[NumberRange(min=0)], default=0.0)
-    labor_rate_per_hour = FloatField('Labor Rate per Hour', validators=[NumberRange(min=0)], default=0.0)
-    overhead_cost_per_unit = FloatField('Fixed Overhead per Unit', validators=[NumberRange(min=0)], default=0.0)
-    overhead_percentage = FloatField('Overhead % (of material cost)', validators=[NumberRange(min=0, max=100)], default=0.0)
-    freight_cost_per_unit = FloatField('Freight/Transportation Cost (Optional)', validators=[NumberRange(min=0)], default=0.0)
+    # Labor and Overhead fields - All optional
+    labor_cost_per_unit = FloatField('Labor Cost per Unit', validators=[Optional(), NumberRange(min=0)], default=0.0)
+    labor_hours_per_unit = FloatField('Labor Hours per Unit', validators=[Optional(), NumberRange(min=0)], default=0.0)
+    labor_rate_per_hour = FloatField('Labor Rate per Hour', validators=[Optional(), NumberRange(min=0)], default=0.0)
+    overhead_cost_per_unit = FloatField('Fixed Overhead per Unit', validators=[Optional(), NumberRange(min=0)], default=0.0)
+    overhead_percentage = FloatField('Overhead % (of material cost)', validators=[Optional(), NumberRange(min=0, max=100)], default=0.0)
+    freight_cost_per_unit = FloatField('Freight/Transportation Cost (Optional)', validators=[Optional(), NumberRange(min=0)], default=0.0)
     freight_unit_type = SelectField('Freight Unit Type', validators=[Optional()],
                                    choices=[
                                        ('per_piece', 'Per Piece/Unit'),
@@ -718,7 +718,7 @@ class BOMForm(FlaskForm):
                                        ('per_ton', 'Per Ton')
                                    ],
                                    default='per_piece')
-    markup_percentage = FloatField('Markup % (Profit Margin)', validators=[NumberRange(min=0, max=500)], default=0.0)
+    markup_percentage = FloatField('Markup % (Profit Margin)', validators=[Optional(), NumberRange(min=0, max=500)], default=0.0)
     
     def __init__(self, *args, **kwargs):
         super(BOMForm, self).__init__(*args, **kwargs)
