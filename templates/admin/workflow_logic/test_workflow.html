@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+
+{% block title %}Test Workflow - {{ template.name }} - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-vial"></i> Test Workflow Logic - {{ template.name }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('dynamic_forms.dashboard') }}">Dynamic Forms</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('workflow_logic.dashboard', template_id=template.id) }}">{{ template.name }} Logic</a></li>
+                    <li class="breadcrumb-item active">Test Workflow</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Test Form -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-flask"></i> Workflow Test Environment</h5>
+                </div>
+                <div class="card-body">
+                    <form id="testForm">
+                        <div class="row" id="testFields">
+                            {% for field in template.active_fields %}
+                            <div class="col-md-6 mb-3 test-field" data-field-id="{{ field.id }}">
+                                <label class="form-label">{{ field.label }}</label>
+                                {% if field.field_type == 'text' %}
+                                    <input type="text" 
+                                           class="form-control test-input" 
+                                           id="field_{{ field.id }}" 
+                                           name="field_{{ field.id }}"
+                                           placeholder="{{ field.placeholder or '' }}">
+                                {% elif field.field_type == 'number' %}
+                                    <input type="number" 
+                                           class="form-control test-input" 
+                                           id="field_{{ field.id }}" 
+                                           name="field_{{ field.id }}"
+                                           placeholder="{{ field.placeholder or '' }}">
+                                {% elif field.field_type == 'select' %}
+                                    <select class="form-select test-input" 
+                                            id="field_{{ field.id }}" 
+                                            name="field_{{ field.id }}">
+                                        <option value="">-- Select Option --</option>
+                                        {% if field.field_options %}
+                                            {% set options = field.field_options | from_json %}
+                                            {% for option in options %}
+                                                <option value="{{ option }}">{{ option }}</option>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </select>
+                                {% elif field.field_type == 'checkbox' %}
+                                    <div class="form-check">
+                                        <input type="checkbox" 
+                                               class="form-check-input test-input" 
+                                               id="field_{{ field.id }}" 
+                                               name="field_{{ field.id }}"
+                                               value="1">
+                                        <label class="form-check-label" for="field_{{ field.id }}">
+                                            {{ field.help_text or 'Check this option' }}
+                                        </label>
+                                    </div>
+                                {% elif field.field_type == 'textarea' %}
+                                    <textarea class="form-control test-input" 
+                                              id="field_{{ field.id }}" 
+                                              name="field_{{ field.id }}"
+                                              rows="3"
+                                              placeholder="{{ field.placeholder or '' }}"></textarea>
+                                {% elif field.field_type == 'date' %}
+                                    <input type="date" 
+                                           class="form-control test-input" 
+                                           id="field_{{ field.id }}" 
+                                           name="field_{{ field.id }}">
+                                {% else %}
+                                    <input type="text" 
+                                           class="form-control test-input" 
+                                           id="field_{{ field.id }}" 
+                                           name="field_{{ field.id }}"
+                                           placeholder="{{ field.placeholder or '' }}">
+                                {% endif %}
+                                
+                                {% if field.help_text %}
+                                    <small class="text-muted">{{ field.help_text }}</small>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button type="button" id="testLogicBtn" class="btn btn-primary">
+                                <i class="fas fa-play"></i> Test Logic
+                            </button>
+                            <button type="button" id="resetFormBtn" class="btn btn-secondary">
+                                <i class="fas fa-undo"></i> Reset Form
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Panel -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-line"></i> Test Results</h5>
+                </div>
+                <div class="card-body">
+                    <div id="testResults">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> Fill out the form and click "Test Logic" to see how your workflow conditions affect the form fields.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Conditions -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-cogs"></i> Active Conditions</h5>
+                </div>
+                <div class="card-body">
+                    {% set conditions = template.field_conditions.filter_by(is_active=True).order_by(template.field_conditions.condition_order).all() %}
+                    {% if conditions %}
+                        {% for condition in conditions %}
+                        <div class="border-bottom mb-2 pb-2">
+                            <small class="text-muted">{{ condition.condition_order }}.</small>
+                            <strong>{{ condition.condition_type.upper() }}</strong>
+                            <span class="text-primary">{{ condition.source_field.label }}</span>
+                            {{ condition.operator.replace('_', ' ') }}
+                            {% if condition.condition_value %}"{{ condition.condition_value }}"{% endif %}
+                            <br>
+                            <small class="text-muted">
+                                → {{ condition.action.replace('_', ' ').title() }} 
+                                <span class="text-info">{{ condition.target_field.label }}</span>
+                            </small>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted small">No active conditions found. <a href="{{ url_for('workflow_logic.add_condition', template_id=template.id) }}">Create one</a> to test workflow logic.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Help -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-question-circle"></i> How to Test</h5>
+                </div>
+                <div class="card-body">
+                    <ol class="small">
+                        <li>Fill out form fields with test values</li>
+                        <li>Click "Test Logic" to see results</li>
+                        <li>Watch how fields show/hide based on conditions</li>
+                        <li>Check required field validation</li>
+                        <li>Verify automatic value setting</li>
+                    </ol>
+                    
+                    <div class="mt-3">
+                        <h6 class="small">Legend:</h6>
+                        <div class="d-flex align-items-center mb-1">
+                            <span class="badge bg-success me-2">Show</span>
+                            <small>Field is visible</small>
+                        </div>
+                        <div class="d-flex align-items-center mb-1">
+                            <span class="badge bg-danger me-2">Hide</span>
+                            <small>Field is hidden</small>
+                        </div>
+                        <div class="d-flex align-items-center mb-1">
+                            <span class="badge bg-warning me-2">Required</span>
+                            <small>Field is required</small>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-info me-2">Auto</span>
+                            <small>Value set automatically</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    const templateId = {{ template.id }};
+    
+    // Test logic function
+    function testWorkflowLogic() {
+        const formData = {};
+        
+        // Collect form data
+        $('.test-input').each(function() {
+            const fieldId = $(this).attr('id').replace('field_', '');
+            let value = $(this).val();
+            
+            if ($(this).attr('type') === 'checkbox') {
+                value = $(this).is(':checked') ? '1' : '0';
+            }
+            
+            formData[fieldId] = value;
+        });
+        
+        // Show loading
+        $('#testResults').html(`
+            <div class="alert alert-info">
+                <i class="fas fa-spinner fa-spin"></i> Testing workflow logic...
+            </div>
+        `);
+        
+        // Call API
+        $.ajax({
+            url: `/admin/workflow/api/test_logic/${templateId}`,
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                field_values: formData
+            }),
+            success: function(response) {
+                if (response.success) {
+                    displayTestResults(response.form_state);
+                } else {
+                    $('#testResults').html(`
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle"></i> Error: ${response.error}
+                        </div>
+                    `);
+                }
+            },
+            error: function() {
+                $('#testResults').html(`
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i> Failed to test workflow logic.
+                    </div>
+                `);
+            }
+        });
+    }
+    
+    // Display test results
+    function displayTestResults(formState) {
+        let html = '<h6>Workflow Results:</h6>';
+        
+        // Visible fields
+        if (formState.visible_fields && formState.visible_fields.length > 0) {
+            html += '<div class="mb-2"><strong>Visible Fields:</strong><br>';
+            formState.visible_fields.forEach(fieldId => {
+                const fieldLabel = $(`#field_${fieldId}`).closest('.test-field').find('.form-label').text();
+                html += `<span class="badge bg-success me-1">${fieldLabel}</span>`;
+            });
+            html += '</div>';
+        }
+        
+        // Required fields
+        if (formState.required_fields && formState.required_fields.length > 0) {
+            html += '<div class="mb-2"><strong>Required Fields:</strong><br>';
+            formState.required_fields.forEach(fieldId => {
+                const fieldLabel = $(`#field_${fieldId}`).closest('.test-field').find('.form-label').text();
+                html += `<span class="badge bg-warning me-1">${fieldLabel}</span>`;
+            });
+            html += '</div>';
+        }
+        
+        // Auto-set values
+        const autoValues = [];
+        for (const [fieldId, value] of Object.entries(formState.field_values)) {
+            const originalValue = $(`#field_${fieldId}`).val();
+            if (originalValue !== String(value)) {
+                const fieldLabel = $(`#field_${fieldId}`).closest('.test-field').find('.form-label').text();
+                autoValues.push(`${fieldLabel}: "${value}"`);
+                
+                // Actually set the value in the form
+                $(`#field_${fieldId}`).val(value);
+            }
+        }
+        
+        if (autoValues.length > 0) {
+            html += '<div class="mb-2"><strong>Auto-Set Values:</strong><br>';
+            autoValues.forEach(valueStr => {
+                html += `<span class="badge bg-info me-1">${valueStr}</span><br>`;
+            });
+            html += '</div>';
+        }
+        
+        if (formState.visible_fields.length === 0 && formState.required_fields.length === 0 && autoValues.length === 0) {
+            html += '<div class="alert alert-info">No workflow conditions were triggered by the current field values.</div>';
+        }
+        
+        $('#testResults').html(html);
+    }
+    
+    // Event handlers
+    $('#testLogicBtn').on('click', testWorkflowLogic);
+    
+    $('#resetFormBtn').on('click', function() {
+        $('#testForm')[0].reset();
+        $('#testResults').html(`
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> Form reset. Fill out fields and test again.
+            </div>
+        `);
+    });
+    
+    // Auto-test when form values change (with debounce)
+    let testTimeout;
+    $('.test-input').on('change keyup', function() {
+        clearTimeout(testTimeout);
+        testTimeout = setTimeout(testWorkflowLogic, 500);
+    });
+});
+</script>
+{% endblock %}

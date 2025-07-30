@@ -138,18 +138,16 @@ class CustomFieldValue(db.Model):
     )
     
     def __repr__(self):
-        field_name = "Unknown"
-        if hasattr(self, 'custom_field') and self.custom_field:
-            field_name = self.custom_field.field_name
-        return f'<CustomFieldValue {field_name} for {self.record_type}:{self.record_id}>'
+        return f'<CustomFieldValue for {self.record_type}:{self.record_id}>'
     
     @property
     def display_value(self):
         """Get the appropriate value based on field type"""
-        if not hasattr(self, 'custom_field') or not self.custom_field:
+        field = CustomField.query.get(self.custom_field_id)
+        if not field:
             return None
             
-        field_type = self.custom_field.field_type
+        field_type = field.field_type
         if field_type in ['text', 'textarea', 'select', 'email', 'url']:
             return self.value_text
         elif field_type in ['number', 'decimal', 'currency']:
@@ -166,10 +164,11 @@ class CustomFieldValue(db.Model):
     
     def set_value(self, value):
         """Set the appropriate value field based on field type"""
-        if not hasattr(self, 'custom_field') or not self.custom_field:
+        field = CustomField.query.get(self.custom_field_id)
+        if not field:
             return
             
-        field_type = self.custom_field.field_type
+        field_type = field.field_type
         
         # Clear all value fields first
         self.value_text = None
@@ -255,11 +254,10 @@ class DynamicFormManager:
             ).first()
             
             if not field_value:
-                field_value = CustomFieldValue(
-                    custom_field_id=field.id,
-                    record_type=record_type,
-                    record_id=record_id
-                )
+                field_value = CustomFieldValue()
+                field_value.custom_field_id = field.id
+                field_value.record_type = record_type
+                field_value.record_id = record_id
                 db.session.add(field_value)
             
             # Set the value
@@ -339,7 +337,6 @@ class DynamicFormManager:
         db.session.commit()
 
 # Create default templates when models are imported
-@event.listens_for(FormTemplate.__table__, 'after_create')
-def create_default_templates(target, connection, **kw):
-    """Automatically create default form templates after table creation"""
-    pass  # Will be called manually to avoid circular imports
+def create_default_templates_handler():
+    """Manually create default form templates to avoid circular imports"""
+    DynamicFormManager.create_default_templates()

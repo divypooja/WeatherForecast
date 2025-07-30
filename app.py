@@ -125,6 +125,10 @@ def create_app():
     from routes.dynamic_forms import dynamic_forms_bp
     app.register_blueprint(dynamic_forms_bp)
     
+    # Register Workflow Logic blueprint
+    from routes.workflow_logic import workflow_logic_bp
+    app.register_blueprint(workflow_logic_bp, url_prefix='/admin/workflow')
+    
 
     
     # Register placeholder routes for new dashboard modules
