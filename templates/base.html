@@ -216,6 +216,12 @@
                     <span class="fw-bold">Manufacturing Intelligence</span>
                     <span class="badge bg-success ms-2">NEW</span>
                 </a>
+                
+                <a class="nav-link {{ 'active' if 'bom' in request.endpoint }}" href="{{ url_for('bom.dashboard') }}">
+                    <i class="fas fa-sitemap text-primary"></i>
+                    <span class="fw-bold">Bill of Materials</span>
+                    <span class="badge bg-primary ms-2">NEW</span>
+                </a>
 
                 <hr class="my-2">
                 

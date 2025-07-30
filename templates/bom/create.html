@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Create BOM{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="page-title">
+                <i class="fas fa-plus text-primary"></i>
+                Create New BOM
+            </h1>
+            <p class="page-subtitle">Create a comprehensive Bill of Materials</p>
+        </div>
+        <div>
+            <a href="{{ url_for('bom.bom_list') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-info-circle text-info"></i>
+            BOM Information
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        {{ form.bom_code.label(class="form-label") }}
+                        {{ form.bom_code(class="form-control") }}
+                        {% if form.bom_code.errors %}
+                            <div class="text-danger">
+                                {% for error in form.bom_code.errors %}
+                                    <small>{{ error }}</small><br>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <small class="form-text text-muted">Unique BOM identifier (e.g., BOM-PROD-001)</small>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        {{ form.version.label(class="form-label") }}
+                        {{ form.version(class="form-control") }}
+                        {% if form.version.errors %}
+                            <div class="text-danger">
+                                {% for error in form.version.errors %}
+                                    <small>{{ error }}</small><br>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        {{ form.product_id.label(class="form-label") }}
+                        {{ form.product_id(class="form-control") }}
+                        {% if form.product_id.errors %}
+                            <div class="text-danger">
+                                {% for error in form.product_id.errors %}
+                                    <small>{{ error }}</small><br>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <small class="form-text text-muted">The final product this BOM produces</small>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        {{ form.status.label(class="form-label") }}
+                        {{ form.status(class="form-control") }}
+                        {% if form.status.errors %}
+                            <div class="text-danger">
+                                {% for error in form.status.errors %}
+                                    <small>{{ error }}</small><br>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        {{ form.output_quantity.label(class="form-label") }}
+                        {{ form.output_quantity(class="form-control") }}
+                        {% if form.output_quantity.errors %}
+                            <div class="text-danger">
+                                {% for error in form.output_quantity.errors %}
+                                    <small>{{ error }}</small><br>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <small class="form-text text-muted">Quantity produced per BOM cycle</small>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        {{ form.output_uom_id.label(class="form-label") }}
+                        {{ form.output_uom_id(class="form-control") }}
+                        {% if form.output_uom_id.errors %}
+                            <div class="text-danger">
+                                {% for error in form.output_uom_id.errors %}
+                                    <small>{{ error }}</small><br>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                {{ form.estimated_scrap_percent.label(class="form-label") }}
+                {{ form.estimated_scrap_percent(class="form-control") }}
+                {% if form.estimated_scrap_percent.errors %}
+                    <div class="text-danger">
+                        {% for error in form.estimated_scrap_percent.errors %}
+                            <small>{{ error }}</small><br>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <small class="form-text text-muted">Overall expected scrap percentage</small>
+            </div>
+            
+            <div class="mb-3">
+                {{ form.description.label(class="form-label") }}
+                {{ form.description(class="form-control", rows="3") }}
+                {% if form.description.errors %}
+                    <div class="text-danger">
+                        {% for error in form.description.errors %}
+                            <small>{{ error }}</small><br>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="mb-3">
+                {{ form.remarks.label(class="form-label") }}
+                {{ form.remarks(class="form-control", rows="2") }}
+                {% if form.remarks.errors %}
+                    <div class="text-danger">
+                        {% for error in form.remarks.errors %}
+                            <small>{{ error }}</small><br>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('bom.bom_list') }}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Create BOM
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-generate BOM code based on product selection
+    const productSelect = document.getElementById('product_id');
+    const bomCodeInput = document.getElementById('bom_code');
+    
+    if (productSelect && bomCodeInput) {
+        productSelect.addEventListener('change', function() {
+            if (this.value && this.value !== '0') {
+                const productText = this.options[this.selectedIndex].text;
+                const productCode = productText.match(/\(([^)]+)\)/);
+                if (productCode && bomCodeInput.value === '') {
+                    bomCodeInput.value = 'BOM-' + productCode[1];
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
