@@ -66,6 +66,47 @@
                             <small class="text-muted">Number of units this BOM produces (e.g., 1 MS Sheet produces 400 Mounted Plates)</small>
                         </div>
 
+                        <!-- Scrap Tracking Section -->
+                        <div class="card mt-3">
+                            <div class="card-header bg-warning">
+                                <h6><i class="fas fa-recycle"></i> Scrap Management <span class="badge bg-success">NEW</span></h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.estimated_scrap_percent.label(class="form-label") }}
+                                            {{ form.estimated_scrap_percent(class="form-control", step="0.1") }}
+                                            <small class="text-muted">Overall percentage scrap expected in production</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.scrap_quantity.label(class="form-label") }}
+                                            {{ form.scrap_quantity(class="form-control", step="0.001") }}
+                                            <small class="text-muted">Weight-based scrap expected per unit produced</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.scrap_uom.label(class="form-label") }}
+                                            {{ form.scrap_uom(class="form-select") }}
+                                            <small class="text-muted">Unit of measure for scrap tracking</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.scrap_value_recovery_percent.label(class="form-label") }}
+                                            {{ form.scrap_value_recovery_percent(class="form-control", step="0.1") }}
+                                            <small class="text-muted">Percentage of material value recoverable from scrap</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Labor Cost Section -->
                         <div class="card mt-3">
                             <div class="card-header">
@@ -332,6 +373,22 @@
                                     <th colspan="7">Markup ({{ "%.1f"|format(bom.markup_percentage or 0) }}%)</th>
                                     <th>₹{{ "%.2f"|format(bom.markup_amount_per_unit or 0) }}</th>
                                     <th></th>
+                                </tr>
+                                <!-- Scrap Tracking Summary -->
+                                {% if bom.scrap_quantity and bom.scrap_quantity > 0 %}
+                                <tr class="table-warning">
+                                    <th colspan="7">Expected Scrap per Unit <span class="badge bg-warning">NEW</span></th>
+                                    <th>{{ "%.3f"|format(bom.scrap_quantity) }} {{ bom.scrap_uom or 'kg' }}</th>
+                                    <th></th>
+                                </tr>
+                                {% if bom.expected_scrap_value and bom.expected_scrap_value > 0 %}
+                                <tr class="table-success">
+                                    <th colspan="7">Scrap Value Recovery ({{ "%.1f"|format(bom.scrap_value_recovery_percent or 15) }}%)</th>
+                                    <th>₹{{ "%.2f"|format(bom.expected_scrap_value) }}</th>
+                                    <th></th>
+                                </tr>
+                                {% endif %}
+                                {% endif %}
                                 </tr>
                                 <tr class="table-info">
                                     <th colspan="7">Total Weight per Unit</th>

@@ -694,6 +694,11 @@ class BOMForm(FlaskForm):
     output_quantity = FloatField('Output Quantity', validators=[NumberRange(min=0.001)], default=1.0,
                                 render_kw={"placeholder": "How many units this BOM produces (e.g., 400 pieces from 1 sheet)"})
     estimated_scrap_percent = FloatField('Overall Scrap %', validators=[NumberRange(min=0, max=100)], default=0.0)
+    scrap_quantity = FloatField('Expected Scrap Quantity per Unit', validators=[NumberRange(min=0)], default=0.0,
+                               render_kw={"placeholder": "Weight-based scrap expected per unit produced"})
+    scrap_uom = SelectField('Scrap UOM', validators=[Optional()], choices=[], default='kg')
+    scrap_value_recovery_percent = FloatField('Scrap Value Recovery %', validators=[NumberRange(min=0, max=100)], default=15.0,
+                                            render_kw={"placeholder": "Percentage of material value recoverable from scrap"})
     description = TextAreaField('BOM Description', render_kw={"rows": 3})
     remarks = TextAreaField('Remarks', render_kw={"rows": 2})
     
@@ -725,8 +730,15 @@ class BOMForm(FlaskForm):
             from models_uom import UnitOfMeasure
             uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
             self.output_uom_id.choices = [(0, 'Select UOM')] + [(u.id, f"{u.name} ({u.symbol})") for u in uoms]
+            # Populate scrap UOM choices (typically weight-based)
+            weight_uoms = [u for u in uoms if u.category == 'Weight']
+            scrap_choices = [(u.symbol, f"{u.name} ({u.symbol})") for u in weight_uoms]
+            if not scrap_choices:
+                scrap_choices = [('kg', 'Kilogram (kg)'), ('g', 'Gram (g)'), ('lbs', 'Pound (lbs)')]
+            self.scrap_uom.choices = [('', 'Select Scrap Unit')] + scrap_choices
         except Exception:
             self.output_uom_id.choices = [(0, 'Select UOM')]
+            self.scrap_uom.choices = [('', 'Select Scrap Unit'), ('kg', 'Kilogram (kg)'), ('g', 'Gram (g)')]
 
 class BOMItemForm(FlaskForm):
     # New advanced fields

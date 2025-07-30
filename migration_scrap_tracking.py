@@ -40,7 +40,20 @@ def migrate_scrap_tracking():
                 "ALTER TABLE grn_line_items ADD COLUMN scrap_uom TEXT DEFAULT 'kg'"
             ]
             
-            all_migrations = production_migrations + jobwork_migrations + quality_migrations + grn_migrations
+            # BOM scrap tracking enhancement
+            bom_migrations = [
+                "ALTER TABLE boms ADD COLUMN scrap_quantity REAL DEFAULT 0.0",
+                "ALTER TABLE boms ADD COLUMN scrap_uom TEXT DEFAULT 'kg'",
+                "ALTER TABLE boms ADD COLUMN scrap_value_recovery_percent REAL DEFAULT 15.0"
+            ]
+            
+            # Production table additional UOM fields
+            production_uom_migrations = [
+                "ALTER TABLE productions ADD COLUMN planned_uom TEXT DEFAULT 'pcs'",
+                "ALTER TABLE productions ADD COLUMN produced_uom TEXT DEFAULT 'pcs'"
+            ]
+            
+            all_migrations = production_migrations + jobwork_migrations + quality_migrations + grn_migrations + bom_migrations + production_uom_migrations
             
             for migration in all_migrations:
                 try:
@@ -58,10 +71,11 @@ def migrate_scrap_tracking():
                         
             print("\n✅ Scrap tracking migration completed successfully!")
             print("\nNew fields added:")
-            print("- Production: good_uom, damaged_uom, scrap_quantity, scrap_uom")
+            print("- Production: good_uom, damaged_uom, scrap_quantity, scrap_uom, planned_uom, produced_uom")
             print("- JobWork: finished_uom, expected_scrap_uom") 
             print("- QualityControlLog: scrap_quantity, scrap_uom")
             print("- GRNLineItem: scrap_uom")
+            print("- BOM: scrap_quantity, scrap_uom, scrap_value_recovery_percent")
             
         except Exception as e:
             print(f"Migration failed: {e}")

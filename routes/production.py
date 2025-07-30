@@ -236,6 +236,9 @@ def add_bom():
             is_active=form.is_active.data and form.status.data == 'active',
             output_quantity=form.output_quantity.data or 1.0,
             estimated_scrap_percent=form.estimated_scrap_percent.data or 0.0,
+            scrap_quantity=form.scrap_quantity.data or 0.0,
+            scrap_uom=form.scrap_uom.data or 'kg',
+            scrap_value_recovery_percent=form.scrap_value_recovery_percent.data or 15.0,
             description=form.description.data,
             remarks=form.remarks.data,
             labor_cost_per_unit=form.labor_cost_per_unit.data or 0.0,
@@ -287,6 +290,9 @@ def edit_bom(id):
         form.is_active.data = bom.is_active
         form.output_quantity.data = bom.output_quantity
         form.estimated_scrap_percent.data = bom.estimated_scrap_percent
+        form.scrap_quantity.data = bom.scrap_quantity
+        form.scrap_uom.data = bom.scrap_uom
+        form.scrap_value_recovery_percent.data = bom.scrap_value_recovery_percent
         form.description.data = bom.description
         form.remarks.data = bom.remarks
         form.labor_cost_per_unit.data = bom.labor_cost_per_unit
@@ -317,6 +323,9 @@ def edit_bom(id):
         bom.is_active = form.is_active.data and form.status.data == 'active'
         bom.output_quantity = form.output_quantity.data or 1.0
         bom.estimated_scrap_percent = form.estimated_scrap_percent.data or 0.0
+        bom.scrap_quantity = form.scrap_quantity.data or 0.0
+        bom.scrap_uom = form.scrap_uom.data or 'kg'
+        bom.scrap_value_recovery_percent = form.scrap_value_recovery_percent.data or 15.0
         bom.description = form.description.data
         bom.remarks = form.remarks.data
         bom.labor_cost_per_unit = form.labor_cost_per_unit.data or 0.0
