@@ -217,8 +217,32 @@ def add_bom():
     form.product_id.choices = [(i.id, f"{i.code} - {i.name}") for i in Item.query.order_by(Item.name).all()]
     
     if form.validate_on_submit():
+        # Auto-generate BOM code if not provided BEFORE validation checks
+        bom_code = form.bom_code.data
+        if not bom_code or not bom_code.strip():
+            # Auto-generate BOM code: BOM-YYYY-####
+            year = datetime.now().year
+            last_bom = BOM.query.filter(
+                BOM.bom_code.like(f'BOM-{year}-%')
+            ).order_by(BOM.bom_code.desc()).first()
+            
+            if last_bom:
+                # Extract the number from the last BOM code
+                try:
+                    last_number = int(last_bom.bom_code.split('-')[-1])
+                    new_number = last_number + 1
+                except:
+                    new_number = 1
+            else:
+                new_number = 1
+            
+            bom_code = f'BOM-{year}-{new_number:04d}'
+            form.bom_code.data = bom_code  # Set it back to the form
+        else:
+            bom_code = form.bom_code.data
+        
         # Check if BOM code already exists
-        existing_bom_code = BOM.query.filter_by(bom_code=form.bom_code.data).first()
+        existing_bom_code = BOM.query.filter_by(bom_code=bom_code).first()
         if existing_bom_code:
             flash('BOM code already exists. Please use a unique code.', 'warning')
             # Get UOM choices for error case
@@ -243,26 +267,8 @@ def add_bom():
                 uom_choices = [('pcs', 'Pieces (pcs)'), ('kg', 'Kilograms (kg)'), ('g', 'Grams (g)')]
             return render_template('production/bom_form.html', form=form, title='Add BOM', uom_choices=uom_choices)
         
-        # Auto-generate BOM code if not provided
-        bom_code = form.bom_code.data
-        if not bom_code:
-            # Auto-generate BOM code: BOM-YYYY-####
-            year = datetime.now().year
-            last_bom = BOM.query.filter(
-                BOM.bom_code.like(f'BOM-{year}-%')
-            ).order_by(BOM.bom_code.desc()).first()
-            
-            if last_bom:
-                # Extract the number from the last BOM code
-                try:
-                    last_number = int(last_bom.bom_code.split('-')[-1])
-                    new_number = last_number + 1
-                except:
-                    new_number = 1
-            else:
-                new_number = 1
-            
-            bom_code = f'BOM-{year}-{new_number:04d}'
+        # Use the already generated or provided BOM code
+        # (BOM code was generated/validated above)
 
         bom = BOM(
             bom_code=bom_code,
