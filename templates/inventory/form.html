@@ -63,7 +63,7 @@
                         <div class="row">
                             <div class="col-md-4 mb-3">
                                 {{ form.unit_of_measure.label(class="form-label") }}
-                                {{ form.unit_of_measure(class="form-select") }}
+                                {{ form.unit_of_measure(class="form-select", size="1", style="max-height: 200px; overflow-y: auto;") }}
                                 {% if form.unit_of_measure.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.unit_of_measure.errors %}
@@ -71,6 +71,7 @@
                                         {% endfor %}
                                     </div>
                                 {% endif %}
+                                <div class="form-text">Choose from 28 available units across 8 categories</div>
                             </div>
                             
                             <div class="col-md-4 mb-3">
