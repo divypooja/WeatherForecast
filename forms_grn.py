@@ -38,16 +38,35 @@ class GRNLineItemForm(FlaskForm):
     # Quantity fields
     quantity_received = FloatField('Quantity Received', 
                                  validators=[DataRequired(), NumberRange(min=0.01, message="Quantity must be greater than 0")])
+    received_uom = SelectField('Received Unit', validators=[DataRequired()], coerce=str)
     quantity_passed = FloatField('Quantity Passed', 
                                validators=[Optional(), NumberRange(min=0, message="Quantity cannot be negative")],
                                default=0.0)
+    passed_uom = SelectField('Passed Unit', validators=[Optional()], coerce=str)
     quantity_rejected = FloatField('Quantity Rejected', 
                                  validators=[Optional(), NumberRange(min=0, message="Quantity cannot be negative")],
                                  default=0.0)
+    rejected_uom = SelectField('Rejected Unit', validators=[Optional()], coerce=str)
     
     # Unit information
     unit_of_measure = StringField('Unit', validators=[Optional(), Length(max=20)])
     unit_weight = FloatField('Unit Weight (kg)', validators=[Optional(), NumberRange(min=0)])
+    
+    def __init__(self, *args, **kwargs):
+        super(GRNLineItemForm, self).__init__(*args, **kwargs)
+        # Load UOM choices
+        try:
+            from models_uom import UnitOfMeasure
+            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+            uom_choices = [('', 'Select Unit')] + [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
+            self.received_uom.choices = uom_choices
+            self.passed_uom.choices = uom_choices
+            self.rejected_uom.choices = uom_choices
+        except Exception:
+            fallback_choices = [('', 'Select Unit'), ('pcs', 'Pieces'), ('kg', 'Kilogram'), ('ltr', 'Liter')]
+            self.received_uom.choices = fallback_choices
+            self.passed_uom.choices = fallback_choices
+            self.rejected_uom.choices = fallback_choices
     
     # Quality control
     inspection_status = SelectField('Inspection Status', choices=[

@@ -31,11 +31,13 @@ class JobWorkProcessForm(FlaskForm):
     quantity_input = FloatField('Input Quantity', 
                                validators=[DataRequired(), NumberRange(min=0)],
                                render_kw={'placeholder': 'Quantity for this process'})
+    input_uom = SelectField('Input Unit', validators=[DataRequired()], coerce=str)
     
     expected_scrap = FloatField('Expected Scrap', 
                                validators=[NumberRange(min=0)], 
                                default=0.0,
                                render_kw={'placeholder': 'Expected scrap quantity'})
+    scrap_uom = SelectField('Scrap Unit', validators=[Optional()], coerce=str)
     
     # Output product specification
     output_item_id = SelectField('Output Product', 
@@ -46,6 +48,7 @@ class JobWorkProcessForm(FlaskForm):
                                 validators=[NumberRange(min=0)], 
                                 default=0.0,
                                 render_kw={'placeholder': 'Expected quantity of output product'})
+    output_uom = SelectField('Output Unit', validators=[Optional()], coerce=str)
     
     work_type = SelectField('Work Type',
                            validators=[DataRequired()],
@@ -86,9 +89,24 @@ class JobWorkProcessForm(FlaskForm):
     
     def __init__(self, *args, **kwargs):
         super(JobWorkProcessForm, self).__init__(*args, **kwargs)
+        
         # Populate customer choices from suppliers/vendors 
         suppliers = Supplier.query.order_by(Supplier.name).all()
         self.customer_name.choices = [('', 'Select Customer/Vendor')] + [(s.name, s.name) for s in suppliers]
+        
+        # Load UOM choices
+        try:
+            from models_uom import UnitOfMeasure
+            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+            uom_choices = [('', 'Select Unit')] + [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
+            self.input_uom.choices = uom_choices
+            self.scrap_uom.choices = uom_choices
+            self.output_uom.choices = uom_choices
+        except Exception:
+            fallback_choices = [('', 'Select Unit'), ('pcs', 'Pieces'), ('kg', 'Kilogram'), ('ltr', 'Liter')]
+            self.input_uom.choices = fallback_choices
+            self.scrap_uom.choices = fallback_choices
+            self.output_uom.choices = fallback_choices
         
         # Populate output product choices with all items
         items = Item.query.order_by(Item.name).all()
