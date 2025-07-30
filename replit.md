@@ -30,6 +30,16 @@ This is a comprehensive Flask-based Factory Management System designed for small
 - **Auto-Generated Process Codes**: Automatic process code generation from process names (e.g., "Cutting" → "CUTT") with manual override capability
 - **Smart Process Workflow**: Sequential process configuration with automatic step numbering and intelligent process type detection
 
+### Complete Process Management with Edit/Delete Operations (July 30, 2025)
+- **Individual Process Management**: Added comprehensive edit and delete functionality for individual manufacturing process steps
+- **Process Action Buttons**: Enhanced manufacturing process table with edit and delete buttons for each process step
+- **Intelligent Process Updates**: Edit operations automatically trigger ProcessIntegrationService sync for immediate cost recalculation
+- **Safe Process Deletion**: Confirmation dialogs prevent accidental process deletion with immediate BOM cost synchronization
+- **Complete CRUD Operations**: Full Create, Read, Update, Delete functionality for BOM processes with proper error handling
+- **Smart Route Integration**: Edit routes pre-populate forms with existing process data, delete routes handle cleanup and redirects
+- **Professional UI Enhancement**: Action buttons with tooltips, proper styling, and responsive design for process management
+- **Automatic Sync Integration**: All process modifications (add/edit/delete) automatically sync BOM labor costs and scrap percentages
+
 ### Comprehensive BOM Process Management System Implementation (July 30, 2025)
 - **Step-by-Step Manufacturing Workflow Tracking**: Added complete BOMProcess model with 12-field database structure for detailed process routing including step numbers, process names, operation descriptions, timing, costs, and outsourcing capabilities
 - **Manufacturing Complexity Assessment**: Enhanced BOM model with properties calculating manufacturing complexity (Simple/Moderate/Complex/Very Complex) based on process count and workflow analysis

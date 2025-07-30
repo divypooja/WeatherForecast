@@ -583,6 +583,7 @@
                                     <th>Type</th>
                                     <th>Quality Check</th>
                                     <th>Scrap %</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -613,6 +614,16 @@
                                         {% endif %}
                                     </td>
                                     <td>{{ "%.1f"|format(process.estimated_scrap_percent or 0) }}%</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{{ url_for('production.edit_bom_process', id=process.id) }}" class="btn btn-outline-primary btn-sm" title="Edit Process">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteProcess({{ process.id }}, '{{ process.process_name }}')" title="Delete Process">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -621,7 +632,7 @@
                                     <th colspan="4">Total Manufacturing Time</th>
                                     <th>{{ "%.1f"|format(bom.total_process_time_per_unit) }} min</th>
                                     <th>₹{{ "%.2f"|format(bom.total_process_cost_per_unit) }}</th>
-                                    <th colspan="3">{{ bom.manufacturing_complexity }} Process</th>
+                                    <th colspan="4">{{ bom.manufacturing_complexity }} Process</th>
                                 </tr>
                             </tfoot>
                         </table>
@@ -901,5 +912,26 @@ document.addEventListener('DOMContentLoaded', function() {
         firstInput.focus();
     }
 });
+
+// Delete process function
+function deleteProcess(processId, processName) {
+    if (confirm(`Are you sure you want to delete the "${processName}" process? This action cannot be undone.`)) {
+        // Create form and submit
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/production/bom_process/${processId}/delete`;
+        
+        // Add CSRF token
+        const csrfToken = document.querySelector('[name="csrf_token"]').value;
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
 </script>
 {% endblock %}
