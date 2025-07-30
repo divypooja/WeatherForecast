@@ -165,38 +165,52 @@
             </div>
         </div>
 
-        <!-- Recent Activity -->
+        <!-- Current Workflow Status -->
         <div class="col-md-4">
             <div class="card">
                 <div class="card-header">
-                    <h5><i class="fas fa-history"></i> Recent Conditions</h5>
+                    <h5><i class="fas fa-info-circle"></i> Current Workflow Status</h5>
                 </div>
                 <div class="card-body">
-                    {% if recent_conditions %}
-                        {% for condition in recent_conditions %}
-                        <div class="d-flex justify-content-between align-items-center mb-2 p-2 border-bottom">
-                            <div>
-                                <strong>{{ condition.source_field.label }}</strong>
-                                <i class="fas fa-arrow-right text-muted mx-2"></i>
-                                <strong>{{ condition.target_field.label }}</strong>
-                                <br>
-                                <small class="text-muted">
-                                    {{ condition.condition_type.title() }}: {{ condition.operator.replace('_', ' ').title() }}
-                                </small>
-                            </div>
-                            <div>
-                                <span class="badge bg-{{ 'success' if condition.is_active else 'secondary' }}">
-                                    {{ 'Active' if condition.is_active else 'Inactive' }}
-                                </span>
-                            </div>
+                    {% if conditions_count == 0 and rules_count == 0 and groups_count == 0 %}
+                        <div class="alert alert-info mb-3">
+                            <h6><i class="fas fa-lightbulb"></i> No Logic Applied</h6>
+                            <p class="mb-1">The <strong>{{ template.name }}</strong> template has no conditional logic.</p>
+                            <p class="mb-0 small">All fields display normally without conditions.</p>
                         </div>
-                        {% endfor %}
+                        <div class="text-center">
+                            <a href="{{ url_for('workflow_logic.add_condition', template_id=template.id) }}" 
+                               class="btn btn-success btn-sm">
+                                <i class="fas fa-plus"></i> Create First Condition
+                            </a>
+                        </div>
                     {% else %}
-                        <p class="text-muted">No field conditions created yet.</p>
-                        <a href="{{ url_for('workflow_logic.add_condition', template_id=template.id) }}" 
-                           class="btn btn-sm btn-primary">
-                            Create First Condition
-                        </a>
+                        <div class="alert alert-success mb-3">
+                            <h6><i class="fas fa-check-circle"></i> Logic Active</h6>
+                            <p class="mb-1">This template has active conditional logic:</p>
+                            <ul class="mb-0 small">
+                                {% if conditions_count > 0 %}<li>{{ conditions_count }} field condition(s)</li>{% endif %}
+                                {% if rules_count > 0 %}<li>{{ rules_count }} workflow rule(s)</li>{% endif %}
+                                {% if groups_count > 0 %}<li>{{ groups_count }} field group(s)</li>{% endif %}
+                            </ul>
+                        </div>
+                        
+                        <!-- Active Conditions Summary -->
+                        {% if recent_conditions %}
+                            <h6 class="border-bottom pb-2">Active Conditions:</h6>
+                            {% for condition in recent_conditions[:3] %}
+                                <div class="mb-2 p-2 bg-light rounded">
+                                    <small class="text-muted d-block">{{ condition.source_field_name }}</small>
+                                    <strong class="text-primary">{{ condition.operator|replace('_', ' ')|title }}</strong>
+                                    <code class="small">{{ condition.condition_value }}</code>
+                                    <br>
+                                    <small>→ {{ condition.action_type|title }} {{ condition.target_field_name }}</small>
+                                </div>
+                            {% endfor %}
+                            {% if recent_conditions|length > 3 %}
+                                <p class="text-muted small text-center">... and {{ recent_conditions|length - 3 }} more conditions</p>
+                            {% endif %}
+                        {% endif %}
                     {% endif %}
                 </div>
             </div>
