@@ -211,17 +211,12 @@
                     Packing Optimization
                 </a>
                 
-                <a class="nav-link {{ 'active' if 'dynamic_forms' in request.endpoint }}" href="/admin/forms/dashboard" style="background-color: rgba(13, 202, 240, 0.1); border-left: 4px solid #0dcaf0;">
-                    <i class="fas fa-cogs text-info"></i>
-                    <span class="fw-bold">Dynamic Forms</span>
-                    <span class="badge bg-info ms-2">NEW</span>
-                </a>
-                
                 <a class="nav-link {{ 'active' if 'manufacturing_intelligence' in request.endpoint }}" href="{{ url_for('manufacturing_intelligence.dashboard') }}">
                     <i class="fas fa-brain text-success"></i>
                     <span class="fw-bold">Manufacturing Intelligence</span>
                     <span class="badge bg-success ms-2">NEW</span>
                 </a>
+                
 
 
                 <hr class="my-2">
@@ -367,10 +362,6 @@
             }, 50);
         });
     </script>
-    
-    <!-- Universal Dynamic Forms Integration -->
-    <script src="{{ url_for('static', filename='js/universal_dynamic_forms.js') }}"></script>
-    
     {% block scripts %}{% endblock %}
 </body>
 </html>
