@@ -497,71 +497,178 @@ def reset_database():
         # Delete in order to respect foreign key constraints
         # CRITICAL: Delete child records first, then parent records
         
-        # Get counts before deletion
-        counts = {
-            'material_inspections': MaterialInspection.query.count() if reset_inspections else 0,
-            'quality_issues': QualityIssue.query.count() if reset_inspections else 0,
-            'productions': Production.query.count() if reset_production else 0,
-            'job_works': JobWork.query.count() if reset_production else 0,
-            'factory_expenses': FactoryExpense.query.count() if reset_expenses else 0,
-            'salary_records': SalaryRecord.query.count() if reset_employees else 0,
-            'employee_advances': EmployeeAdvance.query.count() if reset_employees else 0,
-            'employees': Employee.query.count() if reset_employees else 0,
-            'sales_orders': SalesOrder.query.count() if reset_purchase_sales else 0,
-            'purchase_orders': PurchaseOrder.query.count() if reset_purchase_sales else 0,
-            'items': Item.query.count() if reset_inventory else 0
-        }
+        # Get counts before deletion (with error handling for schema mismatches)
+        counts = {}
+        
+        try:
+            counts['material_inspections'] = MaterialInspection.query.count() if reset_inspections else 0
+        except Exception as e:
+            print(f"Error counting material inspections: {e}")
+            counts['material_inspections'] = 0
+            
+        try:
+            counts['quality_issues'] = QualityIssue.query.count() if reset_inspections else 0
+        except Exception as e:
+            print(f"Error counting quality issues: {e}")
+            counts['quality_issues'] = 0
+            
+        try:
+            counts['productions'] = Production.query.count() if reset_production else 0
+        except Exception as e:
+            print(f"Error counting productions: {e}")
+            counts['productions'] = 0
+            
+        try:
+            counts['job_works'] = JobWork.query.count() if reset_production else 0
+        except Exception as e:
+            print(f"Error counting job works: {e}")
+            counts['job_works'] = 0
+            
+        try:
+            counts['factory_expenses'] = FactoryExpense.query.count() if reset_expenses else 0
+        except Exception as e:
+            print(f"Error counting factory expenses: {e}")
+            counts['factory_expenses'] = 0
+            
+        try:
+            counts['salary_records'] = SalaryRecord.query.count() if reset_employees else 0
+        except Exception as e:
+            print(f"Error counting salary records: {e}")
+            counts['salary_records'] = 0
+            
+        try:
+            counts['employee_advances'] = EmployeeAdvance.query.count() if reset_employees else 0
+        except Exception as e:
+            print(f"Error counting employee advances: {e}")
+            counts['employee_advances'] = 0
+            
+        try:
+            counts['employees'] = Employee.query.count() if reset_employees else 0
+        except Exception as e:
+            print(f"Error counting employees: {e}")
+            counts['employees'] = 0
+            
+        try:
+            counts['sales_orders'] = SalesOrder.query.count() if reset_purchase_sales else 0
+        except Exception as e:
+            print(f"Error counting sales orders: {e}")
+            counts['sales_orders'] = 0
+            
+        try:
+            counts['purchase_orders'] = PurchaseOrder.query.count() if reset_purchase_sales else 0
+        except Exception as e:
+            print(f"Error counting purchase orders: {e}")
+            counts['purchase_orders'] = 0
+            
+        try:
+            counts['items'] = Item.query.count() if reset_inventory else 0
+        except Exception as e:
+            print(f"Error counting items: {e}")
+            counts['items'] = 0
         
         # Delete all child tables first to avoid foreign key violations
         if reset_inspections or reset_production or reset_purchase_sales or reset_inventory:
             print("Deleting all related child records first...")
-            # Delete all child tables in correct order
-            db.session.execute(db.text("DELETE FROM grn_line_items"))
-            db.session.execute(db.text("DELETE FROM grn"))
-            db.session.execute(db.text("DELETE FROM daily_job_work_entries"))
-            db.session.execute(db.text("DELETE FROM job_work_processes"))
-            db.session.execute(db.text("DELETE FROM job_work_rates"))
-            db.session.execute(db.text("DELETE FROM purchase_order_items"))
-            db.session.execute(db.text("DELETE FROM sales_order_items"))
-            db.session.execute(db.text("DELETE FROM bom_items"))
-            db.session.execute(db.text("DELETE FROM boms"))
-            db.session.execute(db.text("DELETE FROM item_uom_conversions"))
-            db.session.execute(db.text("DELETE FROM material_inspections"))
-            print("Child records deleted successfully")
+            
+            # List of child tables to delete in correct order
+            child_tables = [
+                "grn_line_items",
+                "grn", 
+                "daily_job_work_entries",
+                "job_work_processes",
+                "job_work_rates",
+                "purchase_order_items",
+                "sales_order_items",
+                "bom_items",
+                "boms",
+                "item_uom_conversions",
+                "material_inspections"
+            ]
+            
+            # Delete each table with error handling
+            for table in child_tables:
+                try:
+                    db.session.execute(db.text(f"DELETE FROM {table}"))
+                    print(f"Deleted from {table}")
+                except Exception as e:
+                    print(f"Error deleting from {table}: {e}")
+                    # Continue with next table even if one fails
+                    
+            print("Child records deletion completed")
         
         # Now delete parent records in safe order
         if reset_inspections:
             print(f"Deleting {counts['material_inspections']} material inspections and {counts['quality_issues']} quality issues")
-            db.session.execute(db.text("DELETE FROM quality_issues"))
+            try:
+                db.session.execute(db.text("DELETE FROM quality_issues"))
+                print("Deleted quality issues")
+            except Exception as e:
+                print(f"Error deleting quality issues: {e}")
             deleted_items.append(f"Material Inspections ({counts['material_inspections']}) & Quality Issues ({counts['quality_issues']})")
         
         if reset_production:
             print(f"Deleting {counts['productions']} productions and {counts['job_works']} job works")
-            db.session.execute(db.text("DELETE FROM productions"))
-            db.session.execute(db.text("DELETE FROM job_works"))
+            try:
+                db.session.execute(db.text("DELETE FROM productions"))
+                print("Deleted productions")
+            except Exception as e:
+                print(f"Error deleting productions: {e}")
+            try:
+                db.session.execute(db.text("DELETE FROM job_works"))
+                print("Deleted job works")
+            except Exception as e:
+                print(f"Error deleting job works: {e}")
             deleted_items.append(f"Production Orders ({counts['productions']}) & Job Work ({counts['job_works']})")
         
         if reset_expenses:
             print(f"Deleting {counts['factory_expenses']} factory expenses")
-            db.session.execute(db.text("DELETE FROM factory_expenses"))
+            try:
+                db.session.execute(db.text("DELETE FROM factory_expenses"))
+                print("Deleted factory expenses")
+            except Exception as e:
+                print(f"Error deleting factory expenses: {e}")
             deleted_items.append(f"Factory Expenses ({counts['factory_expenses']})")
         
         if reset_employees:
             print(f"Deleting {counts['employees']} employees, {counts['salary_records']} salary records, {counts['employee_advances']} advances")
-            db.session.execute(db.text("DELETE FROM salary_records"))
-            db.session.execute(db.text("DELETE FROM employee_advances"))
-            db.session.execute(db.text("DELETE FROM employees"))
+            try:
+                db.session.execute(db.text("DELETE FROM salary_records"))
+                print("Deleted salary records")
+            except Exception as e:
+                print(f"Error deleting salary records: {e}")
+            try:
+                db.session.execute(db.text("DELETE FROM employee_advances"))
+                print("Deleted employee advances")
+            except Exception as e:
+                print(f"Error deleting employee advances: {e}")
+            try:
+                db.session.execute(db.text("DELETE FROM employees"))
+                print("Deleted employees")
+            except Exception as e:
+                print(f"Error deleting employees: {e}")
             deleted_items.append(f"Employee Records ({counts['employees']}) & Payroll ({counts['salary_records'] + counts['employee_advances']})")
         
         if reset_purchase_sales:
             print(f"Deleting {counts['purchase_orders']} purchase orders and {counts['sales_orders']} sales orders")
-            db.session.execute(db.text("DELETE FROM sales_orders"))
-            db.session.execute(db.text("DELETE FROM purchase_orders"))
+            try:
+                db.session.execute(db.text("DELETE FROM sales_orders"))
+                print("Deleted sales orders")
+            except Exception as e:
+                print(f"Error deleting sales orders: {e}")
+            try:
+                db.session.execute(db.text("DELETE FROM purchase_orders"))
+                print("Deleted purchase orders")
+            except Exception as e:
+                print(f"Error deleting purchase orders: {e}")
             deleted_items.append(f"Purchase Orders ({counts['purchase_orders']}) & Sales Orders ({counts['sales_orders']})")
         
         if reset_inventory:
             print(f"Deleting {counts['items']} inventory items")
-            db.session.execute(db.text("DELETE FROM items"))
+            try:
+                db.session.execute(db.text("DELETE FROM items"))
+                print("Deleted inventory items")
+            except Exception as e:
+                print(f"Error deleting inventory items: {e}")
             deleted_items.append(f"Inventory Items ({counts['items']})")
         
         if reset_documents:
