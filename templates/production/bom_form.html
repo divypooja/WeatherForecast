@@ -53,17 +53,35 @@
                             <small class="text-muted">Version number for this BOM (e.g., 1.0, 1.1, 2.0)</small>
                         </div>
                         
-                        <div class="mb-3">
-                            {{ form.output_quantity.label(class="form-label") }}
-                            {{ form.output_quantity(class="form-control", step="0.001") }}
-                            {% if form.output_quantity.errors %}
-                                <div class="text-danger">
-                                    {% for error in form.output_quantity.errors %}
-                                        <small>{{ error }}</small>
-                                    {% endfor %}
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    {{ form.output_quantity.label(class="form-label") }}
+                                    {{ form.output_quantity(class="form-control", step="0.001") }}
+                                    {% if form.output_quantity.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.output_quantity.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <small class="text-muted">Number of units this BOM produces (e.g., 1 MS Sheet produces 400 Mounted Plates)</small>
                                 </div>
-                            {% endif %}
-                            <small class="text-muted">Number of units this BOM produces (e.g., 1 MS Sheet produces 400 Mounted Plates)</small>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.output_uom_id.label(class="form-label") }}
+                                    {{ form.output_uom_id(class="form-select") }}
+                                    {% if form.output_uom_id.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.output_uom_id.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <small class="text-muted">Select output unit</small>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Scrap Tracking Section -->
