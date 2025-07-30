@@ -516,7 +516,7 @@
                             <input type="hidden" name="freight_cost_per_unit" value="{{ bom.freight_cost_per_unit or 0 }}">
                             <input type="hidden" name="freight_unit_type" value="{{ bom.freight_unit_type or 'per_piece' }}">
                             <input type="hidden" name="markup_percentage" value="{{ bom.markup_percentage or 0 }}">
-                            <button type="button" class="btn btn-success btn-lg" onclick="saveBOMWithCurrentValues()">
+                            <button type="submit" class="btn btn-success btn-lg">
                                 <i class="fas fa-save"></i> Save BOM
                             </button>
                         </form>
