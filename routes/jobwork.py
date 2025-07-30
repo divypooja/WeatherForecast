@@ -76,18 +76,18 @@ def add_job_work():
     """Unified job work form with BOM integration"""
     if request.method == 'GET':
         # Load data for form dropdowns
-        items = Item.query.filter_by(active=True).all()
+        items = Item.query.order_by(Item.name).all()
         suppliers = Supplier.query.filter(Supplier.partner_type.in_(['customer', 'both'])).all()
         
         # Load BOMs for integration
         try:
-            boms = BOM.query.filter_by(active=True).all()
+            boms = BOM.query.order_by(BOM.bom_code).all()
         except:
             boms = []
         
         try:
             from models_department import Department
-            departments = Department.query.filter_by(active=True).all()
+            departments = Department.query.order_by(Department.name).all()
         except ImportError:
             departments = []
         
