@@ -42,6 +42,7 @@ def create_app():
     from models import User, Item, Supplier, PurchaseOrder, SalesOrder, Employee, JobWork, Production, BOM, NotificationSettings, NotificationLog, NotificationRecipient, CompanySettings, QualityIssue, QualityControlLog, FactoryExpense, Document
     from models_uom import UnitOfMeasure, UOMConversion, ItemUOMConversion, UOMConversionLog
     from models_department import Department
+    from models_bom import BillOfMaterials, BOMComponent, BOMProcess, BOMVersion, BOMCostHistory
     
     @login_manager.user_loader
     def load_user(user_id):
@@ -118,6 +119,10 @@ def create_app():
     # Register Manufacturing Intelligence blueprint
     from routes.manufacturing_intelligence import manufacturing_intelligence_bp
     app.register_blueprint(manufacturing_intelligence_bp)
+    
+    # Register BOM blueprint
+    from routes.bom import bom_bp
+    app.register_blueprint(bom_bp, url_prefix='/bom')
     
     # Register placeholder routes for new dashboard modules
     from routes.module_placeholders import register_placeholder_routes
