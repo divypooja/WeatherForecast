@@ -473,12 +473,23 @@ def add_bom_item_enhanced(bom_id):
             flash('This material is already in the BOM', 'warning')
             return render_template('production/bom_item_form.html', form=form, bom=bom, title='Add BOM Item')
         
+        # Handle UOM - use default if none selected
+        uom_id = form.uom_id.data if form.uom_id.data != 0 else None
+        if not uom_id:
+            # Try to get a default UOM (first available)
+            try:
+                from models_uom import UnitOfMeasure
+                default_uom = UnitOfMeasure.query.first()
+                uom_id = default_uom.id if default_uom else 1  # Fallback to ID 1
+            except:
+                uom_id = 1  # Fallback to default UOM ID
+        
         # Create enhanced BOM item
         bom_item = BOMItem(
             bom_id=bom_id,
             material_id=material_id,
             qty_required=qty_required,
-            uom_id=form.uom_id.data if form.uom_id.data != 0 else None,
+            uom_id=uom_id,
             unit_cost=form.unit_cost.data or 0.0,
             scrap_percent=form.scrap_percent.data or 0.0,
             process_step=form.process_step.data or 1,
