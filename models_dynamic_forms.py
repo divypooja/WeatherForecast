@@ -278,29 +278,74 @@ class DynamicFormManager:
     def create_default_templates():
         """Create default form templates for core modules"""
         default_templates = [
+            # Production Module Templates
             {
-                'name': 'Bill of Materials',
-                'code': 'bom',
-                'description': 'Custom fields for BOM management',
+                'name': 'Bill of Materials Management',
+                'code': 'bom_management',
+                'description': 'Custom fields for BOM creation and management',
                 'module': 'production'
             },
             {
-                'name': 'BOM Items',
-                'code': 'bom_item',
-                'description': 'Custom fields for BOM material items',
+                'name': 'Production Management',
+                'code': 'production_management',
+                'description': 'Custom fields for production orders',
                 'module': 'production'
             },
+            # Job Work Module Templates
             {
-                'name': 'BOM Processes',
-                'code': 'bom_process',
-                'description': 'Custom fields for BOM manufacturing processes',
-                'module': 'production'
-            },
-            {
-                'name': 'Job Work',
-                'code': 'job_work',
-                'description': 'Custom fields for job work management',
+                'name': 'Job Work Management',
+                'code': 'job_work_management',
+                'description': 'Custom fields for job work orders',
                 'module': 'job_work'
+            },
+            # GRN Module Templates
+            {
+                'name': 'GRN Management',
+                'code': 'grn_management',
+                'description': 'Custom fields for Goods Receipt Notes',
+                'module': 'grn'
+            },
+            # Purchase Module Templates
+            {
+                'name': 'Purchase Order Management',
+                'code': 'purchase_order_management',
+                'description': 'Custom fields for purchase orders',
+                'module': 'purchase'
+            },
+            # Sales Module Templates
+            {
+                'name': 'Sales Order Management',
+                'code': 'sales_order_management',
+                'description': 'Custom fields for sales orders',
+                'module': 'sales'
+            },
+            # Inventory Module Templates
+            {
+                'name': 'Inventory Management',
+                'code': 'inventory_management',
+                'description': 'Custom fields for inventory items',
+                'module': 'inventory'
+            },
+            # Employee Module Templates
+            {
+                'name': 'Employee Management',
+                'code': 'employee_management',
+                'description': 'Custom fields for employee records',
+                'module': 'hr'
+            },
+            # Factory Expense Templates
+            {
+                'name': 'Factory Expense Management',
+                'code': 'factory_expense_management',
+                'description': 'Custom fields for factory expenses',
+                'module': 'expenses'
+            },
+            # UOM Management Templates
+            {
+                'name': 'UOM Management',
+                'code': 'uom_management',
+                'description': 'Custom fields for Units of Measure',
+                'module': 'uom'
             },
             {
                 'name': 'Purchase Orders',
