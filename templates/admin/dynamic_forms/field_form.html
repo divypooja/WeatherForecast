@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-plus-square"></i> {{ title }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('dynamic_forms.dashboard') }}">Dynamic Forms</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('dynamic_forms.edit_template', id=template.id) }}">{{ template.name }}</a></li>
+                    <li class="breadcrumb-item active">{{ title }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Field Configuration Form -->
+        <div class="col-md-8">
+            <form method="POST" id="fieldForm">
+                {{ form.hidden_tag() }}
+                
+                <!-- Basic Field Information -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5><i class="fas fa-info-circle"></i> Basic Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.field_name.label(class="form-label") }}
+                                    {{ form.field_name(class="form-control") }}
+                                    {% if form.field_name.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.field_name.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <small class="text-muted">Internal field name (snake_case, no spaces)</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.label.label(class="form-label") }}
+                                    {{ form.label(class="form-control") }}
+                                    {% if form.label.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.label.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <small class="text-muted">Label shown to users</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.field_type.label(class="form-label") }}
+                                    {{ form.field_type(class="form-select", onchange="toggleFieldOptions()") }}
+                                    {% if form.field_type.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.field_type.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check mt-4">
+                                        {{ form.is_required(class="form-check-input") }}
+                                        {{ form.is_required.label(class="form-check-label") }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.default_value.label(class="form-label") }}
+                            {{ form.default_value(class="form-control") }}
+                            <small class="text-muted">Default value when field is empty</small>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.placeholder.label(class="form-label") }}
+                            {{ form.placeholder(class="form-control") }}
+                            <small class="text-muted">Placeholder text shown in empty fields</small>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.help_text.label(class="form-label") }}
+                            {{ form.help_text(class="form-control") }}
+                            <small class="text-muted">Additional help or instructions for users</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dropdown Options (for select fields) -->
+                <div class="card mb-3" id="optionsCard" style="display: none;">
+                    <div class="card-header bg-info text-white">
+                        <h5><i class="fas fa-list"></i> Dropdown Options</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            {{ form.field_options.label(class="form-label") }}
+                            {{ form.field_options(class="form-control") }}
+                            {% if form.field_options.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.field_options.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Display Configuration -->
+                <div class="card mb-3">
+                    <div class="card-header bg-success text-white">
+                        <h5><i class="fas fa-layout"></i> Display Configuration</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.field_group.label(class="form-label") }}
+                                    {{ form.field_group(class="form-control") }}
+                                    <small class="text-muted">Group fields into sections (leave empty for general fields)</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.column_width.label(class="form-label") }}
+                                    {{ form.column_width(class="form-select") }}
+                                    <small class="text-muted">How much horizontal space this field takes</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.display_order.label(class="form-label") }}
+                            {{ form.display_order(class="form-control") }}
+                            <small class="text-muted">Order in which fields appear (lower numbers first)</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Validation Rules -->
+                <div class="card mb-3">
+                    <div class="card-header bg-warning">
+                        <h5><i class="fas fa-shield-alt"></i> Validation Rules</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row" id="textValidation">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.min_length.label(class="form-label") }}
+                                    {{ form.min_length(class="form-control") }}
+                                    <small class="text-muted">Minimum number of characters</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.max_length.label(class="form-label") }}
+                                    {{ form.max_length(class="form-control") }}
+                                    <small class="text-muted">Maximum number of characters</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row" id="numberValidation">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.min_value.label(class="form-label") }}
+                                    {{ form.min_value(class="form-control") }}
+                                    <small class="text-muted">Minimum numeric value</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.max_value.label(class="form-label") }}
+                                    {{ form.max_value(class="form-control") }}
+                                    <small class="text-muted">Maximum numeric value</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="row">
+                    <div class="col">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Field
+                        </button>
+                        <a href="{{ url_for('dynamic_forms.edit_template', id=template.id) }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Template
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Field Preview and Help -->
+        <div class="col-md-4">
+            <!-- Template Info -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i> Template Info</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Template:</strong> {{ template.name }}</p>
+                    <p><strong>Module:</strong> {{ template.module|title }}</p>
+                    <p><strong>Code:</strong> <code>{{ template.code }}</code></p>
+                    <p><strong>Current Fields:</strong> {{ template.field_count }}</p>
+                </div>
+            </div>
+
+            <!-- Field Types Help -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-question-circle"></i> Field Types</h5>
+                </div>
+                <div class="card-body">
+                    <small>
+                        <strong>Text:</strong> Single line text input<br>
+                        <strong>Textarea:</strong> Multi-line text area<br>
+                        <strong>Number:</strong> Integer numbers<br>
+                        <strong>Decimal:</strong> Decimal numbers<br>
+                        <strong>Currency:</strong> Money amounts<br>
+                        <strong>Select:</strong> Dropdown menu<br>
+                        <strong>Checkbox:</strong> Yes/No option<br>
+                        <strong>Date:</strong> Date picker<br>
+                        <strong>DateTime:</strong> Date and time picker<br>
+                        <strong>Email:</strong> Email address<br>
+                        <strong>URL:</strong> Website address<br>
+                        <strong>JSON:</strong> Complex data structure
+                    </small>
+                </div>
+            </div>
+
+            <!-- Naming Tips -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-lightbulb"></i> Naming Tips</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Good Field Names:</h6>
+                    <ul class="list-unstyled">
+                        <li><code>supplier_certification</code></li>
+                        <li><code>quality_rating</code></li>
+                        <li><code>environmental_impact</code></li>
+                        <li><code>priority_level</code></li>
+                        <li><code>custom_notes</code></li>
+                    </ul>
+                    
+                    <h6>Good Labels:</h6>
+                    <ul class="list-unstyled">
+                        <li>"Supplier Certification Required"</li>
+                        <li>"Quality Rating (1-10)"</li>
+                        <li>"Environmental Impact Score"</li>
+                        <li>"Priority Level"</li>
+                        <li>"Additional Notes"</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleFieldOptions() {
+    const fieldType = document.getElementById('field_type').value;
+    const optionsCard = document.getElementById('optionsCard');
+    const textValidation = document.getElementById('textValidation');
+    const numberValidation = document.getElementById('numberValidation');
+    
+    // Show/hide options for select fields
+    if (fieldType === 'select') {
+        optionsCard.style.display = 'block';
+    } else {
+        optionsCard.style.display = 'none';
+    }
+    
+    // Show/hide validation based on field type
+    if (['text', 'textarea', 'email', 'url'].includes(fieldType)) {
+        textValidation.style.display = 'block';
+        numberValidation.style.display = 'none';
+    } else if (['number', 'decimal', 'currency'].includes(fieldType)) {
+        textValidation.style.display = 'none';
+        numberValidation.style.display = 'block';
+    } else {
+        textValidation.style.display = 'none';
+        numberValidation.style.display = 'none';
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    toggleFieldOptions();
+});
+
+// Auto-generate field name from label
+document.getElementById('label').addEventListener('input', function() {
+    const label = this.value;
+    const fieldName = label.toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '')  // Remove special characters
+        .replace(/\s+/g, '_')          // Replace spaces with underscores
+        .replace(/_+/g, '_')           // Remove duplicate underscores
+        .replace(/^_|_$/g, '');        // Remove leading/trailing underscores
+    
+    document.getElementById('field_name').value = fieldName;
+});
+</script>
+{% endblock %}

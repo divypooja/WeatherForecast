@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Form Templates - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-list"></i> Form Templates</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('dynamic_forms.dashboard') }}">Dynamic Forms</a></li>
+                    <li class="breadcrumb-item active">Templates</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('dynamic_forms.add_template') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add Template
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="fas fa-table"></i> All Form Templates</h5>
+        </div>
+        <div class="card-body">
+            {% if templates %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Template Name</th>
+                                <th>Code</th>
+                                <th>Module</th>
+                                <th>Fields</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for template in templates %}
+                                <tr class="{{ 'table-light' if not template.is_active else '' }}">
+                                    <td>
+                                        <strong>{{ template.name }}</strong>
+                                        {% if template.description %}
+                                            <br><small class="text-muted">{{ template.description }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <code>{{ template.code }}</code>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ template.module|title }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">{{ template.field_count }}</span>
+                                    </td>
+                                    <td>
+                                        {% if template.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ template.created_at.strftime('%Y-%m-%d') }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('dynamic_forms.edit_template', id=template.id) }}" 
+                                               class="btn btn-outline-primary" title="Edit Template">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{{ url_for('dynamic_forms.add_field', template_id=template.id) }}" 
+                                               class="btn btn-outline-success" title="Add Field">
+                                                <i class="fas fa-plus"></i>
+                                            </a>
+                                            {% if template.field_count == 0 %}
+                                                <a href="{{ url_for('dynamic_forms.delete_template', id=template.id) }}" 
+                                                   class="btn btn-outline-danger" 
+                                                   onclick="return confirm('Delete this template?')"
+                                                   title="Delete Template">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                    <h5>No Form Templates</h5>
+                    <p class="text-muted">Create your first dynamic form template to get started.</p>
+                    <a href="{{ url_for('dynamic_forms.add_template') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create Template
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
