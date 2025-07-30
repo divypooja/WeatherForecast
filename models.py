@@ -742,8 +742,13 @@ class JobWork(db.Model):
     inspected_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     inspected_at = db.Column(db.DateTime)
     
+    # BOM Integration fields
+    bom_id = db.Column(db.Integer, db.ForeignKey('boms.id'), nullable=True)  # Reference to BOM for production
+    production_quantity = db.Column(db.Integer, nullable=True)  # Quantity to produce from BOM
+    
     # Relationships
     item = db.relationship('Item', backref='job_works')
+    bom = db.relationship('BOM', backref='job_works')
     creator = db.relationship('User', foreign_keys=[created_by], backref='created_job_works')
     inspector = db.relationship('User', foreign_keys=[inspected_by], backref='inspected_job_works')
     processes = db.relationship('JobWorkProcess', backref='job_work', lazy=True, cascade='all, delete-orphan')

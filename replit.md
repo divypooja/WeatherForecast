@@ -6,6 +6,18 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (July 30, 2025)
 
+### Complete BOM Integration with Job Work and GRN System (July 30, 2025)
+- **Unified Job Work Form Enhancement**: Added comprehensive BOM integration to unified job work form allowing selection of BOMs for production-based job works
+- **BOM-Driven Material Planning**: System automatically calculates required materials from BOM and checks inventory availability before creating job works
+- **Real-time Material Validation**: JavaScript-powered interface shows material requirements table with availability status and shortage detection
+- **Production Quantity Management**: Added production_quantity field to JobWork model enabling BOM-based production planning with automatic material calculations
+- **Dynamic Form Behavior**: Form intelligently switches between regular job work mode (single item) and BOM production mode with different field requirements
+- **API Integration**: Added `/api/bom/{id}/materials` and `/api/bom/{id}/production_check/{qty}` endpoints for real-time BOM data and material availability checking
+- **Database Schema Updates**: Added bom_id and production_quantity columns to job_works table with proper foreign key relationships to BOMs
+- **Smart Material Movement**: BOM-based job works automatically move required materials from inventory to process-specific WIP based on BOM specifications
+- **Enhanced Job Work Creation**: System supports both traditional single-item job works and complex BOM-driven production workflows through unified interface
+- **Material Shortage Prevention**: Production feasibility checking prevents creation of job works when insufficient materials are available with detailed shortage reporting
+
 ### Application Debug and Database Fix (July 30, 2025)
 - **Database Connection Resolution**: Fixed PostgreSQL endpoint connection failure by switching to SQLite for immediate functionality
 - **LSP Error Resolution**: Fixed Flask-Login type error in app.py by adding proper type annotation
