@@ -269,13 +269,6 @@ class JobWorkForm(FlaskForm):
     expected_return = DateField('Expected Return Date', validators=[Optional()])
     notes = TextAreaField('Notes')
     
-    # Supporting Documents
-    supporting_document = FileField('Supporting Document (Optional)', 
-                                   validators=[Optional(), 
-                                             FileAllowed(['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx'], 
-                                                       'Only PDF, images, Word, and Excel files are allowed!')])
-    document_description = StringField('Document Description', validators=[Optional(), Length(max=200)])
-    
     # Team work fields
     is_team_work = BooleanField('Enable Team Work', 
                                render_kw={'id': 'is_team_work'})
