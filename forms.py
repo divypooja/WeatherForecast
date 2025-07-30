@@ -539,11 +539,21 @@ class NotificationTestForm(FlaskForm):
     message = TextAreaField('Test Message', validators=[DataRequired()])
 
 class BOMForm(FlaskForm):
+    # Basic BOM Information
+    bom_code = StringField('BOM Code', validators=[DataRequired(), Length(max=50)], 
+                          render_kw={"placeholder": "e.g., BOM-2025-001"})
     product_id = SelectField('Product', validators=[DataRequired()], coerce=int)
+    output_uom_id = SelectField('Output UOM', validators=[Optional()], coerce=int)
     version = StringField('Version', validators=[DataRequired(), Length(max=20)], default='1.0')
-    is_active = BooleanField('Active', default=True)
+    status = SelectField('Status', validators=[DataRequired()], 
+                        choices=[('active', 'Active'), ('inactive', 'Inactive'), ('draft', 'Draft')], 
+                        default='active')
+    is_active = BooleanField('Active', default=True)  # Keep for backward compatibility
     output_quantity = FloatField('Output Quantity', validators=[NumberRange(min=0.001)], default=1.0,
                                 render_kw={"placeholder": "How many units this BOM produces (e.g., 400 pieces from 1 sheet)"})
+    estimated_scrap_percent = FloatField('Overall Scrap %', validators=[NumberRange(min=0, max=100)], default=0.0)
+    description = TextAreaField('BOM Description', render_kw={"rows": 3})
+    remarks = TextAreaField('Remarks', render_kw={"rows": 2})
     
     # Labor and Overhead fields
     labor_cost_per_unit = FloatField('Labor Cost per Unit', validators=[NumberRange(min=0)], default=0.0)
@@ -567,11 +577,33 @@ class BOMForm(FlaskForm):
         super(BOMForm, self).__init__(*args, **kwargs)
         # Allow any product type for BOM creation - no restrictions
         self.product_id.choices = [(0, 'Select Product')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.order_by(Item.name).all()]
+        
+        # Populate UOM choices
+        try:
+            from models_uom import UnitOfMeasure
+            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+            self.output_uom_id.choices = [(0, 'Select UOM')] + [(u.id, f"{u.name} ({u.symbol})") for u in uoms]
+        except Exception:
+            self.output_uom_id.choices = [(0, 'Select UOM')]
 
 class BOMItemForm(FlaskForm):
-    item_id = SelectField('Material/Component', validators=[DataRequired()], coerce=int)
-    quantity_required = FloatField('Quantity Required', validators=[DataRequired(), NumberRange(min=0)])
-    unit = SelectField('Unit', validators=[DataRequired()], choices=[
+    # New advanced fields
+    material_id = SelectField('Material/Component', validators=[DataRequired()], coerce=int)
+    qty_required = FloatField('Quantity Required', validators=[DataRequired(), NumberRange(min=0)])
+    uom_id = SelectField('Unit of Measure', validators=[DataRequired()], coerce=int)
+    unit_cost = FloatField('Unit Cost', validators=[NumberRange(min=0)], default=0.0)
+    scrap_percent = FloatField('Expected Scrap %', validators=[NumberRange(min=0, max=100)], default=0.0)
+    process_step = IntegerField('Process Step', validators=[NumberRange(min=1)], default=1)
+    process_name = StringField('Process Name', validators=[Length(max=100)])
+    is_critical = BooleanField('Critical Material', default=False)
+    substitute_materials = StringField('Substitute Materials (comma-separated codes)')
+    default_supplier_id = SelectField('Default Supplier', validators=[Optional()], coerce=int)
+    remarks = TextAreaField('Remarks', render_kw={"rows": 2})
+    
+    # Legacy fields for backward compatibility
+    item_id = SelectField('Material/Component (Legacy)', validators=[Optional()], coerce=int)
+    quantity_required = FloatField('Quantity Required (Legacy)', validators=[Optional(), NumberRange(min=0)])
+    unit = SelectField('Unit (Legacy)', validators=[Optional()], choices=[
         ('pcs', 'Pieces (pcs)'),
         ('kg', 'Kilograms (kg)'),
         ('g', 'Grams (g)'),
@@ -583,11 +615,77 @@ class BOMItemForm(FlaskForm):
         ('sqft', 'Square Feet (sq.ft)'),
         ('sqm', 'Square Meters (sq.m)')
     ], default='pcs')
-    unit_cost = FloatField('Unit Cost', validators=[NumberRange(min=0)], default=0.0)
     
     def __init__(self, *args, **kwargs):
         super(BOMItemForm, self).__init__(*args, **kwargs)
-        self.item_id.choices = [(0, 'Select Item')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.filter(Item.item_type.in_(['material', 'consumable'])).all()]
+        
+        # Populate material choices - all items can be BOM materials now
+        items = Item.query.order_by(Item.name).all()
+        material_choices = [(0, 'Select Material')] + [(i.id, f"{i.code} - {i.name}") for i in items]
+        self.material_id.choices = material_choices
+        self.item_id.choices = material_choices  # Legacy compatibility
+        
+        # Populate UOM choices
+        try:
+            from models_uom import UnitOfMeasure
+            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+            self.uom_id.choices = [(0, 'Select UOM')] + [(u.id, f"{u.name} ({u.symbol})") for u in uoms]
+        except Exception:
+            self.uom_id.choices = [(0, 'Select UOM')]
+        
+        # Populate supplier choices
+        try:
+            suppliers = Supplier.query.filter_by(is_active=True).order_by(Supplier.name).all()
+            self.default_supplier_id.choices = [(0, 'Select Supplier')] + [(s.id, s.name) for s in suppliers]
+        except Exception:
+            self.default_supplier_id.choices = [(0, 'Select Supplier')]
+
+# New form for BOM Process routing
+class BOMProcessForm(FlaskForm):
+    step_number = IntegerField('Step Number', validators=[DataRequired(), NumberRange(min=1)])
+    process_name = StringField('Process Name', validators=[DataRequired(), Length(max=100)], 
+                              render_kw={"placeholder": "e.g., Cutting, Welding, Assembly"})
+    process_code = StringField('Process Code', validators=[Length(max=20)], 
+                              render_kw={"placeholder": "e.g., CUT, WELD, ASSY"})
+    operation_description = TextAreaField('Operation Description', render_kw={"rows": 3})
+    setup_time_minutes = FloatField('Setup Time (minutes)', validators=[NumberRange(min=0)], default=0.0)
+    run_time_minutes = FloatField('Runtime per Unit (minutes)', validators=[NumberRange(min=0)], default=0.0)
+    labor_rate_per_hour = FloatField('Labor Rate per Hour', validators=[NumberRange(min=0)], default=0.0)
+    machine_id = SelectField('Machine/Tool', validators=[Optional()], coerce=int)
+    department_id = SelectField('Department', validators=[Optional()], coerce=int)
+    is_outsourced = BooleanField('Outsourced Process', default=False)
+    vendor_id = SelectField('Outsourcing Vendor', validators=[Optional()], coerce=int)
+    cost_per_unit = FloatField('Process Cost per Unit', validators=[NumberRange(min=0)], default=0.0)
+    quality_check_required = BooleanField('Quality Check Required', default=False)
+    estimated_scrap_percent = FloatField('Expected Scrap %', validators=[NumberRange(min=0, max=100)], default=0.0)
+    parallel_processes = StringField('Parallel Processes (comma-separated)')
+    predecessor_processes = StringField('Predecessor Processes (comma-separated)')
+    notes = TextAreaField('Notes', render_kw={"rows": 2})
+    
+    def __init__(self, *args, **kwargs):
+        super(BOMProcessForm, self).__init__(*args, **kwargs)
+        
+        # Populate machine choices (items that are tools/machines)
+        try:
+            machines = Item.query.filter(Item.item_type.in_(['tool', 'machine'])).order_by(Item.name).all()
+            self.machine_id.choices = [(0, 'Select Machine')] + [(m.id, f"{m.code} - {m.name}") for m in machines]
+        except Exception:
+            self.machine_id.choices = [(0, 'Select Machine')]
+        
+        # Populate department choices
+        try:
+            from models_department import Department
+            departments = Department.query.filter_by(is_active=True).order_by(Department.name).all()
+            self.department_id.choices = [(0, 'Select Department')] + [(d.id, d.name) for d in departments]
+        except Exception:
+            self.department_id.choices = [(0, 'Select Department')]
+        
+        # Populate vendor choices
+        try:
+            vendors = Supplier.query.filter_by(is_active=True).order_by(Supplier.name).all()
+            self.vendor_id.choices = [(0, 'Select Vendor')] + [(v.id, v.name) for v in vendors]
+        except Exception:
+            self.vendor_id.choices = [(0, 'Select Vendor')]
 
 class CompanySettingsForm(FlaskForm):
     company_name = StringField('Company Name', validators=[DataRequired(), Length(max=200)])

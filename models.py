@@ -344,7 +344,7 @@ class Item(db.Model):
     # Relationships
     purchase_order_items = db.relationship('PurchaseOrderItem', backref='item_ref', lazy=True)
     sales_order_items = db.relationship('SalesOrderItem', backref='item', lazy=True)
-    bom_items = db.relationship('BOMItem', backref='item', lazy=True)
+    # Removed conflicting backref - BOMItem has its own 'item' relationship
     item_type_obj = db.relationship('ItemType', backref='items', lazy=True)
     
     @property
@@ -1343,10 +1343,16 @@ class BOM(db.Model):
     __tablename__ = 'boms'
     
     id = db.Column(db.Integer, primary_key=True)
+    bom_code = db.Column(db.String(50), unique=True, nullable=False)  # Unique BOM identifier
     product_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
+    output_uom_id = db.Column(db.Integer, db.ForeignKey('units_of_measure.id'), nullable=True)  # Output unit of measure
     version = db.Column(db.String(20), default='1.0')
-    is_active = db.Column(db.Boolean, default=True)
+    status = db.Column(db.String(20), default='active')  # active, inactive, draft
+    is_active = db.Column(db.Boolean, default=True)  # Keep for backward compatibility
     output_quantity = db.Column(db.Float, default=1.0)  # How many units this BOM produces (e.g., 1 sheet = 400 pieces)
+    estimated_scrap_percent = db.Column(db.Float, default=0.0)  # Overall expected scrap percentage
+    description = db.Column(db.Text)  # BOM description
+    remarks = db.Column(db.Text)  # Additional remarks
     
     # Labor and Overhead costs
     labor_cost_per_unit = db.Column(db.Float, default=0.0)
@@ -1359,10 +1365,15 @@ class BOM(db.Model):
     markup_percentage = db.Column(db.Float, default=0.0)  # Markup percentage for profit margin
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     
     # Relationships
     product = db.relationship('Item', backref='boms')
+    output_uom = db.relationship('UnitOfMeasure', foreign_keys=[output_uom_id])
     items = db.relationship('BOMItem', backref='bom', lazy=True, cascade='all, delete-orphan')
+    processes = db.relationship('BOMProcess', backref='bom', lazy=True, cascade='all, delete-orphan')
+    creator = db.relationship('User', foreign_keys=[created_by])
     
     @property
     def total_material_cost(self):
@@ -1442,28 +1453,149 @@ class BOM(db.Model):
         subtotal = material_cost + labor_cost + overhead_cost + freight_cost
         
         return subtotal * (self.markup_percentage or 0) / 100
+    
+    @property
+    def total_bom_cost(self):
+        """Total BOM cost per output quantity - alias for total_cost_per_unit"""
+        return self.total_cost_per_unit
+    
+    def get_material_availability(self):
+        """Check material availability for this BOM"""
+        shortages = []
+        for bom_item in self.items:
+            material = bom_item.material or bom_item.item  # Handle both old and new structure
+            if material:
+                available_qty = material.total_stock if hasattr(material, 'total_stock') else (material.current_stock or 0)
+                required_qty = bom_item.effective_quantity
+                
+                if available_qty < required_qty:
+                    shortages.append({
+                        'material': material,
+                        'required': required_qty,
+                        'available': available_qty,
+                        'shortage': required_qty - available_qty
+                    })
+        return shortages
+    
+    def can_produce_quantity(self, production_qty):
+        """Check if BOM can produce specified quantity with current inventory"""
+        shortages = []
+        for bom_item in self.items:
+            material = bom_item.material or bom_item.item  # Handle both old and new structure
+            if material:
+                available_qty = material.total_stock if hasattr(material, 'total_stock') else (material.current_stock or 0)
+                required_qty = bom_item.effective_quantity * production_qty
+                
+                if available_qty < required_qty:
+                    shortages.append({
+                        'material': material,
+                        'required': required_qty,
+                        'available': available_qty,
+                        'shortage': required_qty - available_qty
+                    })
+        return len(shortages) == 0, shortages
+
+# New model for BOM Process routing
+class BOMProcess(db.Model):
+    """Process routing for BOM operations"""
+    __tablename__ = 'bom_processes'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    bom_id = db.Column(db.Integer, db.ForeignKey('boms.id'), nullable=False)
+    step_number = db.Column(db.Integer, nullable=False)  # Sequential step number
+    process_name = db.Column(db.String(100), nullable=False)  # e.g., "Cutting", "Welding", "Assembly"
+    process_code = db.Column(db.String(20))  # Short code like "CUT", "WELD", "ASSY"
+    operation_description = db.Column(db.Text)  # Detailed description of the operation
+    setup_time_minutes = db.Column(db.Float, default=0.0)  # Setup time in minutes
+    run_time_minutes = db.Column(db.Float, default=0.0)  # Runtime per unit in minutes
+    labor_rate_per_hour = db.Column(db.Float, default=0.0)  # Labor rate for this process
+    machine_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=True)  # Machine/tool used
+    department_id = db.Column(db.Integer, db.ForeignKey('departments.id'), nullable=True)  # Department
+    is_outsourced = db.Column(db.Boolean, default=False)  # Is this process outsourced?
+    vendor_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=True)  # Outsourcing vendor
+    cost_per_unit = db.Column(db.Float, default=0.0)  # Process cost per unit
+    quality_check_required = db.Column(db.Boolean, default=False)  # Quality check after this step
+    estimated_scrap_percent = db.Column(db.Float, default=0.0)  # Expected scrap for this process
+    parallel_processes = db.Column(db.Text)  # JSON list of processes that can run in parallel
+    predecessor_processes = db.Column(db.Text)  # JSON list of required predecessor processes
+    notes = db.Column(db.Text)
+    
+    # Relationships
+    machine = db.relationship('Item', foreign_keys=[machine_id])
+    department = db.relationship('Department', foreign_keys=[department_id])
+    vendor = db.relationship('Supplier', foreign_keys=[vendor_id])
+    
+    @property
+    def total_time_minutes(self):
+        """Calculate total time including setup and runtime"""
+        return (self.setup_time_minutes or 0) + (self.run_time_minutes or 0)
+    
+    @property
+    def labor_cost_per_unit(self):
+        """Calculate labor cost per unit for this process"""
+        if self.labor_rate_per_hour and self.run_time_minutes:
+            return (self.labor_rate_per_hour / 60) * self.run_time_minutes
+        return self.cost_per_unit or 0
 
 class BOMItem(db.Model):
     __tablename__ = 'bom_items'
     
     id = db.Column(db.Integer, primary_key=True)
     bom_id = db.Column(db.Integer, db.ForeignKey('boms.id'), nullable=False)
-    item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
-    quantity_required = db.Column(db.Float, nullable=False)
-    unit = db.Column(db.String(20), nullable=False, default='pcs')  # Unit for this BOM item (pcs, kg, etc.)
+    material_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
+    qty_required = db.Column(db.Float, nullable=False)
+    uom_id = db.Column(db.Integer, db.ForeignKey('units_of_measure.id'), nullable=False)  # UOM for this BOM item
+    unit = db.Column(db.String(20), nullable=False, default='pcs')  # Keep for backward compatibility
     unit_cost = db.Column(db.Float, default=0.0)
+    scrap_percent = db.Column(db.Float, default=0.0)  # Expected scrap percentage for this material
+    process_step = db.Column(db.Integer, default=1)  # Which process step this material is used in
+    process_name = db.Column(db.String(100))  # Process where this material is used
+    is_critical = db.Column(db.Boolean, default=False)  # Critical material flag
+    substitute_materials = db.Column(db.Text)  # JSON string of substitute material IDs
+    default_supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=True)  # Default supplier
     unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
     total_weight = db.Column(db.Float, default=0.0)  # Total weight (qty × unit_weight)
+    remarks = db.Column(db.Text)  # Additional remarks
+    
+    # Legacy fields for backward compatibility
+    item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=True)  # Keep for backward compatibility
+    quantity_required = db.Column(db.Float, nullable=True)  # Keep for backward compatibility
+    
+    # Relationships
+    material = db.relationship('Item', foreign_keys=[material_id], backref='bom_material_components')
+    item = db.relationship('Item', foreign_keys=[item_id], backref='legacy_bom_items')  # Keep for backward compatibility
+    uom = db.relationship('UnitOfMeasure', foreign_keys=[uom_id])
+    default_supplier = db.relationship('Supplier', foreign_keys=[default_supplier_id])
     
     def __init__(self, **kwargs):
         super(BOMItem, self).__init__(**kwargs)
+        
+        # Handle backward compatibility
+        if self.item_id and not self.material_id:
+            self.material_id = self.item_id
+        if self.quantity_required and not self.qty_required:
+            self.qty_required = self.quantity_required
+            
         # Auto-populate unit cost from item's unit price if not provided
-        if self.unit_cost == 0.0 and self.item_id:
-            item = Item.query.get(self.item_id)
-            if item and item.unit_price:
-                self.unit_cost = item.unit_price
+        if self.unit_cost == 0.0:
+            material_id = self.material_id or self.item_id
+            if material_id:
+                item = Item.query.get(material_id)
+                if item and item.unit_price:
+                    self.unit_cost = item.unit_price
     
-    # No need for relationship here since Item already defines bom_items with backref
+    @property
+    def total_cost(self):
+        """Calculate total cost for this BOM item"""
+        return self.qty_required * self.unit_cost
+    
+    @property
+    def effective_quantity(self):
+        """Calculate effective quantity including scrap"""
+        base_qty = self.qty_required or self.quantity_required or 0
+        if self.scrap_percent > 0:
+            return base_qty * (1 + self.scrap_percent / 100)
+        return base_qty
 
 class QualityIssue(db.Model):
     __tablename__ = 'quality_issues'
