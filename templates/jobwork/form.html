@@ -610,10 +610,19 @@ function addBOMProcessRow(processData, sequence) {
     row.innerHTML = `
         <td>${sequence}</td>
         <td>
-            <input type="text" class="form-control" 
-                   name="process_${sequence}_name" 
-                   value="${processData.process_name || ''}" 
-                   placeholder="e.g., Cutting" required>
+            <select class="form-select" name="process_${sequence}_name" required>
+                <option value="">Select Process...</option>
+                <option value="Cutting" ${processData.process_name === 'Cutting' ? 'selected' : ''}>Cutting</option>
+                <option value="Bending" ${processData.process_name === 'Bending' ? 'selected' : ''}>Bending</option>
+                <option value="Welding" ${processData.process_name === 'Welding' ? 'selected' : ''}>Welding</option>
+                <option value="Zinc" ${processData.process_name === 'Zinc' ? 'selected' : ''}>Zinc Plating</option>
+                <option value="Painting" ${processData.process_name === 'Painting' ? 'selected' : ''}>Painting</option>
+                <option value="Assembly" ${processData.process_name === 'Assembly' ? 'selected' : ''}>Assembly</option>
+                <option value="Machining" ${processData.process_name === 'Machining' ? 'selected' : ''}>Machining</option>
+                <option value="Polishing" ${processData.process_name === 'Polishing' ? 'selected' : ''}>Polishing</option>
+                <option value="Quality Check" ${processData.process_name === 'Quality Check' ? 'selected' : ''}>Quality Check</option>
+                <option value="Packaging" ${processData.process_name === 'Packaging' ? 'selected' : ''}>Packaging</option>
+            </select>
         </td>
         <td>
             <select class="form-select" name="process_${sequence}_output_product" required>
@@ -1188,7 +1197,21 @@ function addProcessRow() {
     
     row.innerHTML = `
         <td><input type="number" class="form-control form-control-sm" value="${processCounter}" readonly></td>
-        <td><input type="text" class="form-control form-control-sm" placeholder="e.g., Cutting" required></td>
+        <td>
+            <select class="form-select form-select-sm" required>
+                <option value="">Select Process...</option>
+                <option value="Cutting">Cutting</option>
+                <option value="Bending">Bending</option>
+                <option value="Welding">Welding</option>
+                <option value="Zinc">Zinc Plating</option>
+                <option value="Painting">Painting</option>
+                <option value="Assembly">Assembly</option>
+                <option value="Machining">Machining</option>
+                <option value="Polishing">Polishing</option>
+                <option value="Quality Check">Quality Check</option>
+                <option value="Packaging">Packaging</option>
+            </select>
+        </td>
         <td>
             <select class="form-select form-select-sm" required>
                 <option value="">Select Output Product...</option>
@@ -1290,7 +1313,8 @@ document.getElementById('jobWorkForm').addEventListener('submit', function(e) {
     processData = [];
     
     rows.forEach((row, index) => {
-        const processName = row.cells[1].querySelector('input').value;
+        const processNameSelect = row.cells[1].querySelector('select');
+        const processName = processNameSelect.value;
         const outputProductSelect = row.cells[2].querySelector('select');
         const outputProductId = outputProductSelect.value;
         const quantity = row.cells[3].querySelector('input').value;
