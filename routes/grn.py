@@ -134,7 +134,7 @@ def dashboard():
     pending_job_works = JobWork.query.filter(
         JobWork.status.in_(['sent', 'partial_received']),
         or_(
-            JobWork.work_type.in_(['outsourced', 'multi_process']),
+            JobWork.work_type.in_(['outsourced', 'multi_process', 'vendor']),
             # Include unified jobs that have outsourced processes
             and_(
                 JobWork.work_type == 'unified',
