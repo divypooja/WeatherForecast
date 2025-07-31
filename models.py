@@ -775,6 +775,16 @@ class JobWork(db.Model):
     @property
     def pending_quantity(self):
         """Calculate pending quantity to be received"""
+        # For BOM-based job works, calculate expected output quantity
+        if self.bom_id and self.production_quantity:
+            try:
+                # For BOM-based jobs, the expected output is the production quantity
+                # This represents the finished products we expect to receive
+                expected_output = self.production_quantity
+                return max(0, expected_output - (self.quantity_received or 0))
+            except:
+                pass
+        
         # For multi-process jobs, calculate based on expected output vs received output
         if self.work_type in ['multi_process', 'unified']:
             try:
@@ -782,10 +792,10 @@ class JobWork(db.Model):
                 total_expected = 0
                 for process in self.processes:
                     if process.output_quantity:
-                        total_expected += process.output_quantity * (self.quantity_sent or 0)
+                        total_expected += process.output_quantity
                 
-                # Return pending based on expected output vs received
-                return max(0, total_expected - (self.quantity_received or 0))
+                if total_expected > 0:
+                    return max(0, total_expected - (self.quantity_received or 0))
             except:
                 # Fallback to standard calculation if process data unavailable
                 pass
@@ -796,6 +806,17 @@ class JobWork(db.Model):
     @property
     def pending_receipt_display(self):
         """Get display text for pending material receipt, considering multi-process output"""
+        # For BOM-based job works, show expected output product
+        if self.bom_id and self.production_quantity and self.bom:
+            try:
+                # Show the BOM product name and pending quantity
+                pending_qty = self.pending_quantity
+                if pending_qty > 0:
+                    unit_display = getattr(self.bom.product, 'unit_of_measure', 'pcs')
+                    return f"{pending_qty} {unit_display} {self.bom.product.name}"
+            except:
+                pass
+        
         if self.work_type in ['multi_process', 'unified']:
             # For multi-process jobs, show expected output materials
             processes = self.processes.all() if hasattr(self, 'processes') else []
