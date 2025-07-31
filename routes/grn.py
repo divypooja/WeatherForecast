@@ -342,11 +342,34 @@ def quick_receive(job_work_id):
             
             # Update inventory if adding to stock
             if form.add_to_inventory.data and quantity_passed > 0:
-                # Move from WIP to Finished (multi-state system)
-                job_work.item.qty_finished = (job_work.item.qty_finished or 0) + quantity_passed
-                # Add rejected quantity to scrap if any
-                if form.quantity_rejected.data and form.quantity_rejected.data > 0:
-                    job_work.item.qty_scrap = (job_work.item.qty_scrap or 0) + form.quantity_rejected.data
+                # For BOM-based jobs, add materials to the final output product instead of input material
+                if job_work.bom_id and job_work.production_quantity:
+                    # Find the final output product from BOM processes
+                    final_output_item = None
+                    if job_work.processes:
+                        # Get the last process's output item
+                        sorted_processes = sorted(job_work.processes, key=lambda x: x.sequence_number or 0)
+                        if sorted_processes and sorted_processes[-1].output_item:
+                            final_output_item = sorted_processes[-1].output_item
+                    
+                    if final_output_item:
+                        # Add to final output product (e.g., Mounted Plate)
+                        final_output_item.qty_finished = (final_output_item.qty_finished or 0) + quantity_passed
+                        # Add rejected quantity to final output product's scrap
+                        if form.quantity_rejected.data and form.quantity_rejected.data > 0:
+                            final_output_item.qty_scrap = (final_output_item.qty_scrap or 0) + form.quantity_rejected.data
+                    else:
+                        # Fallback to input material if no output item found
+                        job_work.item.qty_finished = (job_work.item.qty_finished or 0) + quantity_passed
+                        if form.quantity_rejected.data and form.quantity_rejected.data > 0:
+                            job_work.item.qty_scrap = (job_work.item.qty_scrap or 0) + form.quantity_rejected.data
+                else:
+                    # Regular job work - add to input material
+                    job_work.item.qty_finished = (job_work.item.qty_finished or 0) + quantity_passed
+                    # Add rejected quantity to scrap if any
+                    if form.quantity_rejected.data and form.quantity_rejected.data > 0:
+                        job_work.item.qty_scrap = (job_work.item.qty_scrap or 0) + form.quantity_rejected.data
+                
                 grn.add_to_inventory = True  # Set the flag to True when inventory is updated
             else:
                 grn.add_to_inventory = False  # Set the flag to False when inventory is not updated
