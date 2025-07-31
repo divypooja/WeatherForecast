@@ -226,9 +226,9 @@
         </div>
 
         <!-- Job Work Process Flow -->
-        {% if processes and processes|length > 1 %}
+        {% if processes and processes|length > 0 %}
         <div class="section-header">
-            <i>🔄</i> Job Work Process Flow (Sequential)
+            <i>🔄</i> Job Work Process Flow{% if processes|length > 1 %} (Sequential){% endif %}
         </div>
         <div class="section-content">
             <table>
@@ -292,16 +292,20 @@
                     </tr>
                 </thead>
                 <tbody>
+                    {% for process in processes %}
                     <tr>
-                        <td>Cutting</td>
-                        <td>1.5 kg</td>
+                        <td>{{ process.process_name }}</td>
+                        <td>{{ process.quantity_scrap or '0.0' }}</td>
                         <td>kg</td>
                     </tr>
+                    {% endfor %}
+                    {% if not processes %}
                     <tr>
-                        <td>Zinc Plating</td>
-                        <td>0.8 kg</td>
+                        <td>{{ job.process or 'General Job Work' }}</td>
+                        <td>{{ job.expected_scrap or '0.0' }}</td>
                         <td>kg</td>
                     </tr>
+                    {% endif %}
                 </tbody>
             </table>
         </div>
