@@ -300,6 +300,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 loadBOMs();
             } else {
                 bomRow.style.display = 'none';
+                clearBOMData();
+            }
+        });
+    }
+    
+    // BOM selection change handler
+    const bomSelect = document.getElementById('bom_select');
+    if (bomSelect) {
+        bomSelect.addEventListener('change', function() {
+            if (this.value) {
+                loadBOMData(this.value);
+            } else {
+                clearBOMData();
             }
         });
     }
@@ -362,6 +375,221 @@ function loadBOMs() {
             }
         })
         .catch(error => console.error('Error loading BOMs:', error));
+}
+
+// Load BOM data and populate form
+function loadBOMData(bomId) {
+    if (!bomId) return;
+    
+    fetch(`/jobwork/api/bom/${bomId}/details`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error loading BOM data: ' + data.error);
+                return;
+            }
+            
+            // Populate input materials section
+            if (data.materials && data.materials.length > 0) {
+                populateInputMaterials(data.materials);
+            }
+            
+            // Populate process routing section
+            if (data.processes && data.processes.length > 0) {
+                populateProcessRouting(data.processes);
+            }
+            
+            // Show success message
+            showSuccessMessage(`BOM ${data.bom_code} data loaded successfully!`);
+        })
+        .catch(error => {
+            console.error('Error loading BOM data:', error);
+            alert('Error loading BOM data: ' + error.message);
+        });
+}
+
+// Populate input materials from BOM
+function populateInputMaterials(materials) {
+    // Clear existing material rows
+    const materialTable = document.getElementById('input_materials_table');
+    const tbody = materialTable ? materialTable.querySelector('tbody') : null;
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    // Add each material from BOM
+    materials.forEach((material, index) => {
+        addMaterialRowFromBOM(material, index);
+    });
+}
+
+// Add material row from BOM data
+function addMaterialRowFromBOM(materialData, index) {
+    const tbody = document.getElementById('input_materials_table').querySelector('tbody');
+    const row = document.createElement('tr');
+    
+    row.innerHTML = `
+        <td>
+            <select class="form-select item-select" name="input_materials[${index}][item_id]" required>
+                <option value="${materialData.id}">${materialData.code} - ${materialData.name}</option>
+            </select>
+        </td>
+        <td>
+            <input type="number" class="form-control quantity-input" 
+                   name="input_materials[${index}][quantity]" 
+                   value="${materialData.quantity_required}" 
+                   step="0.01" min="0" required>
+        </td>
+        <td>
+            <span class="unit-display">${materialData.unit}</span>
+        </td>
+        <td>
+            <button type="button" class="btn btn-sm btn-outline-primary" 
+                    onclick="checkMaterialStock(${materialData.id}, ${index})">
+                Check Stock
+            </button>
+        </td>
+        <td>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+    
+    tbody.appendChild(row);
+}
+
+// Populate process routing from BOM
+function populateProcessRouting(processes) {
+    // Clear existing process rows
+    const processTable = document.getElementById('process_routing_table');
+    const tbody = processTable ? processTable.querySelector('tbody') : null;
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    // Add each process from BOM
+    processes.forEach((process, index) => {
+        addProcessRowFromBOM(process, index + 1);
+    });
+}
+
+// Add process row from BOM data
+function addProcessRowFromBOM(processData, sequence) {
+    const tbody = document.getElementById('process_routing_table').querySelector('tbody');
+    const row = document.createElement('tr');
+    
+    row.innerHTML = `
+        <td>${sequence}</td>
+        <td>
+            <input type="text" class="form-control" 
+                   name="processes[${sequence}][process_name]" 
+                   value="${processData.process_name || ''}" 
+                   placeholder="Process Name" required>
+        </td>
+        <td>
+            <textarea class="form-control" 
+                      name="processes[${sequence}][operation_description]" 
+                      placeholder="Operation Description" rows="2">${processData.operation_description || ''}</textarea>
+        </td>
+        <td>
+            <select class="form-select" name="processes[${sequence}][work_type]" required>
+                <option value="">Select...</option>
+                <option value="in_house" ${!processData.is_outsourced ? 'selected' : ''}>In-House</option>
+                <option value="outsourced" ${processData.is_outsourced ? 'selected' : ''}>Outsourced</option>
+            </select>
+        </td>
+        <td>
+            <input type="text" class="form-control" 
+                   name="processes[${sequence}][assigned_to]" 
+                   value="${processData.department || processData.vendor || ''}" 
+                   placeholder="Department/Vendor">
+        </td>
+        <td>
+            <input type="number" class="form-control" 
+                   name="processes[${sequence}][rate]" 
+                   value="${processData.labor_rate || ''}" 
+                   step="0.01" min="0" placeholder="0.00">
+        </td>
+        <td>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+    
+    tbody.appendChild(row);
+}
+
+// Check stock for specific material
+function checkMaterialStock(itemId, rowIndex) {
+    fetch(`/jobwork/api/inventory/stock/${itemId}`)
+        .then(response => response.json())
+        .then(data => {
+            const quantityInput = document.querySelector(`input[name="input_materials[${rowIndex}][quantity]"]`);
+            const requiredQty = parseFloat(quantityInput.value) || 0;
+            const availableQty = data.available_stock || 0;
+            
+            let statusMessage = '';
+            let statusClass = '';
+            
+            if (availableQty >= requiredQty) {
+                statusMessage = `✓ Available: ${availableQty} ${data.unit_of_measure}`;
+                statusClass = 'text-success';
+            } else {
+                statusMessage = `⚠ Shortage: ${availableQty}/${requiredQty} ${data.unit_of_measure}`;
+                statusClass = 'text-danger';
+            }
+            
+            // Update the button to show status
+            const button = document.querySelector(`button[onclick="checkMaterialStock(${itemId}, ${rowIndex})"]`);
+            button.innerHTML = statusMessage;
+            button.className = `btn btn-sm ${statusClass}`;
+        })
+        .catch(error => {
+            console.error('Error checking stock:', error);
+        });
+}
+
+// Clear BOM data
+function clearBOMData() {
+    // Clear materials table
+    const materialTable = document.getElementById('input_materials_table');
+    const materialTbody = materialTable ? materialTable.querySelector('tbody') : null;
+    if (materialTbody) {
+        materialTbody.innerHTML = '';
+    }
+    
+    // Clear process table
+    const processTable = document.getElementById('process_routing_table');
+    const processTbody = processTable ? processTable.querySelector('tbody') : null;
+    if (processTbody) {
+        processTbody.innerHTML = '';
+    }
+}
+
+// Show success message
+function showSuccessMessage(message) {
+    // Create and show a temporary success message
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-success alert-dismissible fade show';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Insert at top of form
+    const cardBody = document.querySelector('.card-body');
+    if (cardBody) {
+        cardBody.insertBefore(alertDiv, cardBody.firstChild);
+        
+        // Auto-dismiss after 3 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 3000);
+    }
 }
 
 // Load assignment options based on work type
