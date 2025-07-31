@@ -86,11 +86,12 @@
                             {{ form.vendor_name.label(class="form-label") }}
                             <div class="search-dropdown">
                                 <input type="text" class="form-control search-input" id="vendor_search" placeholder="Type to search vendors..." />
-                                <select class="form-select search-select" name="vendor_name" id="vendor_name" size="6">
+                                <select class="form-select search-select" id="vendor_name_select" size="6" style="display: none;">
                                     {% for value, label in form.vendor_name.choices %}
                                         <option value="{{ value }}" {% if form.vendor_name.data == value %}selected{% endif %}>{{ label }}</option>
                                     {% endfor %}
                                 </select>
+                                <input type="hidden" name="vendor_name" id="vendor_name_hidden" value="{{ form.vendor_name.data or '' }}" />
                             </div>
                             <div class="form-text">Search and select vendor/supplier for this specific rate</div>
                             {% if form.vendor_name.errors %}
@@ -177,7 +178,8 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('vendor_search');
-    const selectElement = document.getElementById('vendor_name');
+    const selectElement = document.getElementById('vendor_name_select');
+    const hiddenInput = document.getElementById('vendor_name_hidden');
     const allOptions = Array.from(selectElement.options);
     
     // Store original options
@@ -187,48 +189,78 @@ document.addEventListener('DOMContentLoaded', function() {
         selected: option.selected
     }));
     
+    // Initialize search input with selected value
+    const selectedOption = selectElement.options[selectElement.selectedIndex];
+    if (selectedOption && selectedOption.value !== '') {
+        searchInput.value = selectedOption.text;
+        hiddenInput.value = selectedOption.value;
+    }
+    
+    // Show dropdown when search input is focused
+    searchInput.addEventListener('focus', function() {
+        selectElement.style.display = 'block';
+        this.select(); // Select all text for easy replacement
+    });
+    
+    // Hide dropdown when clicked outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.search-dropdown')) {
+            selectElement.style.display = 'none';
+        }
+    });
+    
     // Search functionality
     searchInput.addEventListener('input', function() {
         const searchTerm = this.value.toLowerCase();
+        selectElement.style.display = 'block';
         
         // Clear current options
         selectElement.innerHTML = '';
         
         // Filter and add matching options
+        let hasMatches = false;
         originalOptions.forEach(optionData => {
             if (optionData.text.toLowerCase().includes(searchTerm) || optionData.value === '') {
                 const option = document.createElement('option');
                 option.value = optionData.value;
                 option.text = optionData.text;
-                option.selected = optionData.selected;
                 selectElement.appendChild(option);
+                hasMatches = true;
             }
         });
         
         // If no matches found, show "No matches" message
-        if (selectElement.options.length === 0 || (selectElement.options.length === 1 && selectElement.options[0].value === '')) {
+        if (!hasMatches) {
             const noMatchOption = document.createElement('option');
             noMatchOption.text = 'No vendors found matching "' + searchTerm + '"';
             noMatchOption.disabled = true;
+            noMatchOption.value = '';
             selectElement.appendChild(noMatchOption);
         }
+        
+        // Clear hidden input when typing
+        hiddenInput.value = '';
     });
     
-    // When selecting from dropdown, update search input
+    // When selecting from dropdown, update search input and hide dropdown
     selectElement.addEventListener('change', function() {
         const selectedOption = this.options[this.selectedIndex];
-        if (selectedOption && selectedOption.value !== '') {
+        if (selectedOption && selectedOption.value !== '' && !selectedOption.disabled) {
             searchInput.value = selectedOption.text;
-        } else {
-            searchInput.value = '';
+            hiddenInput.value = selectedOption.value;
+            selectElement.style.display = 'none';
         }
     });
     
-    // Initialize search input with selected value
-    const selectedOption = selectElement.options[selectElement.selectedIndex];
-    if (selectedOption && selectedOption.value !== '') {
-        searchInput.value = selectedOption.text;
-    }
+    // Handle clicking on options
+    selectElement.addEventListener('click', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption && selectedOption.value !== '' && !selectedOption.disabled) {
+            searchInput.value = selectedOption.text;
+            hiddenInput.value = selectedOption.value;
+            selectElement.style.display = 'none';
+        }
+    });
     
     // Pre-fill item if provided in URL
     const urlParams = new URLSearchParams(window.location.search);
