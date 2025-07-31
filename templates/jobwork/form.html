@@ -636,10 +636,15 @@ function addBOMProcessRow(processData, sequence) {
                    step="0.01" min="0" placeholder="Qty" required>
         </td>
         <td>
-            <input type="number" class="form-control rate-input" 
-                   name="process_${sequence}_rate" 
-                   value="${processData.labor_rate || processData.cost_per_unit || ''}" 
-                   step="0.01" min="0" placeholder="Rate">
+            <div class="input-group">
+                <input type="number" class="form-control rate-input" 
+                       name="process_${sequence}_rate" 
+                       value="${processData.labor_rate || processData.cost_per_unit || ''}" 
+                       step="0.01" min="0" placeholder="Rate">
+                <button type="button" class="btn btn-outline-secondary" onclick="loadRateManually(this)" title="Load Rate from Database">
+                    <i class="fas fa-magic"></i>
+                </button>
+            </div>
         </td>
         <td>
             <input type="number" class="form-control" 
@@ -678,8 +683,20 @@ function addBOMProcessRow(processData, sequence) {
             const outputProductId = outputProductSelect.value;
             const workType = document.getElementById('work_type')?.value;
             
-            if (processName && outputProductId && workType === 'vendor') {
-                loadJobWorkRate(outputProductId, processName, rateInput);
+            console.log('loadRateForBOMProcess called:', {
+                processName,
+                outputProductId, 
+                workType,
+                shouldLoad: processName && outputProductId && workType === 'vendor'
+            });
+            
+            // Allow testing rate loading regardless of work type (for debugging)
+            if (processName && outputProductId) {
+                if (workType === 'vendor') {
+                    loadJobWorkRate(outputProductId, processName, rateInput);
+                } else {
+                    console.log('Rate loading skipped - work type is not vendor:', workType);
+                }
             }
         };
         
@@ -1238,7 +1255,14 @@ function addProcessRow() {
             </select>
         </td>
         <td><input type="number" class="form-control form-control-sm" placeholder="Qty" min="1" required></td>
-        <td><input type="number" class="form-control form-control-sm" placeholder="Rate" step="0.01" min="0" class="rate-input"></td>
+        <td>
+            <div class="input-group input-group-sm">
+                <input type="number" class="form-control rate-input" placeholder="Rate" step="0.01" min="0">
+                <button type="button" class="btn btn-outline-secondary" onclick="loadRateManually(this)" title="Load Rate from Database">
+                    <i class="fas fa-magic"></i>
+                </button>
+            </div>
+        </td>
         <td><input type="number" class="form-control form-control-sm" placeholder="%" min="0" max="100" step="0.1"></td>
         <td><input type="checkbox" class="form-check-input process-checkbox"></td>
         <td><button type="button" class="btn btn-sm btn-danger" onclick="removeProcessRow(${processCounter})"><i class="fas fa-trash"></i></button></td>
@@ -1260,8 +1284,20 @@ function addProcessRow() {
         const outputProductId = outputProductSelect.value;
         const workType = document.getElementById('work_type')?.value;
         
-        if (processName && outputProductId && workType === 'vendor') {
-            loadJobWorkRate(outputProductId, processName, rateInput);
+        console.log('loadRateForProcess called:', {
+            processName,
+            outputProductId, 
+            workType,
+            shouldLoad: processName && outputProductId && workType === 'vendor'
+        });
+        
+        // Allow testing rate loading regardless of work type (for debugging)
+        if (processName && outputProductId) {
+            if (workType === 'vendor') {
+                loadJobWorkRate(outputProductId, processName, rateInput);
+            } else {
+                console.log('Rate loading skipped - work type is not vendor:', workType);
+            }
         }
     };
     
@@ -1337,6 +1373,7 @@ function loadJobWorkRate(itemId, processType, rateInput) {
     console.log(`Loading rate for item ${itemId}, process: ${processType}`);
     
     const url = `/jobwork-rates/api/get-rate/${itemId}${processType ? `?process_type=${encodeURIComponent(processType)}` : ''}`;
+    console.log('Rate API URL:', url);
     
     fetch(url, {
         method: 'GET',
@@ -1425,6 +1462,32 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Manual rate loading function for the magic button
+function loadRateManually(button) {
+    const row = button.closest('tr');
+    if (!row) return;
+    
+    const processSelect = row.querySelectorAll('select')[0]; // Process Name
+    const outputProductSelect = row.querySelectorAll('select')[1]; // Output Product  
+    const rateInput = row.querySelector('.rate-input');
+    
+    if (!processSelect || !outputProductSelect || !rateInput) {
+        alert('Please make sure Process Name and Output Product are selected first.');
+        return;
+    }
+    
+    const processName = processSelect.value;
+    const outputProductId = outputProductSelect.value;
+    
+    if (!processName || !outputProductId) {
+        alert('Please select both Process Name and Output Product first.');
+        return;
+    }
+    
+    console.log('Manual rate loading:', { processName, outputProductId });
+    loadJobWorkRate(outputProductId, processName, rateInput);
+}
 
 // Update output summary based on process routing
 function updateOutputSummary() {
