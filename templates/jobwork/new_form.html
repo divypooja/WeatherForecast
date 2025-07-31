@@ -60,7 +60,7 @@
                                 <td>
                                     <div class="input-group">
                                         {{ form.job_title(class="form-control") }}
-                                        <button type="button" class="btn btn-outline-info btn-sm" id="generateTitleBtn" onclick="autoFillJobTitle()" title="Auto-generate title">
+                                        <button type="button" class="btn btn-outline-info btn-sm" id="generateTitleBtn" onclick="autoFillJobTitle(true)" title="Auto-generate title">
                                             <i class="fas fa-magic"></i>
                                         </button>
                                     </div>
@@ -319,6 +319,11 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('input_material').addEventListener('change', updateAvailableStock);
     document.getElementById('checkStock').addEventListener('click', checkStock);
     
+    // Check if "Manual" is already selected and auto-fill title
+    if (document.getElementById('job_work_type').value === 'manual') {
+        autoFillJobTitle();
+    }
+    
     // Add initial process row
     addProcessRow();
 });
@@ -349,6 +354,8 @@ function autoFillJobTitle(force = false) {
     const jobWorkType = document.getElementById('job_work_type').value;
     const titleField = document.querySelector('input[name="job_title"]');
     
+    console.log('autoFillJobTitle called:', {jobWorkType, force, hasField: !!titleField, currentValue: titleField?.value});
+    
     if (jobWorkType === 'manual' && titleField && (force || !titleField.value.trim())) {
         // Show loading state
         const generateBtn = document.getElementById('generateTitleBtn');
@@ -357,10 +364,26 @@ function autoFillJobTitle(force = false) {
             generateBtn.disabled = true;
         }
         
+        // Get CSRF token
+        const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
+        
         // Auto-generate title for manual job work
-        fetch('/jobwork/api/generate_title')
-            .then(response => response.json())
+        fetch('/jobwork/api/generate_title', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken || ''
+            },
+            credentials: 'same-origin'
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
             .then(data => {
+                console.log('API response:', data);
                 if (data.title) {
                     titleField.value = data.title;
                     // Add a subtle visual indication that the title was auto-filled
@@ -368,11 +391,21 @@ function autoFillJobTitle(force = false) {
                     setTimeout(() => {
                         titleField.style.backgroundColor = '';
                     }, 2000);
+                } else if (data.error) {
+                    throw new Error(data.error);
                 }
             })
             .catch(error => {
                 console.error('Error generating title:', error);
-                alert('Error generating title. Please enter manually.');
+                // Fallback: generate a simple title
+                const today = new Date();
+                const year = today.getFullYear();
+                const randomNum = String(Math.floor(Math.random() * 1000) + 1).padStart(3, '0');
+                titleField.value = `JW-${randomNum} – Manual Work`;
+                titleField.style.backgroundColor = '#fff3cd';
+                setTimeout(() => {
+                    titleField.style.backgroundColor = '';
+                }, 2000);
             })
             .finally(() => {
                 // Reset button state
