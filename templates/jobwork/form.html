@@ -398,6 +398,9 @@ function loadBOMData(bomId) {
             console.log('Materials received:', data.materials);
             console.log('Processes received:', data.processes);
             
+            // Populate Job Work Title from BOM
+            populateJobWorkTitle(data);
+            
             // Populate input materials section
             if (data.materials && data.materials.length > 0) {
                 console.log('Calling populateInputMaterials with:', data.materials);
@@ -413,6 +416,9 @@ function loadBOMData(bomId) {
             } else {
                 console.warn('No processes found in BOM data');
             }
+            
+            // Update output summary after populating processes
+            updateOutputSummary();
             
             // Show success message
             showSuccessMessage(`BOM ${data.bom_code} data loaded successfully!`);
@@ -602,6 +608,9 @@ function addBOMProcessRow(processData, sequence) {
     
     // Load items for output product dropdown
     loadItemsForProcessRow(sequence);
+    
+    // Add event listeners for auto-calculation
+    addProcessRowEventListeners(row);
 }
 
 // Check stock for specific material
@@ -710,6 +719,18 @@ function addProcessRow() {
     
     tbody.appendChild(row);
     loadItemsForProcessRow(sequence);
+    
+    // Add event listeners for auto-calculation
+    addProcessRowEventListeners(row);
+}
+
+// Add event listeners to process row for auto-calculation
+function addProcessRowEventListeners(row) {
+    const inputs = row.querySelectorAll('input, select');
+    inputs.forEach(input => {
+        input.addEventListener('change', updateOutputSummary);
+        input.addEventListener('input', updateOutputSummary);
+    });
 }
 
 // Clear BOM data
@@ -750,6 +771,32 @@ document.addEventListener('DOMContentLoaded', function() {
     if (inputMaterialSelect) {
         inputMaterialSelect.addEventListener('change', updateMaterialUnit);
     }
+    
+    // Add event listener for work type changes
+    const workTypeSelect = document.getElementById('work_type');
+    if (workTypeSelect) {
+        workTypeSelect.addEventListener('change', loadAssignmentOptions);
+        // Load initial options
+        loadAssignmentOptions();
+    }
+    
+    // Add event listener for BOM selection
+    const bomSelect = document.getElementById('bom_select');
+    if (bomSelect) {
+        bomSelect.addEventListener('change', function() {
+            if (this.value) {
+                loadBOMData(this.value);
+            } else {
+                clearBOMData();
+                clearJobWorkTitle();
+            }
+        });
+    }
+    
+    // Load BOMs when page loads
+    if (bomSelect) {
+        loadBOMs();
+    }
 });
 
 // Show success message
@@ -776,6 +823,86 @@ function showSuccessMessage(message) {
     }
 }
 
+// Populate Job Work Title from BOM data
+function populateJobWorkTitle(bomData) {
+    const jobTitleInput = document.getElementById('job_title');
+    if (jobTitleInput && bomData.product_name) {
+        const title = `${bomData.bom_code} - ${bomData.product_name} Production`;
+        jobTitleInput.value = title;
+        console.log('Set job title to:', title);
+    }
+}
+
+// Clear Job Work Title
+function clearJobWorkTitle() {
+    const jobTitleInput = document.getElementById('job_title');
+    if (jobTitleInput) {
+        jobTitleInput.value = '';
+    }
+}
+
+// Update Output Summary based on process routing
+function updateOutputSummary() {
+    const processRows = document.querySelectorAll('#processTableBody tr');
+    let finalOutputProduct = '-';
+    let expectedQuantity = 0;
+    let totalCost = 0;
+    let expectedScrap = 0;
+    
+    // Find the last process (final output)
+    if (processRows.length > 0) {
+        const lastRow = processRows[processRows.length - 1];
+        const outputSelect = lastRow.querySelector('select[name*="_output_product"]');
+        const quantityInput = lastRow.querySelector('input[name*="_quantity"]');
+        const rateInput = lastRow.querySelector('input[name*="_rate"]');
+        const scrapInput = lastRow.querySelector('input[name*="_scrap"]');
+        
+        if (outputSelect && outputSelect.selectedOptions.length > 0) {
+            finalOutputProduct = outputSelect.selectedOptions[0].text;
+        }
+        
+        if (quantityInput) {
+            expectedQuantity = parseFloat(quantityInput.value) || 0;
+        }
+        
+        // Calculate total cost from all processes
+        processRows.forEach(row => {
+            const rateInput = row.querySelector('input[name*="_rate"]');
+            const quantityInput = row.querySelector('input[name*="_quantity"]');
+            if (rateInput && quantityInput) {
+                const rate = parseFloat(rateInput.value) || 0;
+                const quantity = parseFloat(quantityInput.value) || 0;
+                totalCost += rate * quantity;
+            }
+        });
+        
+        // Get average scrap percentage
+        let scrapSum = 0;
+        let scrapCount = 0;
+        processRows.forEach(row => {
+            const scrapInput = row.querySelector('input[name*="_scrap"]');
+            if (scrapInput && scrapInput.value) {
+                scrapSum += parseFloat(scrapInput.value) || 0;
+                scrapCount++;
+            }
+        });
+        expectedScrap = scrapCount > 0 ? scrapSum / scrapCount : 0;
+    }
+    
+    // Update the output summary table
+    const finalOutputElement = document.getElementById('final_output_product');
+    const finalQuantityElement = document.getElementById('final_output_quantity');
+    const totalCostElement = document.getElementById('total_cost');
+    const expectedScrapElement = document.getElementById('expected_scrap');
+    
+    if (finalOutputElement) finalOutputElement.textContent = finalOutputProduct;
+    if (finalQuantityElement) finalQuantityElement.textContent = expectedQuantity > 0 ? `${expectedQuantity}` : '-';
+    if (totalCostElement) totalCostElement.textContent = `₹ ${totalCost.toFixed(2)}`;
+    if (expectedScrapElement) expectedScrapElement.textContent = `${expectedScrap.toFixed(1)}%`;
+    
+    console.log('Updated output summary:', { finalOutputProduct, expectedQuantity, totalCost, expectedScrap });
+}
+
 // Load assignment options based on work type
 function loadAssignmentOptions() {
     const workType = document.getElementById('work_type');
@@ -799,7 +926,7 @@ function loadAssignmentOptions() {
                 }
             })
             .catch(error => console.error('Error loading departments:', error));
-    } else if (workType.value === 'outsourced') {
+    } else if (workType.value === 'outsourced' || workType.value === 'vendor') {
         // Load suppliers/vendors
         fetch('/jobwork/api/suppliers')
             .then(response => response.json())
