@@ -333,11 +333,12 @@ def add_job_work():
             # Create job work record
             job = JobWork(
                 job_number=job_number,
-                customer_name=assigned_to_name if assigned_to_type == 'vendor' else None,
+                customer_name=assigned_to_name,  # Always set customer_name (required field)
                 work_type=assigned_to_type,
                 department=assigned_to_name if assigned_to_type == 'in_house' else None,
                 item_id=input_material.id,
                 quantity_sent=form.quantity_to_issue.data,
+                rate_per_unit=0.0,  # Set default rate (required field)
                 process='multi_process' if len(process_data) > 1 else (process_data[0].get('process_name', 'General') if process_data else 'General'),
                 sent_date=form.send_date.data,
                 expected_return=form.expected_return.data,
@@ -397,6 +398,10 @@ def add_job_work():
             
         except Exception as e:
             db.session.rollback()
+            print(f"Exception during job work creation: {str(e)}")
+            print(f"Exception type: {type(e)}")
+            import traceback
+            print(f"Traceback: {traceback.format_exc()}")
             flash(f'Error creating job work: {str(e)}', 'error')
             return redirect(url_for('jobwork.add_job_work'))
     
