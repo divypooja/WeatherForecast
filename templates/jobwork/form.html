@@ -410,17 +410,42 @@ function loadBOMData(bomId) {
 
 // Populate input materials from BOM
 function populateInputMaterials(materials) {
-    // Clear existing material rows
-    const materialTable = document.getElementById('input_materials_table');
-    const tbody = materialTable ? materialTable.querySelector('tbody') : null;
-    if (!tbody) return;
+    if (!materials || materials.length === 0) return;
     
-    tbody.innerHTML = '';
+    // For this form design, populate the first/primary material
+    const primaryMaterial = materials[0];
+    const inputMaterialSelect = document.getElementById('input_material');
+    const quantityInput = document.getElementById('quantity_to_issue');
     
-    // Add each material from BOM
-    materials.forEach((material, index) => {
-        addMaterialRowFromBOM(material, index);
-    });
+    if (inputMaterialSelect && primaryMaterial) {
+        // Add option if not exists
+        let optionExists = false;
+        for (let option of inputMaterialSelect.options) {
+            if (option.value == primaryMaterial.id) {
+                optionExists = true;
+                break;
+            }
+        }
+        
+        if (!optionExists) {
+            const option = document.createElement('option');
+            option.value = primaryMaterial.id;
+            option.textContent = `${primaryMaterial.code} - ${primaryMaterial.name}`;
+            option.setAttribute('data-unit', primaryMaterial.unit);
+            inputMaterialSelect.appendChild(option);
+        }
+        
+        // Select the material
+        inputMaterialSelect.value = primaryMaterial.id;
+        
+        // Update quantity
+        if (quantityInput) {
+            quantityInput.value = primaryMaterial.quantity_required;
+        }
+        
+        // Update unit display
+        updateMaterialUnit();
+    }
 }
 
 // Add material row from BOM data
@@ -461,64 +486,78 @@ function addMaterialRowFromBOM(materialData, index) {
 
 // Populate process routing from BOM
 function populateProcessRouting(processes) {
-    // Clear existing process rows
-    const processTable = document.getElementById('process_routing_table');
-    const tbody = processTable ? processTable.querySelector('tbody') : null;
-    if (!tbody) return;
+    if (!processes || processes.length === 0) return;
     
+    // Get the correct table body ID from the form
+    const tbody = document.getElementById('processTableBody');
+    if (!tbody) {
+        console.error('Process table body not found');
+        return;
+    }
+    
+    // Clear existing rows
     tbody.innerHTML = '';
     
     // Add each process from BOM
     processes.forEach((process, index) => {
-        addProcessRowFromBOM(process, index + 1);
+        addBOMProcessRow(process, index + 1);
     });
 }
 
 // Add process row from BOM data
-function addProcessRowFromBOM(processData, sequence) {
-    const tbody = document.getElementById('process_routing_table').querySelector('tbody');
+function addBOMProcessRow(processData, sequence) {
+    const tbody = document.getElementById('processTableBody');
+    if (!tbody) return;
+    
     const row = document.createElement('tr');
     
     row.innerHTML = `
         <td>${sequence}</td>
         <td>
             <input type="text" class="form-control" 
-                   name="processes[${sequence}][process_name]" 
+                   name="process_${sequence}_name" 
                    value="${processData.process_name || ''}" 
-                   placeholder="Process Name" required>
+                   placeholder="e.g., Cutting" required>
         </td>
         <td>
-            <textarea class="form-control" 
-                      name="processes[${sequence}][operation_description]" 
-                      placeholder="Operation Description" rows="2">${processData.operation_description || ''}</textarea>
-        </td>
-        <td>
-            <select class="form-select" name="processes[${sequence}][work_type]" required>
-                <option value="">Select...</option>
-                <option value="in_house" ${!processData.is_outsourced ? 'selected' : ''}>In-House</option>
-                <option value="outsourced" ${processData.is_outsourced ? 'selected' : ''}>Outsourced</option>
+            <select class="form-select" name="process_${sequence}_output_product" required>
+                <option value="">Select Output Product</option>
             </select>
         </td>
         <td>
-            <input type="text" class="form-control" 
-                   name="processes[${sequence}][assigned_to]" 
-                   value="${processData.department || processData.vendor || ''}" 
-                   placeholder="Department/Vendor">
+            <input type="number" class="form-control" 
+                   name="process_${sequence}_quantity" 
+                   value="1" 
+                   step="0.01" min="0" placeholder="Qty" required>
         </td>
         <td>
             <input type="number" class="form-control" 
-                   name="processes[${sequence}][rate]" 
-                   value="${processData.labor_rate || ''}" 
-                   step="0.01" min="0" placeholder="0.00">
+                   name="process_${sequence}_rate" 
+                   value="${processData.labor_rate || processData.cost_per_unit || ''}" 
+                   step="0.01" min="0" placeholder="Rate">
         </td>
         <td>
-            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)">
+            <input type="number" class="form-control" 
+                   name="process_${sequence}_scrap" 
+                   value="${processData.estimated_scrap_percent || ''}" 
+                   step="0.01" min="0" max="100" placeholder="%">
+        </td>
+        <td>
+            <input type="checkbox" class="form-check-input" 
+                   name="process_${sequence}_qc" 
+                   ${processData.quality_check_required ? 'checked' : ''}>
+        </td>
+        <td>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeProcessRow(this)">
                 <i class="fas fa-trash"></i>
             </button>
         </td>
     `;
     
     tbody.appendChild(row);
+    
+    // Load items for output product dropdown
+    loadItemsForProcessRow(sequence);
 }
 
 // Check stock for specific material
@@ -551,22 +590,123 @@ function checkMaterialStock(itemId, rowIndex) {
         });
 }
 
+// Load items for process output product dropdown
+function loadItemsForProcessRow(sequence) {
+    fetch('/jobwork/api/items')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.querySelector(`select[name="process_${sequence}_output_product"]`);
+            if (select && data.items) {
+                select.innerHTML = '<option value="">Select Output Product</option>';
+                data.items.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = `${item.code} - ${item.name}`;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error('Error loading items for process:', error));
+}
+
+// Function to remove process row
+function removeProcessRow(button) {
+    if (confirm('Are you sure you want to remove this process?')) {
+        button.closest('tr').remove();
+    }
+}
+
+// Function to add new empty process row
+function addProcessRow() {
+    const tbody = document.getElementById('processTableBody');
+    if (!tbody) return;
+    
+    const currentRows = tbody.querySelectorAll('tr').length;
+    const sequence = currentRows + 1;
+    
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td>${sequence}</td>
+        <td>
+            <input type="text" class="form-control" 
+                   name="process_${sequence}_name" 
+                   placeholder="e.g., Cutting" required>
+        </td>
+        <td>
+            <select class="form-select" name="process_${sequence}_output_product" required>
+                <option value="">Select Output Product</option>
+            </select>
+        </td>
+        <td>
+            <input type="number" class="form-control" 
+                   name="process_${sequence}_quantity" 
+                   value="1" 
+                   step="0.01" min="0" placeholder="Qty" required>
+        </td>
+        <td>
+            <input type="number" class="form-control" 
+                   name="process_${sequence}_rate" 
+                   step="0.01" min="0" placeholder="Rate">
+        </td>
+        <td>
+            <input type="number" class="form-control" 
+                   name="process_${sequence}_scrap" 
+                   step="0.01" min="0" max="100" placeholder="%">
+        </td>
+        <td>
+            <input type="checkbox" class="form-check-input" 
+                   name="process_${sequence}_qc">
+        </td>
+        <td>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeProcessRow(this)">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+    
+    tbody.appendChild(row);
+    loadItemsForProcessRow(sequence);
+}
+
 // Clear BOM data
 function clearBOMData() {
-    // Clear materials table
-    const materialTable = document.getElementById('input_materials_table');
-    const materialTbody = materialTable ? materialTable.querySelector('tbody') : null;
-    if (materialTbody) {
-        materialTbody.innerHTML = '';
+    // Clear input material
+    const inputMaterialSelect = document.getElementById('input_material');
+    const quantityInput = document.getElementById('quantity_to_issue');
+    
+    if (inputMaterialSelect) {
+        inputMaterialSelect.value = '';
+    }
+    if (quantityInput) {
+        quantityInput.value = '';
     }
     
     // Clear process table
-    const processTable = document.getElementById('process_routing_table');
-    const processTbody = processTable ? processTable.querySelector('tbody') : null;
+    const processTbody = document.getElementById('processTableBody');
     if (processTbody) {
         processTbody.innerHTML = '';
     }
 }
+
+// Update material unit display when material is selected
+function updateMaterialUnit() {
+    const inputMaterialSelect = document.getElementById('input_material');
+    const unitSpan = document.getElementById('input_material_unit');
+    
+    if (inputMaterialSelect && unitSpan && inputMaterialSelect.value) {
+        const selectedOption = inputMaterialSelect.options[inputMaterialSelect.selectedIndex];
+        const unit = selectedOption.getAttribute('data-unit') || 'Units';
+        unitSpan.textContent = unit;
+    }
+}
+
+// Event listener setup
+document.addEventListener('DOMContentLoaded', function() {
+    const inputMaterialSelect = document.getElementById('input_material');
+    if (inputMaterialSelect) {
+        inputMaterialSelect.addEventListener('change', updateMaterialUnit);
+    }
+});
 
 // Show success message
 function showSuccessMessage(message) {

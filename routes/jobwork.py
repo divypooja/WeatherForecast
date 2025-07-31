@@ -227,6 +227,24 @@ def api_bom_details(bom_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@jobwork_bp.route('/api/items')
+@login_required
+def api_get_items():
+    """API endpoint to get all items for process output product selection"""
+    try:
+        items = Item.query.order_by(Item.name).all()
+        items_data = []
+        for item in items:
+            items_data.append({
+                'id': item.id,
+                'code': item.code,
+                'name': item.name,
+                'unit': item.unit_of_measure
+            })
+        return jsonify({'items': items_data})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @jobwork_bp.route('/add', methods=['GET', 'POST'])
 @login_required
 def add_job_work():
