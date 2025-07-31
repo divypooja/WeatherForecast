@@ -212,9 +212,8 @@
                                                 <small class="text-success">
                                                     <i class="fas fa-check"></i> {{ job.quantity_received or 0 }} {{ job.item.unit_of_measure }} received
                                                 </small><br>
-                                                {% set pending_qty = job.quantity_sent - (job.quantity_received or 0) %}
-                                                <small class="{% if pending_qty > 0 %}text-warning{% else %}text-muted{% endif %}">
-                                                    <i class="fas fa-clock"></i> {{ pending_qty }} {{ job.item.unit_of_measure }} pending
+                                                <small class="{% if job.pending_quantity > 0 %}text-warning{% else %}text-muted{% endif %}">
+                                                    <i class="fas fa-clock"></i> {{ job.pending_receipt_display }} pending
                                                 </small>
                                             </div>
                                             <div class="col-md-6">

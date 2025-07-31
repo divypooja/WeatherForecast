@@ -91,21 +91,19 @@
                                         <tr>
                                             <td><strong>Pending Quantity:</strong></td>
                                             <td>
-                                                {% set pending_qty = job.quantity_sent - (job.quantity_received or 0) %}
-                                                <span class="{% if pending_qty > 0 %}text-warning fw-bold{% else %}text-muted{% endif %}">
-                                                    {{ pending_qty }} {{ job.item.unit_of_measure }}
+                                                <span class="{% if job.pending_quantity > 0 %}text-warning fw-bold{% else %}text-muted{% endif %}">
+                                                    {{ job.pending_receipt_display }}
                                                 </span>
                                             </td>
                                         </tr>
                                         <tr>
                                             <td><strong>Completion:</strong></td>
                                             <td>
-                                                {% set completion_percentage = ((job.quantity_received or 0) / job.quantity_sent * 100) if job.quantity_sent > 0 else 0 %}
                                                 <div class="progress" style="height: 20px; width: 200px;">
-                                                    <div class="progress-bar {% if completion_percentage == 100 %}bg-success{% elif completion_percentage >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                    <div class="progress-bar {% if job.completion_percentage == 100 %}bg-success{% elif job.completion_percentage >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
                                                          role="progressbar" 
-                                                         style="width: {{ completion_percentage }}%">
-                                                        {{ "%.1f"|format(completion_percentage) }}%
+                                                         style="width: {{ job.completion_percentage }}%">
+                                                        {{ "%.1f"|format(job.completion_percentage) }}%
                                                     </div>
                                                 </div>
                                             </td>
