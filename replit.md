@@ -4,6 +4,18 @@
 
 This is a comprehensive Flask-based Factory Management System designed for small to medium manufacturing companies. The application provides modular dashboards for managing various aspects of factory operations including inventory, purchase orders, sales, HR, job work, production, and reporting.
 
+## Recent Changes (July 31, 2025)
+
+### Complete BOM-Based Inventory Management Fix (July 31, 2025)
+- **Critical GRN Inventory Logic Fix**: Fixed GRN completion to add received materials to final output product (Mounted Plate) instead of input material (Ms Sheet) for BOM-based job works
+- **BOM-Aware Inventory Updates**: Enhanced GRN system to detect BOM-based jobs and automatically route finished goods to the correct final output item from manufacturing processes
+- **Historical Data Correction**: Successfully corrected existing inventory data by moving 2000 units from Ms Sheet (ITEM-0002) to Mounted Plate (ITEM-0001) for accurate BOM workflow representation
+- **Intelligent Product Resolution**: GRN system now analyzes job work processes to identify final output products and updates inventory accordingly for complex manufacturing transformations
+- **Template Display Fix**: Updated job work detail and dashboard templates to use BOM-aware `pending_receipt_display` property showing "4000 pcs Mounted Plate" instead of input material quantities
+- **GRN Dashboard Enhancement**: Fixed GRN dashboard filtering to include 'vendor' work type ensuring all outsourced BOM jobs appear in pending material receipt section
+- **Production Quantity Integration**: Enhanced job work creation to properly set `production_quantity` field for BOM-based jobs enabling correct pending quantity calculations
+- **Comprehensive BOM Workflow**: System now correctly handles material flow from Raw Materials (Ms Sheet) → Manufacturing → Finished Goods (Mounted Plate) with proper inventory state tracking
+
 ## Recent Changes (July 30, 2025)
 
 ### Unified BOM Process Management Interface (July 30, 2025)
