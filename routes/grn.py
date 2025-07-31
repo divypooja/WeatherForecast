@@ -120,8 +120,15 @@ def dashboard():
         except ValueError:
             pass
     
-    # Get filtered GRNs (increase limit for comprehensive view)
-    grns = grn_query.order_by(GRN.received_date.desc()).limit(200).all()
+    # Pagination parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    
+    # Get paginated filtered GRNs
+    pagination = grn_query.order_by(GRN.received_date.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    grns = pagination.items
     
     # Count filtered results for display
     filtered_count = grn_query.count()
@@ -181,7 +188,8 @@ def dashboard():
                          pending_job_works=pending_job_works,
                          pending_purchase_orders=pending_purchase_orders,
                          monthly_grns=monthly_grns,
-                         filtered_count=filtered_count)
+                         filtered_count=filtered_count,
+                         pagination=pagination)
 
 
 @grn_bp.route('/create/job_work/<int:job_work_id>')
