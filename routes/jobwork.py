@@ -71,6 +71,86 @@ def list_job_works():
     return render_template('jobwork/list.html', jobs=jobs, status_filter=status_filter)
 
 # API endpoints for new Job Work form
+@jobwork_bp.route('/api/items')
+@login_required
+def api_items():
+    """API to get all items for dropdown population"""
+    try:
+        items = Item.query.order_by(Item.name).all()
+        items_data = []
+        for item in items:
+            items_data.append({
+                'id': item.id,
+                'code': item.code,
+                'name': item.name,
+                'unit_of_measure': item.unit_of_measure
+            })
+        return jsonify({'items': items_data})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@jobwork_bp.route('/api/boms')
+@login_required
+def api_boms():
+    """API to get all BOMs for dropdown population"""
+    try:
+        from models import BOM
+        boms = BOM.query.filter_by(is_active=True).order_by(BOM.bom_code).all()
+        boms_data = []
+        for bom in boms:
+            boms_data.append({
+                'id': bom.id,
+                'bom_code': bom.bom_code,
+                'product_name': bom.product.name if bom.product else 'Unknown Product'
+            })
+        return jsonify({'boms': boms_data})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@jobwork_bp.route('/api/suppliers')
+@login_required
+def api_suppliers():
+    """API to get suppliers/vendors for dropdown population"""
+    try:
+        suppliers = Supplier.query.filter(
+            Supplier.partner_type.in_(['customer', 'vendor', 'both'])
+        ).order_by(Supplier.name).all()
+        suppliers_data = []
+        for supplier in suppliers:
+            suppliers_data.append({
+                'id': supplier.id,
+                'name': supplier.name,
+                'partner_type': supplier.partner_type
+            })
+        return jsonify({'suppliers': suppliers_data})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@jobwork_bp.route('/api/departments')
+@login_required
+def api_departments():
+    """API to get departments for dropdown population"""
+    try:
+        from models_department import Department
+        departments = Department.query.filter_by(is_active=True).order_by(Department.name).all()
+        departments_data = []
+        for dept in departments:
+            departments_data.append({
+                'code': dept.code,
+                'name': dept.name
+            })
+        return jsonify({'departments': departments_data})
+    except ImportError:
+        # Fallback if Department model not available
+        return jsonify({'departments': [
+            {'code': 'production', 'name': 'Production'},
+            {'code': 'assembly', 'name': 'Assembly'},
+            {'code': 'quality', 'name': 'Quality Control'},
+            {'code': 'maintenance', 'name': 'Maintenance'}
+        ]})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @jobwork_bp.route('/api/inventory/stock/<int:item_id>')
 @login_required
 def api_inventory_stock(item_id):
@@ -82,6 +162,58 @@ def api_inventory_stock(item_id):
             'item_id': item_id,
             'available_stock': available_stock,
             'unit_of_measure': item.unit_of_measure
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@jobwork_bp.route('/api/bom/<int:bom_id>/details')
+@login_required
+def api_bom_details(bom_id):
+    """API to get BOM details including materials and processes"""
+    try:
+        from models import BOM
+        bom = BOM.query.get_or_404(bom_id)
+        
+        # Get BOM materials
+        materials = []
+        for bom_item in bom.items:
+            material = bom_item.material or bom_item.item
+            if material:
+                materials.append({
+                    'id': material.id,
+                    'name': material.name,
+                    'code': material.code,
+                    'quantity_required': bom_item.qty_required or bom_item.quantity_required,
+                    'unit': material.unit_of_measure
+                })
+        
+        # Get BOM processes
+        processes = []
+        try:
+            from models import BOMProcess
+            for bom_process in bom.processes:
+                processes.append({
+                    'sequence': bom_process.step_number,
+                    'process_name': bom_process.process_name,
+                    'operation_description': bom_process.operation_description,
+                    'setup_time': bom_process.setup_time_minutes,
+                    'runtime_per_unit': bom_process.runtime_per_unit_minutes,
+                    'labor_rate': bom_process.labor_rate_per_hour,
+                    'is_outsourced': bom_process.is_outsourced,
+                    'department': bom_process.department,
+                    'vendor': bom_process.vendor
+                })
+        except ImportError:
+            # BOMProcess model not available
+            processes = []
+        
+        return jsonify({
+            'bom_id': bom_id,
+            'bom_code': bom.bom_code,
+            'product_id': bom.product_id,
+            'product_name': bom.product.name if bom.product else 'Unknown',
+            'materials': materials,
+            'processes': processes
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -1429,66 +1561,4 @@ def generate_challan(job_id):
                          company_settings=company_settings,
                          processes=processes)
 
-# API Endpoints for Multi-Process Form
 
-@jobwork_bp.route('/api/items')
-@login_required
-def api_items():
-    """API endpoint to get all items for dropdowns"""
-    try:
-        items = Item.query.order_by(Item.name).all()
-        items_data = []
-        for item in items:
-            items_data.append({
-                'id': item.id,
-                'code': item.code,
-                'name': item.name
-            })
-        return jsonify({'items': items_data})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@jobwork_bp.route('/api/departments')
-@login_required
-def api_departments():
-    """API endpoint to get all departments for dropdowns"""
-    try:
-        # Import Department model
-        from models_department import Department
-        departments = Department.query.filter_by(active=True).order_by(Department.name).all()
-        departments_data = []
-        for dept in departments:
-            departments_data.append({
-                'id': dept.id,
-                'name': dept.name,
-                'code': dept.code
-            })
-        return jsonify({'departments': departments_data})
-    except Exception as e:
-        # Fallback to default departments if Department model not available
-        default_departments = [
-            {'id': 1, 'name': 'Production', 'code': 'PROD'},
-            {'id': 2, 'name': 'Quality Control', 'code': 'QC'},
-            {'id': 3, 'name': 'Assembly', 'code': 'ASSY'},
-            {'id': 4, 'name': 'Machining', 'code': 'MACH'},
-            {'id': 5, 'name': 'Welding', 'code': 'WELD'},
-            {'id': 6, 'name': 'Finishing', 'code': 'FINISH'}
-        ]
-        return jsonify({'departments': default_departments})
-
-@jobwork_bp.route('/api/suppliers')
-@login_required
-def api_suppliers():
-    """API endpoint to get all suppliers/vendors for dropdowns"""
-    try:
-        suppliers = Supplier.query.order_by(Supplier.name).all()
-        suppliers_data = []
-        for supplier in suppliers:
-            suppliers_data.append({
-                'id': supplier.id,
-                'name': supplier.name,
-                'partner_type': getattr(supplier, 'partner_type', 'supplier')
-            })
-        return jsonify({'suppliers': suppliers_data})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
