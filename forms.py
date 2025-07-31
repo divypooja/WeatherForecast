@@ -268,7 +268,7 @@ class JobWorkForm(FlaskForm):
     input_material_id = SelectField('Input Material', validators=[DataRequired()], coerce=int)
     available_stock = FloatField('Available Stock', render_kw={'readonly': True})
     quantity_to_issue = FloatField('Quantity to Issue', validators=[DataRequired(), NumberRange(min=0)])
-    input_uom = SelectField('UOM', validators=[DataRequired()], coerce=str)
+    input_uom = SelectField('UOM', validators=[Optional()], coerce=str)
     store_location = SelectField('Store', 
                                choices=[('raw_store', 'Raw Store'), ('wip_store', 'WIP Store'), ('finished_store', 'Finished Store')],
                                default='raw_store')
