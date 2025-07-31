@@ -588,6 +588,7 @@ class PurchaseOrderItem(db.Model):
     total_price = db.Column(db.Float, nullable=False)
     unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
     total_weight = db.Column(db.Float, default=0.0)  # Total weight (qty × unit_weight)
+    material_destination = db.Column(db.String(20), default='raw_material')  # Where material goes: raw_material, finished, wip, scrap
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships  

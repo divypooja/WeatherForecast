@@ -175,6 +175,7 @@
                                 <th style="min-width: 120px;">Unit Weight</th>
                                 <th style="min-width: 100px;">HSN Code</th>
                                 <th style="min-width: 120px;">GST Rate</th>
+                                <th style="min-width: 140px;">Material Destination</th>
                                 <th style="min-width: 80px;">UOM</th>
                                 <th style="min-width: 100px;">Qty</th>
                                 <th style="min-width: 130px;">Rate</th>
@@ -240,6 +241,14 @@
                                         </div>
                                     </td>
                                     <td class="align-middle">
+                                        <select class="form-control form-control-sm" name="material_destination_{{ item.id }}" style="min-width: 140px;">
+                                            <option value="raw_material" {% if item.material_destination == 'raw_material' or not item.material_destination %}selected{% endif %}>Raw Material</option>
+                                            <option value="finished" {% if item.material_destination == 'finished' %}selected{% endif %}>Finished Goods</option>
+                                            <option value="wip" {% if item.material_destination == 'wip' %}selected{% endif %}>Work in Progress</option>
+                                            <option value="scrap" {% if item.material_destination == 'scrap' %}selected{% endif %}>Scrap/Waste</option>
+                                        </select>
+                                    </td>
+                                    <td class="align-middle">
                                         <input type="text" class="form-control form-control-sm text-center fw-bold" name="uom_{{ item.id }}" 
                                                value="{{ item.uom or item.item.unit_of_measure }}" placeholder="UOM" style="min-width: 80px;">
                                     </td>
@@ -268,17 +277,17 @@
                         </tbody>
                         <tfoot>
                             <tr class="table-secondary">
-                                <td colspan="9" class="text-end"><strong>Sub Total:</strong></td>
+                                <td colspan="10" class="text-end"><strong>Sub Total:</strong></td>
                                 <td><input type="number" class="form-control form-control-sm" id="subTotal" readonly placeholder="0.00"></td>
                                 <td></td>
                             </tr>
                             <tr class="table-secondary">
-                                <td colspan="9" class="text-end"><strong>Total GST:</strong></td>
+                                <td colspan="10" class="text-end"><strong>Total GST:</strong></td>
                                 <td><input type="number" class="form-control form-control-sm" id="igstAmount" readonly placeholder="0.00"></td>
                                 <td></td>
                             </tr>
                             <tr class="table-dark">
-                                <td colspan="9" class="text-end"><strong>Grand Total:</strong></td>
+                                <td colspan="10" class="text-end"><strong>Grand Total:</strong></td>
                                 <td><input type="number" class="form-control form-control-sm" id="grandTotal" readonly placeholder="0.00"></td>
                                 <td></td>
                             </tr>
@@ -418,6 +427,14 @@ function addPOItem() {
                        step="0.01" min="0" max="100" placeholder="18" onchange="calculateAmount(this)" style="min-width: 80px; flex: 1;">
                 <span class="input-group-text" style="white-space: nowrap;">%</span>
             </div>
+        </td>
+        <td class="align-middle">
+            <select class="form-control form-control-sm" name="material_destination_new_${itemCounter}" style="min-width: 140px;">
+                <option value="raw_material" selected>Raw Material</option>
+                <option value="finished">Finished Goods</option>
+                <option value="wip">Work in Progress</option>
+                <option value="scrap">Scrap/Waste</option>
+            </select>
         </td>
         <td class="align-middle">
             <input type="text" class="form-control form-control-sm text-center fw-bold" name="uom_new_${itemCounter}" placeholder="UOM">
