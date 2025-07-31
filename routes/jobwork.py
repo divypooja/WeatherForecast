@@ -375,9 +375,9 @@ def add_job_work():
                                 process_name=process_info.get('process_name', ''),
                                 output_item_id=int(process_info.get('output_product_id', 0)),
                                 output_quantity=int(process_info.get('quantity', 0)),
+                                quantity_input=int(process_info.get('quantity', 0)),  # Set input quantity
                                 rate_per_unit=float(process_info.get('rate_per_unit', 0)),
-                                scrap_percentage=float(process_info.get('scrap_percent', 0)),
-                                quality_check_required=bool(process_info.get('quality_check', False)),
+                                expected_scrap=float(process_info.get('scrap_percent', 0)),  # Use expected_scrap instead of scrap_percentage
                                 notes=process_info.get('notes', '')
                             )
                             db.session.add(process)
