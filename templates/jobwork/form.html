@@ -381,22 +381,37 @@ function loadBOMs() {
 function loadBOMData(bomId) {
     if (!bomId) return;
     
+    console.log('Loading BOM data for ID:', bomId);
+    
     fetch(`/jobwork/api/bom/${bomId}/details`)
         .then(response => response.json())
         .then(data => {
+            console.log('BOM API Response:', data);
+            
             if (data.error) {
+                console.error('BOM API Error:', data.error);
                 alert('Error loading BOM data: ' + data.error);
                 return;
             }
             
+            // Debug: Check data structure
+            console.log('Materials received:', data.materials);
+            console.log('Processes received:', data.processes);
+            
             // Populate input materials section
             if (data.materials && data.materials.length > 0) {
+                console.log('Calling populateInputMaterials with:', data.materials);
                 populateInputMaterials(data.materials);
+            } else {
+                console.warn('No materials found in BOM data');
             }
             
             // Populate process routing section
             if (data.processes && data.processes.length > 0) {
+                console.log('Calling populateProcessRouting with:', data.processes);
                 populateProcessRouting(data.processes);
+            } else {
+                console.warn('No processes found in BOM data');
             }
             
             // Show success message
@@ -410,12 +425,22 @@ function loadBOMData(bomId) {
 
 // Populate input materials from BOM
 function populateInputMaterials(materials) {
-    if (!materials || materials.length === 0) return;
+    console.log('populateInputMaterials called with:', materials);
+    
+    if (!materials || materials.length === 0) {
+        console.warn('No materials provided to populate');
+        return;
+    }
     
     // For this form design, populate the first/primary material
     const primaryMaterial = materials[0];
+    console.log('Primary material:', primaryMaterial);
+    
     const inputMaterialSelect = document.getElementById('input_material');
     const quantityInput = document.getElementById('quantity_to_issue');
+    
+    console.log('Input material select element:', inputMaterialSelect);
+    console.log('Quantity input element:', quantityInput);
     
     if (inputMaterialSelect && primaryMaterial) {
         // Add option if not exists
@@ -427,24 +452,32 @@ function populateInputMaterials(materials) {
             }
         }
         
+        console.log('Option exists:', optionExists);
+        
         if (!optionExists) {
             const option = document.createElement('option');
             option.value = primaryMaterial.id;
             option.textContent = `${primaryMaterial.code} - ${primaryMaterial.name}`;
             option.setAttribute('data-unit', primaryMaterial.unit);
             inputMaterialSelect.appendChild(option);
+            console.log('Added new option:', option.textContent);
         }
         
         // Select the material
         inputMaterialSelect.value = primaryMaterial.id;
+        console.log('Set material value to:', primaryMaterial.id);
         
         // Update quantity
         if (quantityInput) {
             quantityInput.value = primaryMaterial.quantity_required;
+            console.log('Set quantity to:', primaryMaterial.quantity_required);
         }
         
         // Update unit display
         updateMaterialUnit();
+        console.log('Material population completed');
+    } else {
+        console.error('Missing elements - inputMaterialSelect:', !!inputMaterialSelect, 'primaryMaterial:', !!primaryMaterial);
     }
 }
 
@@ -486,10 +519,17 @@ function addMaterialRowFromBOM(materialData, index) {
 
 // Populate process routing from BOM
 function populateProcessRouting(processes) {
-    if (!processes || processes.length === 0) return;
+    console.log('populateProcessRouting called with:', processes);
+    
+    if (!processes || processes.length === 0) {
+        console.warn('No processes provided to populate');
+        return;
+    }
     
     // Get the correct table body ID from the form
     const tbody = document.getElementById('processTableBody');
+    console.log('Process table body element:', tbody);
+    
     if (!tbody) {
         console.error('Process table body not found');
         return;
@@ -497,11 +537,15 @@ function populateProcessRouting(processes) {
     
     // Clear existing rows
     tbody.innerHTML = '';
+    console.log('Cleared existing process rows');
     
     // Add each process from BOM
     processes.forEach((process, index) => {
+        console.log(`Adding process ${index + 1}:`, process);
         addBOMProcessRow(process, index + 1);
     });
+    
+    console.log('Process population completed');
 }
 
 // Add process row from BOM data
