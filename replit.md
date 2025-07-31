@@ -6,6 +6,18 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (July 31, 2025)
 
+### Unified Inventory Management Table Implementation (July 31, 2025)
+- **Single Comprehensive Table**: Created unified inventory view combining standard inventory list with multi-state breakdown (Raw, WIP, Finished, Scrap) in one table for better usability
+- **Complete Information Display**: Table shows Item Code, Name, Type, UOM, all multi-state quantities (Raw Material, WIP, Finished, Scrap), Total Stock, Available Stock, Unit Price, and Stock Value
+- **Advanced Column Toggle**: Users can hide/show advanced multi-state columns (Raw, WIP, Finished, Scrap) for simplified view when not needed
+- **Comprehensive Filtering**: Enhanced search and filter system with item type, stock status, price range, and text search capabilities
+- **Visual Stock Indicators**: Color-coded stock status badges (Low/Out of Stock), visual indicators for active inventory states, and automatic row highlighting
+- **Real-time Summary Cards**: Bottom summary showing totals for each inventory state (Raw Material, WIP, Finished, Scrap, Total, Available) 
+- **Smart Stock Calculations**: Available stock calculation (Raw + Finished), automatic low stock detection, and stock value computations
+- **Navigation Integration**: Added unified view buttons to both Standard List and Multi-State views for seamless switching between inventory perspectives
+- **Responsive Design**: Mobile-friendly table with proper scrolling, sticky headers, and optimized column widths for all screen sizes
+- **Export Compatibility**: Unified view supports same Excel export functionality as existing inventory reports for complete data export
+
 ### Enhanced Vendor-Specific Rate Auto-Loading System (July 31, 2025)
 - **Vendor Name Field Integration**: Added vendor_name field to JobWorkRate model, form, and templates for comprehensive vendor tracking in job work rates
 - **Intelligent Rate Lookup Priority**: Implemented sophisticated rate lookup algorithm with priority order: 1) Vendor + Process + Item (most specific), 2) Process + Item (no vendor), 3) Vendor + Item (no process), 4) Item only (general rate)

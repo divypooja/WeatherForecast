@@ -70,6 +70,66 @@ def multi_state_view():
                          total_finished=total_finished,
                          total_scrap=total_scrap)
 
+@inventory_bp.route('/unified')
+@login_required
+def unified_view():
+    """Unified inventory view combining standard and multi-state information"""
+    # Get filter parameters
+    search = request.args.get('search', '').strip()
+    item_type_filter = request.args.get('item_type', '')
+    stock_status = request.args.get('stock_status', '')
+    min_price = request.args.get('min_price', type=float)
+    max_price = request.args.get('max_price', type=float)
+    
+    # Base query
+    query = Item.query
+    
+    # Apply filters
+    if search:
+        query = query.filter(
+            (Item.name.ilike(f'%{search}%')) | 
+            (Item.code.ilike(f'%{search}%'))
+        )
+    
+    if item_type_filter:
+        query = query.join(ItemType).filter(ItemType.name == item_type_filter)
+    
+    if min_price is not None:
+        query = query.filter(Item.unit_price >= min_price)
+    
+    if max_price is not None:
+        query = query.filter(Item.unit_price <= max_price)
+    
+    # Get all items
+    items = query.order_by(Item.name).all()
+    
+    # Initialize multi-state inventory for items that haven't been set up
+    for item in items:
+        if item.qty_raw is None:
+            item.qty_raw = item.current_stock or 0.0
+            item.qty_wip = 0.0
+            item.qty_finished = 0.0
+            item.qty_scrap = 0.0
+    
+    db.session.commit()
+    
+    # Apply stock status filter after multi-state initialization
+    if stock_status:
+        if stock_status == 'low':
+            items = [item for item in items if (item.available_stock or 0) <= (item.minimum_stock or 0) and (item.minimum_stock or 0) > 0]
+        elif stock_status == 'out':
+            items = [item for item in items if (item.available_stock or 0) == 0]
+        elif stock_status == 'available':
+            items = [item for item in items if (item.available_stock or 0) > 0]
+    
+    # Get item types for filter dropdown
+    item_types = ItemType.query.filter_by(is_active=True).order_by(ItemType.name).all()
+    
+    return render_template('inventory/unified_view.html',
+                         title='Unified Inventory View',
+                         items=items,
+                         item_types=item_types)
+
 @inventory_bp.route('/list')
 @login_required
 def list_items():
