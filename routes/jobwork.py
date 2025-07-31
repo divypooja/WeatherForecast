@@ -151,6 +151,24 @@ def api_departments():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@jobwork_bp.route('/api/generate_title')
+@login_required
+def api_generate_title():
+    """API to generate auto job work title"""
+    try:
+        # Get the next job number sequence
+        next_job_number = generate_job_number()
+        
+        # Extract just the number part (JOB-2025-0008 → 008)
+        job_sequence = next_job_number.split('-')[-1]
+        
+        # Generate title like "JW-008 – Manual Work"
+        title = f"JW-{job_sequence} – Manual Work"
+        
+        return jsonify({'title': title})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @jobwork_bp.route('/api/inventory/stock/<int:item_id>')
 @login_required
 def api_inventory_stock(item_id):
