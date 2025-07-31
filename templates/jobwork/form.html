@@ -1226,8 +1226,9 @@ function addProcessRow() {
     
     tbody.appendChild(row);
     
-    // Load output products for the new row
-    loadOutputProducts(row.querySelector('select'));
+    // Load output products for the new row (select the second dropdown - Output Product)
+    const outputProductSelect = row.querySelectorAll('select')[1]; // Second select is Output Product
+    loadOutputProducts(outputProductSelect);
     
     processCounter++;
     updateOutputSummary();
@@ -1244,9 +1245,29 @@ function removeProcessRow(id) {
 
 // Load output products for dropdown
 function loadOutputProducts(selectElement) {
-    fetch('/jobwork/api/items')
-        .then(response => response.json())
+    if (!selectElement) {
+        console.error('No select element provided to loadOutputProducts');
+        return;
+    }
+    
+    console.log('Loading output products for element:', selectElement);
+    
+    fetch('/jobwork/api/items', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        credentials: 'same-origin'  // Ensure cookies/session are sent
+    })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('API response data:', data);
             if (selectElement && data.items) {
                 selectElement.innerHTML = '<option value="">Select Output Product...</option>';
                 data.items.forEach(item => {
@@ -1255,9 +1276,17 @@ function loadOutputProducts(selectElement) {
                     option.textContent = `${item.code} - ${item.name}`;
                     selectElement.appendChild(option);
                 });
+                console.log(`Loaded ${data.items.length} items into dropdown`);
+            } else {
+                console.warn('No items data received or invalid select element');
             }
         })
-        .catch(error => console.error('Error loading output products:', error));
+        .catch(error => {
+            console.error('Error loading output products:', error);
+            if (selectElement) {
+                selectElement.innerHTML = '<option value="">Error loading products</option>';
+            }
+        });
 }
 
 // Update output summary based on process routing
