@@ -83,6 +83,7 @@ def dashboard():
     # Get filter parameters
     search = request.args.get('search', '').strip()
     status_filter = request.args.get('status', '').strip()
+    source_type_filter = request.args.get('source_type', '').strip()
     date_from = request.args.get('date_from', '').strip()
     date_to = request.args.get('date_to', '').strip()
     
@@ -102,6 +103,9 @@ def dashboard():
     if status_filter:
         grn_query = grn_query.filter(GRN.status == status_filter)
     
+    if source_type_filter:
+        grn_query = grn_query.filter(GRN.source_type == source_type_filter)
+    
     if date_from:
         try:
             from_date = datetime.strptime(date_from, '%Y-%m-%d').date()
@@ -116,8 +120,11 @@ def dashboard():
         except ValueError:
             pass
     
-    # Get filtered GRNs
-    grns = grn_query.order_by(GRN.received_date.desc()).limit(50).all()
+    # Get filtered GRNs (increase limit for comprehensive view)
+    grns = grn_query.order_by(GRN.received_date.desc()).limit(200).all()
+    
+    # Count filtered results for display
+    filtered_count = grn_query.count()
     
     # Calculate statistics
     stats = {
@@ -173,7 +180,8 @@ def dashboard():
                          stats=stats,
                          pending_job_works=pending_job_works,
                          pending_purchase_orders=pending_purchase_orders,
-                         monthly_grns=monthly_grns)
+                         monthly_grns=monthly_grns,
+                         filtered_count=filtered_count)
 
 
 @grn_bp.route('/create/job_work/<int:job_work_id>')
