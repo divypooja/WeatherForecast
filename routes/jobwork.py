@@ -344,7 +344,8 @@ def add_job_work():
                 expected_return=form.expected_return.data,
                 notes=f"Job Work Title: {form.job_title.data}\nType: {form.job_work_type.data}\n{form.remarks.data or ''}",
                 created_by=current_user.id,
-                bom_id=form.bom_id.data if form.bom_id.data else None
+                bom_id=form.bom_id.data if form.bom_id.data else None,
+                production_quantity=final_output_quantity if final_output_quantity > 0 else None  # Set expected output quantity for BOM jobs
             )
             
             # Move input material from store to WIP
