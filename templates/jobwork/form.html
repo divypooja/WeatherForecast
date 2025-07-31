@@ -73,37 +73,17 @@
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
                                 </td>
-                                <td>In-house / Vendor / Machine</td>
+                                <td>🔘 In-House  🔘 Outsourced</td>
                             </tr>
                             <tr>
                                 <td><strong>Assigned To</strong></td>
                                 <td>
-                                    {{ form.assigned_to(class="form-select") }}
+                                    {{ form.assigned_to(class="form-select", id="assigned_to") }}
                                     {% for error in form.assigned_to.errors %}
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
                                 </td>
-                                <td>"Faheem Welding Works"</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Send Date</strong></td>
-                                <td>
-                                    {{ form.send_date(class="form-control") }}
-                                    {% for error in form.send_date.errors %}
-                                        <div class="text-danger small">{{ error }}</div>
-                                    {% endfor %}
-                                </td>
-                                <td>2025-08-01</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Expected Return</strong></td>
-                                <td>
-                                    {{ form.expected_return(class="form-control") }}
-                                    {% for error in form.expected_return.errors %}
-                                        <div class="text-danger small">{{ error }}</div>
-                                    {% endfor %}
-                                </td>
-                                <td>2025-08-03</td>
+                                <td>Department / Vendor Selection</td>
                             </tr>
                         </tbody>
                     </table>
@@ -111,134 +91,144 @@
             </div>
         </div>
 
-        <!-- [2] Input Material & Issuance -->
+        <!-- [2] Input Material & Issuance Details -->
         <div class="card mb-4">
             <div class="card-header bg-success text-white">
-                <h5 class="mb-0"><i class="fas fa-boxes me-2"></i>Input Material & Issuance</h5>
+                <h5 class="mb-0"><i class="fas fa-box me-2"></i>Input Material & Issuance Details</h5>
             </div>
             <div class="card-body">
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i>
-                    Auto-filled from BOM or manual selection. Quantity is deducted from Raw Store on submission.
-                </div>
                 <div class="table-responsive">
-                    <table class="table table-bordered table-striped">
-                        <thead class="table-success">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
                             <tr>
-                                <th style="width: 25%;">Input Material</th>
-                                <th style="width: 15%;">UOM</th>
-                                <th style="width: 20%;">Available Stock</th>
-                                <th style="width: 20%;">Quantity to Issue</th>
-                                <th style="width: 20%;">Store</th>
+                                <th style="width: 20%;">Field</th>
+                                <th style="width: 30%;">Input Type</th>
+                                <th style="width: 50%;">Example / Note</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
+                                <td><strong>Input Material</strong></td>
                                 <td>
                                     {{ form.input_material_id(class="form-select", id="input_material") }}
                                     {% for error in form.input_material_id.errors %}
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
                                 </td>
-                                <td>
-                                    {{ form.input_uom(class="form-select") }}
-                                    {% for error in form.input_uom.errors %}
-                                        <div class="text-danger small">{{ error }}</div>
-                                    {% endfor %}
-                                </td>
+                                <td>"Ms sheet - 1mm - 4x8 feet"</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Quantity to Issue</strong></td>
                                 <td>
                                     <div class="input-group">
-                                        {{ form.available_stock(class="form-control bg-light") }}
-                                        <button type="button" class="btn btn-outline-info btn-sm" id="checkStock">
-                                            <i class="fas fa-search"></i> Check
-                                        </button>
+                                        {{ form.quantity_to_issue(class="form-control", id="quantity_to_issue") }}
+                                        <span class="input-group-text" id="input_material_unit">Units</span>
                                     </div>
-                                </td>
-                                <td>
-                                    {{ form.quantity_to_issue(class="form-control") }}
                                     {% for error in form.quantity_to_issue.errors %}
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
+                                    <button type="button" class="btn btn-sm btn-outline-primary mt-1" onclick="checkStock()">
+                                        <i class="fas fa-search"></i> Check Stock
+                                    </button>
+                                    <div id="stock_status" class="mt-1"></div>
                                 </td>
+                                <td>5 Pieces / Kg</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Store Location</strong></td>
                                 <td>
                                     {{ form.store_location(class="form-select") }}
+                                    {% for error in form.store_location.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
                                 </td>
+                                <td>🔘 Raw Store  🔘 Finished Store</td>
                             </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- [3] Process Routing Table (Dynamic Table) -->
-        <div class="card mb-4">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0"><i class="fas fa-route me-2"></i>Process Routing Table (Dynamic Table)</h5>
-            </div>
-            <div class="card-body">
-                <div class="alert alert-warning">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    Only selected (☑️) processes are saved. Final output = product from <strong>last selected step</strong>
-                </div>
-                
-                <div class="table-responsive">
-                    <table class="table table-bordered table-hover" id="processTable">
-                        <thead class="table-warning">
                             <tr>
-                                <th style="width: 5%;"><i class="fas fa-check"></i></th>
-                                <th style="width: 8%;">Seq</th>
-                                <th style="width: 15%;">Process</th>
-                                <th style="width: 20%;">Output Product</th>
-                                <th style="width: 10%;">Qty</th>
-                                <th style="width: 8%;">UOM</th>
-                                <th style="width: 12%;">Rate (₹/unit)</th>
-                                <th style="width: 5%;">QC</th>
-                                <th style="width: 8%;">Scrap %</th>
-                                <th style="width: 20%;">Notes</th>
-                                <th style="width: 5%;">Action</th>
+                                <td><strong>Send Date</strong></td>
+                                <td>
+                                    {{ form.send_date(class="form-control", type="date") }}
+                                    {% for error in form.send_date.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>Today's Date</td>
                             </tr>
-                        </thead>
-                        <tbody id="processTableBody">
-                            <!-- Process rows will be added here dynamically -->
+                            <tr>
+                                <td><strong>Expected Return</strong></td>
+                                <td>
+                                    {{ form.expected_return(class="form-control", type="date") }}
+                                    {% for error in form.expected_return.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>Target Completion Date</td>
+                            </tr>
                         </tbody>
                     </table>
-                </div>
-                
-                <div class="mt-3">
-                    <button type="button" class="btn btn-primary" id="addProcessRow">
-                        <i class="fas fa-plus me-2"></i>Add Process
-                    </button>
-                    <button type="button" class="btn btn-info" id="loadFromBOM" style="display: none;">
-                        <i class="fas fa-download me-2"></i>Load from BOM
-                    </button>
                 </div>
             </div>
         </div>
 
-        <!-- [4] Output Summary (Auto-filled) -->
+        <!-- [3] Process Routing (Dynamic Table) -->
         <div class="card mb-4">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Output Summary (Auto-filled)</h5>
+            <div class="card-header bg-warning text-white">
+                <h5 class="mb-0"><i class="fas fa-route me-2"></i>Process Routing Table</h5>
             </div>
             <div class="card-body">
                 <div class="alert alert-info">
-                    <i class="fas fa-magic me-2"></i>
-                    This is used for <strong>GRN generation + Inventory addition</strong>
+                    <i class="fas fa-info-circle"></i> Define the manufacturing processes and output products for this job work.
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-bordered table-info" id="outputSummaryTable">
-                        <thead class="table-info">
+                    <table class="table table-bordered" id="processTable">
+                        <thead class="table-light">
                             <tr>
-                                <th style="width: 60%;">Output Product</th>
-                                <th style="width: 25%;">Quantity to Produce</th>
-                                <th style="width: 15%;">UOM</th>
+                                <th style="width: 8%;">Seq</th>
+                                <th style="width: 20%;">Process Name</th>
+                                <th style="width: 22%;">Output Product</th>
+                                <th style="width: 12%;">Quantity</th>
+                                <th style="width: 12%;">Rate/Unit</th>
+                                <th style="width: 10%;">Scrap %</th>
+                                <th style="width: 8%;">QC</th>
+                                <th style="width: 8%;">Action</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="processTableBody">
+                            <!-- Dynamic rows will be added here -->
+                        </tbody>
+                    </table>
+                    <button type="button" class="btn btn-primary" onclick="addProcessRow()">
+                        <i class="fas fa-plus"></i> Add Process
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- [4] Output Summary (Auto-calculated) -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Output Summary (Auto-calculated)</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-calculator"></i> This section automatically calculates based on process routing above.
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
                             <tr>
-                                <td id="finalOutputProduct">-</td>
-                                <td id="finalOutputQuantity">-</td>
-                                <td id="finalOutputUOM">-</td>
+                                <th>Final Output Product</th>
+                                <th>Expected Quantity</th>
+                                <th>Total Cost</th>
+                                <th>Expected Scrap</th>
+                            </tr>
+                        </thead>
+                        <tbody id="outputSummary">
+                            <tr>
+                                <td id="final_output_product">-</td>
+                                <td id="final_output_quantity">-</td>
+                                <td id="total_cost">₹ 0.00</td>
+                                <td id="expected_scrap">0%</td>
                             </tr>
                         </tbody>
                     </table>
@@ -246,31 +236,28 @@
             </div>
         </div>
 
-        <!-- [5] Optional Notes & Attachments -->
+        <!-- [5] Notes & Attachments -->
         <div class="card mb-4">
             <div class="card-header bg-secondary text-white">
-                <h5 class="mb-0"><i class="fas fa-sticky-note me-2"></i>Optional Notes & Attachments</h5>
+                <h5 class="mb-0"><i class="fas fa-sticky-note me-2"></i>Notes & Attachments</h5>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-bordered">
-                        <thead class="table-secondary">
+                        <thead class="table-light">
                             <tr>
-                                <th style="width: 50%;">Remarks / Instructions</th>
-                                <th style="width: 50%;">File Upload</th>
+                                <th style="width: 20%;">Field</th>
+                                <th style="width: 80%;">Input</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
+                                <td><strong>Remarks</strong></td>
                                 <td>
-                                    {{ form.remarks(class="form-control") }}
+                                    {{ form.remarks(class="form-control", rows="3", placeholder="Additional notes or special instructions...") }}
                                     {% for error in form.remarks.errors %}
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
-                                </td>
-                                <td>
-                                    <input type="file" class="form-control" name="attachment" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
-                                    <small class="text-muted">PDF, Images, Word documents</small>
                                 </td>
                             </tr>
                         </tbody>
@@ -279,233 +266,308 @@
             </div>
         </div>
 
-        <!-- Form Actions -->
-        <div class="card">
-            <div class="card-body text-center">
-                <button type="button" class="btn btn-outline-secondary me-3" onclick="window.history.back()">
-                    <i class="fas fa-times me-2"></i>Cancel
-                </button>
+        <!-- Form Buttons -->
+        <div class="row">
+            <div class="col">
                 <button type="submit" class="btn btn-success btn-lg">
-                    <i class="fas fa-save me-2"></i>Create Job Work
+                    <i class="fas fa-save"></i> Create Job Work
                 </button>
+                <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-secondary btn-lg ms-2">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
             </div>
         </div>
-
-        <!-- Hidden fields -->
-        {{ form.job_number(type="hidden") }}
     </form>
 </div>
 
-<!-- JavaScript for dynamic functionality -->
 <script>
-let processCounter = 0;
-let processes = [];
+// Global variables for managing processes
+let processCounter = 1;
+let processData = [];
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize form
-    initializeForm();
+    // Initialize form behavior
+    const jobWorkType = document.getElementById('job_work_type');
+    const workType = document.getElementById('work_type');
+    const assignedTo = document.getElementById('assigned_to');
     
-    // Add event listeners
-    document.getElementById('job_work_type').addEventListener('change', toggleBOMSelection);
-    document.getElementById('addProcessRow').addEventListener('click', addProcessRow);
-    document.getElementById('input_material').addEventListener('change', updateAvailableStock);
-    document.getElementById('checkStock').addEventListener('click', checkStock);
+    // Job work type change handler
+    if (jobWorkType) {
+        jobWorkType.addEventListener('change', function() {
+            const bomRow = document.getElementById('bom_row');
+            if (this.value === 'bom_based') {
+                bomRow.style.display = 'table-row';
+                loadBOMs();
+            } else {
+                bomRow.style.display = 'none';
+            }
+        });
+    }
     
-    // Add initial process row
-    addProcessRow();
+    // Work type change handler
+    if (workType) {
+        workType.addEventListener('change', function() {
+            loadAssignmentOptions();
+        });
+    }
+    
+    // Input material change handler
+    const inputMaterial = document.getElementById('input_material');
+    if (inputMaterial) {
+        inputMaterial.addEventListener('change', function() {
+            updateMaterialUnit();
+        });
+    }
+    
+    // Load initial data
+    loadItems();
+    loadAssignmentOptions();
+    addProcessRow(); // Add first process row
 });
 
-function initializeForm() {
-    // Auto-generate job number
-    const today = new Date();
-    const year = today.getFullYear();
-    const jobNumber = `JOB-${year}-${String(Math.floor(Math.random() * 1000) + 1).padStart(4, '0')}`;
-    document.querySelector('input[name="job_number"]').value = jobNumber;
-}
-
-function toggleBOMSelection() {
-    const jobWorkType = document.getElementById('job_work_type').value;
-    const bomRow = document.getElementById('bom_row');
-    const loadFromBOMBtn = document.getElementById('loadFromBOM');
-    
-    if (jobWorkType === 'bom_based') {
-        bomRow.style.display = 'table-row';
-        loadFromBOMBtn.style.display = 'inline-block';
-    } else {
-        bomRow.style.display = 'none';
-        loadFromBOMBtn.style.display = 'none';
-    }
-}
-
-function addProcessRow() {
-    processCounter++;
-    const tableBody = document.getElementById('processTableBody');
-    
-    const row = document.createElement('tr');
-    row.innerHTML = `
-        <td>
-            <input type="checkbox" class="form-check-input process-checkbox" checked data-index="${processCounter}">
-        </td>
-        <td>
-            <input type="number" class="form-control form-control-sm" value="${processCounter}" min="1" data-field="sequence" data-index="${processCounter}">
-        </td>
-        <td>
-            <select class="form-select form-select-sm" data-field="process_name" data-index="${processCounter}">
-                <option value="">Select Process</option>
-                <option value="cutting">Cutting</option>
-                <option value="welding">Welding</option>
-                <option value="powder_coating">Powder Coating</option>
-                <option value="bending">Bending</option>
-                <option value="assembly">Assembly</option>
-                <option value="machining">Machining</option>
-                <option value="zinc_plating">Zinc Plating</option>
-                <option value="painting">Painting</option>
-            </select>
-        </td>
-        <td>
-            <select class="form-select form-select-sm" data-field="output_product_id" data-index="${processCounter}">
-                <option value="">Select Product</option>
-                <!-- Will be populated via AJAX -->
-            </select>
-        </td>
-        <td>
-            <input type="number" class="form-control form-control-sm" min="1" data-field="quantity" data-index="${processCounter}">
-        </td>
-        <td>
-            <select class="form-select form-select-sm" data-field="uom" data-index="${processCounter}">
-                <option value="">Select UOM</option>
-                <option value="piece">Piece</option>
-                <option value="kg">Kilogram</option>
-                <option value="sheet">Sheet</option>
-            </select>
-        </td>
-        <td>
-            <input type="number" class="form-control form-control-sm" step="0.01" min="0" data-field="rate_per_unit" data-index="${processCounter}">
-        </td>
-        <td>
-            <input type="checkbox" class="form-check-input" data-field="quality_check" data-index="${processCounter}">
-        </td>
-        <td>
-            <input type="number" class="form-control form-control-sm" step="0.1" min="0" max="100" data-field="scrap_percent" data-index="${processCounter}">
-        </td>
-        <td>
-            <input type="text" class="form-control form-control-sm" placeholder="e.g., Use laser cutter" data-field="notes" data-index="${processCounter}">
-        </td>
-        <td>
-            <button type="button" class="btn btn-danger btn-sm" onclick="removeProcessRow(this)">
-                <i class="fas fa-trash"></i>
-            </button>
-        </td>
-    `;
-    
-    tableBody.appendChild(row);
-    
-    // Add event listeners for this row
-    row.addEventListener('change', updateOutputSummary);
-    
-    // Load products for output product dropdown
-    loadProducts(row.querySelector('[data-field="output_product_id"]'));
-}
-
-function removeProcessRow(button) {
-    const row = button.closest('tr');
-    row.remove();
-    updateOutputSummary();
-}
-
-function loadProducts(selectElement) {
-    // Load products via AJAX - simplified for now
+// Load items for input material dropdown
+function loadItems() {
     fetch('/jobwork/api/items')
         .then(response => response.json())
         .then(data => {
-            selectElement.innerHTML = '<option value="">Select Product</option>';
-            data.items.forEach(item => {
-                const option = document.createElement('option');
-                option.value = item.id;
-                option.textContent = `${item.code} - ${item.name}`;
-                selectElement.appendChild(option);
-            });
+            const select = document.getElementById('input_material');
+            if (select && data.items) {
+                select.innerHTML = '<option value="">Select Material...</option>';
+                data.items.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = `${item.code} - ${item.name}`;
+                    option.setAttribute('data-unit', item.unit_of_measure);
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error('Error loading items:', error));
+}
+
+// Load BOMs for BOM-based job work
+function loadBOMs() {
+    fetch('/jobwork/api/boms')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('bom_select');
+            if (select && data.boms) {
+                select.innerHTML = '<option value="">Select BOM...</option>';
+                data.boms.forEach(bom => {
+                    const option = document.createElement('option');
+                    option.value = bom.id;
+                    option.textContent = `${bom.bom_code} - ${bom.product_name}`;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error('Error loading BOMs:', error));
+}
+
+// Load assignment options based on work type
+function loadAssignmentOptions() {
+    const workType = document.getElementById('work_type');
+    const assignedTo = document.getElementById('assigned_to');
+    
+    if (!workType || !assignedTo) return;
+    
+    if (workType.value === 'in_house') {
+        // Load departments
+        fetch('/jobwork/api/departments')
+            .then(response => response.json())
+            .then(data => {
+                assignedTo.innerHTML = '<option value="">Select Department...</option>';
+                if (data.departments) {
+                    data.departments.forEach(dept => {
+                        const option = document.createElement('option');
+                        option.value = `department_${dept.code}`;
+                        option.textContent = dept.name;
+                        assignedTo.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Error loading departments:', error));
+    } else if (workType.value === 'outsourced') {
+        // Load suppliers/vendors
+        fetch('/jobwork/api/suppliers')
+            .then(response => response.json())
+            .then(data => {
+                assignedTo.innerHTML = '<option value="">Select Vendor...</option>';
+                if (data.suppliers) {
+                    data.suppliers.forEach(supplier => {
+                        const option = document.createElement('option');
+                        option.value = `supplier_${supplier.id}`;
+                        option.textContent = supplier.name;
+                        assignedTo.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Error loading suppliers:', error));
+    }
+}
+
+// Update material unit display
+function updateMaterialUnit() {
+    const inputMaterial = document.getElementById('input_material');
+    const unitSpan = document.getElementById('input_material_unit');
+    
+    if (inputMaterial && unitSpan) {
+        const selectedOption = inputMaterial.options[inputMaterial.selectedIndex];
+        const unit = selectedOption.getAttribute('data-unit') || 'Units';
+        unitSpan.textContent = unit;
+    }
+}
+
+// Check stock availability
+function checkStock() {
+    const inputMaterial = document.getElementById('input_material');
+    const quantityToIssue = document.getElementById('quantity_to_issue');
+    const stockStatus = document.getElementById('stock_status');
+    
+    if (!inputMaterial.value) {
+        stockStatus.innerHTML = '<div class="alert alert-warning alert-sm">Please select a material first</div>';
+        return;
+    }
+    
+    fetch(`/jobwork/api/inventory/stock/${inputMaterial.value}`)
+        .then(response => response.json())
+        .then(data => {
+            const requestedQty = parseFloat(quantityToIssue.value) || 0;
+            const availableStock = data.available_stock || 0;
+            
+            let statusClass = 'alert-success';
+            let message = `Available: ${availableStock} ${data.unit_of_measure}`;
+            
+            if (requestedQty > availableStock) {
+                statusClass = 'alert-danger';
+                message += ` - Insufficient stock! Need ${requestedQty - availableStock} more.`;
+            } else if (requestedQty > availableStock * 0.8) {
+                statusClass = 'alert-warning';
+                message += ' - Low stock warning';
+            }
+            
+            stockStatus.innerHTML = `<div class="alert ${statusClass} alert-sm">${message}</div>`;
         })
         .catch(error => {
-            console.error('Error loading products:', error);
+            stockStatus.innerHTML = '<div class="alert alert-danger alert-sm">Error checking stock</div>';
+            console.error('Error checking stock:', error);
         });
 }
 
-function updateOutputSummary() {
-    const checkedRows = document.querySelectorAll('.process-checkbox:checked');
-    let lastSelectedRow = null;
-    let maxSequence = 0;
+// Add process row to routing table
+function addProcessRow() {
+    const tbody = document.getElementById('processTableBody');
+    const row = document.createElement('tr');
+    row.id = `process_row_${processCounter}`;
     
-    checkedRows.forEach(checkbox => {
-        const row = checkbox.closest('tr');
-        const sequence = parseInt(row.querySelector('[data-field="sequence"]').value) || 0;
+    row.innerHTML = `
+        <td><input type="number" class="form-control form-control-sm" value="${processCounter}" readonly></td>
+        <td><input type="text" class="form-control form-control-sm" placeholder="e.g., Cutting" required></td>
+        <td>
+            <select class="form-select form-select-sm" required>
+                <option value="">Select Output Product...</option>
+            </select>
+        </td>
+        <td><input type="number" class="form-control form-control-sm" placeholder="Qty" min="1" required></td>
+        <td><input type="number" class="form-control form-control-sm" placeholder="Rate" step="0.01" min="0"></td>
+        <td><input type="number" class="form-control form-control-sm" placeholder="%" min="0" max="100" step="0.1"></td>
+        <td><input type="checkbox" class="form-check-input process-checkbox"></td>
+        <td><button type="button" class="btn btn-sm btn-danger" onclick="removeProcessRow(${processCounter})"><i class="fas fa-trash"></i></button></td>
+    `;
+    
+    tbody.appendChild(row);
+    
+    // Load output products for the new row
+    loadOutputProducts(row.querySelector('select'));
+    
+    processCounter++;
+    updateOutputSummary();
+}
+
+// Remove process row
+function removeProcessRow(id) {
+    const row = document.getElementById(`process_row_${id}`);
+    if (row) {
+        row.remove();
+        updateOutputSummary();
+    }
+}
+
+// Load output products for dropdown
+function loadOutputProducts(selectElement) {
+    fetch('/jobwork/api/items')
+        .then(response => response.json())
+        .then(data => {
+            if (selectElement && data.items) {
+                selectElement.innerHTML = '<option value="">Select Output Product...</option>';
+                data.items.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = `${item.code} - ${item.name}`;
+                    selectElement.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error('Error loading output products:', error));
+}
+
+// Update output summary based on process routing
+function updateOutputSummary() {
+    const rows = document.querySelectorAll('#processTableBody tr');
+    let totalCost = 0;
+    let finalProduct = '-';
+    let finalQuantity = '-';
+    let totalScrap = 0;
+    
+    rows.forEach((row, index) => {
+        const quantity = parseFloat(row.cells[3].querySelector('input').value) || 0;
+        const rate = parseFloat(row.cells[4].querySelector('input').value) || 0;
+        const scrap = parseFloat(row.cells[5].querySelector('input').value) || 0;
         
-        if (sequence > maxSequence) {
-            maxSequence = sequence;
-            lastSelectedRow = row;
+        totalCost += quantity * rate;
+        totalScrap += scrap;
+        
+        // Last process defines final output
+        if (index === rows.length - 1) {
+            const productSelect = row.cells[2].querySelector('select');
+            finalProduct = productSelect.options[productSelect.selectedIndex]?.text || '-';
+            finalQuantity = quantity > 0 ? `${quantity} Units` : '-';
         }
     });
     
-    if (lastSelectedRow) {
-        const outputProductSelect = lastSelectedRow.querySelector('[data-field="output_product_id"]');
-        const quantity = lastSelectedRow.querySelector('[data-field="quantity"]').value;
-        const uom = lastSelectedRow.querySelector('[data-field="uom"]').value;
-        
-        document.getElementById('finalOutputProduct').textContent = outputProductSelect.options[outputProductSelect.selectedIndex]?.text || '-';
-        document.getElementById('finalOutputQuantity').textContent = quantity || '-';
-        document.getElementById('finalOutputUOM').textContent = uom || '-';
-    } else {
-        document.getElementById('finalOutputProduct').textContent = '-';
-        document.getElementById('finalOutputQuantity').textContent = '-';
-        document.getElementById('finalOutputUOM').textContent = '-';
-    }
-}
-
-function updateAvailableStock() {
-    const materialId = document.getElementById('input_material').value;
-    if (materialId && materialId !== '0') {
-        // Fetch available stock via AJAX
-        fetch(`/jobwork/api/inventory/stock/${materialId}`)
-            .then(response => response.json())
-            .then(data => {
-                document.querySelector('input[name="available_stock"]').value = data.available_stock || 0;
-            })
-            .catch(error => {
-                console.error('Error fetching stock:', error);
-                document.querySelector('input[name="available_stock"]').value = 0;
-            });
-    }
-}
-
-function checkStock() {
-    updateAvailableStock();
+    document.getElementById('final_output_product').textContent = finalProduct;
+    document.getElementById('final_output_quantity').textContent = finalQuantity;
+    document.getElementById('total_cost').textContent = `₹ ${totalCost.toFixed(2)}`;
+    document.getElementById('expected_scrap').textContent = rows.length > 0 ? `${(totalScrap / rows.length).toFixed(1)}%` : '0%';
 }
 
 // Form submission handler
 document.getElementById('jobWorkForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
     // Collect process data
-    const processData = [];
-    const checkedRows = document.querySelectorAll('.process-checkbox:checked');
+    const rows = document.querySelectorAll('#processTableBody tr');
+    processData = [];
     
-    checkedRows.forEach(checkbox => {
-        const row = checkbox.closest('tr');
-        const index = checkbox.dataset.index;
+    rows.forEach((row, index) => {
+        const processName = row.cells[1].querySelector('input').value;
+        const outputProductSelect = row.cells[2].querySelector('select');
+        const outputProductId = outputProductSelect.value;
+        const quantity = row.cells[3].querySelector('input').value;
+        const ratePerUnit = row.cells[4].querySelector('input').value;
+        const scrapPercent = row.cells[5].querySelector('input').value;
+        const qualityCheck = row.cells[6].querySelector('input').checked;
         
-        const processRow = {
-            sequence: row.querySelector(`[data-field="sequence"][data-index="${index}"]`).value,
-            process_name: row.querySelector(`[data-field="process_name"][data-index="${index}"]`).value,
-            output_product_id: row.querySelector(`[data-field="output_product_id"][data-index="${index}"]`).value,
-            quantity: row.querySelector(`[data-field="quantity"][data-index="${index}"]`).value,
-            uom: row.querySelector(`[data-field="uom"][data-index="${index}"]`).value,
-            rate_per_unit: row.querySelector(`[data-field="rate_per_unit"][data-index="${index}"]`).value,
-            quality_check: row.querySelector(`[data-field="quality_check"][data-index="${index}"]`).checked,
-            scrap_percent: row.querySelector(`[data-field="scrap_percent"][data-index="${index}"]`).value,
-            notes: row.querySelector(`[data-field="notes"][data-index="${index}"]`).value
-        };
-        
-        processData.push(processRow);
+        if (processName && outputProductId && quantity) {
+            processData.push({
+                sequence: index + 1,
+                process_name: processName,
+                output_product_id: outputProductId,
+                quantity: quantity,
+                rate_per_unit: ratePerUnit || 0,
+                scrap_percent: scrapPercent || 0,
+                quality_check: qualityCheck,
+                notes: ''
+            });
+        }
     });
     
     // Add process data to form
@@ -548,692 +610,4 @@ document.getElementById('jobWorkForm').addEventListener('submit', function(e) {
     font-size: 0.875rem;
 }
 </style>
-{% endblock %}
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <!-- Customer/Vendor Selection - Only for Outsourced Work -->
-                        <div class="row" id="customer-row" style="display: none;">
-                            <div class="col-md-12 mb-3">
-                                {{ form.customer_name.label(class="form-label") }}
-                                {{ form.customer_name(class="form-select", id="customer_name") }}
-                                <small class="text-muted">Select vendor/customer for this job work</small>
-                                {% if form.customer_name.errors %}
-                                    <div class="text-danger small">
-                                        {% for error in form.customer_name.errors %}
-                                            <div>{{ error }}</div>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <!-- Department Selection - Only for In-House Work -->
-                        <div class="row" id="department-row" style="display: none;">
-                            <div class="col-md-12 mb-3">
-                                {{ form.department.label(class="form-label") }}
-                                {{ form.department(class="form-select", id="department") }}
-                                <small class="text-muted">Select department for in-house work</small>
-                                {% if form.department.errors %}
-                                    <div class="text-danger small">
-                                        {% for error in form.department.errors %}
-                                            <div>{{ error }}</div>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                {{ form.quantity_sent.label(class="form-label") }}
-                                <div class="input-group">
-                                    {% if job %}
-                                        {{ form.quantity_sent(class="form-control", step="0.01", id="quantity_sent", **{"data-original-value": job.quantity_sent}) }}
-                                    {% else %}
-                                        {{ form.quantity_sent(class="form-control", step="0.01", id="quantity_sent") }}
-                                    {% endif %}
-                                    <span class="input-group-text" id="quantity-unit">units</span>
-                                    <button type="button" class="btn btn-outline-info" id="check-stock-btn" onclick="checkInventoryStock()">
-                                        <i class="fas fa-search"></i> Check Stock
-                                    </button>
-                                </div>
-                                <div id="stock-info" class="mt-2"></div>
-                                <!-- Weight conversion display -->
-                                <div id="weight-conversion" class="mt-2" style="display: none;">
-                                    <div class="alert alert-info">
-                                        <i class="fas fa-weight"></i> <strong>Weight Calculation:</strong><br>
-                                        <span id="weight-calculation-text"></span>
-                                    </div>
-                                </div>
-                                <small class="text-muted">Available stock will be checked before sending</small>
-                                {% if form.quantity_sent.errors %}
-                                    <div class="text-danger small">
-                                        {% for error in form.quantity_sent.errors %}
-                                            <div>{{ error }}</div>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                            
-                            <!-- Rate per Unit - Only for Outsourced Work --> 
-                            <div class="col-md-6 mb-3" id="rate-row" style="display: none;">
-                                {{ form.rate_per_unit.label(class="form-label") }}
-                                <div class="input-group">
-                                    {{ form.rate_per_unit(class="form-control", step="0.01", id="rate_per_unit") }}
-                                    <span class="input-group-text">₹</span>
-                                </div>
-                                <small class="text-muted">Enter the rate per unit for outsourced job work</small>
-                                {% if form.rate_per_unit.errors %}
-                                    <div class="text-danger small">
-                                        {% for error in form.rate_per_unit.errors %}
-                                            <div>{{ error }}</div>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                {{ form.expected_finished_material.label(class="form-label") }}
-                                <div class="input-group">
-                                    {{ form.expected_finished_material(class="form-control", id="expected_finished_material", step="0.01") }}
-                                    <span class="input-group-text" id="finished-material-unit">units</span>
-                                </div>
-                                <small class="text-muted">Expected finished material quantity (optional)</small>
-                                {% if form.expected_finished_material.errors %}
-                                    <div class="text-danger small">
-                                        {% for error in form.expected_finished_material.errors %}
-                                            <div>{{ error }}</div>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="col-md-6 mb-3">
-                                {{ form.expected_scrap.label(class="form-label") }}
-                                <div class="input-group">
-                                    {{ form.expected_scrap(class="form-control", id="expected_scrap", step="0.01") }}
-                                    <span class="input-group-text" id="scrap-unit">kg</span>
-                                </div>
-                                <small class="text-muted">Expected scrap weight in kg (optional)</small>
-                                {% if form.expected_scrap.errors %}
-                                    <div class="text-danger small">
-                                        {% for error in form.expected_scrap.errors %}
-                                            <div>{{ error }}</div>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                {{ form.sent_date.label(class="form-label") }} <span class="text-danger">*</span>
-                                {{ form.sent_date(class="form-control", required="required") }}
-                                <small class="text-muted">Date when materials are sent for job work</small>
-                                {% if form.sent_date.errors %}
-                                    <div class="text-danger small">
-                                        {% for error in form.sent_date.errors %}
-                                            <div>{{ error }}</div>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="col-md-6 mb-3">
-                                {{ form.expected_return.label(class="form-label") }}
-                                {{ form.expected_return(class="form-control") }}
-                                {% if form.expected_return.errors %}
-                                    <div class="text-danger small">
-                                        {% for error in form.expected_return.errors %}
-                                            <div>{{ error }}</div>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        
-                        <div class="mb-3">
-                            {{ form.notes.label(class="form-label") }}
-                            {{ form.notes(class="form-control", rows="3") }}
-                            <div class="form-text">Add details about materials sent, work required, etc.</div>
-                            {% if form.notes.errors %}
-                                <div class="text-danger small">
-                                    {% for error in form.notes.errors %}
-                                        <div>{{ error }}</div>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        
-                        <!-- Team Work Section - Only for In-House Work -->
-                        <div id="team-work-section" style="display: none;">
-                            <div class="card mb-3 border-success">
-                                <div class="card-header bg-success text-white">
-                                    <h6 class="mb-0"><i class="fas fa-users"></i> Team Work Configuration</h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row">
-                                        <div class="col-md-6 mb-3">
-                                            <div class="form-check">
-                                                {{ form.is_team_work(class="form-check-input", id="is_team_work") }}
-                                                {{ form.is_team_work.label(class="form-check-label") }}
-                                            </div>
-                                            <small class="text-muted">Enable if this job work can be divided among multiple team members</small>
-                                        </div>
-                                        <div class="col-md-6 mb-3" id="max-members-section" style="display: none;">
-                                            {{ form.max_team_members.label(class="form-label") }}
-                                            {{ form.max_team_members(class="form-control", min="1", max="10") }}
-                                            <small class="text-muted">Maximum number of team members for this job work</small>
-                                            {% if form.max_team_members.errors %}
-                                                <div class="text-danger small">
-                                                    {% for error in form.max_team_members.errors %}
-                                                        <div>{{ error }}</div>
-                                                    {% endfor %}
-                                                </div>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                    <div class="alert alert-info">
-                                        <i class="fas fa-info-circle"></i> 
-                                        <strong>Team Work Benefits:</strong> Distribute work among multiple members, track individual progress, and manage collaborative assignments efficiently.
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Total Job Cost Calculation Section -->
-                        <div class="card mb-3 bg-light">
-                            <div class="card-header">
-                                <h6 class="mb-0"><i class="fas fa-calculator"></i> Job Cost Calculation</h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <label class="form-label small fw-bold">Quantity Sent:</label>
-                                        <div id="cost-quantity">0.00 units</div>
-                                    </div>
-                                    <div class="col-md-4" id="cost-rate-section">
-                                        <label class="form-label small fw-bold">Rate per Unit:</label>
-                                        <div id="cost-rate">₹0.00</div>
-                                    </div>
-                                    <div class="col-md-4" id="cost-department-section" style="display: none;">
-                                        <label class="form-label small fw-bold">Department:</label>
-                                        <div id="cost-department">Not Selected</div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label small fw-bold">Total Job Cost:</label>
-                                        <div id="cost-total" class="fs-5 fw-bold text-primary">₹0.00</div>
-                                    </div>
-                                </div>
-                                <div class="mt-2">
-                                    <small class="text-muted">
-                                        <i class="fas fa-info-circle"></i> 
-                                        Total Cost = Quantity Sent × Rate per Unit
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="d-flex justify-content-between">
-                            <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-secondary">
-                                <i class="fas fa-times"></i> Cancel
-                            </a>
-                            <div>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-save"></i> {{ 'Update' if job else 'Save' }} Job Work
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-            
-
-        </div>
-    </div>
-</div>
-
-
-
-<script>
-// Job Work Form JavaScript - Version 2.0
-console.log('Job Work Form JavaScript loaded - Version 2.0');
-
-// Function to check inventory stock
-function checkInventoryStock() {
-    const itemSelect = document.getElementById('item_id');
-    const quantityInput = document.getElementById('quantity_sent');
-    const stockInfo = document.getElementById('stock-info');
-    
-    if (!itemSelect.value) {
-        stockInfo.innerHTML = '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle"></i> Please select an item first</div>';
-        return;
-    }
-    
-    const quantity = parseFloat(quantityInput.value) || 0;
-    
-    // Check if we're in edit mode by looking for original quantity
-    const isEditMode = window.location.pathname.includes('/edit/');
-    const originalQuantity = parseFloat(document.getElementById('quantity_sent').getAttribute('data-original-value')) || 0;
-    
-    // Fetch item stock information
-    fetch(`/inventory/api/item-stock/${itemSelect.value}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const availableStock = data.current_stock || 0;
-                const unit = data.unit_of_measure || 'units';
-                
-                let effectiveAvailableStock = availableStock;
-                
-                // For edit mode, add back the originally allocated quantity
-                if (isEditMode && originalQuantity > 0) {
-                    effectiveAvailableStock = availableStock + originalQuantity;
-                }
-                
-                let stockClass = 'alert-success';
-                let stockMessage = `Available Stock: ${availableStock} ${unit}`;
-                let stockIcon = 'fa-check-circle';
-                
-                if (isEditMode && originalQuantity > 0) {
-                    stockMessage = `Current Stock: ${availableStock} ${unit} (+ ${originalQuantity} ${unit} currently allocated) = ${effectiveAvailableStock} ${unit} available`;
-                }
-                
-                if (quantity > effectiveAvailableStock) {
-                    stockClass = 'alert-danger';
-                    stockMessage = `Insufficient Stock! Available: ${effectiveAvailableStock} ${unit}, Required: ${quantity} ${unit}`;
-                    stockIcon = 'fa-exclamation-triangle';
-                } else if (availableStock < 10) { // Low stock warning
-                    stockClass = 'alert-warning';
-                    stockMessage = `Low Stock Warning: ${effectiveAvailableStock} ${unit} available`;
-                    stockIcon = 'fa-exclamation-circle';
-                }
-                
-                stockInfo.innerHTML = `<div class="alert ${stockClass}"><i class="fas ${stockIcon}"></i> ${stockMessage}</div>`;
-            } else {
-                stockInfo.innerHTML = '<div class="alert alert-danger"><i class="fas fa-times"></i> Error checking stock</div>';
-            }
-        })
-        .catch(error => {
-            stockInfo.innerHTML = '<div class="alert alert-danger"><i class="fas fa-times"></i> Error checking stock</div>';
-        });
-}
-
-// Function to load job work rate from rates table
-function loadJobWorkRate() {
-    const itemSelect = document.getElementById('item_id');
-    const processSelect = document.getElementById('process_type');
-    const rateInput = document.getElementById('rate_per_unit');
-    
-    if (!itemSelect.value || !rateInput) return;
-    
-    const processType = processSelect ? processSelect.value : '';
-    
-    fetch(`/jobwork-rates/api/get-rate/${itemSelect.value}?process_type=${processType}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                rateInput.value = data.rate.toFixed(2);
-                
-                // Show a small notification that rate was loaded
-                const rateGroup = rateInput.closest('.mb-3');
-                if (rateGroup) {
-                    const existingNote = rateGroup.querySelector('.rate-loaded-note');
-                    if (existingNote) existingNote.remove();
-                    
-                    const note = document.createElement('small');
-                    note.className = 'text-success rate-loaded-note';
-                    note.innerHTML = '<i class="fas fa-check-circle"></i> Rate loaded from rates table';
-                    rateGroup.appendChild(note);
-                    
-                    // Remove note after 3 seconds
-                    setTimeout(() => {
-                        if (note.parentNode) note.remove();
-                    }, 3000);
-                }
-            }
-        })
-        .catch(error => {
-            console.log('No rate found for this item/process combination');
-        });
-}
-
-
-
-// Function to toggle customer/department fields based on work type
-function toggleCustomerFields() {
-    const workTypeSelect = document.getElementById('work_type');
-    const customerRow = document.getElementById('customer-row');
-    const departmentRow = document.getElementById('department-row');
-    const rateRow = document.getElementById('rate-row');
-    const customerNameSelect = document.getElementById('customer_name');
-    const departmentSelect = document.getElementById('department');
-    const rateInput = document.getElementById('rate_per_unit');
-    
-    if (workTypeSelect.value === 'in_house') {
-        // Hide customer and rate fields, show department fields
-        customerRow.style.display = 'none';
-        departmentRow.style.display = 'block';
-        rateRow.style.display = 'none';
-        
-        // Clear customer and rate validation requirements
-        if (customerNameSelect) {
-            customerNameSelect.removeAttribute('required');
-            customerNameSelect.value = '';
-        }
-        if (rateInput) {
-            rateInput.removeAttribute('required');
-            rateInput.value = '0'; // Set to 0 for in-house work
-        }
-        
-        // Add department validation requirement
-        if (departmentSelect) {
-            departmentSelect.setAttribute('required', 'required');
-        }
-    } else if (workTypeSelect.value === 'outsourced') {
-        // Show customer and rate fields, hide department fields
-        customerRow.style.display = 'block';
-        departmentRow.style.display = 'none';
-        rateRow.style.display = 'block';
-        
-        // Add customer and rate validation requirements
-        if (customerNameSelect) {
-            customerNameSelect.setAttribute('required', 'required');
-        }
-        if (rateInput) {
-            rateInput.setAttribute('required', 'required');
-            if (rateInput.value === '0') {
-                rateInput.value = ''; // Clear the 0 value when switching to outsourced
-            }
-        }
-        
-        // Clear department validation requirement
-        if (departmentSelect) {
-            departmentSelect.removeAttribute('required');
-            departmentSelect.value = '';
-        }
-    } else {
-        // Hide all if no work type selected
-        customerRow.style.display = 'none';
-        departmentRow.style.display = 'none';
-        rateRow.style.display = 'none';
-        
-        // Clear all requirements
-        if (customerNameSelect) {
-            customerNameSelect.removeAttribute('required');
-        }
-        if (departmentSelect) {
-            departmentSelect.removeAttribute('required');
-        }
-        if (rateInput) {
-            rateInput.removeAttribute('required');
-        }
-    }
-}
-
-// Function to toggle between rate and department fields based on work type (kept for legacy compatibility)
-function toggleWorkTypeFields() {
-    toggleCustomerFields();
-    toggleTeamWorkSection();
-}
-
-// Function to toggle team work section visibility based on work type
-function toggleTeamWorkSection() {
-    const workTypeSelect = document.getElementById('work_type');
-    const teamWorkSection = document.getElementById('team-work-section');
-    
-    if (workTypeSelect.value === 'in_house') {
-        teamWorkSection.style.display = 'block';
-    } else {
-        teamWorkSection.style.display = 'none';
-        // Reset team work fields when hiding
-        const isTeamWorkCheckbox = document.getElementById('is_team_work');
-        const maxMembersInput = document.getElementById('max_team_members');
-        if (isTeamWorkCheckbox) isTeamWorkCheckbox.checked = false;
-        if (maxMembersInput) maxMembersInput.value = '1';
-        toggleMaxMembersField();
-    }
-}
-
-// Function to toggle max members field based on team work checkbox
-function toggleMaxMembersField() {
-    const isTeamWorkCheckbox = document.getElementById('is_team_work');
-    const maxMembersSection = document.getElementById('max-members-section');
-    
-    if (isTeamWorkCheckbox && isTeamWorkCheckbox.checked) {
-        maxMembersSection.style.display = 'block';
-    } else {
-        maxMembersSection.style.display = 'none';
-    }
-}
-
-// Function to update cost calculation based on work type
-function updateCostCalculation() {
-    const workTypeSelect = document.getElementById('work_type');
-    const quantityInput = document.getElementById('quantity_sent');
-    const rateInput = document.getElementById('rate_per_unit');
-    const departmentSelect = document.getElementById('department');
-    const itemSelect = document.getElementById('item_id');
-    
-    const costQuantity = document.getElementById('cost-quantity');
-    const costRate = document.getElementById('cost-rate');
-    const costDepartment = document.getElementById('cost-department');
-    const costTotal = document.getElementById('cost-total');
-    
-    const quantity = parseFloat(quantityInput.value) || 0;
-    const rate = parseFloat(rateInput.value) || 0;
-    
-    // Get unit from selected item
-    let unit = 'units';
-    if (itemSelect && itemSelect.selectedOptions.length > 0) {
-        const itemText = itemSelect.selectedOptions[0].text;
-        // Try to extract unit from item text if available
-        unit = 'units'; // Default fallback
-    }
-    
-    // Update quantity display
-    costQuantity.textContent = `${quantity.toFixed(2)} ${unit}`;
-    
-    if (workTypeSelect.value === 'in_house') {
-        // For in-house work, show department and no cost calculation
-        const selectedDepartment = departmentSelect.value;
-        costDepartment.textContent = selectedDepartment ? 
-            departmentSelect.selectedOptions[0].text : 'Not Selected';
-        costTotal.textContent = 'Internal Cost';
-        costTotal.className = 'fs-5 fw-bold text-success';
-    } else {
-        // For outsourced work, calculate total cost
-        costRate.textContent = `₹${rate.toFixed(2)}`;
-        const totalCost = quantity * rate;
-        costTotal.textContent = `₹${totalCost.toFixed(2)}`;
-        costTotal.className = 'fs-5 fw-bold text-primary';
-    }
-}
-
-// Auto-check stock when item or quantity changes
-document.addEventListener('DOMContentLoaded', function() {
-    const itemSelect = document.getElementById('item_id');
-    const quantityInput = document.getElementById('quantity_sent');
-    
-    if (itemSelect && quantityInput) {
-        itemSelect.addEventListener('change', function() {
-            checkInventoryStock();
-            updateUnitLabels();
-            loadJobWorkRate(); // Auto-load rate from rates table
-        });
-        quantityInput.addEventListener('input', function() {
-            if (itemSelect.value) {
-                checkInventoryStock();
-                updateWeightConversion();
-            }
-        });
-    }
-    
-    // Add work type change listener
-    const workTypeSelect = document.getElementById('work_type');
-    if (workTypeSelect) {
-        workTypeSelect.addEventListener('change', function() {
-            toggleCustomerFields();
-            toggleTeamWorkSection();
-        });
-        // Initialize on page load
-        toggleCustomerFields();
-        toggleTeamWorkSection();
-    }
-    
-    // Initialize unit labels and stock check on page load (important for edit forms)
-    if (itemSelect && itemSelect.value && itemSelect.value !== '0') {
-        updateUnitLabels();
-        checkInventoryStock();
-    }
-    
-    // Add team work checkbox listener
-    const isTeamWorkCheckbox = document.getElementById('is_team_work');
-    if (isTeamWorkCheckbox) {
-        isTeamWorkCheckbox.addEventListener('change', toggleMaxMembersField);
-        // Initialize on page load
-        toggleMaxMembersField();
-    }
-    
-    // Add rate and department change listeners for cost calculation
-    const rateInput = document.getElementById('rate_per_unit');
-    const departmentSelect = document.getElementById('department');
-    if (rateInput) {
-        rateInput.addEventListener('input', updateCostCalculation);
-    }
-    if (departmentSelect) {
-        departmentSelect.addEventListener('change', updateCostCalculation);
-    }
-    
-    // Add process change listener for rate loading
-    const processSelect = document.getElementById('process_type');
-    if (processSelect) {
-        processSelect.addEventListener('change', function() {
-            loadJobWorkRate(); // Reload rate when process changes
-        });
-    }
-});
-
-// Function to update unit labels based on selected item
-function updateUnitLabels() {
-    const itemId = document.getElementById('item_id').value;
-    if (itemId && itemId !== '0') {
-        fetch(`/inventory/api/item-stock/${itemId}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const unit = data.unit_of_measure || 'units';
-                    const unitWeight = data.unit_weight || 0;
-                    
-                    // Update all unit labels in the form
-                    document.getElementById('quantity-unit').textContent = unit;
-                    document.getElementById('finished-material-unit').textContent = unit;
-                    document.getElementById('scrap-unit').textContent = unit;
-                    
-                    // Store unit weight for calculations
-                    window.currentItemUnitWeight = unitWeight;
-                    window.currentItemUnit = unit;
-                    
-                    // Update weight conversion display
-                    updateWeightConversion();
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching item details:', error);
-            });
-    } else {
-        // Reset to default units when no item selected
-        document.getElementById('quantity-unit').textContent = 'units';
-        document.getElementById('finished-material-unit').textContent = 'units';
-        document.getElementById('scrap-unit').textContent = 'units';
-        document.getElementById('weight-conversion').style.display = 'none';
-        window.currentItemUnitWeight = 0;
-        window.currentItemUnit = 'units';
-    }
-}
-
-// Function to update weight conversion display
-function updateWeightConversion() {
-    const quantityInput = document.getElementById('quantity_sent');
-    const weightConversionDiv = document.getElementById('weight-conversion');
-    const weightCalculationText = document.getElementById('weight-calculation-text');
-    
-    if (!quantityInput || !weightConversionDiv || !weightCalculationText) return;
-    
-    const quantity = parseFloat(quantityInput.value) || 0;
-    const unitWeight = window.currentItemUnitWeight || 0;
-    const unit = window.currentItemUnit || 'units';
-    
-    // Show weight conversion if unit is not already weight-based and unit weight is available
-    const isWeightUnit = ['kg', 'g', 'gm', 'gram', 'kilogram', 'ton', 'tonne'].includes(unit.toLowerCase());
-    
-    if (!isWeightUnit && unitWeight > 0 && quantity > 0) {
-        const totalWeight = quantity * unitWeight;
-        const weightUnit = totalWeight >= 1 ? 'kg' : 'g';
-        const displayWeight = totalWeight >= 1 ? totalWeight.toFixed(3) : (totalWeight * 1000).toFixed(1);
-        
-        weightCalculationText.innerHTML = `
-            ${quantity} ${unit} × ${unitWeight} kg/unit = <strong>${displayWeight} ${weightUnit}</strong>
-        `;
-        weightConversionDiv.style.display = 'block';
-    } else {
-        weightConversionDiv.style.display = 'none';
-    }
-}
-
-// Update cost calculation display
-function updateCostCalculation() {
-    const quantityInput = document.getElementById('quantity_sent');
-    const rateInput = document.getElementById('rate_per_unit');
-    const itemSelect = document.getElementById('item_id');
-    
-    const quantity = parseFloat(quantityInput.value) || 0;
-    const rate = parseFloat(rateInput.value) || 0;
-    const totalCost = quantity * rate;
-    
-    // Get unit from selected item or default
-    let unit = 'units';
-    if (window.currentItemUnit) {
-        unit = window.currentItemUnit;
-    } else if (itemSelect.selectedIndex > 0) {
-        const selectedOption = itemSelect.options[itemSelect.selectedIndex];
-        unit = selectedOption.getAttribute('data-unit') || 'units';
-    }
-    
-    // Update cost display
-    document.getElementById('cost-quantity').textContent = `${quantity.toFixed(2)} ${unit}`;
-    document.getElementById('cost-rate').textContent = `₹${rate.toFixed(2)}`;
-    document.getElementById('cost-total').textContent = `₹${totalCost.toFixed(2)}`;
-}
-
-// Enhanced event listeners to include cost calculation
-document.addEventListener('DOMContentLoaded', function() {
-    const quantityInput = document.getElementById('quantity_sent');
-    const rateInput = document.getElementById('rate_per_unit');
-    const itemSelect = document.getElementById('item_id');
-    
-    // Update cost calculation when values change
-    if (quantityInput) {
-        quantityInput.addEventListener('input', updateCostCalculation);
-    }
-    if (rateInput) {
-        rateInput.addEventListener('input', updateCostCalculation);
-    }
-    if (itemSelect) {
-        itemSelect.addEventListener('change', updateCostCalculation);
-    }
-    
-    // Initial cost calculation update
-    updateCostCalculation();
-});
-</script>
 {% endblock %}
