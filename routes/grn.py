@@ -682,11 +682,22 @@ def quick_receive_po(purchase_order_id, item_id):
             
             # Update inventory if adding to stock
             if form.add_to_inventory.data and quantity_passed > 0:
-                # Add to multi-state inventory (raw materials from PO)
-                item.qty_raw = (item.qty_raw or 0) + quantity_passed
-                # Add rejected quantity to scrap if any
+                # Add to multi-state inventory based on material destination from PO
+                destination = po_item.material_destination or 'raw_material'
+                
+                if destination == 'raw_material':
+                    item.qty_raw = (item.qty_raw or 0) + quantity_passed
+                elif destination == 'finished':
+                    item.qty_finished = (item.qty_finished or 0) + quantity_passed
+                elif destination == 'wip':
+                    item.qty_wip = (item.qty_wip or 0) + quantity_passed
+                elif destination == 'scrap':
+                    item.qty_scrap = (item.qty_scrap or 0) + quantity_passed
+                
+                # Add rejected quantity to scrap regardless of destination
                 if form.quantity_rejected.data and form.quantity_rejected.data > 0:
                     item.qty_scrap = (item.qty_scrap or 0) + form.quantity_rejected.data
+                    
                 grn.add_to_inventory = True  # Set the flag to True when inventory is updated
             else:
                 grn.add_to_inventory = False  # Set the flag to False when inventory is not updated

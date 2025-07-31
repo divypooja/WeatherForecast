@@ -622,6 +622,7 @@ def process_po_items(po, form_data):
                 drawing_spec = form_data.get(f'drawing_spec_{prefix}', '')
                 hsn_code = form_data.get(f'hsn_code_{prefix}', '')
                 gst_rate = float(form_data.get(f'gst_rate_{prefix}', 18.0) or 18.0)
+                material_destination = form_data.get(f'material_destination_{prefix}', 'raw_material')
                 uom = form_data.get(f'uom_{prefix}', '')
                 qty = float(form_data.get(f'qty_{prefix}', 0) or 0)
                 rate = float(form_data.get(f'rate_{prefix}', 0) or 0)
@@ -637,6 +638,7 @@ def process_po_items(po, form_data):
                         drawing_spec_no=drawing_spec,
                         hsn_code=hsn_code,
                         gst_rate=gst_rate,
+                        material_destination=material_destination,
                         uom=uom,
                         qty=qty,
                         rate=rate,

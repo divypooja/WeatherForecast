@@ -6,6 +6,18 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (July 31, 2025)
 
+### Complete Purchase Order Material Destination System Implementation (July 31, 2025)
+- **Material Classification Enhancement**: Enhanced Purchase Order system with material destination selection for proper inventory state routing during GRN material receipt
+- **PO Form Enhancement**: Added Material Destination column to Purchase Order form template with dropdown selection (Raw Material, Finished Goods, Work in Progress, Scrap/Waste)
+- **Enhanced PO Model**: Extended PurchaseOrderItem model with material_destination field allowing proper classification of incoming materials based on intended use
+- **GRN Integration**: Updated GRN quick receive logic to route materials to correct inventory states (qty_raw, qty_finished, qty_wip, qty_scrap) based on PO item material destination
+- **Database Migration**: Successfully executed database migration adding material_destination column to purchase_order_items table with backward compatibility defaults
+- **JavaScript Enhancement**: Updated addPOItem function to include material destination field for new items with default "Raw Material" selection
+- **Form Processing**: Enhanced process_po_items function in routes/purchase.py to handle material_destination field from form data during PO creation and editing
+- **User Experience**: Material destination defaults to "Raw Material" for existing PO items ensuring backward compatibility while enabling advanced material classification
+- **System Integration**: Complete integration allows PO → GRN → Inventory workflow with proper material state routing based on intended use classification
+- **Professional UI**: Material destination selection with clear labels and color-coded options for intuitive material classification during procurement
+
 ### Unified Inventory Management Table Implementation (July 31, 2025)
 - **Single Comprehensive Table**: Created unified inventory view combining standard inventory list with multi-state breakdown (Raw, WIP, Finished, Scrap) in one table for better usability
 - **Complete Information Display**: Table shows Item Code, Name, Type, UOM, all multi-state quantities (Raw Material, WIP, Finished, Scrap), Total Stock, Available Stock, Unit Price, and Stock Value

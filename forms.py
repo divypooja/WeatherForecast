@@ -149,6 +149,15 @@ class PurchaseOrderItemForm(FlaskForm):
     quantity_ordered = FloatField('Quantity', validators=[DataRequired(), NumberRange(min=0)])
     uom = SelectField('Unit of Measure', validators=[DataRequired()], coerce=str)
     unit_price = FloatField('Unit Price', validators=[DataRequired(), NumberRange(min=0)])
+    material_destination = SelectField('Material Destination', 
+                                     validators=[DataRequired()], 
+                                     choices=[
+                                         ('raw_material', 'Raw Material'),
+                                         ('finished', 'Finished Goods'),
+                                         ('wip', 'Work in Progress'),
+                                         ('scrap', 'Scrap/Waste')
+                                     ],
+                                     default='raw_material')
     
     def __init__(self, *args, **kwargs):
         super(PurchaseOrderItemForm, self).__init__(*args, **kwargs)
