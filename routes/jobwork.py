@@ -266,6 +266,16 @@ def add_job_work():
     """New redesigned job work form with BOM/Manual selection and process routing"""
     form = JobWorkForm()
     
+    # Debug form submission
+    if request.method == 'POST':
+        print(f"Form validation result: {form.validate_on_submit()}")
+        print(f"Form data: {request.form}")
+        if form.errors:
+            print(f"Form errors: {form.errors}")
+            for field, errors in form.errors.items():
+                print(f"Field {field}: {errors}")
+                flash(f"Validation error in {field}: {', '.join(errors)}", 'error')
+    
     if form.validate_on_submit():
         try:
             # Generate job number
