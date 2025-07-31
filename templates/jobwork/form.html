@@ -1223,15 +1223,17 @@ document.getElementById('jobWorkForm').addEventListener('submit', function(e) {
         }
     });
     
-    // Add process data to form
-    const processInput = document.createElement('input');
-    processInput.type = 'hidden';
-    processInput.name = 'process_data';
-    processInput.value = JSON.stringify(processData);
-    this.appendChild(processInput);
+    // Add process data to form (only if not already added)
+    if (!this.querySelector('input[name="process_data"]')) {
+        const processInput = document.createElement('input');
+        processInput.type = 'hidden';
+        processInput.name = 'process_data';
+        processInput.value = JSON.stringify(processData);
+        this.appendChild(processInput);
+    }
     
-    // Submit form
-    this.submit();
+    // Allow normal form submission (don't call submit() again)
+    console.log('Form submitting with process data:', processData);
 });
 </script>
 
