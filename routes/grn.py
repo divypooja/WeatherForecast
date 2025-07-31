@@ -640,7 +640,7 @@ def quick_receive_po(purchase_order_id, item_id):
     
     if not po_item:
         flash('Item not found in this purchase order.', 'error')
-        return redirect(url_for('purchase.edit_purchase_order', id=purchase_order_id))
+        return redirect(url_for('grn.dashboard'))
     
     form = QuickReceivePOForm()
     form.purchase_order_id.data = purchase_order_id
@@ -704,7 +704,7 @@ def quick_receive_po(purchase_order_id, item_id):
             update_po_status_based_on_grn(purchase_order_id)
             
             flash(f'Materials received successfully! GRN {grn.grn_number} created for PO {purchase_order.po_number}.', 'success')
-            return redirect(url_for('purchase.edit_purchase_order', id=purchase_order_id))
+            return redirect(url_for('grn.dashboard'))
             
         except Exception as e:
             db.session.rollback()
