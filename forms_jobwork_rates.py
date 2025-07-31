@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
-from wtforms import SelectField, FloatField, TextAreaField, BooleanField, SubmitField
-from wtforms.validators import DataRequired, NumberRange
+from wtforms import SelectField, FloatField, TextAreaField, BooleanField, SubmitField, StringField
+from wtforms.validators import DataRequired, NumberRange, Optional, Length
 from models import Item
 
 class JobWorkRateForm(FlaskForm):
@@ -17,6 +17,8 @@ class JobWorkRateForm(FlaskForm):
         ('Machining', 'Machining'),
         ('Polishing', 'Polishing')
     ])
+    vendor_name = StringField('Vendor Name (Optional)', validators=[Optional(), Length(max=200)], 
+                             render_kw={"placeholder": "Vendor/Supplier Name"})
     notes = TextAreaField('Notes')
     is_active = BooleanField('Active', default=True)
     submit = SubmitField('Save Rate')

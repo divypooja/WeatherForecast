@@ -77,6 +77,7 @@ def add_rate():
             item_id=form.item_id.data,
             rate_per_unit=form.rate_per_unit.data,
             process_type=form.process_type.data if form.process_type.data else None,
+            vendor_name=form.vendor_name.data if form.vendor_name.data else None,
             notes=form.notes.data,
             is_active=form.is_active.data
         )
@@ -111,6 +112,7 @@ def edit_rate(rate_id):
         rate.item_id = form.item_id.data
         rate.rate_per_unit = form.rate_per_unit.data
         rate.process_type = form.process_type.data if form.process_type.data else None
+        rate.vendor_name = form.vendor_name.data if form.vendor_name.data else None
         rate.notes = form.notes.data
         rate.is_active = form.is_active.data
         

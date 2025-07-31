@@ -64,7 +64,24 @@
                     </div>
                     <div class="col-md-6">
                         <div class="mb-3">
-                            <div class="form-check mt-4">
+                            {{ form.vendor_name.label(class="form-label") }}
+                            {{ form.vendor_name(class="form-control") }}
+                            <div class="form-text">Optional vendor/supplier name for this rate</div>
+                            {% if form.vendor_name.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.vendor_name.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <div class="form-check mt-2">
                                 {{ form.is_active(class="form-check-input") }}
                                 {{ form.is_active.label(class="form-check-label") }}
                             </div>
@@ -116,6 +133,9 @@
                             <span class="badge bg-secondary">All Processes</span>
                         {% endif %}
                     </p>
+                    {% if rate.vendor_name %}
+                    <p><strong>Vendor:</strong> <span class="badge bg-success">{{ rate.vendor_name }}</span></p>
+                    {% endif %}
                     <p><strong>Created:</strong> {{ rate.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
                 </div>
             </div>
