@@ -58,12 +58,17 @@
                             <tr>
                                 <td><strong>Job Work Title</strong></td>
                                 <td>
-                                    {{ form.job_title(class="form-control") }}
+                                    <div class="input-group">
+                                        {{ form.job_title(class="form-control") }}
+                                        <button type="button" class="btn btn-outline-info btn-sm" id="generateTitleBtn" onclick="autoFillJobTitle(true)" title="Auto-generate title">
+                                            <i class="fas fa-magic"></i>
+                                        </button>
+                                    </div>
                                     {% for error in form.job_title.errors %}
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
                                 </td>
-                                <td>"JW-008 – Base Plate Work"</td>
+                                <td>"JW-008 – Base Plate Work" <i class="fas fa-magic text-info" title="Auto-generated for Manual jobs"></i></td>
                             </tr>
                             <tr>
                                 <td><strong>Work Type</strong></td>
@@ -889,6 +894,74 @@ function clearJobWorkTitle() {
     }
 }
 
+// Auto-fill Job Work Title for Manual jobs
+function autoFillJobTitle(force = false) {
+    const jobWorkType = document.getElementById('job_work_type').value;
+    const titleField = document.querySelector('input[name="job_title"]');
+    
+    console.log('autoFillJobTitle called:', {jobWorkType, force, hasField: !!titleField, currentValue: titleField?.value});
+    
+    if (jobWorkType === 'manual' && titleField && (force || !titleField.value.trim())) {
+        // Show loading state
+        const generateBtn = document.getElementById('generateTitleBtn');
+        if (generateBtn) {
+            generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            generateBtn.disabled = true;
+        }
+        
+        // Get CSRF token
+        const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
+        
+        // Auto-generate title for manual job work
+        fetch('/jobwork/api/generate_title', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken || ''
+            },
+            credentials: 'same-origin'
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('API response:', data);
+                if (data.title) {
+                    titleField.value = data.title;
+                    // Add a subtle visual indication that the title was auto-filled
+                    titleField.style.backgroundColor = '#e8f5e8';
+                    setTimeout(() => {
+                        titleField.style.backgroundColor = '';
+                    }, 2000);
+                } else if (data.error) {
+                    throw new Error(data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error generating title:', error);
+                // Fallback: generate a simple title
+                const today = new Date();
+                const year = today.getFullYear();
+                const randomNum = String(Math.floor(Math.random() * 1000) + 1).padStart(3, '0');
+                titleField.value = `JW-${randomNum} – Manual Work`;
+                titleField.style.backgroundColor = '#fff3cd';
+                setTimeout(() => {
+                    titleField.style.backgroundColor = '';
+                }, 2000);
+            })
+            .finally(() => {
+                // Reset button state
+                if (generateBtn) {
+                    generateBtn.innerHTML = '<i class="fas fa-magic"></i>';
+                    generateBtn.disabled = false;
+                }
+            });
+    }
+}
+
 // Update Output Summary based on process routing
 function updateOutputSummary() {
     const processRows = document.querySelectorAll('#processTableBody tr');
@@ -1193,6 +1266,22 @@ function updateOutputSummary() {
     document.getElementById('total_cost').textContent = `₹ ${totalCost.toFixed(2)}`;
     document.getElementById('expected_scrap').textContent = rows.length > 0 ? `${(totalScrap / rows.length).toFixed(1)}%` : '0%';
 }
+
+// Initialize page and add event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listener for job work type change
+    const jobWorkTypeSelect = document.getElementById('job_work_type');
+    if (jobWorkTypeSelect) {
+        jobWorkTypeSelect.addEventListener('change', function() {
+            autoFillJobTitle(); // Auto-fill when Manual is selected
+        });
+        
+        // Auto-fill on page load if Manual is already selected
+        if (jobWorkTypeSelect.value === 'manual') {
+            autoFillJobTitle();
+        }
+    }
+});
 
 // Form submission handler
 document.getElementById('jobWorkForm').addEventListener('submit', function(e) {
