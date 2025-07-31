@@ -143,24 +143,36 @@ def export_sales_orders(sales_orders):
     return create_excel_response(df, filename, "Sales Orders")
 
 def export_inventory_items(items):
-    """Export inventory items to Excel"""
+    """Export inventory items to Excel with multi-state inventory details"""
     data = []
     for item in items:
+        # Calculate stock values
+        stock_value = (item.available_stock or 0) * (item.unit_price or 0)
+        
         data.append({
             'Item Code': item.code,
             'Item Name': item.name,
-            'Category': item.item_type.title() if item.item_type else '',
-            'Current Stock': float(item.current_stock) if item.current_stock else 0,
-            'Unit': item.unit_of_measure or '',
-            'Unit Weight (kg)': float(item.unit_weight) if item.unit_weight else 0,
-            'Total Weight (kg)': float((item.unit_weight or 0) * (item.current_stock or 0)) if item.unit_weight and item.current_stock else 0,
+            'Type': item.display_item_type if hasattr(item, 'display_item_type') else (item.item_type.title() if item.item_type else ''),
+            'UOM': item.unit_of_measure or '',
+            
+            # Multi-State Inventory Columns
+            'Raw Material': float(item.qty_raw or 0),
+            'WIP': float(item.total_wip or 0) if hasattr(item, 'total_wip') else float(item.qty_wip or 0),
+            'Finished': float(item.qty_finished or 0),
+            'Scrap': float(item.qty_scrap or 0),
+            
+            # Summary Columns  
+            'Total Stock': float(item.total_stock or 0) if hasattr(item, 'total_stock') else float(item.current_stock or 0),
+            'Available Stock': float(item.available_stock or 0) if hasattr(item, 'available_stock') else float(item.current_stock or 0),
+            'Min Stock': float(item.minimum_stock or 0),
             'Unit Price (₹)': float(item.unit_price) if item.unit_price else 0,
-            'Reorder Level': float(item.reorder_level) if item.reorder_level else 0,
+            'Stock Value (₹)': float(stock_value),
+            
+            # Additional Information
+            'Unit Weight (kg)': float(item.unit_weight) if item.unit_weight else 0,
             'HSN Code': item.hsn_code or '',
             'GST Rate (%)': float(item.gst_rate) if item.gst_rate else 0,
-            'Location': item.location or '',
-            'Status': 'Active' if item.is_active else 'Inactive',
-            'Created Date': item.created_at.strftime('%d/%m/%Y %H:%M') if item.created_at else '',
+            'Last Updated': item.created_at.strftime('%d/%m/%Y') if item.created_at else '',
         })
     
     df = pd.DataFrame(data)
