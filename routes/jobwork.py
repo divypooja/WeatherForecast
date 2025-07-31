@@ -192,19 +192,28 @@ def api_bom_details(bom_id):
         try:
             from models import BOMProcess
             for bom_process in bom.processes:
+                # Get department/vendor name
+                department_name = ""
+                vendor_name = ""
+                if bom_process.department:
+                    department_name = bom_process.department.name
+                if bom_process.vendor:
+                    vendor_name = bom_process.vendor.name
+                    
                 processes.append({
                     'sequence': bom_process.step_number,
                     'process_name': bom_process.process_name,
-                    'operation_description': bom_process.operation_description,
-                    'setup_time': bom_process.setup_time_minutes,
-                    'runtime_per_unit': bom_process.runtime_per_unit_minutes,
-                    'labor_rate': bom_process.labor_rate_per_hour,
-                    'is_outsourced': bom_process.is_outsourced,
-                    'department': bom_process.department,
-                    'vendor': bom_process.vendor
+                    'operation_description': bom_process.operation_description or '',
+                    'setup_time': bom_process.setup_time_minutes or 0,
+                    'runtime_per_unit': bom_process.run_time_minutes or 0,  # Correct field name
+                    'labor_rate': bom_process.labor_rate_per_hour or 0,
+                    'is_outsourced': bom_process.is_outsourced or False,
+                    'department': department_name,
+                    'vendor': vendor_name,
+                    'cost_per_unit': bom_process.cost_per_unit or 0
                 })
-        except ImportError:
-            # BOMProcess model not available
+        except (ImportError, AttributeError) as e:
+            # BOMProcess model not available or field missing
             processes = []
         
         return jsonify({
