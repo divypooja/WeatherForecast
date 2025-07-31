@@ -153,7 +153,7 @@ def add_production():
 def edit_production(id):
     production = Production.query.get_or_404(id)
     form = ProductionForm(obj=production)
-    form.item_id.choices = [(i.id, f"{i.code} - {i.name}") for i in Item.query.filter(Item.item_type == 'product').all()]
+    form.item_id.choices = [(0, 'Select Item')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.order_by(Item.name).all()]
     
     if form.validate_on_submit():
         # Check if production number already exists (excluding current production)

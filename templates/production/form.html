@@ -44,9 +44,8 @@
                             </div>
                             
                             <div class="col-md-6 mb-3">
-                                {{ form.item_id.label(class="form-label") }}
-                                <select name="item_id" id="item_id" class="form-select selectpicker" data-live-search="true" data-size="10" required>
-                                    <option value="">Select Item to Produce</option>
+                                <label for="item_id" class="form-label">Item to Produce</label>
+                                <select name="item_id" id="item_id" class="selectpicker form-control" data-live-search="true" data-size="10" title="Select Item to Produce..." required>
                                     {% for item_id, item_display in form.item_id.choices %}
                                         {% if item_id != 0 %}
                                         <option value="{{ item_id }}" {% if form.item_id.data == item_id %}selected{% endif %}>
@@ -362,12 +361,15 @@ document.addEventListener('DOMContentLoaded', function() {
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Bootstrap Select for searchable dropdown
-    $('.selectpicker').selectpicker({
-        liveSearch: true,
-        size: 10,
-        dropupAuto: false,
-        title: 'Select Item to Produce...'
-    });
+    setTimeout(function() {
+        $('.selectpicker').selectpicker({
+            liveSearch: true,
+            size: 10,
+            dropupAuto: false,
+            style: 'btn-outline-secondary',
+            title: 'Select Item to Produce...'
+        });
+    }, 100);
     
     const statusSelect = document.getElementById('status');
     const productionResults = document.getElementById('production-results');
