@@ -138,41 +138,61 @@ def delete_rate(rate_id):
 def get_item_rate(item_id):
     """API endpoint to get job work rate for an item"""
     process_type = request.args.get('process_type', '')
+    vendor_name = request.args.get('vendor_name', '')
     
-    # First try to find rate for specific process
+    # Priority order for rate lookup:
+    # 1. Vendor + Process + Item (most specific)
+    # 2. Process + Item (no vendor specified)
+    # 3. Vendor + Item (no process specified)  
+    # 4. Item only (general rate)
+    
     rate = None
-    if process_type:
+    
+    # Try vendor + process + item (most specific)
+    if vendor_name and process_type:
+        rate = JobWorkRate.query.filter_by(
+            item_id=item_id,
+            process_type=process_type,
+            vendor_name=vendor_name,
+            is_active=True
+        ).first()
+    
+    # Try process + item (no vendor)
+    if not rate and process_type:
         rate = JobWorkRate.query.filter_by(
             item_id=item_id,
             process_type=process_type,
             is_active=True
-        ).first()
+        ).filter((JobWorkRate.vendor_name.is_(None)) | (JobWorkRate.vendor_name == '')).first()
     
-    # If no process-specific rate found, try general rate
+    # Try vendor + item (no specific process)
+    if not rate and vendor_name:
+        rate = JobWorkRate.query.filter_by(
+            item_id=item_id,
+            vendor_name=vendor_name,
+            is_active=True
+        ).filter((JobWorkRate.process_type.is_(None)) | (JobWorkRate.process_type == '')).first()
+    
+    # Try general rate (no vendor, no process)
     if not rate:
         rate = JobWorkRate.query.filter_by(
             item_id=item_id,
-            process_type=None,
             is_active=True
+        ).filter(
+            (JobWorkRate.process_type.is_(None)) | (JobWorkRate.process_type == ''),
+            (JobWorkRate.vendor_name.is_(None)) | (JobWorkRate.vendor_name == '')
         ).first()
-        
-        # Also check for empty string process_type
-        if not rate:
-            rate = JobWorkRate.query.filter_by(
-                item_id=item_id,
-                process_type='',
-                is_active=True
-            ).first()
     
     if rate:
         return jsonify({
             'success': True,
             'rate': rate.rate_per_unit,
             'process_type': rate.process_type,
+            'vendor_name': rate.vendor_name,
             'notes': rate.notes
         })
     else:
         return jsonify({
             'success': False,
-            'message': 'No rate found for this item'
+            'message': 'No rate found for this item/process/vendor combination'
         })

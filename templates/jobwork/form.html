@@ -1363,16 +1363,27 @@ function loadOutputProducts(selectElement) {
         });
 }
 
-// Load job work rate for specific item and process
-function loadJobWorkRate(itemId, processType, rateInput) {
+// Load job work rate for specific item, process, and vendor
+function loadJobWorkRate(itemId, processType, rateInput, vendorName) {
     if (!itemId || !rateInput) {
         console.warn('Missing itemId or rateInput for rate loading');
         return;
     }
     
-    console.log(`Loading rate for item ${itemId}, process: ${processType}`);
+    // Get vendor name from form if not provided
+    if (!vendorName) {
+        const assignedToSelect = document.getElementById('assigned_to');
+        vendorName = assignedToSelect ? assignedToSelect.value : '';
+    }
     
-    const url = `/jobwork-rates/api/get-rate/${itemId}${processType ? `?process_type=${encodeURIComponent(processType)}` : ''}`;
+    console.log(`Loading rate for item ${itemId}, process: ${processType}, vendor: ${vendorName}`);
+    
+    // Build API URL with parameters
+    const params = new URLSearchParams();
+    if (processType) params.append('process_type', processType);
+    if (vendorName) params.append('vendor_name', vendorName);
+    
+    const url = `/jobwork-rates/api/get-rate/${itemId}${params.toString() ? '?' + params.toString() : ''}`;
     console.log('Rate API URL:', url);
     
     fetch(url, {
@@ -1394,13 +1405,13 @@ function loadJobWorkRate(itemId, processType, rateInput) {
                 rateInput.value = data.rate;
                 rateInput.style.backgroundColor = '#d4edda'; // Light green background to indicate auto-loaded
                 
-                // Show success notification
-                showRateLoadedMessage(data.rate, processType || 'general');
+                // Show success notification with vendor info
+                showRateLoadedMessage(data.rate, processType || 'general', data.vendor_name);
                 
                 // Update output summary after rate change
                 updateOutputSummary();
             } else {
-                console.log('No rate found for this item/process combination');
+                console.log('No rate found for this item/process/vendor combination');
                 rateInput.style.backgroundColor = ''; // Reset background
             }
         })
@@ -1411,15 +1422,29 @@ function loadJobWorkRate(itemId, processType, rateInput) {
 }
 
 // Show rate loaded notification
-function showRateLoadedMessage(rate, processType) {
+function showRateLoadedMessage(rate, processType, vendorName) {
     // Create notification element
     const notification = document.createElement('div');
     notification.className = 'alert alert-success alert-dismissible fade show position-fixed';
-    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 300px;';
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 350px;';
+    
+    // Build notification message
+    let message = `Rate loaded: ₹${rate}`;
+    if (vendorName) {
+        message += ` (${vendorName}`;
+        if (processType && processType !== 'general') {
+            message += ` - ${processType})`;
+        } else {
+            message += ')';
+        }
+    } else if (processType && processType !== 'general') {
+        message += ` (${processType})`;
+    }
+    
     notification.innerHTML = `
         <small>
             <i class="fas fa-check-circle"></i> 
-            Rate loaded: ₹${rate} (${processType})
+            ${message}
         </small>
         <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert"></button>
     `;
@@ -1434,32 +1459,42 @@ function showRateLoadedMessage(rate, processType) {
     }, 3000);
 }
 
-// Event listener for work type change to trigger rate loading
+// Event listener for work type and vendor changes to trigger rate loading
 document.addEventListener('DOMContentLoaded', function() {
     const workTypeSelect = document.getElementById('work_type');
+    const assignedToSelect = document.getElementById('assigned_to');
+    
+    function triggerRateLoading() {
+        if (workTypeSelect && workTypeSelect.value === 'vendor') {
+            // Trigger rate loading for all existing process rows
+            const processRows = document.querySelectorAll('#processTableBody tr');
+            processRows.forEach(row => {
+                const processSelect = row.querySelectorAll('select')[0]; // Process Name
+                const outputProductSelect = row.querySelectorAll('select')[1]; // Output Product
+                const rateInput = row.querySelector('.rate-input');
+                
+                if (processSelect && outputProductSelect && rateInput && 
+                    processSelect.value && outputProductSelect.value) {
+                    const vendorName = assignedToSelect ? assignedToSelect.value : '';
+                    loadJobWorkRate(outputProductSelect.value, processSelect.value, rateInput, vendorName);
+                }
+            });
+        } else {
+            // Clear rate highlighting when not vendor work type
+            const rateInputs = document.querySelectorAll('.rate-input');
+            rateInputs.forEach(input => {
+                input.style.backgroundColor = '';
+            });
+        }
+    }
+    
+    // Add event listeners
     if (workTypeSelect) {
-        workTypeSelect.addEventListener('change', function() {
-            if (this.value === 'vendor') {
-                // Trigger rate loading for all existing process rows
-                const processRows = document.querySelectorAll('#processTableBody tr');
-                processRows.forEach(row => {
-                    const processSelect = row.querySelectorAll('select')[0]; // Process Name
-                    const outputProductSelect = row.querySelectorAll('select')[1]; // Output Product
-                    const rateInput = row.querySelector('.rate-input');
-                    
-                    if (processSelect && outputProductSelect && rateInput && 
-                        processSelect.value && outputProductSelect.value) {
-                        loadJobWorkRate(outputProductSelect.value, processSelect.value, rateInput);
-                    }
-                });
-            } else {
-                // Clear rate highlighting when not vendor work type
-                const rateInputs = document.querySelectorAll('.rate-input');
-                rateInputs.forEach(input => {
-                    input.style.backgroundColor = '';
-                });
-            }
-        });
+        workTypeSelect.addEventListener('change', triggerRateLoading);
+    }
+    
+    if (assignedToSelect) {
+        assignedToSelect.addEventListener('change', triggerRateLoading);
     }
 });
 
@@ -1485,8 +1520,12 @@ function loadRateManually(button) {
         return;
     }
     
-    console.log('Manual rate loading:', { processName, outputProductId });
-    loadJobWorkRate(outputProductId, processName, rateInput);
+    // Get vendor name from form
+    const assignedToSelect = document.getElementById('assigned_to');
+    const vendorName = assignedToSelect ? assignedToSelect.value : '';
+    
+    console.log('Manual rate loading:', { processName, outputProductId, vendorName });
+    loadJobWorkRate(outputProductId, processName, rateInput, vendorName);
 }
 
 // Update output summary based on process routing

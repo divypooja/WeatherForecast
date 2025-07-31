@@ -6,6 +6,20 @@ This is a comprehensive Flask-based Factory Management System designed for small
 
 ## Recent Changes (July 31, 2025)
 
+### Enhanced Vendor-Specific Rate Auto-Loading System (July 31, 2025)
+- **Vendor Name Field Integration**: Added vendor_name field to JobWorkRate model, form, and templates for comprehensive vendor tracking in job work rates
+- **Intelligent Rate Lookup Priority**: Implemented sophisticated rate lookup algorithm with priority order: 1) Vendor + Process + Item (most specific), 2) Process + Item (no vendor), 3) Vendor + Item (no process), 4) Item only (general rate)
+- **Enhanced API Endpoint**: Updated `/api/get-rate/<item_id>` to accept vendor_name parameter and filter rates based on vendor, process, and product combinations
+- **Smart Auto-Loading Logic**: Modified JavaScript rate loading to automatically detect vendor from "Assigned To" field when Work Type is "Vendor" and trigger vendor-specific rate lookup
+- **Dynamic Event Listeners**: Added event listeners for both Work Type and Assigned To field changes to automatically reload rates when vendor selection changes
+- **Enhanced Notifications**: Updated rate loading notifications to display vendor name and process information in success messages
+- **Magic Button Enhancement**: Updated manual rate loading button (⚡) to include vendor name in rate lookup for consistent behavior
+- **Database Migration**: Successfully migrated SQLite database to add vendor_name column to job_work_rates table
+- **Template Enhancements**: Updated Job Work Rate list and form templates to display vendor names with green badges for better visual identification
+- **Comprehensive Vendor Integration**: System now tracks which vendor provides what rate for specific processes and products, enabling accurate vendor-specific job work costing
+
+## Recent Changes (July 31, 2025)
+
 ### Complete BOM-Based Inventory Management Fix (July 31, 2025)
 - **Critical GRN Inventory Logic Fix**: Fixed GRN completion to add received materials to final output product (Mounted Plate) instead of input material (Ms Sheet) for BOM-based job works
 - **BOM-Aware Inventory Updates**: Enhanced GRN system to detect BOM-based jobs and automatically route finished goods to the correct final output item from manufacturing processes
