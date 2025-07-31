@@ -200,6 +200,14 @@ def api_bom_details(bom_id):
                 if bom_process.vendor:
                     vendor_name = bom_process.vendor.name
                     
+                # Get input and output product details for transformation
+                input_product_name = ""
+                output_product_name = ""
+                if hasattr(bom_process, 'input_product') and bom_process.input_product:
+                    input_product_name = bom_process.input_product.name
+                if hasattr(bom_process, 'output_product') and bom_process.output_product:
+                    output_product_name = bom_process.output_product.name
+                
                 processes.append({
                     'sequence': bom_process.step_number,
                     'process_name': bom_process.process_name,
@@ -210,7 +218,14 @@ def api_bom_details(bom_id):
                     'is_outsourced': bom_process.is_outsourced or False,
                     'department': department_name,
                     'vendor': vendor_name,
-                    'cost_per_unit': bom_process.cost_per_unit or 0
+                    'cost_per_unit': bom_process.cost_per_unit or 0,
+                    # Add transformation data
+                    'input_product_id': getattr(bom_process, 'input_product_id', None),
+                    'output_product_id': getattr(bom_process, 'output_product_id', None),
+                    'input_quantity': getattr(bom_process, 'input_quantity', 1),
+                    'output_quantity': getattr(bom_process, 'output_quantity', 1),
+                    'input_product_name': input_product_name,
+                    'output_product_name': output_product_name
                 })
         except (ImportError, AttributeError) as e:
             # BOMProcess model not available or field missing
