@@ -246,101 +246,114 @@ class EmployeeForm(FlaskForm):
                          render_kw={'multiple': True, 'accept': '.pdf,.jpg,.jpeg,.png,.doc,.docx'})
 
 class JobWorkForm(FlaskForm):
-    job_number = StringField('Job Number', validators=[DataRequired(), Length(max=50)])
-    customer_name = SelectField('Customer Name', coerce=str)
-    item_id = SelectField('Item', validators=[DataRequired()], coerce=int)
-    process_type = SelectField('Process', 
-                         validators=[DataRequired()], 
-                         coerce=str,
-                         choices=[('', 'Select Process'),
-                                ('Zinc', 'Zinc'),
-                                ('Cutting', 'Cutting'), 
-                                ('Bending', 'Bending'),
-                                ('Welding', 'Welding'),
-                                ('Painting', 'Painting'),
-                                ('Assembly', 'Assembly'),
-                                ('Machining', 'Machining'),
-                                ('Polishing', 'Polishing')])
+    """Redesigned Job Work Form according to specification with BOM/Manual support, Process routing, and GRN integration"""
+    
+    # [1] Job Work Type & Basic Info
+    job_work_type = SelectField('Job Work Type', 
+                               validators=[DataRequired()], 
+                               choices=[('bom_based', 'BOM-Based'), ('manual', 'Manual')],
+                               default='manual')
+    bom_id = SelectField('Select BOM', validators=[Optional()], coerce=int)
+    job_title = StringField('Job Work Title', validators=[DataRequired(), Length(max=100)],
+                           render_kw={'placeholder': 'e.g., JW-008 – Base Plate Work'})
     work_type = SelectField('Work Type',
                           validators=[DataRequired()],
-                          coerce=str,
-                          choices=[('outsourced', 'Outsourced'),
-                                 ('in_house', 'In-House')],
-                          default='outsourced')
-    department = SelectField('Department',
-                           coerce=str,
-                           choices=[('', 'Select Department'),
-                                  ('production', 'Production'),
-                                  ('assembly', 'Assembly'),
-                                  ('quality_control', 'Quality Control'),
-                                  ('finishing', 'Finishing'),
-                                  ('packaging', 'Packaging'),
-                                  ('maintenance', 'Maintenance'),
-                                  ('research_development', 'Research & Development')])
-    quantity_sent = FloatField('Quantity Sent', validators=[DataRequired(), NumberRange(min=0)])
-    quantity_uom = SelectField('Quantity Unit', validators=[DataRequired()], coerce=str)
-    expected_finished_material = FloatField('Expected Finished Material', validators=[NumberRange(min=0)], default=0.0)
-    finished_uom = SelectField('Finished Unit', validators=[Optional()], coerce=str)
-    expected_scrap = FloatField('Expected Scrap', validators=[NumberRange(min=0)], default=0.0)
-    expected_scrap_uom = SelectField('Scrap Unit', validators=[Optional()], coerce=str)
-    rate_per_unit = FloatField('Rate per Unit', validators=[NumberRange(min=0)], default=0.0)
-    sent_date = DateField('Sent Date', validators=[DataRequired()])
-    expected_return = DateField('Expected Return Date', validators=[Optional()])
-    notes = TextAreaField('Notes')
+                          choices=[('in_house', 'In-house'), ('vendor', 'Vendor'), ('machine', 'Machine')],
+                          default='in_house')
+    assigned_to = SelectField('Assigned To', validators=[DataRequired()], coerce=str)
+    send_date = DateField('Send Date', validators=[DataRequired()], default=datetime.utcnow().date())
+    expected_return = DateField('Expected Return', validators=[Optional()])
     
-    # Team work fields
-    is_team_work = BooleanField('Enable Team Work', 
-                               render_kw={'id': 'is_team_work'})
-    max_team_members = IntegerField('Maximum Team Members', 
-                                   validators=[Optional(), NumberRange(min=1, max=10)],
-                                   default=1,
-                                   render_kw={'id': 'max_team_members'})
+    # [2] Input Material & Issuance (will be auto-filled from BOM or manual selection)
+    input_material_id = SelectField('Input Material', validators=[DataRequired()], coerce=int)
+    available_stock = FloatField('Available Stock', render_kw={'readonly': True})
+    quantity_to_issue = FloatField('Quantity to Issue', validators=[DataRequired(), NumberRange(min=0)])
+    input_uom = SelectField('UOM', validators=[DataRequired()], coerce=str)
+    store_location = SelectField('Store', 
+                               choices=[('raw_store', 'Raw Store'), ('wip_store', 'WIP Store'), ('finished_store', 'Finished Store')],
+                               default='raw_store')
+    
+    # [5] Optional Notes & Attachments
+    remarks = TextAreaField('Remarks / Instructions', 
+                          render_kw={'placeholder': 'Priority job. Ensure QC report.', 'rows': 3})
+    
+    # Legacy fields for compatibility
+    job_number = StringField('Job Number', render_kw={'readonly': True})
     
     def __init__(self, *args, **kwargs):
         super(JobWorkForm, self).__init__(*args, **kwargs)
-        self.item_id.choices = [(0, 'Select Item')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.all()]
         
-        # Populate customer choices from suppliers/vendors 
-        suppliers = Supplier.query.order_by(Supplier.name).all()
-        self.customer_name.choices = [('', 'Select Customer')] + [(s.name, s.name) for s in suppliers]
+        # Populate BOM choices
+        try:
+            from models import BOM
+            boms = BOM.query.filter_by(is_active=True).order_by(BOM.bom_code).all()
+            self.bom_id.choices = [(0, 'Select BOM')] + [(b.id, f"{b.bom_code} - {b.product.name if b.product else 'No Product'}") for b in boms]
+        except Exception:
+            self.bom_id.choices = [(0, 'Select BOM')]
         
-        # Load UOM choices for quantities
+        # Populate assigned to choices (suppliers/vendors + departments)
+        assigned_choices = [('', 'Select Assignment')]
+        try:
+            # Add suppliers/vendors for outsourced work
+            suppliers = Supplier.query.filter_by(is_active=True).order_by(Supplier.name).all()
+            for supplier in suppliers:
+                assigned_choices.append((f"supplier_{supplier.id}", f"🏢 {supplier.name}"))
+            
+            # Add departments for in-house work
+            from models_department import Department
+            departments = Department.query.filter_by(is_active=True).order_by(Department.name).all()
+            for dept in departments:
+                assigned_choices.append((f"department_{dept.code}", f"🏭 {dept.name}"))
+        except Exception:
+            pass
+        
+        self.assigned_to.choices = assigned_choices
+        
+        # Populate input material choices
+        items = Item.query.order_by(Item.name).all()
+        self.input_material_id.choices = [(0, 'Select Material')] + [(i.id, f"{i.code} - {i.name}") for i in items]
+        
+        # Load UOM choices
         try:
             from models_uom import UnitOfMeasure
             uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
             uom_choices = [('', 'Select Unit')] + [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
-            self.quantity_uom.choices = uom_choices
-            self.finished_uom.choices = uom_choices
-            self.expected_scrap_uom.choices = uom_choices
+            self.input_uom.choices = uom_choices
         except Exception:
-            fallback_choices = [('', 'Select Unit'), ('pcs', 'Pieces'), ('kg', 'Kilogram'), ('ltr', 'Liter')]
-            self.quantity_uom.choices = fallback_choices
-            self.finished_uom.choices = fallback_choices
-            self.expected_scrap_uom.choices = fallback_choices
+            self.input_uom.choices = [('', 'Select Unit'), ('pcs', 'Pieces'), ('kg', 'Kilogram'), ('sheet', 'Sheet')]
+
+class JobWorkProcessRowForm(FlaskForm):
+    """Individual row in the process routing table"""
+    selected = BooleanField('Include', default=True)
+    sequence = IntegerField('Seq', validators=[DataRequired(), NumberRange(min=1)])
+    process_name = SelectField('Process', 
+                              validators=[DataRequired()],
+                              choices=[('cutting', 'Cutting'), ('welding', 'Welding'), 
+                                     ('powder_coating', 'Powder Coating'), ('bending', 'Bending'),
+                                     ('assembly', 'Assembly'), ('machining', 'Machining'),
+                                     ('zinc_plating', 'Zinc Plating'), ('painting', 'Painting')])
+    output_product_id = SelectField('Output Product', validators=[DataRequired()], coerce=int)
+    quantity = IntegerField('Qty', validators=[DataRequired(), NumberRange(min=1)])
+    uom = SelectField('UOM', validators=[DataRequired()], coerce=str)
+    rate_per_unit = FloatField('Rate (₹/unit)', validators=[NumberRange(min=0)], default=0.0)
+    quality_check = BooleanField('QC')
+    scrap_percent = FloatField('Scrap %', validators=[NumberRange(min=0, max=100)], default=0.0)
+    notes = StringField('Notes', render_kw={'placeholder': 'e.g., Use laser cutter'})
     
-    def validate(self, extra_validators=None):
-        if not super().validate(extra_validators):
-            return False
+    def __init__(self, *args, **kwargs):
+        super(JobWorkProcessRowForm, self).__init__(*args, **kwargs)
         
-        # Custom validation based on work type
-        if self.work_type.data == 'outsourced':
-            # For outsourced work, customer_name and rate_per_unit are required
-            if not self.customer_name.data:
-                self.customer_name.errors.append('Customer name is required for outsourced work.')
-                return False
-            if not self.rate_per_unit.data or self.rate_per_unit.data <= 0:
-                self.rate_per_unit.errors.append('Rate per unit is required for outsourced work.')
-                return False
-        elif self.work_type.data == 'in_house':
-            # For in-house work, department is required, set rate to 0
-            if not self.department.data:
-                self.department.errors.append('Department is required for in-house work.')
-                return False
-            # Clear customer name and set rate to 0 for in-house work
-            self.customer_name.data = ''
-            self.rate_per_unit.data = 0.0
+        # Populate output product choices
+        items = Item.query.order_by(Item.name).all()
+        self.output_product_id.choices = [(0, 'Select Product')] + [(i.id, f"{i.code} - {i.name}") for i in items]
         
-        return True
+        # Load UOM choices
+        try:
+            from models_uom import UnitOfMeasure
+            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+            self.uom.choices = [('', 'Select Unit')] + [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
+        except Exception:
+            self.uom.choices = [('', 'Select Unit'), ('piece', 'Piece'), ('kg', 'Kilogram')]
 
 class DailyJobWorkForm(FlaskForm):
     """Simplified form for daily job work entry by workers"""

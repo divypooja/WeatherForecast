@@ -70,176 +70,155 @@ def list_job_works():
     
     return render_template('jobwork/list.html', jobs=jobs, status_filter=status_filter)
 
+# API endpoints for new Job Work form
+@jobwork_bp.route('/api/inventory/stock/<int:item_id>')
+@login_required
+def api_inventory_stock(item_id):
+    """API to get available stock for an item"""
+    try:
+        item = Item.query.get_or_404(item_id)
+        available_stock = item.qty_raw or item.current_stock or 0
+        return jsonify({
+            'item_id': item_id,
+            'available_stock': available_stock,
+            'unit_of_measure': item.unit_of_measure
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @jobwork_bp.route('/add', methods=['GET', 'POST'])
 @login_required
 def add_job_work():
-    """Unified job work form with BOM integration"""
-    if request.method == 'GET':
-        # Load data for form dropdowns
-        items = Item.query.order_by(Item.name).all()
-        suppliers = Supplier.query.filter(Supplier.partner_type.in_(['customer', 'both'])).all()
-        
-        # Load BOMs for integration
-        try:
-            boms = BOM.query.all()
-        except Exception as e:
-            print(f"BOM query error: {e}")
-            boms = []
-        
-        try:
-            from models_department import Department
-            departments = Department.query.order_by(Department.name).all()
-        except ImportError:
-            departments = []
-        
-        return render_template('jobwork/simple_add.html', 
-                             items=items, 
-                             suppliers=suppliers, 
-                             departments=departments,
-                             boms=boms)
+    """New redesigned job work form with BOM/Manual selection and process routing"""
+    form = JobWorkForm()
     
-    # Handle form submission
-    try:
-        # Extract form data
-        work_type = request.form.get('work_type')
-        bom_id = request.form.get('bom_id')
-        production_quantity = request.form.get('production_quantity')
-        job_work_type = request.form.get('job_work_type', 'single')  # single or multi
-        sent_date_str = request.form.get('sent_date')
-        expected_return_str = request.form.get('expected_return')
-        notes = request.form.get('notes', '')
-        
-        # Work type specific fields
-        customer_name = request.form.get('customer_name') if work_type == 'outsourced' else None
-        rate_per_unit = float(request.form.get('rate_per_unit', 0)) if work_type == 'outsourced' else 0.0
-        department = request.form.get('department') if work_type == 'in_house' else None
-        
-        # Handle BOM-based vs regular job work
-        if bom_id and production_quantity:
-            # BOM-based job work
-            bom = BOM.query.get(int(bom_id))
-            if not bom:
-                flash('Selected BOM not found', 'error')
-                return redirect(url_for('jobwork.add_job_work'))
-            
-            production_qty = int(production_quantity)
-            
-            # Check material availability
-            can_produce, shortages = bom.can_produce_quantity(production_qty)
-            if not can_produce:
-                shortage_msg = "Material shortages detected: " + ", ".join([f"{s['material'].name} (need {s['shortage']} more)" for s in shortages])
-                flash(shortage_msg, 'error')
-                return redirect(url_for('jobwork.add_job_work'))
-            
-            # Create BOM-based job work
+    if form.validate_on_submit():
+        try:
+            # Generate job number
             job_number = generate_job_number()
+            
+            # Extract process data from JSON
+            import json
+            process_data_str = request.form.get('process_data', '[]')
+            process_data = json.loads(process_data_str) if process_data_str else []
+            
+            # Parse assignment data
+            assigned_to = form.assigned_to.data
+            if assigned_to.startswith('supplier_'):
+                supplier_id = int(assigned_to.split('_')[1])
+                supplier = Supplier.query.get(supplier_id)
+                assigned_to_name = supplier.name if supplier else 'Unknown'
+                assigned_to_type = 'vendor'
+            elif assigned_to.startswith('department_'):
+                dept_code = assigned_to.split('_')[1]
+                try:
+                    from models_department import Department
+                    dept = Department.query.filter_by(code=dept_code).first()
+                    assigned_to_name = dept.name if dept else assigned_to.split('_')[1]
+                    assigned_to_type = 'in_house'
+                except ImportError:
+                    assigned_to_name = assigned_to.split('_')[1]
+                    assigned_to_type = 'in_house'
+            else:
+                assigned_to_name = assigned_to
+                assigned_to_type = form.work_type.data
+            
+            # Determine final output product from last selected process
+            final_output_product_id = None
+            final_output_quantity = 0
+            if process_data:
+                # Sort by sequence to get the last process
+                sorted_processes = sorted(process_data, key=lambda x: int(x.get('sequence', 0)))
+                if sorted_processes:
+                    last_process = sorted_processes[-1]
+                    final_output_product_id = int(last_process.get('output_product_id', 0))
+                    final_output_quantity = int(last_process.get('quantity', 0))
+            
+            # Get input material for inventory deduction
+            input_material = Item.query.get(form.input_material_id.data)
+            if not input_material:
+                flash('Selected input material not found', 'error')
+                return redirect(url_for('jobwork.add_job_work'))
+            
+            # Check available stock
+            available_stock = input_material.qty_raw or input_material.current_stock or 0
+            if available_stock < form.quantity_to_issue.data:
+                flash(f'Insufficient stock. Available: {available_stock} {input_material.unit_of_measure}', 'error')
+                return redirect(url_for('jobwork.add_job_work'))
+            
+            # Create job work record
             job = JobWork(
                 job_number=job_number,
-                customer_name=customer_name,
-                work_type=work_type,
-                department=department,
-                rate_per_unit=rate_per_unit,
-                sent_date=datetime.strptime(sent_date_str, '%Y-%m-%d').date() if sent_date_str else None,
-                expected_return=datetime.strptime(expected_return_str, '%Y-%m-%d').date() if expected_return_str else None,
-                notes=f"BOM-based production: {bom.bom_code} - {production_qty} units\n{notes}",
+                customer_name=assigned_to_name if assigned_to_type == 'vendor' else None,
+                work_type=assigned_to_type,
+                department=assigned_to_name if assigned_to_type == 'in_house' else None,
+                item_id=input_material.id,
+                quantity_sent=form.quantity_to_issue.data,
+                process='multi_process' if len(process_data) > 1 else (process_data[0].get('process_name', 'General') if process_data else 'General'),
+                sent_date=form.send_date.data,
+                expected_return=form.expected_return.data,
+                notes=f"Job Work Title: {form.job_title.data}\nType: {form.job_work_type.data}\n{form.remarks.data or ''}",
                 created_by=current_user.id,
-                bom_id=bom_id,
-                production_quantity=production_qty
+                bom_id=form.bom_id.data if form.bom_id.data else None
             )
             
-            # Move materials from inventory to WIP based on BOM requirements
-            for bom_item in bom.items:
-                material = bom_item.material or bom_item.item
-                if material:
-                    required_qty = (bom_item.qty_required or bom_item.quantity_required) * production_qty
-                    process_name = bom_item.process_name or 'General'
-                    
-                    # Move material to WIP
-                    if material.move_to_wip(required_qty, process_name):
-                        movement_note = f"[{datetime.utcnow().strftime('%d/%m/%Y %H:%M')}] {required_qty} {material.unit_of_measure} {material.name} moved to {process_name} WIP for BOM production"
-                        job.notes = (job.notes or '') + f"\n{movement_note}"
+            # Move input material from store to WIP
+            if form.store_location.data == 'raw_store' and input_material.qty_raw:
+                input_material.qty_raw -= form.quantity_to_issue.data
+            elif form.store_location.data == 'finished_store' and hasattr(input_material, 'qty_finished'):
+                input_material.qty_finished -= form.quantity_to_issue.data
+            else:
+                # Fallback to current_stock
+                input_material.current_stock = (input_material.current_stock or 0) - form.quantity_to_issue.data
+            
+            # Add material movement note
+            movement_note = f"[{datetime.utcnow().strftime('%d/%m/%Y %H:%M')}] {form.quantity_to_issue.data} {input_material.unit_of_measure} {input_material.name} issued from {form.store_location.data.replace('_', ' ').title()}"
+            job.notes = (job.notes or '') + f"\n{movement_note}"
             
             db.session.add(job)
+            db.session.flush()  # Get job ID
+            
+            # Create job work processes if any
+            if process_data:
+                try:
+                    from models import JobWorkProcess
+                    for process_info in process_data:
+                        if process_info.get('output_product_id') and process_info.get('sequence'):
+                            process = JobWorkProcess(
+                                job_work_id=job.id,
+                                sequence_number=int(process_info.get('sequence', 1)),
+                                process_name=process_info.get('process_name', ''),
+                                output_item_id=int(process_info.get('output_product_id', 0)),
+                                output_quantity=int(process_info.get('quantity', 0)),
+                                rate_per_unit=float(process_info.get('rate_per_unit', 0)),
+                                scrap_percentage=float(process_info.get('scrap_percent', 0)),
+                                quality_check_required=bool(process_info.get('quality_check', False)),
+                                notes=process_info.get('notes', '')
+                            )
+                            db.session.add(process)
+                except ImportError:
+                    # JobWorkProcess model not available, store in notes
+                    process_notes = "\nProcess Routing:\n"
+                    for i, process_info in enumerate(process_data, 1):
+                        process_notes += f"{i}. {process_info.get('process_name', '')} → {process_info.get('quantity', 0)} units"
+                        if process_info.get('notes'):
+                            process_notes += f" ({process_info.get('notes')})"
+                        process_notes += "\n"
+                    job.notes = (job.notes or '') + process_notes
+            
             db.session.commit()
             
-            flash(f'BOM-based Job Work {job_number} created successfully for producing {production_qty} units of {bom.product.name if bom.product else "product"}.', 'success')
+            flash(f'Job Work {job_number} created successfully! Assigned to: {assigned_to_name}', 'success')
             return redirect(url_for('jobwork.list_job_works'))
             
-        else:
-            # Regular job work (existing logic)
-            item_id = int(request.form.get('item_id', 0))
-            process = request.form.get('process')
-            quantity_sent = float(request.form.get('quantity_sent', 0))
-            
-            if not item_id or not process or not quantity_sent:
-                flash('Item, process, and quantity are required for regular job work', 'error')
-                return redirect(url_for('jobwork.add_job_work'))
-        
-        # Parse dates
-        from datetime import datetime
-        sent_date = datetime.strptime(sent_date_str, '%Y-%m-%d').date() if sent_date_str else None
-        expected_return = datetime.strptime(expected_return_str, '%Y-%m-%d').date() if expected_return_str else None
-        
-        # Validate item and inventory
-        item = Item.query.get(item_id)
-        if not item:
-            flash('Selected item not found', 'error')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error creating job work: {str(e)}', 'error')
             return redirect(url_for('jobwork.add_job_work'))
-        
-        # Initialize multi-state inventory if needed
-        if item.qty_raw is None or item.qty_raw == 0.0:
-            item.qty_raw = item.current_stock or 0.0
-            item.qty_wip = 0.0
-            item.qty_finished = 0.0
-            item.qty_scrap = 0.0
-        
-        # Check inventory
-        if item.qty_raw < quantity_sent:
-            flash(f'Insufficient raw material inventory. Available: {item.qty_raw or 0} {item.unit_of_measure}', 'error')
-            return redirect(url_for('jobwork.add_job_work'))
-        
-        # Generate job number
-        job_number = generate_job_number()
-        
-        # Create job work
-        job = JobWork(
-            job_number=job_number,
-            customer_name=customer_name,
-            item_id=item_id,
-            process=process,
-            work_type=work_type,
-            department=department,
-            quantity_sent=quantity_sent,
-            rate_per_unit=rate_per_unit,
-            sent_date=sent_date,
-            expected_return=expected_return,
-            notes=notes,
-            created_by=current_user.id
-        )
-        
-        # Move materials to process-specific WIP
-        if item.move_to_wip(quantity_sent, process):
-            movement_note = f"[{datetime.utcnow().strftime('%d/%m/%Y %H:%M')}] {quantity_sent} {item.unit_of_measure} moved to {process} WIP for {job_number}"
-            job.notes = (job.notes or '') + f"\n{movement_note}"
-        else:
-            # Fallback to legacy deduction if move_to_wip fails
-            item.current_stock = (item.current_stock or 0) - quantity_sent
-        
-        db.session.add(job)
-        db.session.commit()
-        
-        # Success message
-        if work_type == 'in_house':
-            flash(f'Job Work {job_number} created successfully for in-house processing in {department} department.', 'success')
-        else:
-            flash(f'Job Work {job_number} created successfully for {customer_name}.', 'success')
-        
-        return redirect(url_for('jobwork.list_job_works'))
-        
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Error creating job work: {str(e)}', 'error')
-        return redirect(url_for('jobwork.add_job_work'))
+    
+    # GET request - show form
+    title = "Create New Job Work"
+    return render_template('jobwork/form.html', form=form, title=title)
 
 @jobwork_bp.route('/api/generate-job-number')
 @login_required
