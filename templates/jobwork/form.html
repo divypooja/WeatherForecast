@@ -131,6 +131,7 @@
                                         <i class="fas fa-search"></i> Check Stock
                                     </button>
                                     <div id="stock_status" class="mt-1"></div>
+                                    <div id="calculation_display" class="mt-2"></div>
                                 </td>
                                 <td>5 Pieces / Kg</td>
                             </tr>
@@ -400,6 +401,25 @@ function loadBOMData(bomId) {
             
             // Populate Job Work Title from BOM
             populateJobWorkTitle(data);
+            
+            // Store BOM transformation ratios for auto-calculation
+            window.bomTransformationRatios = {};
+            if (data.processes && data.processes.length > 0) {
+                data.processes.forEach(process => {
+                    if (process.input_product_id && process.output_product_id && process.input_quantity && process.output_quantity) {
+                        const inputQty = parseFloat(process.input_quantity) || 1;
+                        const outputQty = parseFloat(process.output_quantity) || 1;
+                        const ratio = outputQty / inputQty;
+                        window.bomTransformationRatios[process.input_product_id] = {
+                            output_product_id: process.output_product_id,
+                            output_product_name: process.output_product_name || 'Output Product',
+                            ratio: ratio,
+                            input_name: process.input_product_name || 'Input Material'
+                        };
+                        console.log(`Transformation ratio stored: ${process.input_product_name} (${inputQty}) → ${process.output_product_name} (${outputQty}) = ${ratio}x`);
+                    }
+                });
+            }
             
             // Populate input materials section
             if (data.materials && data.materials.length > 0) {
@@ -793,6 +813,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // Add event listener for quantity to issue for auto-calculation
+    const quantityToIssueInput = document.getElementById('quantity_to_issue');
+    if (quantityToIssueInput) {
+        quantityToIssueInput.addEventListener('input', calculateExpectedOutput);
+        quantityToIssueInput.addEventListener('change', calculateExpectedOutput);
+    }
+    
     // Load BOMs when page loads
     if (bomSelect) {
         loadBOMs();
@@ -901,6 +928,72 @@ function updateOutputSummary() {
     if (expectedScrapElement) expectedScrapElement.textContent = `${expectedScrap.toFixed(1)}%`;
     
     console.log('Updated output summary:', { finalOutputProduct, expectedQuantity, totalCost, expectedScrap });
+}
+
+// Calculate expected output based on BOM transformation ratios
+function calculateExpectedOutput() {
+    const inputMaterialSelect = document.getElementById('input_material');
+    const quantityToIssueInput = document.getElementById('quantity_to_issue');
+    const calculationDisplay = document.getElementById('calculation_display');
+    
+    if (!inputMaterialSelect || !quantityToIssueInput || !calculationDisplay) {
+        return;
+    }
+    
+    const inputMaterialId = inputMaterialSelect.value;
+    const quantityToIssue = parseFloat(quantityToIssueInput.value) || 0;
+    
+    if (!inputMaterialId || quantityToIssue <= 0) {
+        calculationDisplay.innerHTML = '<div class="alert alert-info alert-sm">Enter quantity to see expected output calculation</div>';
+        return;
+    }
+    
+    // Check if we have transformation ratio for this material
+    if (window.bomTransformationRatios && window.bomTransformationRatios[inputMaterialId]) {
+        const transformation = window.bomTransformationRatios[inputMaterialId];
+        const expectedOutput = Math.round(quantityToIssue * transformation.ratio);
+        
+        calculationDisplay.innerHTML = `
+            <div class="alert alert-success alert-sm">
+                <strong>Auto-Calculation:</strong><br>
+                ${quantityToIssue} ${transformation.input_name} × ${transformation.ratio} = 
+                <strong>${expectedOutput} ${transformation.output_product_name}</strong>
+                <br><small>Based on BOM transformation ratio (1:${transformation.ratio})</small>
+            </div>
+        `;
+        
+        // Auto-populate process routing quantities
+        autoPopulateProcessQuantities(expectedOutput, transformation);
+        
+        console.log(`Auto-calculated: ${quantityToIssue} × ${transformation.ratio} = ${expectedOutput}`);
+    } else {
+        calculationDisplay.innerHTML = '<div class="alert alert-warning alert-sm">No BOM transformation ratio found for selected material</div>';
+    }
+}
+
+// Auto-populate process routing quantities based on calculation
+function autoPopulateProcessQuantities(expectedOutput, transformation) {
+    const processRows = document.querySelectorAll('#processTableBody tr');
+    
+    processRows.forEach((row, index) => {
+        const quantityInput = row.querySelector('input[name*="_quantity"]');
+        const outputSelect = row.querySelector('select[name*="_output_product"]');
+        
+        if (quantityInput) {
+            quantityInput.value = expectedOutput;
+        }
+        
+        // Try to select the correct output product
+        if (outputSelect && transformation.output_product_id) {
+            const optionToSelect = outputSelect.querySelector(`option[value="${transformation.output_product_id}"]`);
+            if (optionToSelect) {
+                outputSelect.value = transformation.output_product_id;
+            }
+        }
+    });
+    
+    // Update output summary after auto-population
+    updateOutputSummary();
 }
 
 // Load assignment options based on work type
