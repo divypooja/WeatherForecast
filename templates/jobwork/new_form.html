@@ -58,12 +58,17 @@
                             <tr>
                                 <td><strong>Job Work Title</strong></td>
                                 <td>
-                                    {{ form.job_title(class="form-control") }}
+                                    <div class="input-group">
+                                        {{ form.job_title(class="form-control") }}
+                                        <button type="button" class="btn btn-outline-info btn-sm" id="generateTitleBtn" onclick="autoFillJobTitle()" title="Auto-generate title">
+                                            <i class="fas fa-magic"></i>
+                                        </button>
+                                    </div>
                                     {% for error in form.job_title.errors %}
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
                                 </td>
-                                <td>"JW-008 – Base Plate Work"</td>
+                                <td>"JW-008 – Base Plate Work" <i class="fas fa-magic text-info" title="Auto-generated for Manual jobs"></i></td>
                             </tr>
                             <tr>
                                 <td><strong>Work Type</strong></td>
@@ -306,7 +311,10 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeForm();
     
     // Add event listeners
-    document.getElementById('job_work_type').addEventListener('change', toggleBOMSelection);
+    document.getElementById('job_work_type').addEventListener('change', function() {
+        toggleBOMSelection();
+        autoFillJobTitle();
+    });
     document.getElementById('addProcessRow').addEventListener('click', addProcessRow);
     document.getElementById('input_material').addEventListener('change', updateAvailableStock);
     document.getElementById('checkStock').addEventListener('click', checkStock);
@@ -334,6 +342,45 @@ function toggleBOMSelection() {
     } else {
         bomRow.style.display = 'none';
         loadFromBOMBtn.style.display = 'none';
+    }
+}
+
+function autoFillJobTitle(force = false) {
+    const jobWorkType = document.getElementById('job_work_type').value;
+    const titleField = document.querySelector('input[name="job_title"]');
+    
+    if (jobWorkType === 'manual' && titleField && (force || !titleField.value.trim())) {
+        // Show loading state
+        const generateBtn = document.getElementById('generateTitleBtn');
+        if (generateBtn) {
+            generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            generateBtn.disabled = true;
+        }
+        
+        // Auto-generate title for manual job work
+        fetch('/jobwork/api/generate_title')
+            .then(response => response.json())
+            .then(data => {
+                if (data.title) {
+                    titleField.value = data.title;
+                    // Add a subtle visual indication that the title was auto-filled
+                    titleField.style.backgroundColor = '#e8f5e8';
+                    setTimeout(() => {
+                        titleField.style.backgroundColor = '';
+                    }, 2000);
+                }
+            })
+            .catch(error => {
+                console.error('Error generating title:', error);
+                alert('Error generating title. Please enter manually.');
+            })
+            .finally(() => {
+                // Reset button state
+                if (generateBtn) {
+                    generateBtn.innerHTML = '<i class="fas fa-magic"></i>';
+                    generateBtn.disabled = false;
+                }
+            });
     }
 }
 
