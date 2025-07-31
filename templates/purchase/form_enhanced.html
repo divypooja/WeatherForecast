@@ -138,10 +138,15 @@
                 </button>
             </div>
             <div class="card-body">
-                <div class="table-responsive" style="overflow-x: auto;">
+                <!-- Scroll Indicator -->
+                <div class="alert alert-info mb-3" role="alert">
+                    <i class="fas fa-arrows-alt-h"></i> <strong>Table contains many columns:</strong> 
+                    Scroll horizontally to see <strong>Material Destination</strong>, UOM, Qty, Rate, and Amount columns →
+                </div>
+                <div class="table-responsive" style="overflow-x: auto; border: 2px solid #0d6efd; border-radius: 8px;">
                     <style>
                         #poItemsTable { 
-                            min-width: 1200px; 
+                            min-width: 1400px; 
                             table-layout: fixed; 
                             width: 100%;
                         }
@@ -164,6 +169,17 @@
                             max-width: 120px !important;
                             min-width: 120px !important;
                             padding: 4px !important;
+                        }
+                        /* Material Destination Column Highlighting */
+                        #poItemsTable th:nth-child(7), #poItemsTable td:nth-child(7) {
+                            background-color: #fff3cd !important;
+                            border-left: 3px solid #ffc107 !important;
+                            font-weight: 600 !important;
+                        }
+                        #poItemsTable th:nth-child(7) {
+                            position: sticky !important;
+                            left: 620px; /* Approximately where this column appears */
+                            z-index: 10;
                         }
                     </style>
                     <table class="table table-bordered" id="poItemsTable">
