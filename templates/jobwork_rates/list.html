@@ -62,6 +62,7 @@
                                 <th>Item Code</th>
                                 <th>Item Name</th>
                                 <th>Process Type</th>
+                                <th>Vendor Name</th>
                                 <th>Rate (₹/unit)</th>
                                 <th>Notes</th>
                                 <th>Created</th>
@@ -78,6 +79,13 @@
                                         <span class="badge bg-info">{{ rate.process_type }}</span>
                                     {% else %}
                                         <span class="badge bg-secondary">All Processes</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if rate.vendor_name %}
+                                        <span class="badge bg-success">{{ rate.vendor_name }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
                                     {% endif %}
                                 </td>
                                 <td><strong>₹{{ "%.2f"|format(rate.rate_per_unit) }}</strong></td>

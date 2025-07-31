@@ -695,6 +695,7 @@ class JobWorkRate(db.Model):
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     rate_per_unit = db.Column(db.Float, nullable=False, default=0.0)
     process_type = db.Column(db.String(50), nullable=True)  # Optional process-specific rate
+    vendor_name = db.Column(db.String(200), nullable=True)  # Optional vendor/supplier name
     notes = db.Column(db.Text, nullable=True)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.now)
