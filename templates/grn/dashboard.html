@@ -193,14 +193,71 @@
                                         </td>
                                         <td>
                                             <small>
-                                            {% for line_item in grn.line_items %}
-                                                <div>{{ line_item.item.name }}</div>
-                                            {% endfor %}
+                                            {% if grn.source_type == 'job_work' and grn.job_work %}
+                                                {% if grn.job_work.bom_id and grn.job_work.bom %}
+                                                    <!-- BOM-based job work: Show transformation -->
+                                                    <div class="text-muted">
+                                                        <strong>Sent:</strong> {{ grn.job_work.item.name }}
+                                                    </div>
+                                                    <div class="text-success">
+                                                        <strong>Expected:</strong> {{ grn.job_work.bom.product.name }}
+                                                    </div>
+                                                {% elif grn.job_work.work_type in ['multi_process', 'unified'] and grn.job_work.processes %}
+                                                    <!-- Multi-process job work: Show transformation -->
+                                                    <div class="text-muted">
+                                                        <strong>Sent:</strong> {{ grn.job_work.item.name }}
+                                                    </div>
+                                                    {% for process in grn.job_work.processes[:1] %}
+                                                        {% if process.output_item %}
+                                                        <div class="text-success">
+                                                            <strong>Expected:</strong> {{ process.output_item.name }}
+                                                        </div>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                {% else %}
+                                                    <!-- Regular job work: Show item -->
+                                                    <div>{{ grn.job_work.item.name }}</div>
+                                                {% endif %}
+                                            {% else %}
+                                                <!-- Purchase Order: Show line items -->
+                                                {% for line_item in grn.line_items %}
+                                                    <div>{{ line_item.item.name }}</div>
+                                                {% endfor %}
+                                            {% endif %}
                                             </small>
                                         </td>
                                         <td>
                                             <small>
-                                            {% for line_item in grn.line_items %}
+                                            {% if grn.source_type == 'job_work' and grn.job_work %}
+                                                {% if grn.job_work.bom_id or grn.job_work.work_type in ['multi_process', 'unified'] %}
+                                                    <!-- For BOM/Multi-process jobs, show expected vs received -->
+                                                    <div class="text-muted mb-1">
+                                                        <strong>Sent:</strong> {{ grn.job_work.quantity_sent }} {{ grn.job_work.item.unit_of_measure }}
+                                                    </div>
+                                                    {% for line_item in grn.line_items %}
+                                                    <div>
+                                                        <span class="text-info">Rec: {{ line_item.quantity_received }}</span>
+                                                        <span class="text-success">Pass: {{ line_item.quantity_passed }}</span>
+                                                        {% if line_item.quantity_rejected > 0 %}
+                                                        <span class="text-danger">Rej: {{ line_item.quantity_rejected }}</span>
+                                                        {% endif %}
+                                                    </div>
+                                                    {% endfor %}
+                                                {% else %}
+                                                    <!-- Regular job work -->
+                                                    {% for line_item in grn.line_items %}
+                                                    <div>
+                                                        <span class="text-info">Rec: {{ line_item.quantity_received }}</span>
+                                                        <span class="text-success">Pass: {{ line_item.quantity_passed }}</span>
+                                                        {% if line_item.quantity_rejected > 0 %}
+                                                        <span class="text-danger">Rej: {{ line_item.quantity_rejected }}</span>
+                                                        {% endif %}
+                                                    </div>
+                                                    {% endfor %}
+                                                {% endif %}
+                                            {% else %}
+                                                <!-- Purchase Order -->
+                                                {% for line_item in grn.line_items %}
                                                 <div>
                                                     <span class="text-info">Rec: {{ line_item.quantity_received }}</span>
                                                     <span class="text-success">Pass: {{ line_item.quantity_passed }}</span>
@@ -208,7 +265,8 @@
                                                     <span class="text-danger">Rej: {{ line_item.quantity_rejected }}</span>
                                                     {% endif %}
                                                 </div>
-                                            {% endfor %}
+                                                {% endfor %}
+                                            {% endif %}
                                             </small>
                                         </td>
                                         <td>
