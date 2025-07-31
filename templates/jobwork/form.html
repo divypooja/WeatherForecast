@@ -636,7 +636,7 @@ function addBOMProcessRow(processData, sequence) {
                    step="0.01" min="0" placeholder="Qty" required>
         </td>
         <td>
-            <input type="number" class="form-control" 
+            <input type="number" class="form-control rate-input" 
                    name="process_${sequence}_rate" 
                    value="${processData.labor_rate || processData.cost_per_unit || ''}" 
                    step="0.01" min="0" placeholder="Rate">
@@ -664,8 +664,28 @@ function addBOMProcessRow(processData, sequence) {
     // Load items for output product dropdown
     loadItemsForProcessRow(sequence);
     
-    // Add event listeners for auto-calculation
+    // Add event listeners for auto-calculation and rate loading
     addProcessRowEventListeners(row);
+    
+    // Add event listeners for auto-rate loading in BOM process rows
+    const processSelect = row.querySelector('select[name^="process_"][name$="_name"]');
+    const outputProductSelect = row.querySelector('select[name^="process_"][name$="_output_product"]');
+    const rateInput = row.querySelector('.rate-input');
+    
+    if (processSelect && outputProductSelect && rateInput) {
+        const loadRateForBOMProcess = () => {
+            const processName = processSelect.value;
+            const outputProductId = outputProductSelect.value;
+            const workType = document.getElementById('work_type')?.value;
+            
+            if (processName && outputProductId && workType === 'vendor') {
+                loadJobWorkRate(outputProductId, processName, rateInput);
+            }
+        };
+        
+        processSelect.addEventListener('change', loadRateForBOMProcess);
+        outputProductSelect.addEventListener('change', loadRateForBOMProcess);
+    }
 }
 
 // Check stock for specific material
@@ -1218,7 +1238,7 @@ function addProcessRow() {
             </select>
         </td>
         <td><input type="number" class="form-control form-control-sm" placeholder="Qty" min="1" required></td>
-        <td><input type="number" class="form-control form-control-sm" placeholder="Rate" step="0.01" min="0"></td>
+        <td><input type="number" class="form-control form-control-sm" placeholder="Rate" step="0.01" min="0" class="rate-input"></td>
         <td><input type="number" class="form-control form-control-sm" placeholder="%" min="0" max="100" step="0.1"></td>
         <td><input type="checkbox" class="form-check-input process-checkbox"></td>
         <td><button type="button" class="btn btn-sm btn-danger" onclick="removeProcessRow(${processCounter})"><i class="fas fa-trash"></i></button></td>
@@ -1229,6 +1249,24 @@ function addProcessRow() {
     // Load output products for the new row (select the second dropdown - Output Product)
     const outputProductSelect = row.querySelectorAll('select')[1]; // Second select is Output Product
     loadOutputProducts(outputProductSelect);
+    
+    // Add event listeners for auto-rate loading
+    const processSelect = row.querySelectorAll('select')[0]; // First select is Process Name
+    const rateInput = row.querySelector('.rate-input');
+    
+    // Load rate when both process and output product are selected
+    const loadRateForProcess = () => {
+        const processName = processSelect.value;
+        const outputProductId = outputProductSelect.value;
+        const workType = document.getElementById('work_type')?.value;
+        
+        if (processName && outputProductId && workType === 'vendor') {
+            loadJobWorkRate(outputProductId, processName, rateInput);
+        }
+    };
+    
+    processSelect.addEventListener('change', loadRateForProcess);
+    outputProductSelect.addEventListener('change', loadRateForProcess);
     
     processCounter++;
     updateOutputSummary();
@@ -1288,6 +1326,105 @@ function loadOutputProducts(selectElement) {
             }
         });
 }
+
+// Load job work rate for specific item and process
+function loadJobWorkRate(itemId, processType, rateInput) {
+    if (!itemId || !rateInput) {
+        console.warn('Missing itemId or rateInput for rate loading');
+        return;
+    }
+    
+    console.log(`Loading rate for item ${itemId}, process: ${processType}`);
+    
+    const url = `/jobwork-rates/api/get-rate/${itemId}${processType ? `?process_type=${encodeURIComponent(processType)}` : ''}`;
+    
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        credentials: 'same-origin'
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Rate API response:', data);
+            if (data.success && data.rate) {
+                rateInput.value = data.rate;
+                rateInput.style.backgroundColor = '#d4edda'; // Light green background to indicate auto-loaded
+                
+                // Show success notification
+                showRateLoadedMessage(data.rate, processType || 'general');
+                
+                // Update output summary after rate change
+                updateOutputSummary();
+            } else {
+                console.log('No rate found for this item/process combination');
+                rateInput.style.backgroundColor = ''; // Reset background
+            }
+        })
+        .catch(error => {
+            console.error('Error loading job work rate:', error);
+            rateInput.style.backgroundColor = ''; // Reset background
+        });
+}
+
+// Show rate loaded notification
+function showRateLoadedMessage(rate, processType) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = 'alert alert-success alert-dismissible fade show position-fixed';
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 300px;';
+    notification.innerHTML = `
+        <small>
+            <i class="fas fa-check-circle"></i> 
+            Rate loaded: ₹${rate} (${processType})
+        </small>
+        <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-dismiss after 3 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 3000);
+}
+
+// Event listener for work type change to trigger rate loading
+document.addEventListener('DOMContentLoaded', function() {
+    const workTypeSelect = document.getElementById('work_type');
+    if (workTypeSelect) {
+        workTypeSelect.addEventListener('change', function() {
+            if (this.value === 'vendor') {
+                // Trigger rate loading for all existing process rows
+                const processRows = document.querySelectorAll('#processTableBody tr');
+                processRows.forEach(row => {
+                    const processSelect = row.querySelectorAll('select')[0]; // Process Name
+                    const outputProductSelect = row.querySelectorAll('select')[1]; // Output Product
+                    const rateInput = row.querySelector('.rate-input');
+                    
+                    if (processSelect && outputProductSelect && rateInput && 
+                        processSelect.value && outputProductSelect.value) {
+                        loadJobWorkRate(outputProductSelect.value, processSelect.value, rateInput);
+                    }
+                });
+            } else {
+                // Clear rate highlighting when not vendor work type
+                const rateInputs = document.querySelectorAll('.rate-input');
+                rateInputs.forEach(input => {
+                    input.style.backgroundColor = '';
+                });
+            }
+        });
+    }
+});
 
 // Update output summary based on process routing
 function updateOutputSummary() {
