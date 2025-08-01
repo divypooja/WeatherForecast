@@ -212,6 +212,31 @@ def update_job_work_status_from_grn(grn):
 
 grn_bp = Blueprint('grn', __name__)
 
+@grn_bp.route('/grn/<int:grn_id>/batches')
+@login_required 
+def view_grn_batches(grn_id):
+    """View batches created from a specific GRN"""
+    grn = GRN.query.get_or_404(grn_id)
+    
+    # Get all batches created from this GRN
+    created_batches = []
+    for line_item in grn.line_items:
+        if hasattr(line_item, 'created_batches'):
+            created_batches.extend(line_item.created_batches)
+    
+    # Alternative: find batches by GRN reference
+    if not created_batches:
+        batches = ItemBatch.query.filter(
+            ItemBatch.ref_type == 'GRN',
+            ItemBatch.ref_id == grn_id
+        ).all()
+        created_batches = batches
+    
+    return render_template('grn/batch_view.html',
+                         title=f'Batches Created from GRN {grn.grn_number}',
+                         grn=grn,
+                         batches=created_batches)
+
 @grn_bp.route('/dashboard')
 @login_required
 def dashboard():
