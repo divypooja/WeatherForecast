@@ -1879,20 +1879,22 @@ def generate_challan(job_id):
 def get_batches_by_item(item_id):
     """Get available batches for a specific item"""
     try:
-        batches = ItemBatch.query.filter_by(item_id=item_id).filter(
-            ItemBatch.qty_available > 0
-        ).order_by(ItemBatch.created_at.desc()).all()
+        # Filter batches with available quantities (raw + finished)
+        batches = ItemBatch.query.filter_by(item_id=item_id).all()
+        
+        # Filter batches with available quantity using Python (since available_quantity is a property)
+        available_batches = [batch for batch in batches if batch.available_quantity > 0]
         
         batch_data = []
-        for batch in batches:
+        for batch in available_batches:
             batch_data.append({
                 'id': batch.id,
                 'batch_number': batch.batch_number,
-                'qty_available': batch.qty_available,
+                'qty_available': batch.available_quantity,  # Use property
                 'manufacture_date': batch.manufacture_date.isoformat() if batch.manufacture_date else None,
                 'expiry_date': batch.expiry_date.isoformat() if batch.expiry_date else None,
-                'quality_status': batch.quality_status,
-                'storage_location': batch.storage_location
+                'quality_status': batch.quality_status or 'good',
+                'storage_location': batch.storage_location or 'Default'
             })
         
         return jsonify({
@@ -1919,13 +1921,13 @@ def get_batch_details(batch_id):
                 'batch_number': batch.batch_number,
                 'item_id': batch.item_id,
                 'item_name': batch.item.name if batch.item else 'Unknown',
-                'qty_available': batch.qty_available,
-                'qty_total': batch.qty_total,
+                'qty_available': batch.available_quantity,  # Use property
+                'qty_total': batch.total_quantity,  # Use property
                 'manufacture_date': batch.manufacture_date.isoformat() if batch.manufacture_date else None,
                 'expiry_date': batch.expiry_date.isoformat() if batch.expiry_date else None,
-                'quality_status': batch.quality_status,
-                'storage_location': batch.storage_location,
-                'supplier_batch': batch.supplier_batch,
+                'quality_status': batch.quality_status or 'good',
+                'storage_location': batch.storage_location or 'Default',
+                'supplier_batch': batch.supplier_batch or '',
                 'purchase_rate': float(batch.purchase_rate) if batch.purchase_rate else 0.0
             }
         })
