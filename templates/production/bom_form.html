@@ -219,6 +219,47 @@
                             </div>
                         </div>
 
+                        <!-- Multi-Level BOM Section -->
+                        <div class="card mt-3">
+                            <div class="card-header bg-info text-white">
+                                <h6><i class="fas fa-layer-group"></i> Multi-Level BOM <span class="badge bg-success">NEW</span></h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.parent_bom_id.label(class="form-label") }}
+                                            {{ form.parent_bom_id(class="form-select") }}
+                                            <small class="text-muted">Select parent BOM if this is a sub-assembly</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.bom_level.label(class="form-label") }}
+                                            {{ form.bom_level(class="form-control") }}
+                                            <small class="text-muted">Hierarchy level (auto-calculated)</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            {{ form.is_phantom_bom(class="form-check-input") }}
+                                            {{ form.is_phantom_bom.label(class="form-check-label") }}
+                                            <small class="form-text text-muted">Phantom BOMs are intermediate products not kept in inventory</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            {{ form.intermediate_product(class="form-check-input") }}
+                                            {{ form.intermediate_product.label(class="form-check-label") }}
+                                            <small class="form-text text-muted">This BOM produces intermediate products for other BOMs</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Markup Section -->
                         <div class="card mt-3">
                             <div class="card-header">

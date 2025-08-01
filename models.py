@@ -2022,6 +2022,12 @@ class BOM(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     
+    # Multi-level BOM support fields
+    parent_bom_id = db.Column(db.Integer, db.ForeignKey('boms.id'), nullable=True)  # Parent BOM if this is a sub-BOM
+    bom_level = db.Column(db.Integer, default=0)  # BOM hierarchy level (0 = top level, 1 = sub-BOM, etc.)
+    is_phantom_bom = db.Column(db.Boolean, default=False)  # Phantom BOM (intermediate product not stocked)
+    intermediate_product = db.Column(db.Boolean, default=False)  # This BOM produces intermediate products for other BOMs
+    
     # Relationships
     product = db.relationship('Item', backref='boms')
     output_uom = db.relationship('UnitOfMeasure', foreign_keys=[output_uom_id])
@@ -2029,10 +2035,39 @@ class BOM(db.Model):
     processes = db.relationship('BOMProcess', backref='bom', lazy=True, cascade='all, delete-orphan')
     creator = db.relationship('User', foreign_keys=[created_by])
     
+    # Multi-level BOM relationships
+    parent_bom = db.relationship('BOM', remote_side=[id], backref='sub_boms')
+    
+    # Relationship to track which BOMs use this BOM's output as input
+    dependent_boms = db.relationship('BOMItem', 
+                                   primaryjoin='BOM.product_id == BOMItem.material_id',
+                                   foreign_keys='BOMItem.material_id',
+                                   backref='source_bom',
+                                   viewonly=True)
+    
     @property
     def total_material_cost(self):
-        """Calculate total material cost for one unit"""
-        return sum(item.quantity_required * item.unit_cost for item in self.items)
+        """Calculate total material cost for one unit including nested BOM costs"""
+        total_cost = 0.0
+        
+        for item in self.items:
+            material = item.material or item.item
+            if material:
+                # Check if this material has its own BOM (nested BOM)
+                material_bom = BOM.query.filter_by(product_id=material.id, is_active=True).first()
+                
+                if material_bom:
+                    # Use the BOM cost for this material (recursive cost calculation)
+                    material_cost = material_bom.total_cost_per_unit
+                else:
+                    # Use the unit cost from inventory
+                    material_cost = item.unit_cost
+                
+                # Calculate total cost for this item
+                required_qty = item.qty_required or item.quantity_required or 0
+                total_cost += required_qty * material_cost
+        
+        return total_cost
     
     @property
     def calculated_freight_cost_per_unit(self):
@@ -2203,21 +2238,52 @@ class BOM(db.Model):
         }
     
     def get_material_availability(self):
-        """Check material availability for this BOM"""
+        """Check material availability for this BOM including nested BOM dependencies"""
         shortages = []
+        nested_requirements = []
+        
         for bom_item in self.items:
             material = bom_item.material or bom_item.item  # Handle both old and new structure
             if material:
-                available_qty = material.total_stock if hasattr(material, 'total_stock') else (material.current_stock or 0)
-                required_qty = bom_item.effective_quantity
+                # Check if this material has its own BOM (nested BOM)
+                material_bom = BOM.query.filter_by(product_id=material.id, is_active=True).first()
                 
-                if available_qty < required_qty:
-                    shortages.append({
-                        'material': material,
-                        'required': required_qty,
-                        'available': available_qty,
-                        'shortage': required_qty - available_qty
-                    })
+                if material_bom:
+                    # This is a nested BOM - check its sub-material availability
+                    sub_shortages = material_bom.get_material_availability()
+                    if sub_shortages:
+                        nested_requirements.append({
+                            'intermediate_product': material,
+                            'bom': material_bom,
+                            'shortages': sub_shortages,
+                            'required_qty': bom_item.effective_quantity
+                        })
+                else:
+                    # Regular material - check direct availability
+                    available_qty = material.total_stock if hasattr(material, 'total_stock') else (material.current_stock or 0)
+                    required_qty = bom_item.effective_quantity
+                    
+                    if available_qty < required_qty:
+                        shortages.append({
+                            'material': material,
+                            'required': required_qty,
+                            'available': available_qty,
+                            'shortage': required_qty - available_qty,
+                            'type': 'direct_material'
+                        })
+        
+        # Add nested requirements to shortages
+        for nested_req in nested_requirements:
+            shortages.append({
+                'material': nested_req['intermediate_product'],
+                'required': nested_req['required_qty'],
+                'available': 0,  # Assume intermediate products are produced on demand
+                'shortage': nested_req['required_qty'],
+                'type': 'intermediate_product',
+                'nested_bom': nested_req['bom'],
+                'sub_material_shortages': nested_req['shortages']
+            })
+        
         return shortages
     
     def can_produce_quantity(self, production_qty):
@@ -2275,6 +2341,198 @@ class BOM(db.Model):
     def in_house_processes(self):
         """Get list of in-house processes"""
         return [p for p in self.processes if not p.is_outsourced]
+    
+    # Multi-level BOM methods
+    
+    def get_bom_hierarchy(self):
+        """Get the complete BOM hierarchy tree"""
+        hierarchy = {
+            'bom': self,
+            'level': self.bom_level,
+            'children': []
+        }
+        
+        # Find all sub-BOMs that use this BOM's output as input
+        for bom_item in self.items:
+            material = bom_item.material or bom_item.item
+            if material:
+                # Find BOMs that produce this material
+                sub_bom = BOM.query.filter_by(product_id=material.id, is_active=True).first()
+                if sub_bom and sub_bom.id != self.id:  # Avoid circular reference
+                    sub_hierarchy = sub_bom.get_bom_hierarchy()
+                    sub_hierarchy['parent_requirement'] = {
+                        'quantity': bom_item.qty_required or bom_item.quantity_required,
+                        'uom': bom_item.unit
+                    }
+                    hierarchy['children'].append(sub_hierarchy)
+        
+        return hierarchy
+    
+    def get_flattened_materials_list(self):
+        """Get a flattened list of all materials required including nested BOMs"""
+        materials_list = []
+        
+        def process_bom(bom, multiplier=1):
+            for bom_item in bom.items:
+                material = bom_item.material or bom_item.item
+                if material:
+                    required_qty = (bom_item.qty_required or bom_item.quantity_required or 0) * multiplier
+                    
+                    # Check if this material has its own BOM
+                    material_bom = BOM.query.filter_by(product_id=material.id, is_active=True).first()
+                    
+                    if material_bom:
+                        # Recursive call for nested BOM
+                        process_bom(material_bom, required_qty)
+                    else:
+                        # Add to final materials list
+                        existing_material = next((m for m in materials_list if m['material'].id == material.id), None)
+                        if existing_material:
+                            existing_material['total_quantity'] += required_qty
+                        else:
+                            materials_list.append({
+                                'material': material,
+                                'total_quantity': required_qty,
+                                'unit': bom_item.unit,
+                                'source_bom': bom.bom_code,
+                                'bom_level': bom.bom_level
+                            })
+        
+        process_bom(self)
+        return materials_list
+    
+    def get_suggested_production_sequence(self):
+        """Get suggested production sequence for multi-level BOMs"""
+        sequence = []
+        
+        def analyze_dependencies(bom, level=0):
+            bom_info = {
+                'bom': bom,
+                'level': level,
+                'dependencies': [],
+                'estimated_lead_time': bom.calculated_total_manufacturing_time
+            }
+            
+            for bom_item in bom.items:
+                material = bom_item.material or bom_item.item
+                if material:
+                    material_bom = BOM.query.filter_by(product_id=material.id, is_active=True).first()
+                    if material_bom and material_bom.id != bom.id:
+                        dependency = analyze_dependencies(material_bom, level + 1)
+                        bom_info['dependencies'].append(dependency)
+            
+            return bom_info
+        
+        dependency_tree = analyze_dependencies(self)
+        
+        # Create production sequence (deepest dependencies first)
+        def extract_sequence(node):
+            # First add all dependencies
+            for dep in node['dependencies']:
+                extract_sequence(dep)
+            
+            # Then add this BOM if not already in sequence
+            if not any(item['bom'].id == node['bom'].id for item in sequence):
+                sequence.append({
+                    'bom': node['bom'],
+                    'level': node['level'],
+                    'estimated_lead_time': node['estimated_lead_time'],
+                    'priority': len(node['dependencies'])  # Higher priority for more dependencies
+                })
+        
+        extract_sequence(dependency_tree)
+        return sequence
+    
+    def get_missing_intermediate_products(self):
+        """Get list of intermediate products that need to be produced"""
+        missing_products = []
+        
+        for bom_item in self.items:
+            material = bom_item.material or bom_item.item
+            if material:
+                # Check if this material has a BOM (intermediate product)
+                material_bom = BOM.query.filter_by(product_id=material.id, is_active=True).first()
+                
+                if material_bom:
+                    # Check current stock vs required
+                    available_qty = material.total_stock if hasattr(material, 'total_stock') else (material.current_stock or 0)
+                    required_qty = bom_item.qty_required or bom_item.quantity_required or 0
+                    
+                    if available_qty < required_qty:
+                        missing_products.append({
+                            'material': material,
+                            'bom': material_bom,
+                            'required_qty': required_qty,
+                            'available_qty': available_qty,
+                            'shortage_qty': required_qty - available_qty,
+                            'suggested_job_work': f"Create Job Work for {material_bom.bom_code}",
+                            'estimated_cost': material_bom.total_cost_per_unit * (required_qty - available_qty)
+                        })
+        
+        return missing_products
+    
+    def calculate_multi_level_cost_breakdown(self):
+        """Calculate detailed cost breakdown including nested BOM costs"""
+        breakdown = {
+            'direct_materials': 0.0,
+            'intermediate_products': 0.0,
+            'labor_costs': 0.0,
+            'overhead_costs': 0.0,
+            'total_cost': 0.0,
+            'cost_details': []
+        }
+        
+        for bom_item in self.items:
+            material = bom_item.material or bom_item.item
+            if material:
+                required_qty = bom_item.qty_required or bom_item.quantity_required or 0
+                
+                # Check if this material has its own BOM
+                material_bom = BOM.query.filter_by(product_id=material.id, is_active=True).first()
+                
+                if material_bom:
+                    # Intermediate product cost
+                    sub_cost = material_bom.total_cost_per_unit * required_qty
+                    breakdown['intermediate_products'] += sub_cost
+                    
+                    # Get sub-BOM breakdown
+                    sub_breakdown = material_bom.calculate_multi_level_cost_breakdown()
+                    
+                    breakdown['cost_details'].append({
+                        'material': material,
+                        'type': 'intermediate_product',
+                        'quantity': required_qty,
+                        'unit_cost': material_bom.total_cost_per_unit,
+                        'total_cost': sub_cost,
+                        'sub_breakdown': sub_breakdown
+                    })
+                else:
+                    # Direct material cost
+                    direct_cost = bom_item.unit_cost * required_qty
+                    breakdown['direct_materials'] += direct_cost
+                    
+                    breakdown['cost_details'].append({
+                        'material': material,
+                        'type': 'direct_material',
+                        'quantity': required_qty,
+                        'unit_cost': bom_item.unit_cost,
+                        'total_cost': direct_cost
+                    })
+        
+        # Add labor and overhead costs
+        breakdown['labor_costs'] = self.calculated_labor_cost_per_unit
+        breakdown['overhead_costs'] = self.overhead_cost_per_unit or 0
+        
+        if self.overhead_percentage and self.overhead_percentage > 0:
+            material_cost = breakdown['direct_materials'] + breakdown['intermediate_products']
+            breakdown['overhead_costs'] = material_cost * (self.overhead_percentage / 100)
+        
+        breakdown['total_cost'] = (breakdown['direct_materials'] + 
+                                 breakdown['intermediate_products'] + 
+                                 breakdown['labor_costs'] + 
+                                 breakdown['overhead_costs'])
+        
+        return breakdown
 
 # New model for BOM Process routing
 class BOMProcess(db.Model):

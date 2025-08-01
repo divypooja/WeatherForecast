@@ -754,10 +754,24 @@ class BOMForm(FlaskForm):
                                    default='per_piece')
     markup_percentage = FloatField('Markup % (Profit Margin)', validators=[Optional(), NumberRange(min=0, max=500)], default=0.0)
     
+    # Multi-level BOM fields
+    parent_bom_id = SelectField('Parent BOM (if sub-BOM)', validators=[Optional()], coerce=int)
+    bom_level = IntegerField('BOM Level', validators=[Optional(), NumberRange(min=0, max=10)], default=0,
+                           render_kw={"readonly": True, "placeholder": "Auto-calculated based on parent BOM"})
+    is_phantom_bom = BooleanField('Phantom BOM (not stocked)', default=False,
+                                render_kw={"title": "Phantom BOMs are intermediate products that are not kept in inventory"})
+    intermediate_product = BooleanField('Intermediate Product', default=False,
+                                      render_kw={"title": "This BOM produces intermediate products used by other BOMs"})
+    
     def __init__(self, *args, **kwargs):
         super(BOMForm, self).__init__(*args, **kwargs)
         # Allow any product type for BOM creation - no restrictions
         self.product_id.choices = [(0, 'Select Product')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.order_by(Item.name).all()]
+        
+        # Populate parent BOM choices (only top-level BOMs can be parents to avoid deep nesting)
+        from models import BOM
+        parent_boms = BOM.query.filter_by(is_active=True, bom_level=0).order_by(BOM.bom_code).all()
+        self.parent_bom_id.choices = [(0, 'None (Top-level BOM)')] + [(b.id, f"{b.bom_code} - {b.product.name}") for b in parent_boms]
         
         # Populate UOM choices
         try:

@@ -1220,3 +1220,155 @@ def delete_bom_process(id):
         flash(f'Error deleting process: {str(e)}', 'error')
     
     return redirect(url_for('production.edit_bom', id=bom_id))
+
+# Multi-level BOM API Endpoints
+
+@production_bp.route('/api/bom/<int:bom_id>/hierarchy')
+@login_required
+def api_bom_hierarchy(bom_id):
+    """Get BOM hierarchy tree for nested BOMs"""
+    try:
+        bom = BOM.query.get_or_404(bom_id)
+        hierarchy = bom.get_bom_hierarchy()
+        
+        def serialize_hierarchy(node):
+            return {
+                'bom_id': node['bom'].id,
+                'bom_code': node['bom'].bom_code,
+                'product_name': node['bom'].product.name if node['bom'].product else '',
+                'level': node['level'],
+                'total_cost': node['bom'].total_cost_per_unit,
+                'is_phantom': node['bom'].is_phantom_bom,
+                'intermediate_product': node['bom'].intermediate_product,
+                'parent_requirement': node.get('parent_requirement', {}),
+                'children': [serialize_hierarchy(child) for child in node['children']]
+            }
+        
+        return jsonify({
+            'success': True,
+            'hierarchy': serialize_hierarchy(hierarchy)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@production_bp.route('/api/bom/<int:bom_id>/missing-intermediate-products')
+@login_required
+def api_missing_intermediate_products(bom_id):
+    """Get missing intermediate products that need to be produced"""
+    try:
+        bom = BOM.query.get_or_404(bom_id)
+        missing_products = bom.get_missing_intermediate_products()
+        
+        serialized_products = []
+        for product in missing_products:
+            serialized_products.append({
+                'material_id': product['material'].id,
+                'material_name': product['material'].name,
+                'material_code': product['material'].code,
+                'bom_id': product['bom'].id,
+                'bom_code': product['bom'].bom_code,
+                'required_qty': product['required_qty'],
+                'available_qty': product['available_qty'],
+                'shortage_qty': product['shortage_qty'],
+                'suggested_job_work': product['suggested_job_work'],
+                'estimated_cost': product['estimated_cost']
+            })
+        
+        return jsonify({
+            'success': True,
+            'missing_products': serialized_products
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@production_bp.route('/api/bom/<int:bom_id>/production-sequence')
+@login_required
+def api_production_sequence(bom_id):
+    """Get suggested production sequence for multi-level BOMs"""
+    try:
+        bom = BOM.query.get_or_404(bom_id)
+        sequence = bom.get_suggested_production_sequence()
+        
+        serialized_sequence = []
+        for item in sequence:
+            serialized_sequence.append({
+                'bom_id': item['bom'].id,
+                'bom_code': item['bom'].bom_code,
+                'product_name': item['bom'].product.name if item['bom'].product else '',
+                'level': item['level'],
+                'estimated_lead_time': item['estimated_lead_time'],
+                'priority': item['priority'],
+                'total_cost': item['bom'].total_cost_per_unit
+            })
+        
+        return jsonify({
+            'success': True,
+            'production_sequence': serialized_sequence
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@production_bp.route('/api/bom/<int:bom_id>/flattened-materials')
+@login_required
+def api_flattened_materials(bom_id):
+    """Get flattened materials list including nested BOM materials"""
+    try:
+        bom = BOM.query.get_or_404(bom_id)
+        materials_list = bom.get_flattened_materials_list()
+        
+        serialized_materials = []
+        for material in materials_list:
+            available_qty = material['material'].total_stock if hasattr(material['material'], 'total_stock') else (material['material'].current_stock or 0)
+            serialized_materials.append({
+                'material_id': material['material'].id,
+                'material_name': material['material'].name,
+                'material_code': material['material'].code,
+                'total_quantity': material['total_quantity'],
+                'unit': material['unit'],
+                'source_bom': material['source_bom'],
+                'bom_level': material['bom_level'],
+                'available_qty': available_qty,
+                'shortage': max(0, material['total_quantity'] - available_qty)
+            })
+        
+        return jsonify({
+            'success': True,
+            'flattened_materials': serialized_materials
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@production_bp.route('/api/bom/<int:bom_id>/cost-breakdown')
+@login_required
+def api_cost_breakdown(bom_id):
+    """Get multi-level cost breakdown"""
+    try:
+        bom = BOM.query.get_or_404(bom_id)
+        breakdown = bom.calculate_multi_level_cost_breakdown()
+        
+        # Serialize cost details
+        serialized_details = []
+        for detail in breakdown['cost_details']:
+            detail_data = {
+                'material_id': detail['material'].id,
+                'material_name': detail['material'].name,
+                'material_code': detail['material'].code,
+                'type': detail['type'],
+                'quantity': detail['quantity'],
+                'unit_cost': detail['unit_cost'],
+                'total_cost': detail['total_cost']
+            }
+            
+            if 'sub_breakdown' in detail:
+                detail_data['sub_breakdown'] = detail['sub_breakdown']
+            
+            serialized_details.append(detail_data)
+        
+        breakdown['cost_details'] = serialized_details
+        
+        return jsonify({
+            'success': True,
+            'cost_breakdown': breakdown
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
