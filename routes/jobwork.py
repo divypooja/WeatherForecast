@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
-from forms import JobWorkForm, JobWorkQuantityUpdateForm, DailyJobWorkForm, JobWorkTeamAssignmentForm
-from models import JobWork, Supplier, Item, BOM, BOMItem, CompanySettings, DailyJobWorkEntry, JobWorkTeamAssignment, Employee
+from forms import JobWorkForm, JobWorkQuantityUpdateForm, DailyJobWorkForm, JobWorkTeamAssignmentForm, JobWorkBatchReturnForm
+from models import JobWork, Supplier, Item, BOM, BOMItem, CompanySettings, DailyJobWorkEntry, JobWorkTeamAssignment, Employee, JobWorkBatch, ItemBatch
 from app import db
 from sqlalchemy import func
 from datetime import datetime
@@ -1637,5 +1637,197 @@ def generate_challan(job_id):
                          job=job, 
                          company_settings=company_settings,
                          processes=processes)
+
+# Batch Tracking API Endpoints
+@jobwork_bp.route('/api/batches/by-item/<int:item_id>')
+@login_required
+def get_batches_by_item(item_id):
+    """Get available batches for a specific item"""
+    try:
+        batches = ItemBatch.query.filter_by(item_id=item_id).filter(
+            ItemBatch.qty_available > 0
+        ).order_by(ItemBatch.created_at.desc()).all()
+        
+        batch_data = []
+        for batch in batches:
+            batch_data.append({
+                'id': batch.id,
+                'batch_number': batch.batch_number,
+                'qty_available': batch.qty_available,
+                'manufacture_date': batch.manufacture_date.isoformat() if batch.manufacture_date else None,
+                'expiry_date': batch.expiry_date.isoformat() if batch.expiry_date else None,
+                'quality_status': batch.quality_status,
+                'storage_location': batch.storage_location
+            })
+        
+        return jsonify({
+            'success': True,
+            'batches': batch_data
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error fetching batches: {str(e)}'
+        }), 500
+
+@jobwork_bp.route('/api/batch/<int:batch_id>/details')
+@login_required
+def get_batch_details(batch_id):
+    """Get detailed information about a specific batch"""
+    try:
+        batch = ItemBatch.query.get_or_404(batch_id)
+        
+        return jsonify({
+            'success': True,
+            'batch': {
+                'id': batch.id,
+                'batch_number': batch.batch_number,
+                'item_id': batch.item_id,
+                'item_name': batch.item.name if batch.item else 'Unknown',
+                'qty_available': batch.qty_available,
+                'qty_total': batch.qty_total,
+                'manufacture_date': batch.manufacture_date.isoformat() if batch.manufacture_date else None,
+                'expiry_date': batch.expiry_date.isoformat() if batch.expiry_date else None,
+                'quality_status': batch.quality_status,
+                'storage_location': batch.storage_location,
+                'supplier_batch': batch.supplier_batch,
+                'purchase_rate': float(batch.purchase_rate) if batch.purchase_rate else 0.0
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error fetching batch details: {str(e)}'
+        }), 500
+
+@jobwork_bp.route('/batch-return', methods=['GET', 'POST'])
+@login_required
+def batch_return():
+    """Process job work batch returns"""
+    form = JobWorkBatchReturnForm()
+    
+    if form.validate_on_submit():
+        try:
+            # Get the batch record
+            batch_record = JobWorkBatch.query.get_or_404(form.batch_record_id.data)
+            
+            # Validate quantities
+            total_processed = form.quantity_finished.data + form.quantity_scrap.data + form.quantity_returned_unused.data
+            if total_processed > batch_record.quantity_issued:
+                flash('Total processed quantity cannot exceed issued quantity', 'error')
+                return render_template('jobwork/batch_return.html', form=form)
+            
+            # Complete the return process
+            success, message = batch_record.complete_return(
+                form.quantity_finished.data,
+                form.quantity_scrap.data,
+                form.quantity_returned_unused.data,
+                form.output_batch_code.data,
+                form.qc_notes.data
+            )
+            
+            if success:
+                # Update additional fields
+                batch_record.quality_status = form.quality_status.data
+                batch_record.inspected_by = current_user.id
+                batch_record.inspected_at = datetime.utcnow()
+                
+                # Add return notes to batch
+                if form.return_notes.data:
+                    batch_record.batch_notes = (batch_record.batch_notes or '') + f"\nReturn Notes: {form.return_notes.data}"
+                
+                db.session.commit()
+                flash(f'Batch return processed successfully. {message}', 'success')
+                return redirect(url_for('jobwork.batch_tracking'))
+            else:
+                flash(f'Error processing batch return: {message}', 'error')
+                
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error processing batch return: {str(e)}', 'error')
+    
+    return render_template('jobwork/batch_return.html', form=form)
+
+@jobwork_bp.route('/api/job-work/<int:job_work_id>/batches')
+@login_required
+def get_job_work_batches(job_work_id):
+    """Get batch records for a specific job work"""
+    try:
+        batches = JobWorkBatch.query.filter_by(job_work_id=job_work_id).filter(
+            JobWorkBatch.status.in_(['issued', 'in_progress'])
+        ).all()
+        
+        batch_data = []
+        for batch in batches:
+            batch_data.append({
+                'id': batch.id,
+                'process_name': batch.process_name,
+                'input_batch_number': batch.input_batch.batch_number if batch.input_batch else 'N/A',
+                'quantity_issued': batch.quantity_issued,
+                'issue_date': batch.issue_date.isoformat() if batch.issue_date else None,
+                'status': batch.status,
+                'days_in_process': batch.days_in_process
+            })
+        
+        return jsonify({
+            'success': True,
+            'batches': batch_data
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error fetching job work batches: {str(e)}'
+        }), 500
+
+@jobwork_bp.route('/batch-tracking')
+@login_required
+def batch_tracking():
+    """Dashboard for batch tracking overview"""
+    # Get active batch records
+    active_batches = JobWorkBatch.query.filter(
+        JobWorkBatch.status.in_(['issued', 'in_progress'])
+    ).order_by(JobWorkBatch.issue_date.desc()).all()
+    
+    # Get completed batch records for the last 30 days
+    from datetime import timedelta
+    thirty_days_ago = datetime.utcnow().date() - timedelta(days=30)
+    recent_returns = JobWorkBatch.query.filter(
+        JobWorkBatch.status == 'returned',
+        JobWorkBatch.return_date >= thirty_days_ago
+    ).order_by(JobWorkBatch.return_date.desc()).all()
+    
+    # Calculate statistics
+    stats = {
+        'active_batches': len(active_batches),
+        'pending_returns': len([b for b in active_batches if b.status == 'issued']),
+        'in_progress': len([b for b in active_batches if b.status == 'in_progress']),
+        'recent_returns': len(recent_returns),
+        'total_material_out': sum(b.quantity_issued for b in active_batches),
+        'avg_yield_rate': sum(b.yield_percentage for b in recent_returns) / len(recent_returns) if recent_returns else 0
+    }
+    
+    return render_template('jobwork/batch_tracking.html', 
+                         active_batches=active_batches,
+                         recent_returns=recent_returns,
+                         stats=stats)
+
+@jobwork_bp.route('/batch/<int:batch_id>/details')
+@login_required
+def batch_details(batch_id):
+    """View detailed information about a specific batch record"""
+    batch = JobWorkBatch.query.get_or_404(batch_id)
+    
+    # Get related data
+    input_batch_history = []
+    if batch.input_batch:
+        # Get history of this batch through various processes
+        related_batches = JobWorkBatch.query.filter_by(
+            input_batch_id=batch.input_batch_id
+        ).order_by(JobWorkBatch.created_at).all()
+        input_batch_history = related_batches
+    
+    return render_template('jobwork/batch_details.html', 
+                         batch=batch,
+                         input_batch_history=input_batch_history)
 
 

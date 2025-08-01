@@ -9,6 +9,9 @@
             <h1><i class="fas fa-tools"></i> Job Works</h1>
         </div>
         <div class="col-auto">
+            <a href="{{ url_for('jobwork.batch_tracking') }}" class="btn btn-info me-2">
+                <i class="fas fa-boxes"></i> Batch Tracking
+            </a>
             <a href="{{ url_for('jobwork.add_job_work') }}" class="btn btn-primary">
                 <i class="fas fa-plus"></i> New Job Work
             </a>
