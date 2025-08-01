@@ -240,7 +240,7 @@ def view_grn_batches(grn_id):
 @grn_bp.route('/dashboard')
 @login_required
 def dashboard():
-    """GRN Dashboard showing statistics and pending actions"""
+    """GRN Dashboard with Parent-Child structure matching Batch Tracking Dashboard"""
     
     # Get filter parameters
     search = request.args.get('search', '').strip()
@@ -248,52 +248,6 @@ def dashboard():
     source_type_filter = request.args.get('source_type', '').strip()
     date_from = request.args.get('date_from', '').strip()
     date_to = request.args.get('date_to', '').strip()
-    
-    # Build base query
-    grn_query = GRN.query
-    
-    # Apply filters
-    if search:
-        grn_query = grn_query.outerjoin(JobWork).outerjoin(PurchaseOrder).filter(
-            or_(
-                GRN.grn_number.ilike(f'%{search}%'),
-                JobWork.job_number.ilike(f'%{search}%'),
-                PurchaseOrder.po_number.ilike(f'%{search}%')
-            )
-        )
-    
-    if status_filter:
-        grn_query = grn_query.filter(GRN.status == status_filter)
-    
-    if source_type_filter:
-        grn_query = grn_query.filter(GRN.source_type == source_type_filter)
-    
-    if date_from:
-        try:
-            from_date = datetime.strptime(date_from, '%Y-%m-%d').date()
-            grn_query = grn_query.filter(GRN.received_date >= from_date)
-        except ValueError:
-            pass
-    
-    if date_to:
-        try:
-            to_date = datetime.strptime(date_to, '%Y-%m-%d').date()
-            grn_query = grn_query.filter(GRN.received_date <= to_date)
-        except ValueError:
-            pass
-    
-    # Pagination parameters
-    page = request.args.get('page', 1, type=int)
-    per_page = 20
-    
-    # Get paginated filtered GRNs
-    pagination = grn_query.order_by(GRN.received_date.desc()).paginate(
-        page=page, per_page=per_page, error_out=False
-    )
-    grns = pagination.items
-    
-    # Count filtered results for display
-    filtered_count = grn_query.count()
     
     # Calculate statistics
     stats = {
@@ -305,6 +259,119 @@ def dashboard():
         ).count(),
         'pending_grns': GRN.query.filter(GRN.status.in_(['draft', 'received'])).count()
     }
+    
+    # Parent-Child Structure: Get Parent orders with their associated GRNs
+    parent_child_data = []
+    
+    # 1. Purchase Orders as Parents
+    purchase_orders = PurchaseOrder.query.filter(
+        PurchaseOrder.grn_receipts_po.any()
+    ).order_by(PurchaseOrder.created_at.desc()).all()
+    
+    for po in purchase_orders:
+        # Calculate totals for this PO
+        total_qty = sum(item.qty for item in po.items)
+        grn_count = len(po.grn_receipts_po)
+        
+        # Determine status based on GRN completion
+        if all(grn.status == 'completed' for grn in po.grn_receipts_po):
+            po_status = 'Completed'
+        elif any(grn.status in ['received', 'inspected'] for grn in po.grn_receipts_po):
+            po_status = 'Partial'
+        else:
+            po_status = 'Pending'
+        
+        # Build child GRNs with details
+        child_grns = []
+        for grn in po.grn_receipts_po:
+            # Get item details for this GRN
+            item_details = []
+            total_received = 0
+            total_scrap = 0
+            
+            for line_item in grn.line_items:
+                item_details.append(f"{line_item.item.name} ({line_item.quantity_received} {line_item.unit_of_measure})")
+                total_received += line_item.quantity_received or 0
+                total_scrap += line_item.quantity_rejected or 0
+            
+            child_grns.append({
+                'grn_number': grn.grn_number,
+                'grn_date': grn.received_date,
+                'item_details': ', '.join(item_details),
+                'received_qty': total_received,
+                'scrap_qty': total_scrap,
+                'status': grn.status.title(),
+                'grn_id': grn.id,
+                'source_type': 'Purchase Order',
+                'source_document': po.po_number
+            })
+        
+        parent_child_data.append({
+            'type': 'Purchase Order',
+            'parent_doc': po.po_number,
+            'date': po.created_at.date(),
+            'vendor_customer': po.supplier.name if po.supplier else 'N/A',
+            'status': po_status,
+            'total_qty': total_qty,
+            'grn_count': grn_count,
+            'child_grns': child_grns,
+            'parent_id': f'po_{po.id}'
+        })
+    
+    # 2. Job Works as Parents
+    job_works = JobWork.query.filter(
+        JobWork.grn_receipts.any()
+    ).order_by(JobWork.created_at.desc()).all()
+    
+    for jw in job_works:
+        # Calculate totals for this Job Work - use quantity_sent as the total
+        total_qty = getattr(jw, 'quantity_sent', 0)
+        grn_count = len(jw.grn_receipts)
+        
+        # Determine status based on GRN completion
+        if all(grn.status == 'completed' for grn in jw.grn_receipts):
+            jw_status = 'Completed'
+        elif any(grn.status in ['received', 'inspected'] for grn in jw.grn_receipts):
+            jw_status = 'Partial'
+        else:
+            jw_status = 'Pending'
+        
+        # Build child GRNs with details
+        child_grns = []
+        for grn in jw.grn_receipts:
+            # Get item details for this GRN
+            item_details = []
+            total_received = 0
+            total_scrap = 0
+            
+            for line_item in grn.line_items:
+                item_details.append(f"{line_item.item.name} ({line_item.quantity_received} {line_item.unit_of_measure})")
+                total_received += line_item.quantity_received or 0
+                total_scrap += line_item.quantity_rejected or 0
+            
+            child_grns.append({
+                'grn_number': grn.grn_number,
+                'grn_date': grn.received_date,
+                'item_details': ', '.join(item_details),
+                'received_qty': total_received,
+                'scrap_qty': total_scrap,
+                'status': grn.status.title(),
+                'grn_id': grn.id,
+                'source_type': 'Job Work',
+                'source_document': jw.job_number
+            })
+        
+        parent_child_data.append({
+            'type': 'Job Work',
+            'parent_doc': jw.job_number,
+            'date': jw.created_at.date(),
+            'vendor_customer': getattr(jw.vendor, 'name', 'In-House') if hasattr(jw, 'vendor') and jw.vendor else 'In-House',
+            'status': jw_status,
+            'total_qty': total_qty,
+            'grn_count': grn_count,
+            'child_grns': child_grns,
+            'parent_id': f'jw_{jw.id}'
+        })
     
     # Get job works pending GRN creation - including unified jobs with outsourced processes
     pending_job_works = JobWork.query.filter(
@@ -345,13 +412,11 @@ def dashboard():
     
     return render_template('grn/dashboard.html',
                          title='GRN Dashboard',
-                         grns=grns,
+                         parent_child_data=parent_child_data,
                          stats=stats,
                          pending_job_works=pending_job_works,
                          pending_purchase_orders=pending_purchase_orders,
-                         monthly_grns=monthly_grns,
-                         filtered_count=filtered_count,
-                         pagination=pagination)
+                         monthly_grns=monthly_grns)
 
 
 @grn_bp.route('/create/job_work/<int:job_work_id>')
