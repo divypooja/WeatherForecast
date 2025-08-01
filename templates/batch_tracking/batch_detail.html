@@ -320,7 +320,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Update Quality Status</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" onclick="closeQualityModal()"></button>
             </div>
             <div class="modal-body">
                 <form id="qualityForm">
@@ -341,7 +341,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary" onclick="closeQualityModal()">Cancel</button>
                 <button type="button" class="btn btn-primary" onclick="saveQualityStatus()">Save Changes</button>
             </div>
         </div>
@@ -354,7 +354,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Change Storage Location</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" onclick="closeLocationModal()"></button>
             </div>
             <div class="modal-body">
                 <form id="locationForm">
@@ -367,7 +367,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary" onclick="closeLocationModal()">Cancel</button>
                 <button type="button" class="btn btn-primary" onclick="saveStorageLocation()">Update Location</button>
             </div>
         </div>
@@ -375,12 +375,31 @@
 </div>
 
 <script>
+// Wait for DOM to be ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Bootstrap modals
+    window.qualityModal = new bootstrap.Modal(document.getElementById('qualityModal'));
+    window.locationModal = new bootstrap.Modal(document.getElementById('locationModal'));
+});
+
 function updateQualityStatus() {
-    $('#qualityModal').modal('show');
+    if (window.qualityModal) {
+        window.qualityModal.show();
+    } else {
+        // Fallback if Bootstrap modal not initialized
+        document.getElementById('qualityModal').style.display = 'block';
+        document.getElementById('qualityModal').classList.add('show');
+    }
 }
 
 function moveToLocation() {
-    $('#locationModal').modal('show');
+    if (window.locationModal) {
+        window.locationModal.show();
+    } else {
+        // Fallback if Bootstrap modal not initialized
+        document.getElementById('locationModal').style.display = 'block';
+        document.getElementById('locationModal').classList.add('show');
+    }
 }
 
 function saveQualityStatus() {
@@ -400,7 +419,9 @@ function saveQualityStatus() {
     .then(data => {
         if (data.success) {
             alert(data.message);
-            $('#qualityModal').modal('hide');
+            if (window.qualityModal) {
+                window.qualityModal.hide();
+            }
             location.reload();
         } else {
             alert('Error: ' + data.error);
@@ -428,7 +449,9 @@ function saveStorageLocation() {
     .then(data => {
         if (data.success) {
             alert(data.message);
-            $('#locationModal').modal('hide');
+            if (window.locationModal) {
+                window.locationModal.hide();
+            }
             location.reload();
         } else {
             alert('Error: ' + data.error);
@@ -438,6 +461,24 @@ function saveStorageLocation() {
         console.error('Error:', error);
         alert('Failed to update storage location');
     });
+}
+
+function closeQualityModal() {
+    if (window.qualityModal) {
+        window.qualityModal.hide();
+    } else {
+        document.getElementById('qualityModal').style.display = 'none';
+        document.getElementById('qualityModal').classList.remove('show');
+    }
+}
+
+function closeLocationModal() {
+    if (window.locationModal) {
+        window.locationModal.hide();
+    } else {
+        document.getElementById('locationModal').style.display = 'none';
+        document.getElementById('locationModal').classList.remove('show');
+    }
 }
 </script>
 {% endblock %}
