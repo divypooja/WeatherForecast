@@ -1372,10 +1372,20 @@ function loadJobWorkRate(itemId, processType, rateInput, vendorName) {
     const assignedToSelect = document.getElementById('assigned_to');
     const currentAssignedTo = assignedToSelect ? assignedToSelect.value : '';
     
-    // Extract vendor name from assignment (remove dept_ prefix if it exists)
-    let effectiveVendorName = currentAssignedTo || vendorName || '';
-    if (effectiveVendorName.startsWith('dept_')) {
-        effectiveVendorName = ''; // Don't use department codes for vendor rates
+    // Extract vendor name from assignment - use the display text, not the value
+    let effectiveVendorName = '';
+    if (assignedToSelect && currentAssignedTo) {
+        if (currentAssignedTo.startsWith('supplier_')) {
+            // Get the actual vendor name from the selected option's text
+            const selectedOption = assignedToSelect.options[assignedToSelect.selectedIndex];
+            effectiveVendorName = selectedOption ? selectedOption.textContent.trim() : '';
+        } else if (currentAssignedTo.startsWith('dept_')) {
+            effectiveVendorName = ''; // Don't use department codes for vendor rates
+        } else {
+            effectiveVendorName = currentAssignedTo; // Direct vendor name
+        }
+    } else {
+        effectiveVendorName = vendorName || '';
     }
     
     console.log(`Loading rate for item ${itemId}, process: ${processType}, assigned to: ${effectiveVendorName}`);
