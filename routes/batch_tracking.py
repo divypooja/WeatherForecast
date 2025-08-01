@@ -302,7 +302,7 @@ def api_update_batch_quality(batch_id):
         new_status = data.get('quality_status')
         quality_notes = data.get('quality_notes', '')
         
-        if new_status not in ['good', 'defective', 'pending_inspection', 'expired']:
+        if new_status not in ['approved', 'rejected', 'pending', 'defective', 'pending_inspection', 'expired', 'good']:
             return jsonify({'success': False, 'error': 'Invalid quality status'}), 400
         
         batch.quality_status = new_status
