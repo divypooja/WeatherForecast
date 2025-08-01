@@ -145,14 +145,14 @@
                     <i class="fas fa-boxes"></i>
                     Inventory
                 </a>
+                <a class="nav-link {{ 'active' if 'production' in request.endpoint }}" href="{{ url_for('production.dashboard') }}">
+                    <i class="fas fa-cogs"></i>
+                    Production
+                </a>
                 <a class="nav-link {{ 'active' if 'batch' in request.endpoint }}" href="{{ url_for('inventory.batch_tracking_dashboard') }}">
                     <i class="fas fa-barcode text-info"></i>
                     <span class="fw-bold">Batch Tracking</span>
                     <span class="badge bg-info ms-2">NEW</span>
-                </a>
-                <a class="nav-link {{ 'active' if 'production' in request.endpoint }}" href="{{ url_for('production.dashboard') }}">
-                    <i class="fas fa-cogs"></i>
-                    Production
                 </a>
                 <a class="nav-link {{ 'active' if 'jobwork' in request.endpoint }}" href="{{ url_for('jobwork.dashboard') }}">
                     <i class="fas fa-tools"></i>
