@@ -99,12 +99,15 @@ def multi_state_view():
             'total_available': sum(item['available'] for item in inventory_data)
         }
         
+        print(f"Multi-state view: rendering template with {len(inventory_data)} items")  # Debug
         return render_template('inventory/multi_state_unified.html', 
                              inventory_data=inventory_data,
                              summary=summary)
         
     except Exception as e:
         print(f"Multi-state view error: {e}")  # Debug logging
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")  # Full error details
         flash(f'Error loading multi-state view: {str(e)}', 'error')
         return redirect(url_for('inventory.dashboard'))
 
