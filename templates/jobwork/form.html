@@ -117,6 +117,29 @@
                                 </td>
                                 <td>"Ms sheet - 1mm - 4x8 feet"</td>
                             </tr>
+                            <tr id="batch_tracking_row">
+                                <td><strong>Enable Batch Tracking</strong></td>
+                                <td>
+                                    <div class="form-check">
+                                        {{ form.enable_batch_tracking(class="form-check-input", id="enable_batch_tracking") }}
+                                        <label class="form-check-label" for="enable_batch_tracking">
+                                            Track material by batch
+                                        </label>
+                                    </div>
+                                </td>
+                                <td>Enable for complete traceability</td>
+                            </tr>
+                            <tr id="batch_selection_row" style="display: none;">
+                                <td><strong>Select Batch</strong></td>
+                                <td>
+                                    {{ form.batch_id(class="form-select", id="batch_select") }}
+                                    <small class="form-text text-muted">Available: <span id="batch_available">0</span> units</small>
+                                    {% for error in form.batch_id.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>Select specific batch for traceability</td>
+                            </tr>
                             <tr>
                                 <td><strong>Quantity to Issue</strong></td>
                                 <td>
@@ -134,6 +157,19 @@
                                     <div id="calculation_display" class="mt-2"></div>
                                 </td>
                                 <td>5 Pieces / Kg</td>
+                            </tr>
+                            <tr id="output_batch_row" style="display: none;">
+                                <td><strong>Create Output Batch</strong></td>
+                                <td>
+                                    <div class="form-check">
+                                        {{ form.create_output_batch(class="form-check-input", id="create_output_batch") }}
+                                        <label class="form-check-label" for="create_output_batch">
+                                            Auto-create output batch
+                                        </label>
+                                    </div>
+                                    {{ form.output_batch_prefix(class="form-control mt-2", placeholder="Auto-generated") }}
+                                </td>
+                                <td>Creates finished goods batch automatically</td>
                             </tr>
                             <tr>
                                 <td><strong>Store Location</strong></td>
@@ -1569,6 +1605,152 @@ document.getElementById('jobWorkForm').addEventListener('submit', function(e) {
     // Allow normal form submission (don't call submit() again)
     console.log('Form submitting with process data:', processData);
 });
+
+// Batch tracking functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const enableBatchTracking = document.getElementById('enable_batch_tracking');
+    const batchSelectionRow = document.getElementById('batch_selection_row');
+    const outputBatchRow = document.getElementById('output_batch_row');
+    const inputMaterial = document.getElementById('input_material');
+    const batchSelect = document.getElementById('batch_select');
+    const batchAvailable = document.getElementById('batch_available');
+
+    // Toggle batch tracking rows
+    function toggleBatchTracking() {
+        if (enableBatchTracking.checked) {
+            batchSelectionRow.style.display = '';
+            outputBatchRow.style.display = '';
+            loadBatchesForMaterial();
+        } else {
+            batchSelectionRow.style.display = 'none';
+            outputBatchRow.style.display = 'none';
+            batchSelect.innerHTML = '<option value="0">Select Material First</option>';
+            batchAvailable.textContent = '0';
+        }
+    }
+
+    // Load available batches for selected material
+    function loadBatchesForMaterial() {
+        const materialId = inputMaterial.value;
+        if (!materialId || materialId === '0') {
+            batchSelect.innerHTML = '<option value="0">Select Material First</option>';
+            batchAvailable.textContent = '0';
+            return;
+        }
+
+        fetch(`/jobwork/api/batches/by-item/${materialId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    batchSelect.innerHTML = '<option value="0">Select Batch</option>';
+                    data.batches.forEach(batch => {
+                        const option = document.createElement('option');
+                        option.value = batch.id;
+                        option.textContent = `${batch.batch_number} - Available: ${batch.qty_available}`;
+                        option.setAttribute('data-available', batch.qty_available);
+                        option.setAttribute('data-location', batch.storage_location || 'Default');
+                        batchSelect.appendChild(option);
+                    });
+                } else {
+                    batchSelect.innerHTML = '<option value="0">No batches available</option>';
+                    console.error('Error loading batches:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading batches:', error);
+                batchSelect.innerHTML = '<option value="0">Error loading batches</option>';
+            });
+    }
+
+    // Update batch available quantity when batch is selected
+    function updateBatchInfo() {
+        const selectedOption = batchSelect.options[batchSelect.selectedIndex];
+        if (selectedOption && selectedOption.value !== '0') {
+            const available = selectedOption.getAttribute('data-available') || '0';
+            batchAvailable.textContent = available;
+            
+            // Auto-set quantity to issue to match batch available if quantity is empty
+            const quantityInput = document.getElementById('quantity_to_issue');
+            if (quantityInput && !quantityInput.value) {
+                quantityInput.value = available;
+            }
+        } else {
+            batchAvailable.textContent = '0';
+        }
+    }
+
+    // Event listeners
+    if (enableBatchTracking) {
+        enableBatchTracking.addEventListener('change', toggleBatchTracking);
+        // Initialize state
+        toggleBatchTracking();
+    }
+
+    if (inputMaterial) {
+        inputMaterial.addEventListener('change', function() {
+            if (enableBatchTracking && enableBatchTracking.checked) {
+                loadBatchesForMaterial();
+            }
+        });
+    }
+
+    if (batchSelect) {
+        batchSelect.addEventListener('change', updateBatchInfo);
+    }
+});
+
+// Batch return form functionality (for separate batch return page)
+function loadJobWorkBatches(jobWorkId) {
+    const batchRecordSelect = document.getElementById('batch_record_id');
+    if (!batchRecordSelect) return;
+
+    if (!jobWorkId || jobWorkId === '0') {
+        batchRecordSelect.innerHTML = '<option value="0">Select Job Work First</option>';
+        return;
+    }
+
+    fetch(`/jobwork/api/job-work/${jobWorkId}/batches`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                batchRecordSelect.innerHTML = '<option value="0">Select Batch</option>';
+                data.batches.forEach(batch => {
+                    const option = document.createElement('option');
+                    option.value = batch.id;
+                    option.textContent = `${batch.process_name} - ${batch.input_batch_number} (${batch.quantity_issued} issued)`;
+                    batchRecordSelect.appendChild(option);
+                });
+            } else {
+                batchRecordSelect.innerHTML = '<option value="0">No active batches</option>';
+                console.error('Error loading job work batches:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading job work batches:', error);
+            batchRecordSelect.innerHTML = '<option value="0">Error loading batches</option>';
+        });
+}
+
+// Auto-generate output batch code
+function generateOutputBatchCode() {
+    const jobWorkSelect = document.getElementById('job_work_id');
+    const batchRecordSelect = document.getElementById('batch_record_id');
+    const outputBatchCodeInput = document.getElementById('output_batch_code');
+    
+    if (jobWorkSelect && batchRecordSelect && outputBatchCodeInput && !outputBatchCodeInput.value) {
+        const jobWorkText = jobWorkSelect.options[jobWorkSelect.selectedIndex].text;
+        const batchRecordText = batchRecordSelect.options[batchRecordSelect.selectedIndex].text;
+        
+        if (jobWorkText && batchRecordText && jobWorkSelect.value !== '0' && batchRecordSelect.value !== '0') {
+            const jobNumber = jobWorkText.split(' - ')[0];
+            const processName = batchRecordText.split(' - ')[0];
+            const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+            
+            const outputBatchCode = `${jobNumber}-${processName}-${timestamp}`;
+            outputBatchCodeInput.value = outputBatchCode;
+        }
+    }
+}
 </script>
 
 <style>

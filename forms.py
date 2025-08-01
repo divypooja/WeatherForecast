@@ -275,12 +275,20 @@ class JobWorkForm(FlaskForm):
     
     # [2] Input Material & Issuance (will be auto-filled from BOM or manual selection)
     input_material_id = SelectField('Input Material', validators=[DataRequired()], coerce=int)
+    batch_id = SelectField('Select Batch', validators=[Optional()], coerce=int)
     available_stock = FloatField('Available Stock', render_kw={'readonly': True})
+    batch_available = FloatField('Batch Available', render_kw={'readonly': True})
     quantity_to_issue = FloatField('Quantity to Issue', validators=[DataRequired(), NumberRange(min=0)])
     input_uom = SelectField('UOM', validators=[Optional()], coerce=str)
     store_location = SelectField('Store', 
                                choices=[('raw_store', 'Raw Store'), ('wip_store', 'WIP Store'), ('finished_store', 'Finished Store')],
                                default='raw_store')
+    
+    # Batch tracking options
+    enable_batch_tracking = BooleanField('Enable Batch Tracking', default=True)
+    create_output_batch = BooleanField('Create Output Batch', default=True)
+    output_batch_prefix = StringField('Output Batch Prefix', validators=[Optional(), Length(max=20)],
+                                    render_kw={'placeholder': 'AUTO-GENERATED'})
     
     # [5] Optional Notes & Attachments
     remarks = TextAreaField('Remarks / Instructions', 
@@ -331,6 +339,9 @@ class JobWorkForm(FlaskForm):
             self.input_uom.choices = uom_choices
         except Exception:
             self.input_uom.choices = [('', 'Select Unit'), ('pcs', 'Pieces'), ('kg', 'Kilogram'), ('sheet', 'Sheet')]
+        
+        # Initialize batch choices (will be populated via AJAX based on selected material)
+        self.batch_id.choices = [(0, 'Select Material First')]
 
 class JobWorkProcessRowForm(FlaskForm):
     """Individual row in the process routing table"""
@@ -1098,3 +1109,110 @@ class AttendanceForm(FlaskForm):
 class BulkAttendanceForm(FlaskForm):
     attendance_date = DateField('Attendance Date', validators=[DataRequired()], default=datetime.utcnow().date())
     submit = SubmitField('Mark All Present')
+
+class JobWorkBatchReturnForm(FlaskForm):
+    """Form for processing job work returns with batch tracking"""
+    
+    # Job Work Selection
+    job_work_id = SelectField('Job Work', validators=[DataRequired()], coerce=int)
+    batch_record_id = SelectField('Batch Record', validators=[DataRequired()], coerce=int)
+    
+    # Return Details
+    return_date = DateField('Return Date', validators=[DataRequired()], default=datetime.utcnow().date())
+    
+    # Output Details
+    output_item_id = SelectField('Output Product', validators=[DataRequired()], coerce=int)
+    output_batch_code = StringField('Output Batch Code', validators=[DataRequired(), Length(max=50)])
+    quantity_finished = FloatField('Finished Quantity', validators=[DataRequired(), NumberRange(min=0)])
+    quantity_scrap = FloatField('Scrap Quantity', validators=[Optional(), NumberRange(min=0)], default=0.0)
+    quantity_returned_unused = FloatField('Unused Material Returned', validators=[Optional(), NumberRange(min=0)], default=0.0)
+    
+    # Quality Control
+    quality_status = SelectField('Quality Status',
+                                choices=[('passed', 'Passed'), ('failed', 'Failed'), ('partial', 'Partial')],
+                                validators=[DataRequired()], default='passed')
+    qc_notes = TextAreaField('QC Notes', validators=[Optional(), Length(max=500)])
+    
+    # Output Batch Properties
+    output_manufacture_date = DateField('Manufacture Date', validators=[Optional()], 
+                                       default=datetime.utcnow().date())
+    output_expiry_date = DateField('Expiry Date', validators=[Optional()])
+    output_location = StringField('Storage Location', validators=[Optional(), Length(max=100)], 
+                                 default='Default')
+    
+    # Return Notes
+    return_notes = TextAreaField('Return Notes', validators=[Optional(), Length(max=500)])
+    
+    def __init__(self, *args, **kwargs):
+        super(JobWorkBatchReturnForm, self).__init__(*args, **kwargs)
+        
+        # Populate job work choices (only those with issued batches)
+        try:
+            from models import JobWork, JobWorkBatch
+            issued_job_works = JobWork.query.join(JobWorkBatch).filter(
+                JobWorkBatch.status == 'issued'
+            ).distinct().all()
+            self.job_work_id.choices = [(0, 'Select Job Work')] + [
+                (jw.id, f"{jw.job_number} - {jw.customer_name}") 
+                for jw in issued_job_works
+            ]
+        except Exception:
+            self.job_work_id.choices = [(0, 'Select Job Work')]
+        
+        # Populate output item choices
+        items = Item.query.order_by(Item.name).all()
+        self.output_item_id.choices = [(0, 'Select Output Product')] + [
+            (i.id, f"{i.code} - {i.name}") for i in items
+        ]
+        
+        # Initialize batch record choices (will be populated via AJAX)
+        self.batch_record_id.choices = [(0, 'Select Job Work First')]
+
+class BatchInventoryForm(FlaskForm):
+    """Form for creating/editing inventory batches"""
+    
+    # Item Selection
+    item_id = SelectField('Item', coerce=int, validators=[DataRequired()])
+    
+    # Batch Details
+    batch_number = StringField('Batch Number', validators=[DataRequired(), Length(max=50)])
+    quantity = FloatField('Quantity', validators=[DataRequired(), NumberRange(min=0.01)])
+    
+    # Batch Metadata
+    manufacture_date = DateField('Manufacture Date', validators=[Optional()])
+    expiry_date = DateField('Expiry Date', validators=[Optional()])
+    supplier_batch = StringField('Supplier Batch No.', validators=[Optional(), Length(max=50)])
+    purchase_rate = FloatField('Purchase Rate', validators=[Optional(), NumberRange(min=0)])
+    storage_location = StringField('Storage Location', validators=[Optional(), Length(max=100)], 
+                                 default='Default')
+    
+    # Initial State
+    initial_state = SelectField('Initial State', 
+                               choices=[('raw', 'Raw Material'), ('finished', 'Finished Goods')],
+                               default='raw', validators=[DataRequired()])
+    
+    # Source Information
+    grn_id = SelectField('GRN Reference', coerce=int, validators=[Optional()])
+    
+    # Notes
+    quality_notes = TextAreaField('Quality Notes', validators=[Optional(), Length(max=500)])
+    
+    def __init__(self, *args, **kwargs):
+        super(BatchInventoryForm, self).__init__(*args, **kwargs)
+        
+        # Populate item choices
+        items = Item.query.order_by(Item.name).all()
+        self.item_id.choices = [(0, 'Select Item')] + [
+            (i.id, f"{i.code} - {i.name}") for i in items
+        ]
+        
+        # Populate GRN choices
+        try:
+            from models_grn import GRN
+            grns = GRN.query.filter_by(status='approved').order_by(GRN.grn_number.desc()).all()
+            self.grn_id.choices = [(0, 'No GRN Reference')] + [
+                (grn.id, f"{grn.grn_number} - {grn.supplier.name if grn.supplier else 'Unknown'}") 
+                for grn in grns
+            ]
+        except Exception:
+            self.grn_id.choices = [(0, 'No GRN Reference')]
