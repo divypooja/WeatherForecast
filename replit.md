@@ -4,6 +4,11 @@
 This Flask-based Factory Management System is designed for small to medium manufacturing companies. It provides modular dashboards for managing inventory, purchase orders, sales, HR, job work, production, and reporting. The system aims to streamline operations, enhance material tracking from raw materials to finished goods, and provide real-time manufacturing intelligence. Key capabilities include comprehensive enterprise-wide batch tracking, multi-state inventory tracking, BOM-driven production planning, comprehensive quality control, detailed expense management, and a flexible reporting system with complete material traceability through all manufacturing processes. The business vision is to empower manufacturing SMEs with an affordable, comprehensive, and user-friendly solution to optimize their factory operations, reduce waste, and improve efficiency.
 
 ## Recent Changes (August 2025)
+✓ Successfully migrated project from Replit Agent to standard Replit environment with PostgreSQL database
+✓ Implemented comprehensive multi-level BOM functionality with nested relationships and hierarchical cost calculations
+✓ Added multi-level BOM API endpoints for hierarchy visualization, cost breakdown, and production sequence optimization
+✓ Enhanced BOM form with parent-child relationship fields and phantom BOM support
+✓ Created admin user credentials (admin/admin123) for system access
 ✓ Successfully implemented comprehensive enterprise-wide batch tracking system across ALL modules
 ✓ Enhanced ItemBatch model with process-specific WIP tracking for cutting, bending, welding, zinc plating, painting, assembly, machining, and polishing
 ✓ Added batch movement methods for complete material traceability from raw materials to finished goods
