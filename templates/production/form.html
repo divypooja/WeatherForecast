@@ -260,7 +260,7 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-sm">
+                        <table class="table table-sm" data-bom-output="{{ selected_item.bom_set[0].output_quantity if selected_item and selected_item.bom_set else 1.0 }}">
                             <thead>
                                 <tr>
                                     <th>Material</th>
@@ -278,7 +278,9 @@
                                 {% elif form.quantity_planned.data %}
                                     {% set planned_qty = form.quantity_planned.data %}
                                 {% endif %}
-                                {% set total_required = bom_item.quantity_required * planned_qty %}
+                                {% set material_qty_per_output = bom_item.quantity_required or bom_item.qty_required %}
+                                {% set bom_output_qty = bom_items[0].bom.output_quantity if bom_items and bom_items[0].bom else 1.0 %}
+                                {% set total_required = (planned_qty / bom_output_qty) * material_qty_per_output %}
                                 {% set available = (bom_item.item.qty_raw or 0) + (bom_item.item.qty_finished or 0) if bom_item.item.qty_raw is not none else (bom_item.item.current_stock or 0) %}
                                 {% set is_sufficient = available >= total_required %}
                                 <tr class="{% if not is_sufficient %}table-danger{% endif %}">
@@ -401,7 +403,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     const availableMatch = availableCell.innerHTML.match(/<strong>([\d.]+)<\/strong>/);
                     const available = availableMatch ? parseFloat(availableMatch[1]) : 0;
                     
-                    const totalRequired = perUnit * quantity;
+                    // Calculate based on BOM output quantity (e.g., 1 sheet = 400 pieces)
+                    const bomOutputQty = parseFloat(document.querySelector('[data-bom-output]')?.dataset.bomOutput) || 1.0;
+                    const totalRequired = (quantity / bomOutputQty) * perUnit;
                     const isSufficient = available >= totalRequired;
                     
                     // Update the "Need" text
