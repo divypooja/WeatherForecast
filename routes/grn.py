@@ -303,7 +303,9 @@ def dashboard():
                 'status': grn.status.title(),
                 'grn_id': grn.id,
                 'source_type': 'Purchase Order',
-                'source_document': po.po_number
+                'source_document': po.po_number,
+                'inspection_status': grn.inspection_status.title() if grn.inspection_status else 'Pending',
+                'inventory_updated': grn.add_to_inventory if hasattr(grn, 'add_to_inventory') else True
             })
         
         parent_child_data.append({
@@ -358,7 +360,9 @@ def dashboard():
                 'status': grn.status.title(),
                 'grn_id': grn.id,
                 'source_type': 'Job Work',
-                'source_document': jw.job_number
+                'source_document': jw.job_number,
+                'inspection_status': grn.inspection_status.title() if grn.inspection_status else 'Pending',
+                'inventory_updated': grn.add_to_inventory if hasattr(grn, 'add_to_inventory') else True
             })
         
         parent_child_data.append({
