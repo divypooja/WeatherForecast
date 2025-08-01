@@ -637,24 +637,30 @@ def api_item_batch_details(item_code):
                 'error': 'Item not found'
             }), 404
         
-        # Get all active batches for this item
-        batches = ItemBatch.query.filter_by(item_id=item.id, is_active=True).all()
+        # Get all batches for this item using InventoryBatch model
+        from models_batch import InventoryBatch
+        batches = InventoryBatch.query.filter_by(item_id=item.id).all()
+        print(f"Found {len(batches)} InventoryBatch records for item {item.code}")
         
         batch_data = []
         for batch in batches:
-            # Calculate multi-state quantities for each batch
+            # Use InventoryBatch field names
             batch_info = {
                 'batch_id': batch.id,
-                'batch_code': batch.batch_number,
+                'batch_code': batch.batch_code,
                 'location': batch.location or 'Main Store',
-                'qty_raw': float(getattr(batch, 'qty_raw', 0) or 0),
-                'qty_wip': float(getattr(batch, 'qty_wip', 0) or 0),
-                'qty_finished': float(getattr(batch, 'qty_finished', 0) or 0),
-                'qty_scrap': float(getattr(batch, 'qty_scrap', 0) or 0),
-                'total_qty': float(batch.quantity or 0),
-                'status': batch.status or 'Active',
-                'created_date': batch.created_date.strftime('%d/%m/%Y') if batch.created_date else 'N/A',
-                'expiry_date': batch.expiry_date.strftime('%d/%m/%Y') if getattr(batch, 'expiry_date', None) else 'N/A'
+                'qty_raw': float(batch.qty_raw or 0),
+                'qty_wip': float(batch.qty_wip or 0),
+                'qty_finished': float(batch.qty_finished or 0),
+                'qty_scrap': float(batch.qty_scrap or 0),
+                'total_qty': float(batch.total_quantity),
+                'available_qty': float(batch.available_quantity),
+                'uom': batch.uom,
+                'purchase_rate': float(batch.purchase_rate or 0),
+                'supplier_batch_no': batch.supplier_batch_no or 'N/A',
+                'created_date': batch.created_at.strftime('%d/%m/%Y') if batch.created_at else 'N/A',
+                'expiry_date': batch.expiry_date.strftime('%d/%m/%Y') if batch.expiry_date else 'N/A',
+                'age_days': batch.age_days
             }
             batch_data.append(batch_info)
         
