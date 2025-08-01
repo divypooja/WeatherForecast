@@ -1887,10 +1887,16 @@ def get_batches_by_item(item_id):
         
         batch_data = []
         for batch in available_batches:
+            # Debug batch quantities
+            print(f"Batch {batch.batch_number}: raw={batch.qty_raw}, finished={batch.qty_finished}, available={batch.available_quantity}")
+            
             batch_data.append({
                 'id': batch.id,
                 'batch_number': batch.batch_number,
                 'qty_available': batch.available_quantity,  # Use property
+                'available_quantity': batch.available_quantity,  # Duplicate for compatibility
+                'qty_raw': batch.qty_raw or 0,
+                'qty_finished': batch.qty_finished or 0,
                 'manufacture_date': batch.manufacture_date.isoformat() if batch.manufacture_date else None,
                 'expiry_date': batch.expiry_date.isoformat() if batch.expiry_date else None,
                 'quality_status': batch.quality_status or 'good',
