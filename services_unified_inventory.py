@@ -104,6 +104,34 @@ class UnifiedInventoryService:
         } for row in result]
     
     @staticmethod
+    def get_all_items_with_states():
+        """Get all inventory items with their multi-state data for export"""
+        
+        items = Item.query.all()
+        items_data = []
+        
+        for item in items:
+            items_data.append({
+                'code': item.code,
+                'name': item.name,
+                'description': item.description,
+                'item_type': item.item_type,
+                'unit_of_measure': item.unit_of_measure,
+                'qty_raw': item.qty_raw or 0,
+                'qty_wip': item.qty_wip or 0,
+                'qty_finished': item.qty_finished or 0,
+                'qty_scrap': item.qty_scrap or 0,
+                'minimum_stock': item.minimum_stock,
+                'unit_price': item.unit_price,
+                'unit_weight': item.unit_weight,
+                'hsn_code': item.hsn_code,
+                'gst_rate': item.gst_rate,
+                'created_at': item.created_at
+            })
+        
+        return items_data
+    
+    @staticmethod
     def create_batch(item_id, quantity, source_type='purchase', source_ref_id=None, 
                     supplier_batch_no=None, purchase_rate=0.0, location='Raw Store'):
         """Create new batch with proper naming convention"""
