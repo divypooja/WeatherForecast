@@ -16,26 +16,42 @@ inventory_bp = Blueprint('inventory', __name__)
 @inventory_bp.route('/dashboard')
 @login_required
 def dashboard():
-    # Inventory statistics
-    stats = {
-        'total_items': Item.query.count(),
-        'low_stock_items': Item.query.filter(
+    """Unified inventory dashboard with enhanced statistics"""
+    try:
+        from services_unified_inventory import UnifiedInventoryService
+        
+        # Get unified dashboard statistics
+        stats = UnifiedInventoryService.get_inventory_dashboard_stats()
+        
+        # Recent items and low stock alerts
+        recent_items = Item.query.order_by(Item.created_at.desc()).limit(5).all()
+        
+        # Get low stock items using new min_stock field
+        low_stock_items = Item.query.filter(
+            func.coalesce(Item.current_stock, 0) <= func.coalesce(Item.min_stock, 0),
+            func.coalesce(Item.current_stock, 0) > 0
+        ).limit(10).all()
+        
+        # UOM summary
+        uom_stats = db.session.query(Item.unit, func.count(Item.id)).group_by(Item.unit).all()
+        
+    except Exception as e:
+        # Fallback to basic statistics if unified service fails
+        stats = {
+            'total_items': Item.query.count(),
+            'low_stock_items': Item.query.filter(
+                func.coalesce(Item.current_stock, 0) <= func.coalesce(Item.minimum_stock, 0)
+            ).count(),
+            'total_stock_value': db.session.query(func.sum(
+                func.coalesce(Item.current_stock, 0) * func.coalesce(Item.unit_price, 0)
+            )).scalar() or 0,
+            'out_of_stock_items': Item.query.filter(func.coalesce(Item.current_stock, 0) == 0).count()
+        }
+        recent_items = Item.query.order_by(Item.created_at.desc()).limit(5).all()
+        low_stock_items = Item.query.filter(
             func.coalesce(Item.current_stock, 0) <= func.coalesce(Item.minimum_stock, 0)
-        ).count(),
-        'total_stock_value': db.session.query(func.sum(
-            func.coalesce(Item.current_stock, 0) * func.coalesce(Item.unit_price, 0)
-        )).scalar() or 0,
-        'out_of_stock': Item.query.filter(func.coalesce(Item.current_stock, 0) == 0).count()
-    }
-    
-    # Recent items and low stock alerts
-    recent_items = Item.query.order_by(Item.created_at.desc()).limit(5).all()
-    low_stock_items = Item.query.filter(
-        func.coalesce(Item.current_stock, 0) <= func.coalesce(Item.minimum_stock, 0)
-    ).limit(10).all()
-    
-    # UOM summary
-    uom_stats = db.session.query(Item.unit_of_measure, func.count(Item.id)).group_by(Item.unit_of_measure).all()
+        ).limit(10).all()
+        uom_stats = db.session.query(Item.unit, func.count(Item.id)).group_by(Item.unit).all()
     
     return render_template('inventory/dashboard.html', 
                          stats=stats, 
@@ -66,13 +82,41 @@ def batch_traceability(batch_id):
 @inventory_bp.route('/multi-state')
 @login_required
 def multi_state_view():
-    """View multi-state inventory breakdown"""
+    """Unified multi-state inventory view per user requirements"""
+    try:
+        from services_unified_inventory import UnifiedInventoryService
+        
+        # Get multi-state inventory data
+        inventory_data = UnifiedInventoryService.get_multi_state_inventory()
+        
+        # Calculate summary totals
+        summary = {
+            'total_items': len(inventory_data),
+            'total_raw': sum(item['raw'] for item in inventory_data),
+            'total_wip': sum(item['wip'] for item in inventory_data),
+            'total_finished': sum(item['finished'] for item in inventory_data),
+            'total_scrap': sum(item['scrap'] for item in inventory_data),
+            'total_available': sum(item['available'] for item in inventory_data)
+        }
+        
+        return render_template('inventory/multi_state_unified.html', 
+                             inventory_data=inventory_data,
+                             summary=summary)
+        
+    except Exception as e:
+        flash(f'Error loading multi-state view: {str(e)}', 'error')
+        return redirect(url_for('inventory.dashboard'))
+
+@inventory_bp.route('/multi-state-legacy')
+@login_required 
+def multi_state_view_legacy():
+    """Legacy multi-state view (backup)"""
     # Get all items and ensure multi-state fields are initialized
     items = Item.query.all()
     
     # Initialize multi-state inventory for items that haven't been set up
     for item in items:
-        if item.qty_raw is None:
+        if hasattr(item, 'qty_raw') and item.qty_raw is None:
             item.qty_raw = item.current_stock or 0.0
             item.qty_wip = 0.0
             item.qty_finished = 0.0

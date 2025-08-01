@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}Multi-State Inventory - AK Innovations Factory Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="page-title"><i class="fas fa-layer-group"></i> Multi-State Inventory</h1>
+            <p class="page-subtitle">Unified view of inventory across all states (Raw/WIP/Finished/Scrap)</p>
+        </div>
+        <div>
+            <a href="{{ url_for('inventory.dashboard') }}" class="btn btn-secondary me-2">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+            <a href="{{ url_for('batch_tracking.dashboard') }}" class="btn btn-info">
+                <i class="fas fa-boxes"></i> Batch Tracking
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h4>{{ summary.total_items }}</h4>
+                    <small>Total Items</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h4>{{ "%.1f"|format(summary.total_raw) }}</h4>
+                    <small>Raw Material</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h4>{{ "%.1f"|format(summary.total_wip) }}</h4>
+                    <small>WIP</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h4>{{ "%.1f"|format(summary.total_finished) }}</h4>
+                    <small>Finished</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <h4>{{ "%.1f"|format(summary.total_scrap) }}</h4>
+                    <small>Scrap</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-dark text-white">
+                <div class="card-body text-center">
+                    <h4>{{ "%.1f"|format(summary.total_available) }}</h4>
+                    <small>Available</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Multi-State Inventory Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-table"></i> Multi-State Inventory Breakdown
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped">
+                    <thead class="table-dark sticky-top">
+                        <tr>
+                            <th>Item Code</th>
+                            <th>Item Name</th>
+                            <th>Type</th>
+                            <th>UOM</th>
+                            <th class="text-end">Raw</th>
+                            <th class="text-end">WIP</th>
+                            <th class="text-end">Finished</th>
+                            <th class="text-end">Scrap</th>
+                            <th class="text-end">Total</th>
+                            <th class="text-end">Available</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in inventory_data %}
+                        <tr>
+                            <td><strong>{{ item.item_code }}</strong></td>
+                            <td>{{ item.item_name }}</td>
+                            <td>
+                                <span class="badge bg-secondary">{{ item.item_type }}</span>
+                            </td>
+                            <td>{{ item.uom }}</td>
+                            <td class="text-end">
+                                {% if item.raw > 0 %}
+                                    <span class="text-info fw-bold">{{ "%.2f"|format(item.raw) }}</span>
+                                {% else %}
+                                    <span class="text-muted">0.00</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if item.wip > 0 %}
+                                    <span class="text-warning fw-bold">{{ "%.2f"|format(item.wip) }}</span>
+                                {% else %}
+                                    <span class="text-muted">0.00</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if item.finished > 0 %}
+                                    <span class="text-success fw-bold">{{ "%.2f"|format(item.finished) }}</span>
+                                {% else %}
+                                    <span class="text-muted">0.00</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if item.scrap > 0 %}
+                                    <span class="text-danger fw-bold">{{ "%.2f"|format(item.scrap) }}</span>
+                                {% else %}
+                                    <span class="text-muted">0.00</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <strong>{{ "%.2f"|format(item.total) }}</strong>
+                            </td>
+                            <td class="text-end">
+                                <strong class="text-primary">{{ "%.2f"|format(item.available) }}</strong>
+                            </td>
+                            <td class="text-center">
+                                {% if item.status == 'Out of Stock' %}
+                                    <span class="badge bg-danger">{{ item.status }}</span>
+                                {% elif item.status == 'Low Stock' %}
+                                    <span class="badge bg-warning">{{ item.status }}</span>
+                                {% else %}
+                                    <span class="badge bg-success">{{ item.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('batch_tracking.view_item_batches', item_id=item.item_code) }}" 
+                                       class="btn btn-outline-primary btn-sm" title="View Batches">
+                                        <i class="fas fa-boxes"></i>
+                                    </a>
+                                    <a href="{{ url_for('inventory.view_item', item_code=item.item_code) }}" 
+                                       class="btn btn-outline-info btn-sm" title="Item Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Low Stock Alerts -->
+    {% set low_stock_items = inventory_data | selectattr('status', 'equalto', 'Low Stock') | list %}
+    {% if low_stock_items %}
+    <div class="card mt-4">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-exclamation-triangle"></i> Low Stock Alerts
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for item in low_stock_items %}
+                <div class="col-md-4 mb-3">
+                    <div class="alert alert-warning mb-0">
+                        <strong>{{ item.item_code }}</strong><br>
+                        <small>{{ item.item_name }}</small><br>
+                        Available: <strong>{{ "%.2f"|format(item.available) }}</strong> {{ item.uom }}<br>
+                        Min Stock: <strong>{{ "%.2f"|format(item.min_stock) }}</strong> {{ item.uom }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Out of Stock Items -->
+    {% set out_of_stock_items = inventory_data | selectattr('status', 'equalto', 'Out of Stock') | list %}
+    {% if out_of_stock_items %}
+    <div class="card mt-4">
+        <div class="card-header bg-danger text-white">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-times-circle"></i> Out of Stock Items
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for item in out_of_stock_items %}
+                <div class="col-md-4 mb-3">
+                    <div class="alert alert-danger mb-0">
+                        <strong>{{ item.item_code }}</strong><br>
+                        <small>{{ item.item_name }}</small><br>
+                        <span class="text-danger"><strong>No Stock Available</strong></span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<style>
+.table th {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.table td {
+    font-size: 0.85rem;
+    vertical-align: middle;
+}
+
+.card-body {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+</style>
+{% endblock %}

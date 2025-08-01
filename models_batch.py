@@ -42,7 +42,7 @@ class InventoryBatch(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    item = db.relationship('Item', backref='batches')
+    item = db.relationship('Item', backref='inventory_batches')
     movements = db.relationship('BatchMovement', backref='batch', lazy=True, cascade='all, delete-orphan')
     
     @property
