@@ -126,12 +126,12 @@
                             <table class="table table-sm">
                                 <thead>
                                     <tr>
-                                        <th>Item</th>
-                                        <th>Received</th>
-                                        <th>Passed</th>
-                                        <th>Rejected</th>
+                                        <th>Product Received</th>
+                                        <th>Source/Sent Item</th>
+                                        <th>Quantities</th>
                                         <th>Status</th>
-                                        <th>Grade</th>
+                                        <th>Inventory Destination</th>
+                                        <th>Batches Created</th>
                                         <th>Remarks</th>
                                     </tr>
                                 </thead>
@@ -139,35 +139,108 @@
                                     {% for line in grn.line_items %}
                                     <tr>
                                         <td>
-                                            <strong>{{ line.item.name }}</strong><br>
+                                            <strong class="text-primary">{{ line.item.name }}</strong><br>
                                             <small class="text-muted">{{ line.item.code }}</small>
                                         </td>
-                                        <td>{{ line.quantity_received }} {{ line.unit_of_measure or line.item.unit_of_measure }}</td>
                                         <td>
-                                            <span class="text-success">{{ line.quantity_passed }} {{ line.unit_of_measure or line.item.unit_of_measure }}</span>
+                                            {% if grn.job_work %}
+                                                <!-- Job Work: Show original sent item -->
+                                                <div class="mb-1">
+                                                    <small class="text-muted">Originally Sent:</small><br>
+                                                    <strong>{{ grn.job_work.item.name }}</strong><br>
+                                                    <small class="text-info">{{ grn.job_work.quantity_sent }} {{ grn.job_work.item.unit_of_measure }}</small>
+                                                </div>
+                                                {% if grn.job_work.bom_id and grn.job_work.bom %}
+                                                <small class="badge bg-info">BOM Transformation</small>
+                                                {% elif grn.job_work.work_type in ['multi_process', 'unified'] %}
+                                                <small class="badge bg-warning">Multi-Process</small>
+                                                {% else %}
+                                                <small class="badge bg-secondary">Regular Job Work</small>
+                                                {% endif %}
+                                            {% elif grn.purchase_order %}
+                                                <!-- Purchase Order: Show PO item -->
+                                                <div class="mb-1">
+                                                    <small class="text-muted">From Purchase Order:</small><br>
+                                                    {% for po_item in grn.purchase_order.items %}
+                                                        {% if po_item.item_id == line.item_id %}
+                                                        <strong>{{ po_item.item.name }}</strong><br>
+                                                        <small class="text-info">Ordered: {{ po_item.qty }} {{ po_item.item.unit_of_measure }}</small>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </div>
+                                                <small class="badge bg-success">Purchase Order</small>
+                                            {% else %}
+                                                <small class="text-muted">Direct Receipt</small>
+                                            {% endif %}
                                         </td>
                                         <td>
-                                            {% if line.quantity_rejected > 0 %}
-                                                <span class="text-danger">{{ line.quantity_rejected }} {{ line.unit_of_measure or line.item.unit_of_measure }}</span>
-                                            {% else %}
-                                                <span class="text-muted">0</span>
-                                            {% endif %}
+                                            <div class="small">
+                                                <div class="text-info">
+                                                    <i class="fas fa-arrow-down"></i> <strong>{{ line.quantity_received }}</strong> {{ line.unit_of_measure or line.item.unit_of_measure }}
+                                                </div>
+                                                <div class="text-success">
+                                                    <i class="fas fa-check"></i> {{ line.quantity_passed }} passed
+                                                </div>
+                                                {% if line.quantity_rejected > 0 %}
+                                                <div class="text-danger">
+                                                    <i class="fas fa-times"></i> {{ line.quantity_rejected }} rejected
+                                                </div>
+                                                {% endif %}
+                                            </div>
                                         </td>
                                         <td>
                                             <span class="badge bg-{{ 'success' if line.inspection_status == 'passed' else 'danger' if line.inspection_status == 'rejected' else 'warning' if line.inspection_status == 'partial' else 'secondary' }}">
                                                 {{ line.inspection_status.title() }}
                                             </span>
+                                            {% if line.quality_grade %}
+                                            <br><small class="badge bg-secondary mt-1">{{ line.quality_grade }}</small>
+                                            {% endif %}
                                         </td>
                                         <td>
-                                            {% if line.quality_grade %}
-                                                <span class="badge bg-secondary">{{ line.quality_grade }}</span>
+                                            {% if grn.job_work %}
+                                                <!-- Job Work items typically go to Finished Goods -->
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-box"></i> Finished Goods
+                                                </span>
+                                                <br><small class="text-muted">From Job Work</small>
+                                            {% elif grn.purchase_order %}
+                                                <!-- Purchase Order items go to Raw Material -->
+                                                <span class="badge bg-primary">
+                                                    <i class="fas fa-industry"></i> Raw Material
+                                                </span>
+                                                <br><small class="text-muted">From Supplier</small>
                                             {% else %}
-                                                <span class="text-muted">-</span>
+                                                <span class="badge bg-secondary">
+                                                    <i class="fas fa-warehouse"></i> General Stock
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <!-- Show created batches -->
+                                            {% set batch_count = 0 %}
+                                            {% for batch in line.created_batches if line.created_batches %}
+                                                {% set batch_count = batch_count + 1 %}
+                                                <div class="small mb-1">
+                                                    <a href="{{ url_for('inventory.batch_detail', batch_id=batch.id) }}" class="text-decoration-none">
+                                                        <span class="badge bg-info">{{ batch.batch_number }}</span>
+                                                    </a>
+                                                    <br><small class="text-muted">{{ batch.quantity }} {{ batch.unit_of_measure }}</small>
+                                                </div>
+                                            {% endfor %}
+                                            {% if batch_count == 0 %}
+                                                <small class="text-muted">
+                                                    <i class="fas fa-plus-circle"></i> 
+                                                    <a href="{{ url_for('grn.view_grn_batches', grn_id=grn.id) }}" class="text-decoration-none">
+                                                        View Batches
+                                                    </a>
+                                                </small>
                                             {% endif %}
                                         </td>
                                         <td>
                                             {% if line.rejection_reason %}
-                                                <small class="text-danger">{{ line.rejection_reason }}</small>
+                                                <small class="text-danger">
+                                                    <i class="fas fa-exclamation-triangle"></i> {{ line.rejection_reason }}
+                                                </small>
                                             {% elif line.remarks %}
                                                 <small class="text-muted">{{ line.remarks }}</small>
                                             {% else %}
