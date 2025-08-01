@@ -134,25 +134,38 @@ def batch_wise_view():
     process_summary = BatchTracker.get_process_wise_inventory_summary()
     
     # Get filter options
-    items = Item.query.filter(Item.batches.any()).order_by(Item.name).all()
+    items = Item.query.filter(Item.batch_required == True).order_by(Item.name).all()
     storage_locations = db.session.query(ItemBatch.storage_location).distinct().all()
     locations = [loc[0] for loc in storage_locations if loc[0]]
     
     # Calculate batch statistics
     batch_stats = {
         'total_batches': ItemBatch.query.count(),
-        'active_batches': ItemBatch.query.filter(ItemBatch.total_quantity > 0).count(),
+        'active_batches': ItemBatch.query.filter(
+            db.or_(
+                ItemBatch.qty_raw > 0,
+                ItemBatch.qty_wip_cutting > 0,
+                ItemBatch.qty_wip_bending > 0,
+                ItemBatch.qty_wip_welding > 0,
+                ItemBatch.qty_wip_zinc > 0,
+                ItemBatch.qty_wip_painting > 0,
+                ItemBatch.qty_wip_assembly > 0,
+                ItemBatch.qty_wip_machining > 0,
+                ItemBatch.qty_wip_polishing > 0,
+                ItemBatch.qty_finished > 0
+            )
+        ).count(),
         'expired_batches': ItemBatch.query.filter(
             ItemBatch.expiry_date < datetime.now().date()
         ).count() if hasattr(ItemBatch, 'expiry_date') else 0,
         'quality_issues': ItemBatch.query.filter(ItemBatch.quality_status == 'defective').count()
     }
     
-    return render_template('inventory/batch_wise_view.html',
+    return render_template('inventory/batch_tracking_dashboard.html',
                          title='Batch-Wise Inventory Tracking',
                          batches=batches,
                          process_summary=process_summary,
-                         batch_stats=batch_stats,
+                         stats=batch_stats,
                          items=items,
                          locations=locations,
                          current_filters={
