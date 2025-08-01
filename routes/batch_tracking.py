@@ -248,8 +248,8 @@ def batch_movements():
         movements_by_date[date_key].append(movement)
     
     return render_template(
-        'batch_tracking/movements.html',
-        movements_by_date=movements_by_date
+        'batch_tracking/batch_movements.html',
+        movements=movements
     )
 
 @batch_tracking_bp.route('/quality-control')
@@ -257,34 +257,36 @@ def batch_movements():
 def quality_control():
     """Quality control dashboard for batch tracking"""
     
-    # Get batches by quality status
-    pending_inspection = ItemBatch.query.filter(
-        ItemBatch.quality_status == 'pending_inspection'
-    ).order_by(ItemBatch.created_at).all()
+    # Get filter from request
+    status_filter = request.args.get('status')
     
-    defective_batches = ItemBatch.query.filter(
-        ItemBatch.quality_status == 'defective'
-    ).order_by(desc(ItemBatch.created_at)).all()
+    # Get batches based on filter
+    if status_filter:
+        batches = ItemBatch.query.filter(
+            ItemBatch.quality_status == status_filter
+        ).order_by(desc(ItemBatch.created_at)).all()
+    else:
+        batches = ItemBatch.query.order_by(desc(ItemBatch.created_at)).limit(50).all()
     
-    expired_batches = ItemBatch.query.filter(
-        ItemBatch.expiry_date < datetime.now().date()
-    ).order_by(ItemBatch.expiry_date).all()
+    # Calculate quality statistics
+    total_batches = ItemBatch.query.count()
+    pending_count = ItemBatch.query.filter(ItemBatch.quality_status == 'pending').count()
+    approved_count = ItemBatch.query.filter(ItemBatch.quality_status == 'approved').count()
+    rejected_count = ItemBatch.query.filter(ItemBatch.quality_status == 'rejected').count()
     
-    # Batches expiring soon (within 7 days)
-    expiring_soon = ItemBatch.query.filter(
-        and_(
-            ItemBatch.expiry_date.isnot(None),
-            ItemBatch.expiry_date <= datetime.now().date() + timedelta(days=7),
-            ItemBatch.expiry_date > datetime.now().date()
-        )
-    ).order_by(ItemBatch.expiry_date).all()
+    approval_rate = (approved_count / total_batches * 100) if total_batches > 0 else 0
+    
+    quality_stats = {
+        'pending_count': pending_count,
+        'approved_count': approved_count,
+        'rejected_count': rejected_count,
+        'approval_rate': round(approval_rate, 1)
+    }
     
     return render_template(
         'batch_tracking/quality_control.html',
-        pending_inspection=pending_inspection,
-        defective_batches=defective_batches,
-        expired_batches=expired_batches,
-        expiring_soon=expiring_soon
+        batches=batches,
+        quality_stats=quality_stats
     )
 
 # API Endpoints for Batch Tracking Dashboard

@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+
+{% block title %}Quality Control Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+.quality-header {
+    background: linear-gradient(135deg, #fd7e14 0%, #ffc107 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.quality-card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+    margin-bottom: 1rem;
+}
+
+.quality-card:hover {
+    transform: translateY(-2px);
+}
+
+.status-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+}
+
+.status-pending { background-color: #ffc107; color: #000; }
+.status-approved { background-color: #28a745; color: white; }
+.status-rejected { background-color: #dc3545; color: white; }
+.status-on-hold { background-color: #6c757d; color: white; }
+
+.quality-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.metric-card {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.metric-value {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.metric-label {
+    color: #6c757d;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Quality Control Header -->
+    <div class="quality-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-0">
+                    <i class="fas fa-check-circle mr-3"></i>
+                    Quality Control Dashboard
+                </h1>
+                <p class="mb-0 mt-2 opacity-75">
+                    Monitor and manage batch quality across all manufacturing processes
+                </p>
+            </div>
+            <div class="col-md-4 text-right">
+                <a href="{{ url_for('batch_tracking.dashboard') }}" class="btn btn-light">
+                    <i class="fas fa-arrow-left"></i> Back to Batch Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quality Metrics -->
+    <div class="quality-metrics">
+        <div class="metric-card">
+            <div class="metric-value text-warning">{{ quality_stats.pending_count or 0 }}</div>
+            <div class="metric-label">Pending Review</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-value text-success">{{ quality_stats.approved_count or 0 }}</div>
+            <div class="metric-label">Approved</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-value text-danger">{{ quality_stats.rejected_count or 0 }}</div>
+            <div class="metric-label">Rejected</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-value text-info">{{ quality_stats.approval_rate or 0 }}%</div>
+            <div class="metric-label">Approval Rate</div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Quality Status Filter -->
+        <div class="col-md-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-filter"></i> Quality Status Filter
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="btn-group" role="group">
+                        <a href="{{ url_for('batch_tracking.quality_control') }}" 
+                           class="btn btn-{{ 'primary' if not request.args.get('status') else 'outline-primary' }}">
+                            All Batches
+                        </a>
+                        <a href="{{ url_for('batch_tracking.quality_control', status='pending') }}" 
+                           class="btn btn-{{ 'warning' if request.args.get('status') == 'pending' else 'outline-warning' }}">
+                            Pending Review
+                        </a>
+                        <a href="{{ url_for('batch_tracking.quality_control', status='approved') }}" 
+                           class="btn btn-{{ 'success' if request.args.get('status') == 'approved' else 'outline-success' }}">
+                            Approved
+                        </a>
+                        <a href="{{ url_for('batch_tracking.quality_control', status='rejected') }}" 
+                           class="btn btn-{{ 'danger' if request.args.get('status') == 'rejected' else 'outline-danger' }}">
+                            Rejected
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Batches List -->
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-boxes"></i> 
+                        Batches 
+                        {% if request.args.get('status') %}
+                            - {{ request.args.get('status').title() }}
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if batches %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Batch Number</th>
+                                        <th>Item</th>
+                                        <th>Total Quantity</th>
+                                        <th>Quality Status</th>
+                                        <th>Last Updated</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for batch in batches %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('batch_tracking.batch_detail', batch_id=batch.id) }}">
+                                                <strong>{{ batch.batch_number }}</strong>
+                                            </a>
+                                        </td>
+                                        <td>{{ batch.item.name }}</td>
+                                        <td>{{ batch.total_quantity }} {{ batch.item.unit_of_measure }}</td>
+                                        <td>
+                                            <span class="status-badge status-{{ batch.quality_status or 'pending' }}">
+                                                {{ (batch.quality_status or 'pending').replace('_', ' ').title() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">
+                                                {{ batch.updated_at.strftime('%d/%m/%Y %H:%M') if batch.updated_at else batch.created_at.strftime('%d/%m/%Y %H:%M') }}
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ url_for('batch_tracking.batch_detail', batch_id=batch.id) }}" 
+                                                   class="btn btn-outline-primary" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                {% if batch.quality_status == 'pending' %}
+                                                <button class="btn btn-outline-success" 
+                                                        onclick="updateQualityStatus({{ batch.id }}, 'approved')" 
+                                                        title="Approve">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                                <button class="btn btn-outline-danger" 
+                                                        onclick="updateQualityStatus({{ batch.id }}, 'rejected')" 
+                                                        title="Reject">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-clipboard-check fa-3x text-muted mb-3"></i>
+                            <h5>No Batches Found</h5>
+                            {% if request.args.get('status') %}
+                                <p class="text-muted">No batches with status "{{ request.args.get('status') }}" found.</p>
+                            {% else %}
+                                <p class="text-muted">No batches available for quality control review.</p>
+                            {% endif %}
+                            <a href="{{ url_for('grn.dashboard') }}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Create First GRN
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quality Update Modal -->
+<div class="modal fade" id="qualityModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Quality Status</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="qualityForm">
+                    <div class="form-group">
+                        <label>Quality Status</label>
+                        <select class="form-control" name="quality_status" required>
+                            <option value="pending">Pending Review</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="on_hold">On Hold</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea class="form-control" name="notes" rows="3" 
+                                  placeholder="Quality control notes..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveQualityUpdate()">Update Status</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentBatchId = null;
+
+function updateQualityStatus(batchId, status) {
+    currentBatchId = batchId;
+    document.querySelector('[name="quality_status"]').value = status;
+    $('#qualityModal').modal('show');
+}
+
+function saveQualityUpdate() {
+    const formData = new FormData(document.getElementById('qualityForm'));
+    
+    fetch(`/batch-tracking/api/update-quality/${currentBatchId}`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            $('#qualityModal').modal('hide');
+            location.reload();
+        } else {
+            alert('Error updating quality status: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating quality status');
+    });
+}
+</script>
+{% endblock %}
