@@ -5,12 +5,11 @@ from models import Item, ItemType, ItemBatch
 from models_batch_movement import BatchMovementLedger, BatchConsumptionReport
 from services_batch_management import BatchManager, BatchValidator
 from app import db
-from sqlalchemy import func, desc
+from sqlalchemy import func, desc, or_, and_
 from utils import generate_item_code
 from utils_export import export_inventory_items
 from utils_batch_tracking import BatchTracker
 from datetime import datetime, timedelta
-from sqlalchemy import or_
 
 inventory_bp = Blueprint('inventory', __name__)
 
@@ -51,7 +50,13 @@ def batch_tracking_dashboard():
     # Batch statistics
     stats = {
         'total_batches': ItemBatch.query.count(),
-        'active_batches': ItemBatch.query.filter(ItemBatch.total_quantity > 0).count(),
+        'active_batches': ItemBatch.query.filter(
+            or_(
+                ItemBatch.qty_raw > 0,
+                ItemBatch.qty_wip > 0,
+                ItemBatch.qty_finished > 0
+            )
+        ).count(),
         'expired_batches': ItemBatch.query.filter(
             ItemBatch.expiry_date <= datetime.now().date()
         ).count() if ItemBatch.query.filter(ItemBatch.expiry_date.isnot(None)).count() > 0 else 0,
@@ -71,14 +76,17 @@ def batch_tracking_dashboard():
         or_(
             ItemBatch.expiry_date <= (datetime.now().date() + timedelta(days=7)),
             ItemBatch.quality_status == 'pending_inspection',
-            ItemBatch.total_quantity <= 10  # Low quantity threshold
+            and_(
+                ItemBatch.qty_raw + ItemBatch.qty_wip + ItemBatch.qty_finished <= 10,
+                ItemBatch.qty_raw + ItemBatch.qty_wip + ItemBatch.qty_finished > 0
+            )
         )
     ).order_by(ItemBatch.expiry_date).limit(15).all()
     
     # Get consumption reports for active batches
-    consumption_reports = BatchConsumptionReport.query.filter(
-        BatchConsumptionReport.total_received > 0
-    ).order_by(BatchConsumptionReport.last_movement.desc()).limit(10).all()
+    consumption_reports = BatchConsumptionReport.query.order_by(
+        BatchConsumptionReport.last_movement.desc()
+    ).limit(10).all()
     
     return render_template('inventory/batch_tracking_dashboard.html',
                          title='Batch Tracking Dashboard',
