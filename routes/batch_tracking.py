@@ -1,0 +1,402 @@
+"""
+Comprehensive Batch Tracking Dashboard and Management Routes
+Provides complete visibility into batch movements, states, and traceability
+"""
+
+from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
+from flask_login import login_required, current_user
+from app import db
+from models import ItemBatch, Item, JobWork, JobWorkBatch
+from utils_batch_tracking import BatchTracker, BatchValidator
+from sqlalchemy import func, and_, or_, desc
+from datetime import datetime, timedelta
+
+batch_tracking_bp = Blueprint('batch_tracking', __name__)
+
+@batch_tracking_bp.route('/dashboard')
+@login_required
+def dashboard():
+    """Comprehensive batch tracking dashboard"""
+    
+    # Get filter parameters
+    item_filter = request.args.get('item_id', type=int)
+    state_filter = request.args.get('state', '')
+    location_filter = request.args.get('location', '')
+    date_from = request.args.get('date_from', '')
+    date_to = request.args.get('date_to', '')
+    
+    # Build base query
+    query = ItemBatch.query.join(Item)
+    
+    # Apply filters
+    if item_filter:
+        query = query.filter(ItemBatch.item_id == item_filter)
+    
+    if state_filter:
+        if state_filter == 'raw':
+            query = query.filter(ItemBatch.qty_raw > 0)
+        elif state_filter == 'finished':
+            query = query.filter(ItemBatch.qty_finished > 0)
+        elif state_filter == 'scrap':
+            query = query.filter(ItemBatch.qty_scrap > 0)
+        elif state_filter in ['cutting', 'bending', 'welding', 'zinc', 'painting', 'assembly', 'machining', 'polishing']:
+            query = query.filter(getattr(ItemBatch, f'qty_wip_{state_filter}') > 0)
+    
+    if location_filter:
+        query = query.filter(ItemBatch.storage_location.ilike(f'%{location_filter}%'))
+    
+    if date_from:
+        try:
+            from_date = datetime.strptime(date_from, '%Y-%m-%d').date()
+            query = query.filter(ItemBatch.manufacture_date >= from_date)
+        except ValueError:
+            pass
+    
+    if date_to:
+        try:
+            to_date = datetime.strptime(date_to, '%Y-%m-%d').date()
+            query = query.filter(ItemBatch.manufacture_date <= to_date)
+        except ValueError:
+            pass
+    
+    # Pagination
+    page = request.args.get('page', 1, type=int)
+    per_page = 25
+    
+    batches = query.order_by(desc(ItemBatch.created_at)).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    
+    # Calculate dashboard statistics
+    stats = {
+        'total_batches': ItemBatch.query.count(),
+        'active_batches': ItemBatch.query.filter(
+            ItemBatch.total_quantity > 0,
+            ItemBatch.quality_status != 'expired'
+        ).count(),
+        'expired_batches': ItemBatch.query.filter(
+            ItemBatch.expiry_date < datetime.now().date()
+        ).count(),
+        'pending_inspection': ItemBatch.query.filter(
+            ItemBatch.quality_status == 'pending_inspection'
+        ).count(),
+        'total_raw_quantity': db.session.query(func.sum(ItemBatch.qty_raw)).scalar() or 0,
+        'total_wip_quantity': db.session.query(
+            func.sum(ItemBatch.qty_wip_cutting + ItemBatch.qty_wip_bending + 
+                    ItemBatch.qty_wip_welding + ItemBatch.qty_wip_zinc + 
+                    ItemBatch.qty_wip_painting + ItemBatch.qty_wip_assembly + 
+                    ItemBatch.qty_wip_machining + ItemBatch.qty_wip_polishing)
+        ).scalar() or 0,
+        'total_finished_quantity': db.session.query(func.sum(ItemBatch.qty_finished)).scalar() or 0
+    }
+    
+    # Get process-wise inventory summary
+    process_summary = BatchTracker.get_process_wise_inventory_summary()
+    
+    # Get items for filter dropdown
+    items = Item.query.filter(Item.batches.any()).order_by(Item.name).all()
+    
+    # Get unique storage locations
+    storage_locations = db.session.query(ItemBatch.storage_location).distinct().all()
+    locations = [loc[0] for loc in storage_locations if loc[0]]
+    
+    return render_template(
+        'batch_tracking/dashboard.html',
+        batches=batches,
+        stats=stats,
+        process_summary=process_summary,
+        items=items,
+        locations=locations,
+        current_filters={
+            'item_id': item_filter,
+            'state': state_filter,
+            'location': location_filter,
+            'date_from': date_from,
+            'date_to': date_to
+        }
+    )
+
+@batch_tracking_bp.route('/batch/<int:batch_id>')
+@login_required
+def batch_detail(batch_id):
+    """Detailed view of a specific batch with complete traceability"""
+    batch = ItemBatch.query.get_or_404(batch_id)
+    
+    # Get traceability report
+    traceability_data = BatchTracker.get_batch_traceability_report(batch_id)
+    
+    # Get related job work batches
+    job_work_batches = JobWorkBatch.query.filter(
+        or_(
+            JobWorkBatch.input_batch_id == batch_id,
+            JobWorkBatch.output_batch_id == batch_id
+        )
+    ).order_by(JobWorkBatch.created_at.desc()).all()
+    
+    return render_template(
+        'batch_tracking/batch_detail.html',
+        batch=batch,
+        traceability_data=traceability_data,
+        job_work_batches=job_work_batches
+    )
+
+@batch_tracking_bp.route('/process-view')
+@login_required
+def process_view():
+    """Process-wise view of inventory with batch tracking"""
+    
+    # Get process summary
+    process_summary = BatchTracker.get_process_wise_inventory_summary()
+    
+    # Get process filter
+    process_filter = request.args.get('process', '')
+    
+    if process_filter:
+        # Filter batches by process state
+        if process_filter == 'raw':
+            batches = ItemBatch.query.filter(ItemBatch.qty_raw > 0).all()
+        elif process_filter == 'finished':
+            batches = ItemBatch.query.filter(ItemBatch.qty_finished > 0).all()
+        else:
+            # Process-specific WIP
+            batches = ItemBatch.query.filter(
+                getattr(ItemBatch, f'qty_wip_{process_filter}') > 0
+            ).all()
+    else:
+        batches = []
+    
+    processes = ['cutting', 'bending', 'welding', 'zinc', 'painting', 'assembly', 'machining', 'polishing']
+    
+    return render_template(
+        'batch_tracking/process_view.html',
+        process_summary=process_summary,
+        batches=batches,
+        processes=processes,
+        current_process=process_filter
+    )
+
+@batch_tracking_bp.route('/traceability')
+@login_required
+def traceability_report():
+    """Comprehensive traceability reports"""
+    
+    report_type = request.args.get('type', 'batch')
+    
+    if report_type == 'batch':
+        # Batch-wise traceability
+        batch_id = request.args.get('batch_id', type=int)
+        if batch_id:
+            traceability_data = BatchTracker.get_batch_traceability_report(batch_id)
+            return render_template(
+                'batch_tracking/traceability_batch.html',
+                traceability_data=traceability_data,
+                batch_id=batch_id
+            )
+    
+    elif report_type == 'item':
+        # Item-wise traceability
+        item_id = request.args.get('item_id', type=int)
+        if item_id:
+            item = Item.query.get_or_404(item_id)
+            batches = ItemBatch.query.filter_by(item_id=item_id).order_by(
+                desc(ItemBatch.created_at)
+            ).all()
+            
+            return render_template(
+                'batch_tracking/traceability_item.html',
+                item=item,
+                batches=batches
+            )
+    
+    # Default: Show traceability options
+    items = Item.query.filter(Item.batches.any()).order_by(Item.name).all()
+    recent_batches = ItemBatch.query.order_by(desc(ItemBatch.created_at)).limit(20).all()
+    
+    return render_template(
+        'batch_tracking/traceability_options.html',
+        items=items,
+        recent_batches=recent_batches
+    )
+
+@batch_tracking_bp.route('/movements')
+@login_required
+def batch_movements():
+    """Track batch movements across processes"""
+    
+    # Get recent batch movements from JobWorkBatch
+    movements = db.session.query(JobWorkBatch).join(JobWork).order_by(
+        desc(JobWorkBatch.created_at)
+    ).limit(50).all()
+    
+    # Group movements by date
+    movements_by_date = {}
+    for movement in movements:
+        date_key = movement.created_at.date()
+        if date_key not in movements_by_date:
+            movements_by_date[date_key] = []
+        movements_by_date[date_key].append(movement)
+    
+    return render_template(
+        'batch_tracking/movements.html',
+        movements_by_date=movements_by_date
+    )
+
+@batch_tracking_bp.route('/quality-control')
+@login_required
+def quality_control():
+    """Quality control dashboard for batch tracking"""
+    
+    # Get batches by quality status
+    pending_inspection = ItemBatch.query.filter(
+        ItemBatch.quality_status == 'pending_inspection'
+    ).order_by(ItemBatch.created_at).all()
+    
+    defective_batches = ItemBatch.query.filter(
+        ItemBatch.quality_status == 'defective'
+    ).order_by(desc(ItemBatch.created_at)).all()
+    
+    expired_batches = ItemBatch.query.filter(
+        ItemBatch.expiry_date < datetime.now().date()
+    ).order_by(ItemBatch.expiry_date).all()
+    
+    # Batches expiring soon (within 7 days)
+    expiring_soon = ItemBatch.query.filter(
+        and_(
+            ItemBatch.expiry_date.isnot(None),
+            ItemBatch.expiry_date <= datetime.now().date() + timedelta(days=7),
+            ItemBatch.expiry_date > datetime.now().date()
+        )
+    ).order_by(ItemBatch.expiry_date).all()
+    
+    return render_template(
+        'batch_tracking/quality_control.html',
+        pending_inspection=pending_inspection,
+        defective_batches=defective_batches,
+        expired_batches=expired_batches,
+        expiring_soon=expiring_soon
+    )
+
+# API Endpoints for Batch Tracking Dashboard
+
+@batch_tracking_bp.route('/api/batch/<int:batch_id>/update-quality', methods=['POST'])
+@login_required
+def api_update_batch_quality(batch_id):
+    """Update batch quality status"""
+    try:
+        batch = ItemBatch.query.get_or_404(batch_id)
+        data = request.json
+        
+        new_status = data.get('quality_status')
+        quality_notes = data.get('quality_notes', '')
+        
+        if new_status not in ['good', 'defective', 'pending_inspection', 'expired']:
+            return jsonify({'success': False, 'error': 'Invalid quality status'}), 400
+        
+        batch.quality_status = new_status
+        if quality_notes:
+            batch.quality_notes = (batch.quality_notes or '') + f"\n[{datetime.now().strftime('%d/%m/%Y %H:%M')}] {quality_notes}"
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Batch {batch.batch_number} quality status updated to {new_status}'
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@batch_tracking_bp.route('/api/batch/<int:batch_id>/update-location', methods=['POST'])
+@login_required
+def api_update_batch_location(batch_id):
+    """Update batch storage location"""
+    try:
+        batch = ItemBatch.query.get_or_404(batch_id)
+        data = request.json
+        
+        new_location = data.get('storage_location', '').strip()
+        if not new_location:
+            return jsonify({'success': False, 'error': 'Storage location is required'}), 400
+        
+        old_location = batch.storage_location
+        batch.storage_location = new_location
+        batch.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Batch {batch.batch_number} moved from {old_location} to {new_location}'
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@batch_tracking_bp.route('/api/batch-summary')
+@login_required
+def api_batch_summary():
+    """Get batch summary statistics for dashboard widgets"""
+    try:
+        summary = {
+            'total_batches': ItemBatch.query.count(),
+            'active_batches': ItemBatch.query.filter(ItemBatch.total_quantity > 0).count(),
+            'quality_issues': ItemBatch.query.filter(ItemBatch.quality_status == 'defective').count(),
+            'pending_inspection': ItemBatch.query.filter(ItemBatch.quality_status == 'pending_inspection').count(),
+            'process_breakdown': {}
+        }
+        
+        # Get process-wise breakdown
+        processes = ['cutting', 'bending', 'welding', 'zinc', 'painting', 'assembly', 'machining', 'polishing']
+        for process in processes:
+            qty = db.session.query(func.sum(getattr(ItemBatch, f'qty_wip_{process}'))).scalar() or 0
+            summary['process_breakdown'][process] = float(qty)
+        
+        # Add raw and finished quantities
+        summary['process_breakdown']['raw'] = float(db.session.query(func.sum(ItemBatch.qty_raw)).scalar() or 0)
+        summary['process_breakdown']['finished'] = float(db.session.query(func.sum(ItemBatch.qty_finished)).scalar() or 0)
+        summary['process_breakdown']['scrap'] = float(db.session.query(func.sum(ItemBatch.qty_scrap)).scalar() or 0)
+        
+        return jsonify(summary)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@batch_tracking_bp.route('/api/search-batches')
+@login_required
+def api_search_batches():
+    """Search batches by various criteria"""
+    try:
+        query_text = request.args.get('q', '').strip()
+        limit = request.args.get('limit', 20, type=int)
+        
+        if not query_text:
+            return jsonify({'batches': []})
+        
+        # Search in batch number, item name, and supplier batch
+        batches = ItemBatch.query.join(Item).filter(
+            or_(
+                ItemBatch.batch_number.ilike(f'%{query_text}%'),
+                Item.name.ilike(f'%{query_text}%'),
+                Item.code.ilike(f'%{query_text}%'),
+                ItemBatch.supplier_batch.ilike(f'%{query_text}%')
+            )
+        ).limit(limit).all()
+        
+        batch_data = []
+        for batch in batches:
+            batch_data.append({
+                'id': batch.id,
+                'batch_number': batch.batch_number,
+                'item_name': batch.item.name,
+                'item_code': batch.item.code,
+                'total_quantity': batch.total_quantity,
+                'available_quantity': batch.available_quantity,
+                'quality_status': batch.quality_status,
+                'storage_location': batch.storage_location,
+                'manufacture_date': batch.manufacture_date.isoformat() if batch.manufacture_date else None
+            })
+        
+        return jsonify({'batches': batch_data})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

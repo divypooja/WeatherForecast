@@ -399,6 +399,210 @@ class ItemBatch(db.Model):
         
         self.updated_at = datetime.utcnow()
         return True
+
+    # Comprehensive Batch Movement Methods for Complete Traceability
+    def issue_for_job_work(self, quantity, process_name=None):
+        """Issue material from this batch for job work processing"""
+        if quantity <= 0:
+            return False, "Quantity must be greater than 0"
+        
+        # Check availability (can issue from Raw or Finished state)
+        available = self.available_quantity
+        if quantity > available:
+            return False, f"Insufficient quantity. Available: {available}, Requested: {quantity}"
+        
+        # Deduct from raw material first, then finished goods
+        if self.qty_raw >= quantity:
+            self.qty_raw -= quantity
+        else:
+            remaining = quantity - self.qty_raw
+            self.qty_raw = 0
+            self.qty_finished -= remaining
+        
+        # Move to appropriate WIP state
+        if process_name:
+            process_lower = process_name.lower().replace(' ', '_')
+            if process_lower == 'cutting':
+                self.qty_wip_cutting += quantity
+            elif process_lower == 'bending':
+                self.qty_wip_bending += quantity
+            elif process_lower == 'welding':
+                self.qty_wip_welding += quantity
+            elif process_lower in ['zinc', 'zinc_plating']:
+                self.qty_wip_zinc += quantity
+            elif process_lower == 'painting':
+                self.qty_wip_painting += quantity
+            elif process_lower == 'assembly':
+                self.qty_wip_assembly += quantity
+            elif process_lower == 'machining':
+                self.qty_wip_machining += quantity
+            elif process_lower == 'polishing':
+                self.qty_wip_polishing += quantity
+            else:
+                self.qty_wip += quantity
+        else:
+            self.qty_wip += quantity
+            
+        self.updated_at = datetime.utcnow()
+        return True, f"Issued {quantity} units for {process_name or 'general'} processing"
+    
+    def transfer_between_processes(self, from_process, to_process, quantity):
+        """Transfer material between different process WIP states"""
+        if quantity <= 0:
+            return False, "Quantity must be greater than 0"
+            
+        # Get current quantities
+        from_qty = self.get_wip_quantity_by_process(from_process)
+        
+        if quantity > from_qty:
+            return False, f"Insufficient quantity in {from_process}. Available: {from_qty}"
+        
+        # Reduce from source process
+        self.set_wip_quantity_by_process(from_process, from_qty - quantity)
+        
+        # Add to destination process
+        to_qty = self.get_wip_quantity_by_process(to_process)
+        self.set_wip_quantity_by_process(to_process, to_qty + quantity)
+        
+        self.updated_at = datetime.utcnow()
+        return True, f"Transferred {quantity} from {from_process} to {to_process}"
+    
+    def get_wip_quantity_by_process(self, process_name):
+        """Get WIP quantity for a specific process"""
+        if not process_name:
+            return self.qty_wip or 0
+            
+        process_lower = process_name.lower().replace(' ', '_')
+        process_map = {
+            'cutting': self.qty_wip_cutting,
+            'bending': self.qty_wip_bending,
+            'welding': self.qty_wip_welding,
+            'zinc': self.qty_wip_zinc,
+            'zinc_plating': self.qty_wip_zinc,
+            'painting': self.qty_wip_painting,
+            'assembly': self.qty_wip_assembly,
+            'machining': self.qty_wip_machining,
+            'polishing': self.qty_wip_polishing
+        }
+        return process_map.get(process_lower, self.qty_wip or 0) or 0
+    
+    def set_wip_quantity_by_process(self, process_name, quantity):
+        """Set WIP quantity for a specific process"""
+        if not process_name:
+            self.qty_wip = quantity
+            return True
+            
+        process_lower = process_name.lower().replace(' ', '_')
+        if process_lower == 'cutting':
+            self.qty_wip_cutting = quantity
+        elif process_lower == 'bending':
+            self.qty_wip_bending = quantity
+        elif process_lower == 'welding':
+            self.qty_wip_welding = quantity
+        elif process_lower in ['zinc', 'zinc_plating']:
+            self.qty_wip_zinc = quantity
+        elif process_lower == 'painting':
+            self.qty_wip_painting = quantity
+        elif process_lower == 'assembly':
+            self.qty_wip_assembly = quantity
+        elif process_lower == 'machining':
+            self.qty_wip_machining = quantity
+        elif process_lower == 'polishing':
+            self.qty_wip_polishing = quantity
+        else:
+            self.qty_wip = quantity
+        return True
+    
+    def create_output_batch(self, output_item_id, output_quantity, output_batch_prefix="OUT"):
+        """Create a new batch for finished goods output"""
+        # Generate unique output batch number
+        timestamp = datetime.now().strftime("%Y%m%d%H%M")
+        output_batch_number = f"{output_batch_prefix}-{self.batch_number}-{timestamp}"
+        
+        # Create new batch for output item
+        output_batch = ItemBatch(
+            item_id=output_item_id,
+            batch_number=output_batch_number,
+            qty_finished=output_quantity,
+            manufacture_date=datetime.now().date(),
+            storage_location=self.storage_location,
+            quality_status='pending_inspection',
+            created_by=self.created_by,
+            quality_notes=f"Produced from input batch: {self.batch_number}"
+        )
+        
+        return output_batch
+    
+    @property 
+    def wip_breakdown(self):
+        """Return dictionary of WIP quantities by process"""
+        return {
+            'cutting': self.qty_wip_cutting or 0,
+            'bending': self.qty_wip_bending or 0,
+            'welding': self.qty_wip_welding or 0,
+            'zinc': self.qty_wip_zinc or 0,
+            'painting': self.qty_wip_painting or 0,
+            'assembly': self.qty_wip_assembly or 0,
+            'machining': self.qty_wip_machining or 0,
+            'polishing': self.qty_wip_polishing or 0,
+            'general': self.qty_wip or 0
+        }
+    
+    @property
+    def batch_age_days(self):
+        """Age of batch in days"""
+        if not self.manufacture_date:
+            return None
+        return (datetime.utcnow().date() - self.manufacture_date).days
+    
+    @property
+    def days_until_expiry(self):
+        """Days until expiry (negative if expired)"""
+        if not self.expiry_date:
+            return None
+        return (self.expiry_date - datetime.utcnow().date()).days
+    
+    @property
+    def is_expired(self):
+        """Check if this batch is expired"""
+        if not self.expiry_date:
+            return False
+        return self.expiry_date < datetime.utcnow().date()
+    
+    @property
+    def qty_total(self):
+        """Total quantity for compatibility (alias for total_quantity)"""
+        return self.total_quantity
+    
+    @property
+    def qty_available(self):
+        """Available quantity for compatibility (alias for available_quantity)"""
+        return self.available_quantity
+    
+    def get_batch_ledger(self):
+        """Get a summary of all movements for this batch"""
+        return {
+            'batch_number': self.batch_number,
+            'item': self.item.name if self.item else 'Unknown',
+            'states': {
+                'raw': self.qty_raw or 0,
+                'wip_total': self.total_wip_quantity,
+                'wip_breakdown': self.wip_breakdown,
+                'finished': self.qty_finished or 0,
+                'scrap': self.qty_scrap or 0
+            },
+            'totals': {
+                'total_quantity': self.total_quantity,
+                'available_quantity': self.available_quantity,
+            },
+            'metadata': {
+                'age_days': self.batch_age_days,
+                'days_until_expiry': self.days_until_expiry,
+                'quality_status': self.quality_status,
+                'storage_location': self.storage_location,
+                'is_expired': self.is_expired
+            }
+        }
     
     def __repr__(self):
         return f'<ItemBatch {self.batch_number} - {self.item.name if self.item else "Unknown"}>'

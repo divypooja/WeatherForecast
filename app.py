@@ -73,6 +73,7 @@ def create_app():
     except ImportError:
         grn_bp = None
     from routes.uom import uom_bp
+    from routes.batch_tracking import batch_tracking_bp
     from routes.tally import tally_bp
     from routes.packing import packing_bp
     from routes.live_status import live_status_bp
@@ -94,6 +95,7 @@ def create_app():
     app.register_blueprint(expenses_bp, url_prefix='/expenses')
     app.register_blueprint(documents_bp, url_prefix='/documents')
     app.register_blueprint(uom_bp, url_prefix='/uom')
+    app.register_blueprint(batch_tracking_bp, url_prefix='/batch-tracking')
     app.register_blueprint(tally_bp, url_prefix='/tally')
     app.register_blueprint(packing_bp, url_prefix='/packing')
     app.register_blueprint(live_status_bp)
