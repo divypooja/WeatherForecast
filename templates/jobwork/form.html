@@ -636,15 +636,10 @@ function addBOMProcessRow(processData, sequence) {
                    step="0.01" min="0" placeholder="Qty" required>
         </td>
         <td>
-            <div class="input-group">
-                <input type="number" class="form-control rate-input" 
-                       name="process_${sequence}_rate" 
-                       value="${processData.labor_rate || processData.cost_per_unit || ''}" 
-                       step="0.01" min="0" placeholder="Rate">
-                <button type="button" class="btn btn-outline-secondary" onclick="loadRateManually(this)" title="Load Rate from Database">
-                    <i class="fas fa-magic"></i>
-                </button>
-            </div>
+            <input type="number" class="form-control rate-input" 
+                   name="process_${sequence}_rate" 
+                   value="${processData.labor_rate || processData.cost_per_unit || ''}" 
+                   step="0.01" min="0" placeholder="Rate">
         </td>
         <td>
             <input type="number" class="form-control" 
@@ -1256,12 +1251,7 @@ function addProcessRow() {
         </td>
         <td><input type="number" class="form-control form-control-sm" placeholder="Qty" min="1" required></td>
         <td>
-            <div class="input-group input-group-sm">
-                <input type="number" class="form-control rate-input" placeholder="Rate" step="0.01" min="0">
-                <button type="button" class="btn btn-outline-secondary" onclick="loadRateManually(this)" title="Load Rate from Database">
-                    <i class="fas fa-magic"></i>
-                </button>
-            </div>
+            <input type="number" class="form-control form-control-sm rate-input" placeholder="Rate" step="0.01" min="0">
         </td>
         <td><input type="number" class="form-control form-control-sm" placeholder="%" min="0" max="100" step="0.1"></td>
         <td><input type="checkbox" class="form-check-input process-checkbox"></td>
@@ -1503,35 +1493,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Manual rate loading function for the magic button
-function loadRateManually(button) {
-    const row = button.closest('tr');
-    if (!row) return;
-    
-    const processSelect = row.querySelectorAll('select')[0]; // Process Name
-    const outputProductSelect = row.querySelectorAll('select')[1]; // Output Product  
-    const rateInput = row.querySelector('.rate-input');
-    
-    if (!processSelect || !outputProductSelect || !rateInput) {
-        alert('Please make sure Process Name and Output Product are selected first.');
-        return;
-    }
-    
-    const processName = processSelect.value;
-    const outputProductId = outputProductSelect.value;
-    
-    if (!processName || !outputProductId) {
-        alert('Please select both Process Name and Output Product first.');
-        return;
-    }
-    
-    // Get vendor name from form
-    const assignedToSelect = document.getElementById('assigned_to');
-    const vendorName = assignedToSelect ? assignedToSelect.value : '';
-    
-    console.log('Manual rate loading:', { processName, outputProductId, vendorName });
-    loadJobWorkRate(outputProductId, processName, rateInput, vendorName);
-}
+
 
 // Update output summary based on process routing
 function updateOutputSummary() {
