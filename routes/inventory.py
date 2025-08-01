@@ -46,7 +46,10 @@ def dashboard():
 @inventory_bp.route('/batch-tracking')
 @login_required
 def batch_tracking_dashboard():
-    """Enhanced batch tracking dashboard with comprehensive views"""
+    """Parent-Child batch tracking dashboard as per documentation"""
+    from models_grn import GRN
+    from models import PurchaseOrder, JobWork
+    
     # Batch statistics
     stats = {
         'total_batches': ItemBatch.query.count(),
@@ -66,34 +69,115 @@ def batch_tracking_dashboard():
         ).count() if ItemBatch.query.filter(ItemBatch.expiry_date.isnot(None)).count() > 0 else 0
     }
     
-    # Get recent batch movements
+    # Parent-Child Structure: Get Parent orders with their associated GRNs
+    parent_child_data = []
+    
+    # 1. Purchase Orders as Parents
+    purchase_orders = PurchaseOrder.query.filter(
+        PurchaseOrder.grn_receipts_po.any()
+    ).order_by(PurchaseOrder.created_at.desc()).all()
+    
+    for po in purchase_orders:
+        # Calculate totals for this PO
+        total_qty = sum(item.quantity for item in po.items)
+        grn_count = len(po.grn_receipts_po)
+        
+        # Determine status based on GRN completion
+        if all(grn.status == 'completed' for grn in po.grn_receipts_po):
+            po_status = 'Completed'
+        elif any(grn.status in ['received', 'inspected'] for grn in po.grn_receipts_po):
+            po_status = 'Partial'
+        else:
+            po_status = 'Pending'
+        
+        # Build child GRNs with batch details
+        child_grns = []
+        for grn in po.grn_receipts_po:
+            for line_item in grn.line_items:
+                # Get batch info for this GRN line item
+                batches = ItemBatch.query.filter_by(grn_id=grn.id, item_id=line_item.item_id).all()
+                
+                child_grns.append({
+                    'grn_number': grn.grn_number,
+                    'grn_date': grn.received_date,
+                    'batch_numbers': [batch.batch_number for batch in batches] if batches else ['Manual Entry'],
+                    'item_name': line_item.item.name,
+                    'received_qty': line_item.quantity_received,
+                    'scrap_qty': line_item.quantity_rejected or 0,
+                    'status': grn.status.title(),
+                    'grn_id': grn.id
+                })
+        
+        parent_child_data.append({
+            'type': 'Purchase Order',
+            'parent_doc': po.po_number,
+            'date': po.created_at.date(),
+            'vendor_customer': po.supplier.name if po.supplier else 'N/A',
+            'status': po_status,
+            'total_qty': total_qty,
+            'grn_count': grn_count,
+            'child_grns': child_grns,
+            'parent_id': po.id
+        })
+    
+    # 2. Job Works as Parents  
+    job_works = JobWork.query.filter(
+        JobWork.grn_receipts.any()
+    ).order_by(JobWork.created_at.desc()).all()
+    
+    for jw in job_works:
+        # Calculate totals for this Job Work
+        total_qty = jw.quantity or 0
+        grn_count = len(jw.grn_receipts)
+        
+        # Determine status based on GRN completion
+        if all(grn.status == 'completed' for grn in jw.grn_receipts):
+            jw_status = 'Completed'
+        elif any(grn.status in ['received', 'inspected'] for grn in jw.grn_receipts):
+            jw_status = 'Partial'
+        else:
+            jw_status = 'Pending'
+        
+        # Build child GRNs with batch details
+        child_grns = []
+        for grn in jw.grn_receipts:
+            for line_item in grn.line_items:
+                # Get batch info for this GRN line item
+                batches = ItemBatch.query.filter_by(grn_id=grn.id, item_id=line_item.item_id).all()
+                
+                child_grns.append({
+                    'grn_number': grn.grn_number,
+                    'grn_date': grn.received_date,
+                    'batch_numbers': [batch.batch_number for batch in batches] if batches else ['Manual Entry'],
+                    'item_name': line_item.item.name,
+                    'received_qty': line_item.quantity_received,
+                    'scrap_qty': line_item.quantity_rejected or 0,
+                    'status': grn.status.title(),
+                    'grn_id': grn.id
+                })
+        
+        parent_child_data.append({
+            'type': 'Job Work',
+            'parent_doc': jw.job_number,
+            'date': jw.created_at.date(),
+            'vendor_customer': jw.vendor.name if jw.vendor else 'In-House',
+            'status': jw_status,
+            'total_qty': total_qty,
+            'grn_count': grn_count,
+            'child_grns': child_grns,
+            'parent_id': jw.id
+        })
+    
+    # Get recent batch movements for the side panel
     recent_movements = BatchMovementLedger.query.order_by(
         BatchMovementLedger.created_at.desc()
-    ).limit(20).all()
-    
-    # Get batches requiring attention (expiring, low quantity, etc.)
-    attention_batches = ItemBatch.query.filter(
-        or_(
-            ItemBatch.expiry_date <= (datetime.now().date() + timedelta(days=7)),
-            ItemBatch.quality_status == 'pending_inspection',
-            and_(
-                ItemBatch.qty_raw + ItemBatch.qty_wip + ItemBatch.qty_finished <= 10,
-                ItemBatch.qty_raw + ItemBatch.qty_wip + ItemBatch.qty_finished > 0
-            )
-        )
-    ).order_by(ItemBatch.expiry_date).limit(15).all()
-    
-    # Get consumption reports for active batches
-    consumption_reports = BatchConsumptionReport.query.order_by(
-        BatchConsumptionReport.last_movement.desc()
     ).limit(10).all()
     
     return render_template('inventory/batch_tracking_dashboard.html',
                          title='Batch Tracking Dashboard',
                          stats=stats,
-                         recent_movements=recent_movements,
-                         attention_batches=attention_batches,
-                         consumption_reports=consumption_reports)
+                         parent_child_data=parent_child_data,
+                         recent_movements=recent_movements)
 
 @inventory_bp.route('/batch/<int:batch_id>/traceability')
 @login_required
