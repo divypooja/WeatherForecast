@@ -1639,8 +1639,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const batchSelectionRow = document.getElementById('batch_selection_row');
     const outputBatchRow = document.getElementById('output_batch_row');
     const inputMaterial = document.getElementById('input_material');
-    const batchSelect = document.getElementById('batch_select');
-    const batchAvailable = document.getElementById('batch_available');
+    // Note: batchSelect and batchAvailable are now part of multi-batch structure
 
     // Toggle batch tracking rows
     function toggleBatchTracking() {
@@ -1671,13 +1670,18 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch(`/jobwork/api/batches/by-item/${materialId}`)
             .then(response => response.json())
             .then(data => {
-                if (data.success) {
+                console.log('Batch API Response:', data); // Debug log
+                if (data.success && data.batches) {
                     window.availableBatches = data.batches;
+                    console.log('Available batches:', data.batches); // Debug log
                     populateBatchDropdowns();
-                    document.getElementById('add_batch_btn').style.display = data.batches.length > 1 ? 'block' : 'none';
+                    const addBatchBtn = document.getElementById('add_batch_btn');
+                    if (addBatchBtn) {
+                        addBatchBtn.style.display = data.batches.length > 1 ? 'block' : 'none';
+                    }
                 } else {
                     clearAllBatchSelections();
-                    console.error('Error loading batches:', data.message);
+                    console.error('Error loading batches:', data.message || 'No batches found');
                 }
             })
             .catch(error => {
@@ -1696,8 +1700,10 @@ document.addEventListener('DOMContentLoaded', function() {
             window.availableBatches.forEach(batch => {
                 const option = document.createElement('option');
                 option.value = batch.id;
-                option.textContent = `${batch.batch_number} - Available: ${batch.qty_available}`;
-                option.setAttribute('data-available', batch.qty_available);
+                // Use the correct property name from API response
+                const availableQty = batch.available_quantity || batch.qty_available || 0;
+                option.textContent = `${batch.batch_number} - Available: ${availableQty}`;
+                option.setAttribute('data-available', availableQty);
                 option.setAttribute('data-location', batch.storage_location || 'Default');
                 select.appendChild(option);
             });
@@ -1736,21 +1742,10 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('add_batch_btn').style.display = 'none';
     }
 
-    // Update batch available quantity when batch is selected (legacy function)
+    // Legacy function - no longer needed with multi-batch structure
     function updateBatchInfo() {
-        const selectedOption = batchSelect.options[batchSelect.selectedIndex];
-        if (selectedOption && selectedOption.value !== '0') {
-            const available = selectedOption.getAttribute('data-available') || '0';
-            batchAvailable.textContent = available;
-            
-            // Auto-set quantity to issue to match batch available if quantity is empty
-            const quantityInput = document.getElementById('quantity_to_issue');
-            if (quantityInput && !quantityInput.value) {
-                quantityInput.value = available;
-            }
-        } else {
-            batchAvailable.textContent = '0';
-        }
+        // This function is kept for backward compatibility but not used
+        console.log('updateBatchInfo called - using multi-batch structure instead');
     }
 
     // Update batch quantity when a batch is selected
@@ -1833,8 +1828,10 @@ document.addEventListener('DOMContentLoaded', function() {
         window.availableBatches.forEach(batch => {
             const option = document.createElement('option');
             option.value = batch.id;
-            option.textContent = `${batch.batch_number} - Available: ${batch.qty_available}`;
-            option.setAttribute('data-available', batch.qty_available);
+            // Use the correct property name from API response
+            const availableQty = batch.available_quantity || batch.qty_available || 0;
+            option.textContent = `${batch.batch_number} - Available: ${availableQty}`;
+            option.setAttribute('data-available', availableQty);
             option.setAttribute('data-location', batch.storage_location || 'Default');
             newSelect.appendChild(option);
         });
@@ -1939,9 +1936,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    if (batchSelect) {
-        batchSelect.addEventListener('change', updateBatchInfo);
-    }
+    // Event listeners for multi-batch functionality are handled inline in HTML
 
     // Add event listener for quantity to issue field to update batch calculations
     const quantityToIssueField = document.getElementById('quantity_to_issue');
