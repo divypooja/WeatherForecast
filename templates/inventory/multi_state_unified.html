@@ -139,11 +139,11 @@
                             <td class="text-center">{{ "%.1f"|format(item.min_stock) }}</td>
                             <td class="text-center">
                                 <div class="btn-group" role="group">
-                                    <a href="{{ url_for('inventory.view_item', id=item.item_code) }}" 
+                                    <a href="{{ url_for('inventory.list_items') }}#{{ item.item_code }}" 
                                        class="btn btn-sm btn-outline-primary" title="View Details">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    <a href="{{ url_for('inventory.batch_wise_view') }}?item={{ item.item_code }}" 
+                                    <a href="{{ url_for('batch_tracking.dashboard') }}?item={{ item.item_code }}" 
                                        class="btn btn-sm btn-outline-info" title="View Batches">
                                         <i class="fas fa-barcode"></i>
                                     </a>
