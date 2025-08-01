@@ -1,5 +1,6 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, FloatField, DateField, SelectField, TextAreaField, IntegerField, BooleanField
+from flask_wtf.file import FileField, FileAllowed
+from wtforms import StringField, FloatField, DateField, SelectField, TextAreaField, IntegerField, BooleanField, MultipleFileField
 from wtforms.validators import DataRequired, NumberRange, Optional, Length
 from wtforms.widgets import HiddenInput
 from datetime import date
@@ -26,6 +27,14 @@ class GRNForm(FlaskForm):
     
     # Notes
     remarks = TextAreaField('Remarks', validators=[Optional()])
+    
+    # Document Upload
+    supporting_documents = MultipleFileField('Supporting Documents', 
+                                           validators=[FileAllowed(['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx'], 
+                                                     'Only PDF, images, and office documents allowed!')])
+    document_description = TextAreaField('Document Description', 
+                                       validators=[Optional()],
+                                       render_kw={'placeholder': 'Describe the uploaded documents (e.g., Delivery challan, Invoice, Quality certificate, etc.)'})
 
 
 class GRNLineItemForm(FlaskForm):
@@ -143,6 +152,14 @@ class QuickReceiveForm(FlaskForm):
     add_to_inventory = BooleanField('Add Passed Quantity to Inventory', default=True)
     
     remarks = TextAreaField('Remarks', validators=[Optional()])
+    
+    # Document Upload
+    supporting_documents = MultipleFileField('Supporting Documents', 
+                                           validators=[FileAllowed(['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx'], 
+                                                     'Only PDF, images, and office documents allowed!')])
+    document_description = TextAreaField('Document Description', 
+                                       validators=[Optional()],
+                                       render_kw={'placeholder': 'Describe uploaded documents (e.g., Job work completion certificate, Quality report, etc.)'})
 
 
 class QuickReceivePOForm(FlaskForm):
@@ -178,6 +195,14 @@ class QuickReceivePOForm(FlaskForm):
     add_to_inventory = BooleanField('Add Passed Quantity to Inventory', default=True)
     
     remarks = TextAreaField('Remarks', validators=[Optional()])
+    
+    # Document Upload
+    supporting_documents = MultipleFileField('Supporting Documents', 
+                                           validators=[FileAllowed(['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx'], 
+                                                     'Only PDF, images, and office documents allowed!')])
+    document_description = TextAreaField('Document Description', 
+                                       validators=[Optional()],
+                                       render_kw={'placeholder': 'Describe uploaded documents (e.g., Purchase invoice, Delivery challan, Quality certificate, etc.)'})
 
 
 class GRNSearchForm(FlaskForm):

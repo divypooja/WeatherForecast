@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file, abort
 from flask_login import login_required, current_user
 from app import db
-from models import Document, PurchaseOrder, SalesOrder, JobWork
+from models import PurchaseOrder, SalesOrder, JobWork
+from models_document import Document
 from forms_documents import DocumentUploadForm, DocumentForm
 from utils_documents import save_uploaded_file, get_documents_for_transaction, delete_document
 from sqlalchemy import func

@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from app import db
-from models import FactoryExpense, User, Document
+from models import FactoryExpense, User
+from models_document import Document
 from forms import FactoryExpenseForm
 from datetime import datetime, date
 from sqlalchemy import func, desc, extract
