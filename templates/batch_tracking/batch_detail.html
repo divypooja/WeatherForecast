@@ -327,10 +327,11 @@
                     <div class="mb-3">
                         <label class="form-label">Quality Status</label>
                         <select class="form-select" name="quality_status" required>
-                            <option value="pending_inspection" {{ 'selected' if batch.quality_status == 'pending_inspection' }}>Pending Inspection</option>
+                            <option value="pending" {{ 'selected' if batch.quality_status == 'pending' }}>Pending Inspection</option>
                             <option value="approved" {{ 'selected' if batch.quality_status == 'approved' }}>Approved</option>
                             <option value="rejected" {{ 'selected' if batch.quality_status == 'rejected' }}>Rejected</option>
                             <option value="defective" {{ 'selected' if batch.quality_status == 'defective' }}>Defective</option>
+                            <option value="good" {{ 'selected' if batch.quality_status == 'good' }}>Good</option>
                         </select>
                     </div>
                     <div class="mb-3">
@@ -387,11 +388,19 @@ function saveQualityStatus() {
     
     fetch(`{{ url_for('batch_tracking.api_update_batch_quality', batch_id=batch.id) }}`, {
         method: 'POST',
-        body: formData
+        body: JSON.stringify({
+            quality_status: formData.get('quality_status'),
+            quality_notes: formData.get('quality_notes')
+        }),
+        headers: {
+            'Content-Type': 'application/json'
+        }
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            alert(data.message);
+            $('#qualityModal').modal('hide');
             location.reload();
         } else {
             alert('Error: ' + data.error);
@@ -418,6 +427,8 @@ function saveStorageLocation() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            alert(data.message);
+            $('#locationModal').modal('hide');
             location.reload();
         } else {
             alert('Error: ' + data.error);
