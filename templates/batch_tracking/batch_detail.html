@@ -377,9 +377,30 @@
 <script>
 // Wait for DOM to be ready
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Bootstrap modals
-    window.qualityModal = new bootstrap.Modal(document.getElementById('qualityModal'));
-    window.locationModal = new bootstrap.Modal(document.getElementById('locationModal'));
+    // Clean up any existing modal backdrops
+    const existingBackdrops = document.querySelectorAll('.modal-backdrop');
+    existingBackdrops.forEach(backdrop => backdrop.remove());
+    
+    // Reset body classes
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+    
+    // Initialize Bootstrap modals with proper configuration
+    try {
+        window.qualityModal = new bootstrap.Modal(document.getElementById('qualityModal'), {
+            backdrop: true,
+            keyboard: true,
+            focus: true
+        });
+        window.locationModal = new bootstrap.Modal(document.getElementById('locationModal'), {
+            backdrop: true,
+            keyboard: true,
+            focus: true
+        });
+    } catch (error) {
+        console.log('Bootstrap modal initialization failed, using fallback methods');
+    }
 });
 
 function updateQualityStatus() {
@@ -470,6 +491,8 @@ function closeQualityModal() {
         document.getElementById('qualityModal').style.display = 'none';
         document.getElementById('qualityModal').classList.remove('show');
     }
+    // Clean up any stuck backdrops
+    cleanupModalBackdrops();
 }
 
 function closeLocationModal() {
@@ -479,6 +502,39 @@ function closeLocationModal() {
         document.getElementById('locationModal').style.display = 'none';
         document.getElementById('locationModal').classList.remove('show');
     }
+    // Clean up any stuck backdrops
+    cleanupModalBackdrops();
 }
+
+function cleanupModalBackdrops() {
+    // Remove any stuck modal backdrops
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(backdrop => backdrop.remove());
+    
+    // Reset body state
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+}
+
+// Add emergency cleanup function for stuck modals
+function forceCloseAllModals() {
+    // Hide all modals
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+        modal.style.display = 'none';
+        modal.classList.remove('show');
+    });
+    
+    // Clean up backdrops and body state
+    cleanupModalBackdrops();
+}
+
+// Add escape key handler to force close modals if stuck
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        forceCloseAllModals();
+    }
+});
 </script>
 {% endblock %}
