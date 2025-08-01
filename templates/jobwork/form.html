@@ -1655,9 +1655,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Global variable to store available batches
+    // Global variables for batch functionality
     window.availableBatches = [];
-    let batchRowCounter = 1;
+    window.batchRowCounter = 1;
 
     // Load available batches for selected material
     function loadBatchesForMaterial() {
@@ -1677,7 +1677,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     populateBatchDropdowns();
                     const addBatchBtn = document.getElementById('add_batch_btn');
                     if (addBatchBtn) {
-                        addBatchBtn.style.display = data.batches.length > 1 ? 'block' : 'none';
+                        addBatchBtn.style.display = data.batches.length > 0 ? 'block' : 'none';
                     }
                 } else {
                     clearAllBatchSelections();
@@ -1738,7 +1738,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <small class="text-muted">Available: <span id="batch_available_1">0</span> units</small>
             </div>`;
-        batchRowCounter = 1;
+        window.batchRowCounter = 1;
         updateTotalQuantity();
         document.getElementById('add_batch_btn').style.display = 'none';
     }
@@ -1956,35 +1956,35 @@ function validateBatchQuantity(rowNum) {
 }
 
 function addBatchRow() {
-    batchRowCounter++;
+    window.batchRowCounter++;
     const container = document.getElementById('batch_selection_container');
     
     const newRow = document.createElement('div');
     newRow.className = 'batch-selection-row mb-2';
-    newRow.id = `batch_row_${batchRowCounter}`;
+    newRow.id = `batch_row_${window.batchRowCounter}`;
     newRow.innerHTML = `
         <div class="row g-2">
             <div class="col-6">
-                <select class="form-select batch-select" name="batch_selections[${batchRowCounter - 1}][batch_id]" id="batch_select_${batchRowCounter}" onchange="updateBatchQuantity(${batchRowCounter})">
+                <select class="form-select batch-select" name="batch_selections[${window.batchRowCounter - 1}][batch_id]" id="batch_select_${window.batchRowCounter}" onchange="updateBatchQuantity(${window.batchRowCounter})">
                     <option value="0">Select Batch</option>
                 </select>
             </div>
             <div class="col-4">
-                <input type="number" class="form-control quantity-input" name="batch_selections[${batchRowCounter - 1}][quantity]" id="batch_quantity_${batchRowCounter}" placeholder="Qty" step="0.01" min="0" onchange="validateBatchQuantity(${batchRowCounter})">
+                <input type="number" class="form-control quantity-input" name="batch_selections[${window.batchRowCounter - 1}][quantity]" id="batch_quantity_${window.batchRowCounter}" placeholder="Qty" step="0.01" min="0" onchange="validateBatchQuantity(${window.batchRowCounter})">
             </div>
             <div class="col-2">
-                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeBatchRow(${batchRowCounter})" id="remove_batch_${batchRowCounter}">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeBatchRow(${window.batchRowCounter})" id="remove_batch_${window.batchRowCounter}">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
         </div>
-        <small class="text-muted">Available: <span id="batch_available_${batchRowCounter}">0</span> units</small>
+        <small class="text-muted">Available: <span id="batch_available_${window.batchRowCounter}">0</span> units</small>
     `;
     
     container.appendChild(newRow);
     
     // Populate the new dropdown with available batches
-    const newSelect = document.getElementById(`batch_select_${batchRowCounter}`);
+    const newSelect = document.getElementById(`batch_select_${window.batchRowCounter}`);
     if (window.availableBatches) {
         window.availableBatches.forEach(batch => {
             const option = document.createElement('option');
