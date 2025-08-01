@@ -1,11 +1,13 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from forms import ItemForm
-from models import Item, ItemType
+from models import Item, ItemType, ItemBatch
 from app import db
-from sqlalchemy import func
+from sqlalchemy import func, desc
 from utils import generate_item_code
 from utils_export import export_inventory_items
+from utils_batch_tracking import BatchTracker
+from datetime import datetime
 
 inventory_bp = Blueprint('inventory', __name__)
 
@@ -69,6 +71,178 @@ def multi_state_view():
                          total_wip=total_wip,
                          total_finished=total_finished,
                          total_scrap=total_scrap)
+
+@inventory_bp.route('/batch-wise')
+@login_required
+def batch_wise_view():
+    """View inventory organized by batches with complete traceability"""
+    
+    # Get filter parameters
+    item_filter = request.args.get('item_id', type=int)
+    state_filter = request.args.get('state', '')
+    location_filter = request.args.get('location', '')
+    
+    # Build base query
+    query = ItemBatch.query.join(Item)
+    
+    # Apply filters
+    if item_filter:
+        query = query.filter(ItemBatch.item_id == item_filter)
+    
+    if state_filter:
+        if state_filter == 'raw':
+            query = query.filter(ItemBatch.qty_raw > 0)
+        elif state_filter == 'finished':
+            query = query.filter(ItemBatch.qty_finished > 0)
+        elif state_filter == 'scrap':
+            query = query.filter(ItemBatch.qty_scrap > 0)
+        elif state_filter in ['cutting', 'bending', 'welding', 'zinc', 'painting', 'assembly', 'machining', 'polishing']:
+            query = query.filter(getattr(ItemBatch, f'qty_wip_{state_filter}') > 0)
+    
+    if location_filter:
+        query = query.filter(ItemBatch.storage_location.ilike(f'%{location_filter}%'))
+    
+    # Pagination
+    page = request.args.get('page', 1, type=int)
+    batches = query.order_by(desc(ItemBatch.created_at)).paginate(
+        page=page, per_page=20, error_out=False
+    )
+    
+    # Get process-wise summary
+    process_summary = BatchTracker.get_process_wise_inventory_summary()
+    
+    # Get filter options
+    items = Item.query.filter(Item.batches.any()).order_by(Item.name).all()
+    storage_locations = db.session.query(ItemBatch.storage_location).distinct().all()
+    locations = [loc[0] for loc in storage_locations if loc[0]]
+    
+    # Calculate batch statistics
+    batch_stats = {
+        'total_batches': ItemBatch.query.count(),
+        'active_batches': ItemBatch.query.filter(ItemBatch.total_quantity > 0).count(),
+        'expired_batches': ItemBatch.query.filter(
+            ItemBatch.expiry_date < datetime.now().date()
+        ).count() if hasattr(ItemBatch, 'expiry_date') else 0,
+        'quality_issues': ItemBatch.query.filter(ItemBatch.quality_status == 'defective').count()
+    }
+    
+    return render_template('inventory/batch_wise_view.html',
+                         title='Batch-Wise Inventory Tracking',
+                         batches=batches,
+                         process_summary=process_summary,
+                         batch_stats=batch_stats,
+                         items=items,
+                         locations=locations,
+                         current_filters={
+                             'item_id': item_filter,
+                             'state': state_filter,
+                             'location': location_filter
+                         })
+
+@inventory_bp.route('/process-breakdown')
+@login_required
+def process_breakdown():
+    """Show inventory breakdown by manufacturing processes"""
+    
+    # Get process-wise inventory summary
+    process_summary = BatchTracker.get_process_wise_inventory_summary()
+    
+    # Calculate totals across all processes
+    process_totals = {
+        'raw': 0,
+        'cutting': 0,
+        'bending': 0,
+        'welding': 0,
+        'zinc': 0,
+        'painting': 0,
+        'assembly': 0,
+        'machining': 0,
+        'polishing': 0,
+        'finished': 0,
+        'scrap': 0
+    }
+    
+    for item_id, item_data in process_summary.items():
+        for process, qty in item_data['states'].items():
+            if process in process_totals:
+                process_totals[process] += qty
+    
+    # Get top items by process volume
+    top_items_by_process = {}
+    for process in process_totals.keys():
+        if process_totals[process] > 0:
+            # Get items with highest quantity in this process
+            items_in_process = []
+            for item_id, item_data in process_summary.items():
+                qty = item_data['states'].get(process, 0)
+                if qty > 0:
+                    items_in_process.append({
+                        'item_name': item_data['item_name'],
+                        'item_code': item_data['item_code'],
+                        'quantity': qty,
+                        'unit_of_measure': item_data['unit_of_measure']
+                    })
+            
+            # Sort by quantity and take top 5
+            items_in_process.sort(key=lambda x: x['quantity'], reverse=True)
+            top_items_by_process[process] = items_in_process[:5]
+    
+    return render_template('inventory/process_breakdown.html',
+                         title='Process-Wise Inventory Breakdown',
+                         process_summary=process_summary,
+                         process_totals=process_totals,
+                         top_items_by_process=top_items_by_process)
+
+# API Endpoints for Batch Integration
+
+@inventory_bp.route('/api/item/<int:item_id>/batch-summary')
+@login_required
+def api_item_batch_summary(item_id):
+    """Get batch summary for a specific item"""
+    try:
+        item = Item.query.get_or_404(item_id)
+        batches = ItemBatch.query.filter_by(item_id=item_id).all()
+        
+        summary = {
+            'item_id': item_id,
+            'item_name': item.name,
+            'item_code': item.code,
+            'total_batches': len(batches),
+            'states': {
+                'raw': sum(b.qty_raw or 0 for b in batches),
+                'cutting': sum(b.qty_wip_cutting or 0 for b in batches),
+                'bending': sum(b.qty_wip_bending or 0 for b in batches),
+                'welding': sum(b.qty_wip_welding or 0 for b in batches),
+                'zinc': sum(b.qty_wip_zinc or 0 for b in batches),
+                'painting': sum(b.qty_wip_painting or 0 for b in batches),
+                'assembly': sum(b.qty_wip_assembly or 0 for b in batches),
+                'machining': sum(b.qty_wip_machining or 0 for b in batches),
+                'polishing': sum(b.qty_wip_polishing or 0 for b in batches),
+                'finished': sum(b.qty_finished or 0 for b in batches),
+                'scrap': sum(b.qty_scrap or 0 for b in batches)
+            },
+            'batches': []
+        }
+        
+        for batch in batches:
+            batch_info = {
+                'id': batch.id,
+                'batch_number': batch.batch_number,
+                'total_quantity': batch.total_quantity,
+                'available_quantity': batch.available_quantity,
+                'quality_status': batch.quality_status,
+                'storage_location': batch.storage_location,
+                'wip_breakdown': batch.wip_breakdown
+            }
+            summary['batches'].append(batch_info)
+        
+        summary['total_quantity'] = sum(summary['states'].values())
+        summary['available_quantity'] = summary['states']['raw'] + summary['states']['finished']
+        
+        return jsonify(summary)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @inventory_bp.route('/unified')
 @login_required

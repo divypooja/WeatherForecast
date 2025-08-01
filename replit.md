@@ -1,7 +1,17 @@
 # Factory Management System - Flask Application
 
 ## Overview
-This Flask-based Factory Management System is designed for small to medium manufacturing companies. It provides modular dashboards for managing inventory, purchase orders, sales, HR, job work, production, and reporting. The system aims to streamline operations, enhance material tracking from raw materials to finished goods, and provide real-time manufacturing intelligence. Key capabilities include multi-state inventory tracking, BOM-driven production planning, comprehensive quality control, detailed expense management, and a flexible reporting system with batch-wise job work control for complete material traceability. The business vision is to empower manufacturing SMEs with an affordable, comprehensive, and user-friendly solution to optimize their factory operations, reduce waste, and improve efficiency.
+This Flask-based Factory Management System is designed for small to medium manufacturing companies. It provides modular dashboards for managing inventory, purchase orders, sales, HR, job work, production, and reporting. The system aims to streamline operations, enhance material tracking from raw materials to finished goods, and provide real-time manufacturing intelligence. Key capabilities include comprehensive enterprise-wide batch tracking, multi-state inventory tracking, BOM-driven production planning, comprehensive quality control, detailed expense management, and a flexible reporting system with complete material traceability through all manufacturing processes. The business vision is to empower manufacturing SMEs with an affordable, comprehensive, and user-friendly solution to optimize their factory operations, reduce waste, and improve efficiency.
+
+## Recent Changes (August 2025)
+✓ Implemented comprehensive enterprise-wide batch tracking system
+✓ Enhanced ItemBatch model with process-specific WIP tracking for cutting, bending, welding, zinc plating, painting, assembly, machining, and polishing
+✓ Added batch movement methods for complete material traceability from raw materials to finished goods
+✓ Integrated batch creation during GRN processing for automatic batch generation from supplier receipts
+✓ Enhanced Job Work module with batch selection and tracking API endpoints
+✓ Created dedicated Batch Tracking dashboard with process-wise inventory views, quality control, and traceability reports
+✓ Added comprehensive batch tracking utilities (BatchTracker, BatchValidator) for system-wide batch operations
+✓ Implemented batch transfer capabilities between different manufacturing process stages
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

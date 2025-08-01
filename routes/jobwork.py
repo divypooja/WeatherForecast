@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from forms import JobWorkForm, JobWorkQuantityUpdateForm, DailyJobWorkForm, JobWorkTeamAssignmentForm, JobWorkBatchReturnForm
 from models import JobWork, Supplier, Item, BOM, BOMItem, CompanySettings, DailyJobWorkEntry, JobWorkTeamAssignment, Employee, JobWorkBatch, ItemBatch
+from utils_batch_tracking import BatchTracker, BatchValidator, get_batch_options_for_item_api, validate_batch_selection_api
 from app import db
 from sqlalchemy import func
 from datetime import datetime
@@ -500,6 +501,177 @@ def api_bom_production_check(bom_id, qty):
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# Comprehensive Batch Tracking API Endpoints
+@jobwork_bp.route('/api/item/<int:item_id>/batches')
+@login_required
+def api_get_item_batches(item_id):
+    """Get available batches for an item with process-specific information"""
+    try:
+        process_name = request.args.get('process_name')
+        required_quantity = request.args.get('required_quantity', type=float)
+        
+        batches_data = get_batch_options_for_item_api(item_id)
+        
+        if process_name:
+            # Filter batches based on process requirements
+            filtered_batches = []
+            for batch in batches_data['batches']:
+                # Add process-specific availability information
+                batch['process_availability'] = {
+                    'raw': batch.get('available_quantity', 0),
+                    'wip_breakdown': batch.get('wip_breakdown', {})
+                }
+                filtered_batches.append(batch)
+            batches_data['batches'] = filtered_batches
+        
+        return jsonify(batches_data)
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@jobwork_bp.route('/api/validate-batch-selection', methods=['POST'])
+@login_required
+def api_validate_batch_selection():
+    """Validate batch selection for job work"""
+    try:
+        batch_selections = request.json.get('batch_selections', [])
+        validation_result = validate_batch_selection_api(batch_selections)
+        return jsonify(validation_result)
+        
+    except Exception as e:
+        return jsonify({'is_valid': False, 'errors': [str(e)]}), 500
+
+@jobwork_bp.route('/api/issue-material-with-batches', methods=['POST'])
+@login_required
+def api_issue_material_with_batches():
+    """Issue material from specific batches for job work"""
+    try:
+        data = request.json
+        job_work_id = data.get('job_work_id')
+        item_id = data.get('item_id')
+        total_quantity = data.get('total_quantity')
+        batch_selections = data.get('batch_selections', [])
+        process_name = data.get('process_name')
+        
+        success, message = BatchTracker.issue_material_with_batch_tracking(
+            job_work_id, item_id, total_quantity, batch_selections, process_name
+        )
+        
+        return jsonify({
+            'success': success,
+            'message': message
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@jobwork_bp.route('/api/receive-material-with-batches', methods=['POST'])
+@login_required
+def api_receive_material_with_batches():
+    """Receive processed material back from job work with batch tracking"""
+    try:
+        data = request.json
+        job_work_id = data.get('job_work_id')
+        return_data = data.get('return_data', [])
+        
+        success, message = BatchTracker.receive_material_with_batch_tracking(
+            job_work_id, return_data
+        )
+        
+        return jsonify({
+            'success': success,
+            'message': message
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@jobwork_bp.route('/api/batch/<int:batch_id>/traceability')
+@login_required
+def api_batch_traceability(batch_id):
+    """Get complete traceability report for a batch"""
+    try:
+        traceability_data = BatchTracker.get_batch_traceability_report(batch_id)
+        
+        if traceability_data:
+            return jsonify({
+                'success': True,
+                'data': traceability_data
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Batch not found or no traceability data available'
+            })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@jobwork_bp.route('/api/transfer-batches-between-processes', methods=['POST'])
+@login_required
+def api_transfer_batches_between_processes():
+    """Transfer material between different process stages"""
+    try:
+        data = request.json
+        job_work_id = data.get('job_work_id')
+        transfer_data = data.get('transfer_data', [])
+        
+        success, message = BatchTracker.transfer_batches_between_processes(
+            job_work_id, transfer_data
+        )
+        
+        return jsonify({
+            'success': success,
+            'message': message
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@jobwork_bp.route('/api/job-work/<int:job_work_id>/batch-status')
+@login_required
+def api_job_work_batch_status(job_work_id):
+    """Get batch status for a specific job work"""
+    try:
+        job_work_batches = JobWorkBatch.query.filter_by(job_work_id=job_work_id).all()
+        
+        batch_status = []
+        for jwb in job_work_batches:
+            input_batch = jwb.input_batch
+            output_batch = jwb.output_batch
+            
+            status_info = {
+                'job_work_batch_id': jwb.id,
+                'input_batch': {
+                    'id': input_batch.id if input_batch else None,
+                    'batch_number': input_batch.batch_number if input_batch else None,
+                    'item_name': input_batch.item.name if input_batch and input_batch.item else None
+                },
+                'output_batch': {
+                    'id': output_batch.id if output_batch else None,
+                    'batch_number': output_batch.batch_number if output_batch else None,
+                    'item_name': output_batch.item.name if output_batch and output_batch.item else None
+                },
+                'process_name': jwb.process_name,
+                'quantity_issued': jwb.quantity_issued,
+                'quantity_finished': jwb.quantity_finished,
+                'quantity_scrap': jwb.quantity_scrap,
+                'quantity_unused': jwb.quantity_unused,
+                'status': jwb.status,
+                'issued_date': jwb.issued_date.isoformat() if jwb.issued_date else None,
+                'received_date': jwb.received_date.isoformat() if jwb.received_date else None
+            }
+            batch_status.append(status_info)
+        
+        return jsonify({
+            'success': True,
+            'batch_status': batch_status,
+            'total_batches': len(batch_status)
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @jobwork_bp.route('/detail/<int:id>')
 @login_required

@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_required, current_user
 from app import db
-from models import JobWork, Item, User, PurchaseOrder, PurchaseOrderItem, JobWorkProcess
+from models import JobWork, Item, User, PurchaseOrder, PurchaseOrderItem, JobWorkProcess, ItemBatch
 from models_grn import GRN, GRNLineItem
 from forms_grn import GRNForm, GRNLineItemForm, QuickReceiveForm, QuickReceivePOForm, GRNSearchForm, MultiProcessQuickReceiveForm
 from datetime import datetime, date
@@ -72,6 +72,83 @@ def update_po_status_based_on_grn(purchase_order_id):
     except Exception as e:
         print(f"Error updating PO status: {str(e)}")
         db.session.rollback()
+
+
+def create_batch_from_grn_line_item(grn, line_item):
+    """Create batch during GRN line item processing for complete traceability"""
+    try:
+        # Generate batch number based on GRN and supplier info
+        supplier_code = grn.supplier.supplier_code[:3] if grn.supplier else "SUP"
+        grn_date = grn.received_date.strftime("%Y%m%d") if grn.received_date else datetime.now().strftime("%Y%m%d")
+        
+        # Create unique batch number: SUP-YYYYMMDD-GRN###-ITEM###
+        batch_number = f"{supplier_code}-{grn_date}-{grn.grn_number.split('-')[-1]}-{line_item.item.item_code[:3]}"
+        
+        # Check if batch already exists for this line item
+        existing_batch = ItemBatch.query.filter_by(
+            item_id=line_item.item_id,
+            batch_number=batch_number
+        ).first()
+        
+        if existing_batch:
+            # Update existing batch quantity
+            existing_batch.qty_raw += line_item.quantity_received
+            existing_batch.purchase_rate = line_item.unit_rate or 0
+            existing_batch.updated_at = datetime.utcnow()
+            return existing_batch
+        
+        # Create new batch
+        new_batch = ItemBatch(
+            item_id=line_item.item_id,
+            batch_number=batch_number,
+            supplier_batch=line_item.supplier_batch_number or "",
+            manufacture_date=line_item.manufacture_date or grn.received_date,
+            expiry_date=line_item.expiry_date,
+            qty_raw=line_item.quantity_received,
+            purchase_rate=line_item.unit_rate or 0,
+            storage_location='Default',
+            grn_id=grn.id,
+            quality_status='pending_inspection',
+            created_by=current_user.id,
+            quality_notes=f"Received via GRN {grn.grn_number} from {grn.supplier.name if grn.supplier else 'Unknown Supplier'}"
+        )
+        
+        db.session.add(new_batch)
+        return new_batch
+        
+    except Exception as e:
+        print(f"Error creating batch from GRN line item: {str(e)}")
+        return None
+
+
+def update_inventory_with_batch_tracking(grn):
+    """Update inventory with comprehensive batch tracking during GRN processing"""
+    try:
+        for line_item in grn.line_items:
+            # Create or update batch for this received material
+            batch = create_batch_from_grn_line_item(grn, line_item)
+            
+            if batch:
+                # Update item's main inventory quantities
+                item = line_item.item
+                
+                # Add to raw material quantity in main inventory
+                if hasattr(item, 'qty_raw'):
+                    item.qty_raw = (item.qty_raw or 0) + line_item.quantity_received
+                elif hasattr(item, 'qty_stock'):
+                    item.qty_stock = (item.qty_stock or 0) + line_item.quantity_received
+                    
+                # Store batch reference in line item for traceability
+                line_item.batch_id = batch.id
+                
+        db.session.commit()
+        return True
+        
+    except Exception as e:
+        print(f"Error updating inventory with batch tracking: {str(e)}")
+        db.session.rollback()
+        return False
+
 
 grn_bp = Blueprint('grn', __name__)
 
