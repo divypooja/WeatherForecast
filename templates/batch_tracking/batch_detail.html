@@ -267,11 +267,11 @@
                             <i class="fas fa-route"></i> Complete Traceability
                         </a>
                         
-                        <button class="btn btn-outline-success" onclick="updateQualityStatus()">
+                        <button class="btn btn-outline-success" onclick="toggleQualityForm()">
                             <i class="fas fa-check-circle"></i> Update Quality Status
                         </button>
                         
-                        <button class="btn btn-outline-warning" onclick="moveToLocation()">
+                        <button class="btn btn-outline-warning" onclick="toggleLocationForm()">
                             <i class="fas fa-map-marker-alt"></i> Change Storage Location
                         </button>
                         
@@ -314,112 +314,113 @@
     </div>
 </div>
 
-<!-- Quality Status Update Modal -->
-<div class="modal fade" id="qualityModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Update Quality Status</h5>
-                <button type="button" class="btn-close" onclick="closeQualityModal()"></button>
+<!-- Quality Status Update Form (Hidden by default) -->
+<div id="qualityUpdateForm" class="card mb-4" style="display: none;">
+    <div class="card-header bg-success text-white">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-check-circle"></i> Update Quality Status
+            <button type="button" class="btn btn-sm btn-outline-light float-end" onclick="toggleQualityForm()">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+        </h5>
+    </div>
+    <div class="card-body">
+        <form id="qualityForm">
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">Quality Status</label>
+                    <select class="form-select" name="quality_status" required>
+                        <option value="pending" {{ 'selected' if batch.quality_status == 'pending' }}>Pending Inspection</option>
+                        <option value="approved" {{ 'selected' if batch.quality_status == 'approved' }}>Approved</option>
+                        <option value="rejected" {{ 'selected' if batch.quality_status == 'rejected' }}>Rejected</option>
+                        <option value="defective" {{ 'selected' if batch.quality_status == 'defective' }}>Defective</option>
+                        <option value="good" {{ 'selected' if batch.quality_status == 'good' }}>Good</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Quality Notes</label>
+                    <textarea class="form-control" name="quality_notes" rows="2" placeholder="Add quality inspection notes...">{{ batch.quality_notes or '' }}</textarea>
+                </div>
             </div>
-            <div class="modal-body">
-                <form id="qualityForm">
-                    <div class="mb-3">
-                        <label class="form-label">Quality Status</label>
-                        <select class="form-select" name="quality_status" required>
-                            <option value="pending" {{ 'selected' if batch.quality_status == 'pending' }}>Pending Inspection</option>
-                            <option value="approved" {{ 'selected' if batch.quality_status == 'approved' }}>Approved</option>
-                            <option value="rejected" {{ 'selected' if batch.quality_status == 'rejected' }}>Rejected</option>
-                            <option value="defective" {{ 'selected' if batch.quality_status == 'defective' }}>Defective</option>
-                            <option value="good" {{ 'selected' if batch.quality_status == 'good' }}>Good</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Quality Notes</label>
-                        <textarea class="form-control" name="quality_notes" rows="3" placeholder="Add quality inspection notes...">{{ batch.quality_notes or '' }}</textarea>
-                    </div>
-                </form>
+            <div class="mt-3">
+                <button type="button" class="btn btn-primary" onclick="saveQualityStatus()">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="toggleQualityForm()">Cancel</button>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeQualityModal()">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="saveQualityStatus()">Save Changes</button>
-            </div>
-        </div>
+        </form>
     </div>
 </div>
 
-<!-- Storage Location Modal -->
-<div class="modal fade" id="locationModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Change Storage Location</h5>
-                <button type="button" class="btn-close" onclick="closeLocationModal()"></button>
+<!-- Storage Location Update Form (Hidden by default) -->
+<div id="locationUpdateForm" class="card mb-4" style="display: none;">
+    <div class="card-header bg-warning text-dark">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-map-marker-alt"></i> Change Storage Location
+            <button type="button" class="btn btn-sm btn-outline-dark float-end" onclick="toggleLocationForm()">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+        </h5>
+    </div>
+    <div class="card-body">
+        <form id="locationForm">
+            <div class="row">
+                <div class="col-md-8">
+                    <label class="form-label">New Storage Location</label>
+                    <input type="text" class="form-control" name="storage_location" 
+                           value="{{ batch.storage_location or '' }}" 
+                           placeholder="Enter storage location..." required>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="button" class="btn btn-warning me-2" onclick="saveStorageLocation()">
+                        <i class="fas fa-save"></i> Update Location
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="toggleLocationForm()">Cancel</button>
+                </div>
             </div>
-            <div class="modal-body">
-                <form id="locationForm">
-                    <div class="mb-3">
-                        <label class="form-label">New Storage Location</label>
-                        <input type="text" class="form-control" name="storage_location" 
-                               value="{{ batch.storage_location or '' }}" 
-                               placeholder="Enter storage location..." required>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeLocationModal()">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="saveStorageLocation()">Update Location</button>
-            </div>
-        </div>
+        </form>
     </div>
 </div>
 
 <script>
-// Wait for DOM to be ready
+// Clean up any existing modal backdrops on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Clean up any existing modal backdrops
     const existingBackdrops = document.querySelectorAll('.modal-backdrop');
     existingBackdrops.forEach(backdrop => backdrop.remove());
-    
-    // Reset body classes
     document.body.classList.remove('modal-open');
     document.body.style.overflow = '';
     document.body.style.paddingRight = '';
-    
-    // Initialize Bootstrap modals with proper configuration
-    try {
-        window.qualityModal = new bootstrap.Modal(document.getElementById('qualityModal'), {
-            backdrop: true,
-            keyboard: true,
-            focus: true
-        });
-        window.locationModal = new bootstrap.Modal(document.getElementById('locationModal'), {
-            backdrop: true,
-            keyboard: true,
-            focus: true
-        });
-    } catch (error) {
-        console.log('Bootstrap modal initialization failed, using fallback methods');
-    }
 });
 
-function updateQualityStatus() {
-    if (window.qualityModal) {
-        window.qualityModal.show();
+function toggleQualityForm() {
+    const form = document.getElementById('qualityUpdateForm');
+    const locationForm = document.getElementById('locationUpdateForm');
+    
+    // Hide location form if open
+    locationForm.style.display = 'none';
+    
+    // Toggle quality form
+    if (form.style.display === 'none') {
+        form.style.display = 'block';
+        form.scrollIntoView({ behavior: 'smooth', block: 'center' });
     } else {
-        // Fallback if Bootstrap modal not initialized
-        document.getElementById('qualityModal').style.display = 'block';
-        document.getElementById('qualityModal').classList.add('show');
+        form.style.display = 'none';
     }
 }
 
-function moveToLocation() {
-    if (window.locationModal) {
-        window.locationModal.show();
+function toggleLocationForm() {
+    const form = document.getElementById('locationUpdateForm');
+    const qualityForm = document.getElementById('qualityUpdateForm');
+    
+    // Hide quality form if open
+    qualityForm.style.display = 'none';
+    
+    // Toggle location form
+    if (form.style.display === 'none') {
+        form.style.display = 'block';
+        form.scrollIntoView({ behavior: 'smooth', block: 'center' });
     } else {
-        // Fallback if Bootstrap modal not initialized
-        document.getElementById('locationModal').style.display = 'block';
-        document.getElementById('locationModal').classList.add('show');
+        form.style.display = 'none';
     }
 }
 
@@ -440,9 +441,7 @@ function saveQualityStatus() {
     .then(data => {
         if (data.success) {
             alert(data.message);
-            if (window.qualityModal) {
-                window.qualityModal.hide();
-            }
+            toggleQualityForm(); // Hide the form
             location.reload();
         } else {
             alert('Error: ' + data.error);
@@ -470,9 +469,7 @@ function saveStorageLocation() {
     .then(data => {
         if (data.success) {
             alert(data.message);
-            if (window.locationModal) {
-                window.locationModal.hide();
-            }
+            toggleLocationForm(); // Hide the form
             location.reload();
         } else {
             alert('Error: ' + data.error);
@@ -483,58 +480,5 @@ function saveStorageLocation() {
         alert('Failed to update storage location');
     });
 }
-
-function closeQualityModal() {
-    if (window.qualityModal) {
-        window.qualityModal.hide();
-    } else {
-        document.getElementById('qualityModal').style.display = 'none';
-        document.getElementById('qualityModal').classList.remove('show');
-    }
-    // Clean up any stuck backdrops
-    cleanupModalBackdrops();
-}
-
-function closeLocationModal() {
-    if (window.locationModal) {
-        window.locationModal.hide();
-    } else {
-        document.getElementById('locationModal').style.display = 'none';
-        document.getElementById('locationModal').classList.remove('show');
-    }
-    // Clean up any stuck backdrops
-    cleanupModalBackdrops();
-}
-
-function cleanupModalBackdrops() {
-    // Remove any stuck modal backdrops
-    const backdrops = document.querySelectorAll('.modal-backdrop');
-    backdrops.forEach(backdrop => backdrop.remove());
-    
-    // Reset body state
-    document.body.classList.remove('modal-open');
-    document.body.style.overflow = '';
-    document.body.style.paddingRight = '';
-}
-
-// Add emergency cleanup function for stuck modals
-function forceCloseAllModals() {
-    // Hide all modals
-    const modals = document.querySelectorAll('.modal');
-    modals.forEach(modal => {
-        modal.style.display = 'none';
-        modal.classList.remove('show');
-    });
-    
-    // Clean up backdrops and body state
-    cleanupModalBackdrops();
-}
-
-// Add escape key handler to force close modals if stuck
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        forceCloseAllModals();
-    }
-});
 </script>
 {% endblock %}
