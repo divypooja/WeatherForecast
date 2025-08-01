@@ -273,7 +273,7 @@
                                 <a href="{{ url_for('batch_tracking.batch_detail', batch_id=batch.id) }}" class="btn btn-sm btn-outline-primary">
                                     <i class="fas fa-eye"></i> View
                                 </a>
-                                <a href="{{ url_for('batch_tracking.api_batch_traceability', batch_id=batch.id) }}" class="btn btn-sm btn-outline-success">
+                                <a href="{{ url_for('batch_tracking.traceability_report', type='batch', batch_id=batch.id) }}" class="btn btn-sm btn-outline-success">
                                     <i class="fas fa-route"></i> Trace
                                 </a>
                             </div>
