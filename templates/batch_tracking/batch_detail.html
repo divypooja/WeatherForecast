@@ -387,10 +387,7 @@ function saveQualityStatus() {
     
     fetch(`{{ url_for('batch_tracking.api_update_batch_quality', batch_id=batch.id) }}`, {
         method: 'POST',
-        body: formData,
-        headers: {
-            'X-CSRFToken': '{{ csrf_token() }}'
-        }
+        body: formData
     })
     .then(response => response.json())
     .then(data => {
@@ -415,8 +412,7 @@ function saveStorageLocation() {
             storage_location: formData.get('storage_location')
         }),
         headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token() }}'
+            'Content-Type': 'application/json'
         }
     })
     .then(response => response.json())
