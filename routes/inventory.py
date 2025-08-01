@@ -677,3 +677,78 @@ def api_item_batch_details(item_code):
             'success': False,
             'error': str(e)
         }), 500
+
+
+@inventory_bp.route('/export_unified_inventory')
+@login_required
+def export_unified_inventory():
+    """Export unified multi-state inventory to Excel"""
+    try:
+        from services_unified_inventory import UnifiedInventoryService
+        
+        # Get all inventory items with multi-state data
+        items = UnifiedInventoryService.get_all_items_with_states()
+        
+        # Create a modified export for unified inventory
+        return export_unified_inventory_items(items)
+        
+    except Exception as e:
+        flash(f'Error exporting inventory: {str(e)}', 'danger')
+        return redirect(url_for('inventory.multi_state_view'))
+
+def export_unified_inventory_items(items):
+    """Export unified multi-state inventory items to Excel"""
+    from flask import make_response
+    import io
+    import csv
+    from datetime import date
+    
+    # Create CSV output
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Write header
+    header = [
+        'Item Code', 'Item Name', 'Description', 'Type', 'UOM',
+        'Raw Material', 'WIP', 'Finished', 'Scrap',
+        'Total Stock', 'Available Stock', 'Min Stock',
+        'Unit Price (₹)', 'Stock Value (₹)', 'Unit Weight (kg)',
+        'HSN Code', 'GST Rate (%)', 'Created Date'
+    ]
+    writer.writerow(header)
+    
+    # Write data
+    for item in items:
+        total_stock = (item.get('qty_raw', 0) + item.get('qty_wip', 0) + 
+                      item.get('qty_finished', 0) + item.get('qty_scrap', 0))
+        available_stock = item.get('qty_raw', 0) + item.get('qty_finished', 0)
+        stock_value = available_stock * (item.get('unit_price', 0) or 0)
+        
+        row = [
+            item.get('code', ''),
+            item.get('name', ''),
+            item.get('description', ''),
+            item.get('item_type', '').title(),
+            item.get('unit_of_measure', ''),
+            float(item.get('qty_raw', 0)),
+            float(item.get('qty_wip', 0)),
+            float(item.get('qty_finished', 0)),
+            float(item.get('qty_scrap', 0)),
+            float(total_stock),
+            float(available_stock),
+            float(item.get('minimum_stock', 0)),
+            float(item.get('unit_price', 0)),
+            float(stock_value),
+            float(item.get('unit_weight', 0)),
+            item.get('hsn_code', ''),
+            float(item.get('gst_rate', 0)),
+            item.get('created_at', '').strftime('%d/%m/%Y') if item.get('created_at') else '',
+        ]
+        writer.writerow(row)
+    
+    # Create response
+    response = make_response(output.getvalue())
+    response.headers['Content-Type'] = 'text/csv'
+    response.headers['Content-Disposition'] = f'attachment; filename=unified_multi_state_inventory_{date.today()}.csv'
+    
+    return response
