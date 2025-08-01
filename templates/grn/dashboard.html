@@ -193,11 +193,11 @@
                                         <td>{{ parent.vendor_customer }}</td>
                                         <td>
                                             {% if parent.status == 'Completed' %}
-                                            <span class="badge badge-success">{{ parent.status }}</span>
+                                            <span class="badge bg-success">{{ parent.status }}</span>
                                             {% elif parent.status == 'Partial' %}
-                                            <span class="badge badge-warning">{{ parent.status }}</span>
+                                            <span class="badge bg-warning">{{ parent.status }}</span>
                                             {% else %}
-                                            <span class="badge badge-secondary">{{ parent.status }}</span>
+                                            <span class="badge bg-secondary">{{ parent.status }}</span>
                                             {% endif %}
                                         </td>
                                         <td>{{ parent.total_qty }}</td>
@@ -221,11 +221,11 @@
                                         </td>
                                         <td>
                                             {% if grn.status == 'Completed' %}
-                                            <span class="badge badge-success badge-sm">{{ grn.status }}</span>
+                                            <span class="badge bg-success text-white">{{ grn.status }}</span>
                                             {% elif grn.status == 'Received' %}
-                                            <span class="badge badge-info badge-sm">{{ grn.status }}</span>
+                                            <span class="badge bg-info text-white">{{ grn.status }}</span>
                                             {% else %}
-                                            <span class="badge badge-secondary badge-sm">{{ grn.status }}</span>
+                                            <span class="badge bg-secondary text-white">{{ grn.status }}</span>
                                             {% endif %}
                                         </td>
                                         <td>-</td>
@@ -243,27 +243,27 @@
                                         </td>
                                         <td>
                                             {% if grn.status == 'Completed' %}
-                                            <span class="badge badge-success badge-sm">{{ grn.status }}</span>
+                                            <span class="badge bg-success text-white">{{ grn.status }}</span>
                                             {% elif grn.status == 'Received' %}
-                                            <span class="badge badge-info badge-sm">{{ grn.status }}</span>
+                                            <span class="badge bg-info text-white">{{ grn.status }}</span>
                                             {% else %}
-                                            <span class="badge badge-secondary badge-sm">{{ grn.status }}</span>
+                                            <span class="badge bg-secondary text-white">{{ grn.status }}</span>
                                             {% endif %}
                                         </td>
                                         <td>
                                             {% if grn.inspection_status == 'Completed' %}
-                                            <span class="badge badge-success badge-sm">{{ grn.inspection_status }}</span>
+                                            <span class="badge bg-success text-white">{{ grn.inspection_status }}</span>
                                             {% elif grn.inspection_status == 'Pending' %}
-                                            <span class="badge badge-warning badge-sm">{{ grn.inspection_status }}</span>
+                                            <span class="badge bg-warning text-dark">{{ grn.inspection_status }}</span>
                                             {% else %}
-                                            <span class="badge badge-info badge-sm">{{ grn.inspection_status }}</span>
+                                            <span class="badge bg-info text-white">{{ grn.inspection_status }}</span>
                                             {% endif %}
                                         </td>
                                         <td>
                                             {% if grn.inventory_updated %}
-                                            <span class="badge badge-success badge-sm"><i class="fas fa-check"></i> Yes</span>
+                                            <span class="badge bg-success text-white"><i class="fas fa-check"></i> Yes</span>
                                             {% else %}
-                                            <span class="badge badge-secondary badge-sm"><i class="fas fa-times"></i> No</span>
+                                            <span class="badge bg-secondary text-white"><i class="fas fa-times"></i> No</span>
                                             {% endif %}
                                         </td>
                                         <td>
