@@ -623,3 +623,51 @@ def get_item_stock(item_id):
             'success': False,
             'error': str(e)
         }), 500
+
+@inventory_bp.route('/api/item-batch-details/<item_code>')
+@login_required
+def api_item_batch_details(item_code):
+    """API endpoint to get detailed batch information for parent-child table"""
+    try:
+        # Get item by code
+        item = Item.query.filter_by(code=item_code).first()
+        if not item:
+            return jsonify({
+                'success': False,
+                'error': 'Item not found'
+            }), 404
+        
+        # Get all active batches for this item
+        batches = ItemBatch.query.filter_by(item_id=item.id, is_active=True).all()
+        
+        batch_data = []
+        for batch in batches:
+            # Calculate multi-state quantities for each batch
+            batch_info = {
+                'batch_id': batch.id,
+                'batch_code': batch.batch_number,
+                'location': batch.location or 'Main Store',
+                'qty_raw': float(getattr(batch, 'qty_raw', 0) or 0),
+                'qty_wip': float(getattr(batch, 'qty_wip', 0) or 0),
+                'qty_finished': float(getattr(batch, 'qty_finished', 0) or 0),
+                'qty_scrap': float(getattr(batch, 'qty_scrap', 0) or 0),
+                'total_qty': float(batch.quantity or 0),
+                'status': batch.status or 'Active',
+                'created_date': batch.created_date.strftime('%d/%m/%Y') if batch.created_date else 'N/A',
+                'expiry_date': batch.expiry_date.strftime('%d/%m/%Y') if getattr(batch, 'expiry_date', None) else 'N/A'
+            }
+            batch_data.append(batch_info)
+        
+        return jsonify({
+            'success': True,
+            'item_code': item_code,
+            'item_name': item.name,
+            'batches': batch_data
+        })
+        
+    except Exception as e:
+        print(f"Error in api_item_batch_details: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
