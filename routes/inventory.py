@@ -104,6 +104,7 @@ def multi_state_view():
                              summary=summary)
         
     except Exception as e:
+        print(f"Multi-state view error: {e}")  # Debug logging
         flash(f'Error loading multi-state view: {str(e)}', 'error')
         return redirect(url_for('inventory.dashboard'))
 
