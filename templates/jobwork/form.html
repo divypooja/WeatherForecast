@@ -1293,8 +1293,9 @@ function addProcessRow() {
         
         // Load rates for all work types (both in-house and vendor work can have rates)
         if (processName && outputProductId) {
+            const assignedTo = document.getElementById('assigned_to')?.value || '';
             loadJobWorkRate(outputProductId, processName, rateInput);
-            console.log('Loading rate for item:', outputProductId, 'process:', processName, 'work type:', workType);
+            console.log('Loading rate for item:', outputProductId, 'process:', processName, 'assigned to:', assignedTo, 'work type:', workType);
         }
     };
     
@@ -1367,18 +1368,19 @@ function loadJobWorkRate(itemId, processType, rateInput, vendorName) {
         return;
     }
     
-    // Get vendor name from form if not provided
-    if (!vendorName) {
-        const assignedToSelect = document.getElementById('assigned_to');
-        vendorName = assignedToSelect ? assignedToSelect.value : '';
-    }
+    // Always get the current assigned vendor/department from the form
+    const assignedToSelect = document.getElementById('assigned_to');
+    const currentAssignedTo = assignedToSelect ? assignedToSelect.value : '';
     
-    console.log(`Loading rate for item ${itemId}, process: ${processType}, vendor: ${vendorName}`);
+    // Use the current assigned to value, not the passed parameter
+    const effectiveVendorName = currentAssignedTo || vendorName || '';
     
-    // Build API URL with parameters
+    console.log(`Loading rate for item ${itemId}, process: ${processType}, assigned to: ${effectiveVendorName}`);
+    
+    // Build API URL with parameters - include all three filters
     const params = new URLSearchParams();
     if (processType) params.append('process_type', processType);
-    if (vendorName) params.append('vendor_name', vendorName);
+    if (effectiveVendorName) params.append('vendor_name', effectiveVendorName);
     
     const url = `/jobwork-rates/api/get-rate/${itemId}${params.toString() ? '?' + params.toString() : ''}`;
     console.log('Rate API URL:', url);
@@ -1403,12 +1405,12 @@ function loadJobWorkRate(itemId, processType, rateInput, vendorName) {
                 rateInput.style.backgroundColor = '#d4edda'; // Light green background to indicate auto-loaded
                 
                 // Show success notification with vendor info
-                showRateLoadedMessage(data.rate, processType || 'general', data.vendor_name);
+                showRateLoadedMessage(data.rate, processType || 'general', data.vendor_name || effectiveVendorName);
                 
                 // Update output summary after rate change
                 updateOutputSummary();
             } else {
-                console.log('No rate found for this item/process/vendor combination');
+                console.log(`No rate found for item: ${itemId}, process: ${processType}, assigned to: ${effectiveVendorName}`);
                 rateInput.style.backgroundColor = ''; // Reset background
             }
         })
@@ -1471,8 +1473,9 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (processSelect && outputProductSelect && rateInput && 
                 processSelect.value && outputProductSelect.value) {
-                const vendorName = assignedToSelect ? assignedToSelect.value : '';
-                loadJobWorkRate(outputProductSelect.value, processSelect.value, rateInput, vendorName);
+                // Rate will be filtered by: Output Product + Process Name + Assigned To
+                loadJobWorkRate(outputProductSelect.value, processSelect.value, rateInput);
+                console.log('Refreshing rate for:', outputProductSelect.value, processSelect.value, 'assigned to:', assignedToSelect?.value || 'none');
             }
         });
     }
