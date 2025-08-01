@@ -1705,6 +1705,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 option.textContent = `${batch.batch_number} - Available: ${availableQty}`;
                 option.setAttribute('data-available', availableQty);
                 option.setAttribute('data-location', batch.storage_location || 'Default');
+                console.log(`Setting batch option: ${batch.batch_number} with data-available=${availableQty}`);
                 select.appendChild(option);
             });
             
@@ -1754,19 +1755,25 @@ document.addEventListener('DOMContentLoaded', function() {
         const quantityInput = document.getElementById(`batch_quantity_${rowNum}`);
         const availableSpan = document.getElementById(`batch_available_${rowNum}`);
         
-        if (batchSelect.value === '0') {
-            availableSpan.textContent = '0';
-            quantityInput.value = '';
+        console.log(`updateBatchQuantity called for row ${rowNum}, selected value: ${batchSelect ? batchSelect.value : 'null'}`);
+        
+        if (!batchSelect || batchSelect.value === '0') {
+            if (availableSpan) availableSpan.textContent = '0';
+            if (quantityInput) quantityInput.value = '';
             updateTotalQuantity();
             return;
         }
         
         const selectedOption = batchSelect.options[batchSelect.selectedIndex];
         const available = parseFloat(selectedOption.getAttribute('data-available')) || 0;
-        availableSpan.textContent = available;
+        console.log(`Selected batch option data-available: ${selectedOption.getAttribute('data-available')}, parsed: ${available}`);
+        
+        if (availableSpan) {
+            availableSpan.textContent = available;
+        }
         
         // Auto-fill with available quantity if empty
-        if (!quantityInput.value && available > 0) {
+        if (quantityInput && !quantityInput.value && available > 0) {
             quantityInput.value = available;
         }
         
@@ -1833,6 +1840,7 @@ document.addEventListener('DOMContentLoaded', function() {
             option.textContent = `${batch.batch_number} - Available: ${availableQty}`;
             option.setAttribute('data-available', availableQty);
             option.setAttribute('data-location', batch.storage_location || 'Default');
+            console.log(`Adding batch option to new row: ${batch.batch_number} with qty=${availableQty}`);
             newSelect.appendChild(option);
         });
         
