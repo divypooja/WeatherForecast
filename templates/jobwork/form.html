@@ -1749,185 +1749,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('updateBatchInfo called - using multi-batch structure instead');
     }
 
-    // Update batch quantity when a batch is selected
-    function updateBatchQuantity(rowNum) {
-        const batchSelect = document.getElementById(`batch_select_${rowNum}`);
-        const quantityInput = document.getElementById(`batch_quantity_${rowNum}`);
-        const availableSpan = document.getElementById(`batch_available_${rowNum}`);
-        
-        console.log(`updateBatchQuantity called for row ${rowNum}, selected value: ${batchSelect ? batchSelect.value : 'null'}`);
-        
-        if (!batchSelect || batchSelect.value === '0') {
-            if (availableSpan) availableSpan.textContent = '0';
-            if (quantityInput) quantityInput.value = '';
-            updateTotalQuantity();
-            return;
-        }
-        
-        const selectedOption = batchSelect.options[batchSelect.selectedIndex];
-        const available = parseFloat(selectedOption.getAttribute('data-available')) || 0;
-        console.log(`Selected batch option data-available: ${selectedOption.getAttribute('data-available')}, parsed: ${available}`);
-        
-        if (availableSpan) {
-            availableSpan.textContent = available;
-        }
-        
-        // Auto-fill with available quantity if empty
-        if (quantityInput && !quantityInput.value && available > 0) {
-            quantityInput.value = available;
-        }
-        
-        updateTotalQuantity();
-        checkQuantitySufficiency();
-    }
 
-    // Validate batch quantity doesn't exceed available
-    function validateBatchQuantity(rowNum) {
-        const batchSelect = document.getElementById(`batch_select_${rowNum}`);
-        const quantityInput = document.getElementById(`batch_quantity_${rowNum}`);
-        
-        if (batchSelect.value === '0') return;
-        
-        const selectedOption = batchSelect.options[batchSelect.selectedIndex];
-        const available = parseFloat(selectedOption.getAttribute('data-available')) || 0;
-        const entered = parseFloat(quantityInput.value) || 0;
-        
-        if (entered > available) {
-            quantityInput.value = available;
-            alert(`Maximum available quantity for this batch is ${available}`);
-        }
-        
-        updateTotalQuantity();
-        checkQuantitySufficiency();
-    }
-
-    // Add new batch selection row
-    function addBatchRow() {
-        batchRowCounter++;
-        const container = document.getElementById('batch_selection_container');
-        
-        const newRow = document.createElement('div');
-        newRow.className = 'batch-selection-row mb-2';
-        newRow.id = `batch_row_${batchRowCounter}`;
-        newRow.innerHTML = `
-            <div class="row g-2">
-                <div class="col-6">
-                    <select class="form-select batch-select" name="batch_selections[${batchRowCounter - 1}][batch_id]" id="batch_select_${batchRowCounter}" onchange="updateBatchQuantity(${batchRowCounter})">
-                        <option value="0">Select Batch</option>
-                    </select>
-                </div>
-                <div class="col-4">
-                    <input type="number" class="form-control quantity-input" name="batch_selections[${batchRowCounter - 1}][quantity]" id="batch_quantity_${batchRowCounter}" placeholder="Qty" step="0.01" min="0" onchange="validateBatchQuantity(${batchRowCounter})">
-                </div>
-                <div class="col-2">
-                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeBatchRow(${batchRowCounter})" id="remove_batch_${batchRowCounter}">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-            <small class="text-muted">Available: <span id="batch_available_${batchRowCounter}">0</span> units</small>
-        `;
-        
-        container.appendChild(newRow);
-        
-        // Populate the new dropdown with available batches
-        const newSelect = document.getElementById(`batch_select_${batchRowCounter}`);
-        window.availableBatches.forEach(batch => {
-            const option = document.createElement('option');
-            option.value = batch.id;
-            // Use the correct property name from API response
-            const availableQty = batch.available_quantity || batch.qty_available || 0;
-            option.textContent = `${batch.batch_number} - Available: ${availableQty}`;
-            option.setAttribute('data-available', availableQty);
-            option.setAttribute('data-location', batch.storage_location || 'Default');
-            console.log(`Adding batch option to new row: ${batch.batch_number} with qty=${availableQty}`);
-            newSelect.appendChild(option);
-        });
-        
-        // Show remove button for all rows except the first one
-        updateRemoveButtons();
-    }
-
-    // Remove batch selection row
-    function removeBatchRow(rowNum) {
-        const row = document.getElementById(`batch_row_${rowNum}`);
-        if (row) {
-            row.remove();
-            updateTotalQuantity();
-            checkQuantitySufficiency();
-            updateRemoveButtons();
-        }
-    }
-
-    // Update remove button visibility
-    function updateRemoveButtons() {
-        const rows = document.querySelectorAll('.batch-selection-row');
-        rows.forEach((row, index) => {
-            const removeBtn = row.querySelector('[id^="remove_batch_"]');
-            if (removeBtn) {
-                removeBtn.style.display = rows.length > 1 ? 'block' : 'none';
-            }
-        });
-    }
-
-    // Calculate total selected quantity
-    function updateTotalQuantity() {
-        const quantityInputs = document.querySelectorAll('.quantity-input');
-        let total = 0;
-        
-        quantityInputs.forEach(input => {
-            const value = parseFloat(input.value) || 0;
-            total += value;
-        });
-        
-        document.getElementById('total_batch_quantity').textContent = total;
-        
-        // Update the required quantity from main form
-        const requiredInput = document.getElementById('quantity_to_issue');
-        const required = parseFloat(requiredInput ? requiredInput.value : 0) || 0;
-        document.getElementById('required_quantity').textContent = required;
-        
-        // Update hidden input for form submission
-        updateHiddenBatchInput();
-        
-        return total;
-    }
-
-    // Check if selected quantities are sufficient
-    function checkQuantitySufficiency() {
-        const total = updateTotalQuantity();
-        const requiredInput = document.getElementById('quantity_to_issue');
-        const required = parseFloat(requiredInput ? requiredInput.value : 0) || 0;
-        const statusDiv = document.getElementById('quantity_status');
-        
-        if (required === 0) {
-            statusDiv.innerHTML = '';
-            return;
-        }
-        
-        if (total >= required) {
-            statusDiv.innerHTML = '<span class="badge bg-success">✓ Sufficient quantity selected</span>';
-        } else if (total > 0) {
-            const shortage = required - total;
-            statusDiv.innerHTML = `<span class="badge bg-warning">⚠ Need ${shortage} more units</span>`;
-        } else {
-            statusDiv.innerHTML = '<span class="badge bg-danger">⚠ No batches selected</span>';
-        }
-    }
-
-    // Update hidden input for form submission (backward compatibility)
-    function updateHiddenBatchInput() {
-        const batchSelects = document.querySelectorAll('.batch-select');
-        const hiddenInput = document.getElementById('hidden_batch_input');
-        
-        // Use the first selected batch for backward compatibility
-        for (const select of batchSelects) {
-            if (select.value && select.value !== '0') {
-                hiddenInput.value = select.value;
-                break;
-            }
-        }
-    }
 
     // Event listeners
     if (enableBatchTracking) {
@@ -2078,6 +1900,189 @@ function generateOutputBatchCode() {
             
             const outputBatchCode = `${jobNumber}-${processName}-${timestamp}`;
             outputBatchCodeInput.value = outputBatchCode;
+        }
+    }
+}
+
+// Global functions for multi-batch functionality (accessible from HTML onchange events)
+function updateBatchQuantity(rowNum) {
+    const batchSelect = document.getElementById(`batch_select_${rowNum}`);
+    const quantityInput = document.getElementById(`batch_quantity_${rowNum}`);
+    const availableSpan = document.getElementById(`batch_available_${rowNum}`);
+    
+    console.log(`updateBatchQuantity called for row ${rowNum}, selected value: ${batchSelect ? batchSelect.value : 'null'}`);
+    
+    if (!batchSelect || batchSelect.value === '0') {
+        if (availableSpan) availableSpan.textContent = '0';
+        if (quantityInput) quantityInput.value = '';
+        updateTotalQuantity();
+        return;
+    }
+    
+    const selectedOption = batchSelect.options[batchSelect.selectedIndex];
+    const available = parseFloat(selectedOption.getAttribute('data-available')) || 0;
+    console.log(`Selected batch option data-available: ${selectedOption.getAttribute('data-available')}, parsed: ${available}`);
+    
+    if (availableSpan) {
+        availableSpan.textContent = available;
+    }
+    
+    // Auto-fill with available quantity if empty
+    if (quantityInput && !quantityInput.value && available > 0) {
+        quantityInput.value = available;
+    }
+    
+    updateTotalQuantity();
+    checkQuantitySufficiency();
+}
+
+function validateBatchQuantity(rowNum) {
+    const batchSelect = document.getElementById(`batch_select_${rowNum}`);
+    const quantityInput = document.getElementById(`batch_quantity_${rowNum}`);
+    
+    if (!batchSelect || batchSelect.value === '0') return;
+    
+    const selectedOption = batchSelect.options[batchSelect.selectedIndex];
+    const available = parseFloat(selectedOption.getAttribute('data-available')) || 0;
+    const entered = parseFloat(quantityInput.value) || 0;
+    
+    if (entered > available) {
+        quantityInput.value = available;
+        alert(`Maximum available quantity for this batch is ${available}`);
+    }
+    
+    updateTotalQuantity();
+    checkQuantitySufficiency();
+}
+
+function addBatchRow() {
+    batchRowCounter++;
+    const container = document.getElementById('batch_selection_container');
+    
+    const newRow = document.createElement('div');
+    newRow.className = 'batch-selection-row mb-2';
+    newRow.id = `batch_row_${batchRowCounter}`;
+    newRow.innerHTML = `
+        <div class="row g-2">
+            <div class="col-6">
+                <select class="form-select batch-select" name="batch_selections[${batchRowCounter - 1}][batch_id]" id="batch_select_${batchRowCounter}" onchange="updateBatchQuantity(${batchRowCounter})">
+                    <option value="0">Select Batch</option>
+                </select>
+            </div>
+            <div class="col-4">
+                <input type="number" class="form-control quantity-input" name="batch_selections[${batchRowCounter - 1}][quantity]" id="batch_quantity_${batchRowCounter}" placeholder="Qty" step="0.01" min="0" onchange="validateBatchQuantity(${batchRowCounter})">
+            </div>
+            <div class="col-2">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeBatchRow(${batchRowCounter})" id="remove_batch_${batchRowCounter}">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <small class="text-muted">Available: <span id="batch_available_${batchRowCounter}">0</span> units</small>
+    `;
+    
+    container.appendChild(newRow);
+    
+    // Populate the new dropdown with available batches
+    const newSelect = document.getElementById(`batch_select_${batchRowCounter}`);
+    if (window.availableBatches) {
+        window.availableBatches.forEach(batch => {
+            const option = document.createElement('option');
+            option.value = batch.id;
+            const availableQty = batch.available_quantity || batch.qty_available || 0;
+            option.textContent = `${batch.batch_number} - Available: ${availableQty}`;
+            option.setAttribute('data-available', availableQty);
+            option.setAttribute('data-location', batch.storage_location || 'Default');
+            console.log(`Adding batch option to new row: ${batch.batch_number} with qty=${availableQty}`);
+            newSelect.appendChild(option);
+        });
+    }
+    
+    updateRemoveButtons();
+}
+
+function removeBatchRow(rowNum) {
+    const row = document.getElementById(`batch_row_${rowNum}`);
+    if (row) {
+        row.remove();
+        updateTotalQuantity();
+        checkQuantitySufficiency();
+        updateRemoveButtons();
+    }
+}
+
+function updateRemoveButtons() {
+    const rows = document.querySelectorAll('.batch-selection-row');
+    rows.forEach((row, index) => {
+        const removeBtn = row.querySelector('[id^="remove_batch_"]');
+        if (removeBtn) {
+            removeBtn.style.display = rows.length > 1 ? 'block' : 'none';
+        }
+    });
+}
+
+function updateTotalQuantity() {
+    const quantityInputs = document.querySelectorAll('.quantity-input');
+    let total = 0;
+    
+    quantityInputs.forEach(input => {
+        const value = parseFloat(input.value) || 0;
+        total += value;
+    });
+    
+    const totalSpan = document.getElementById('total_batch_quantity');
+    if (totalSpan) {
+        totalSpan.textContent = total;
+    }
+    
+    // Update the required quantity from main form
+    const requiredInput = document.getElementById('quantity_to_issue');
+    const required = parseFloat(requiredInput ? requiredInput.value : 0) || 0;
+    const requiredSpan = document.getElementById('required_quantity');
+    if (requiredSpan) {
+        requiredSpan.textContent = required;
+    }
+    
+    // Update hidden input for form submission
+    updateHiddenBatchInput();
+    
+    return total;
+}
+
+function checkQuantitySufficiency() {
+    const total = updateTotalQuantity();
+    const requiredInput = document.getElementById('quantity_to_issue');
+    const required = parseFloat(requiredInput ? requiredInput.value : 0) || 0;
+    const statusDiv = document.getElementById('quantity_status');
+    
+    if (!statusDiv) return;
+    
+    if (required === 0) {
+        statusDiv.innerHTML = '';
+        return;
+    }
+    
+    if (total >= required) {
+        statusDiv.innerHTML = '<span class="badge bg-success">✓ Sufficient quantity selected</span>';
+    } else if (total > 0) {
+        const shortage = required - total;
+        statusDiv.innerHTML = `<span class="badge bg-warning">⚠ Need ${shortage} more units</span>`;
+    } else {
+        statusDiv.innerHTML = '<span class="badge bg-danger">⚠ No batches selected</span>';
+    }
+}
+
+function updateHiddenBatchInput() {
+    const batchSelects = document.querySelectorAll('.batch-select');
+    const hiddenInput = document.getElementById('hidden_batch_input');
+    
+    if (!hiddenInput) return;
+    
+    // Use the first selected batch for backward compatibility
+    for (const select of batchSelects) {
+        if (select.value && select.value !== '0') {
+            hiddenInput.value = select.value;
+            break;
         }
     }
 }
