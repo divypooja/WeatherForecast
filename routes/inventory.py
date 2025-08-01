@@ -26,9 +26,9 @@ def dashboard():
         # Recent items and low stock alerts
         recent_items = Item.query.order_by(Item.created_at.desc()).limit(5).all()
         
-        # Get low stock items using new min_stock field
+        # Get low stock items using minimum_stock field
         low_stock_items = Item.query.filter(
-            func.coalesce(Item.current_stock, 0) <= func.coalesce(Item.min_stock, 0),
+            func.coalesce(Item.current_stock, 0) <= func.coalesce(Item.minimum_stock, 0),
             func.coalesce(Item.current_stock, 0) > 0
         ).limit(10).all()
         
@@ -51,7 +51,7 @@ def dashboard():
         low_stock_items = Item.query.filter(
             func.coalesce(Item.current_stock, 0) <= func.coalesce(Item.minimum_stock, 0)
         ).limit(10).all()
-        uom_stats = db.session.query(Item.unit, func.count(Item.id)).group_by(Item.unit).all()
+        uom_stats = db.session.query(Item.unit_of_measure, func.count(Item.id)).group_by(Item.unit_of_measure).all()
     
     return render_template('inventory/dashboard.html', 
                          stats=stats, 
