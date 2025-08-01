@@ -33,7 +33,7 @@ def dashboard():
         ).limit(10).all()
         
         # UOM summary
-        uom_stats = db.session.query(Item.unit, func.count(Item.id)).group_by(Item.unit).all()
+        uom_stats = db.session.query(Item.unit_of_measure, func.count(Item.id)).group_by(Item.unit_of_measure).all()
         
     except Exception as e:
         # Fallback to basic statistics if unified service fails
