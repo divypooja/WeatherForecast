@@ -666,6 +666,12 @@ class Item(db.Model):
     current_stock = db.Column(db.Float, default=0.0)  # Legacy total stock field
     minimum_stock = db.Column(db.Float, default=0.0)
     
+    # Batch Tracking Configuration (as per blueprint)
+    batch_required = db.Column(db.Boolean, default=True)  # Whether this item requires batch tracking
+    default_batch_prefix = db.Column(db.String(10))  # Default prefix for auto-generated batch numbers
+    shelf_life_days = db.Column(db.Integer)  # Shelf life in days for expiry tracking
+    batch_numbering_auto = db.Column(db.Boolean, default=True)  # Auto-generate batch numbers
+    
     # Multi-state inventory tracking
     qty_raw = db.Column(db.Float, default=0.0)      # Raw material stock
     qty_wip = db.Column(db.Float, default=0.0)      # Work in Progress (sent for job work) - LEGACY
