@@ -126,8 +126,8 @@ def batch_tracking_dashboard():
     ).order_by(JobWork.created_at.desc()).all()
     
     for jw in job_works:
-        # Calculate totals for this Job Work
-        total_qty = jw.quantity_ordered if hasattr(jw, 'quantity_ordered') else (jw.quantity or 0)
+        # Calculate totals for this Job Work - use quantity_sent as the total
+        total_qty = getattr(jw, 'quantity_sent', 0)
         grn_count = len(jw.grn_receipts)
         
         # Determine status based on GRN completion
@@ -160,7 +160,7 @@ def batch_tracking_dashboard():
             'type': 'Job Work',
             'parent_doc': jw.job_number,
             'date': jw.created_at.date(),
-            'vendor_customer': jw.vendor.name if jw.vendor else 'In-House',
+            'vendor_customer': getattr(jw.vendor, 'name', 'In-House') if hasattr(jw, 'vendor') and jw.vendor else 'In-House',
             'status': jw_status,
             'total_qty': total_qty,
             'grn_count': grn_count,
