@@ -3,7 +3,9 @@ from flask_login import login_required, current_user
 from app import db
 from models import JobWork, Item, User, PurchaseOrder, PurchaseOrderItem, JobWorkProcess, ItemBatch
 from models_grn import GRN, GRNLineItem
+from models_batch_movement import BatchMovementLedger, BatchConsumptionReport
 from forms_grn import GRNForm, GRNLineItemForm, QuickReceiveForm, QuickReceivePOForm, GRNSearchForm, MultiProcessQuickReceiveForm
+from services_batch_management import BatchManager, BatchValidator
 from datetime import datetime, date
 from utils import generate_next_number
 from sqlalchemy import func, and_, or_
@@ -125,8 +127,8 @@ def update_inventory_with_batch_tracking(grn):
     """Update inventory with comprehensive batch tracking during GRN processing"""
     try:
         for line_item in grn.line_items:
-            # Create or update batch for this received material
-            batch = create_batch_from_grn_line_item(grn, line_item)
+            # Create batch using the BatchManager service
+            batch, message = BatchManager.create_batch_from_grn(line_item)
             
             if batch:
                 # Update item's main inventory quantities
@@ -141,6 +143,9 @@ def update_inventory_with_batch_tracking(grn):
                 # Store batch reference in line item for traceability
                 line_item.batch_id = batch.id
                 
+                # Sync current_stock with multi-state inventory
+                item.sync_stock()
+                
         db.session.commit()
         return True
         
@@ -148,6 +153,61 @@ def update_inventory_with_batch_tracking(grn):
         print(f"Error updating inventory with batch tracking: {str(e)}")
         db.session.rollback()
         return False
+
+def process_grn_with_batch_tracking(grn, add_to_inventory=True):
+    """Process GRN completion with comprehensive batch tracking"""
+    try:
+        if add_to_inventory:
+            # Update inventory with batch tracking
+            success = update_inventory_with_batch_tracking(grn)
+            if not success:
+                return False, "Failed to update inventory with batch tracking"
+        
+        # Mark GRN as completed
+        grn.status = 'completed'
+        grn.inspection_status = 'completed'
+        grn.inspected_by = current_user.id
+        grn.inspected_at = datetime.utcnow()
+        grn.add_to_inventory = add_to_inventory
+        
+        # Update job work status if applicable
+        if grn.job_work:
+            update_job_work_status_from_grn(grn)
+        
+        # Update purchase order status if applicable  
+        if grn.purchase_order:
+            update_po_status_based_on_grn(grn.purchase_order_id)
+        
+        db.session.commit()
+        return True, "GRN processed successfully with batch tracking"
+        
+    except Exception as e:
+        db.session.rollback()
+        return False, f"Error processing GRN: {str(e)}"
+
+def update_job_work_status_from_grn(grn):
+    """Update job work status based on GRN receipt with batch tracking"""
+    if not grn.job_work:
+        return
+    
+    job_work = grn.job_work
+    
+    # Calculate total received vs expected quantities
+    total_received = sum(line_item.quantity_received for line_item in grn.line_items)
+    expected_quantity = job_work.quantity_sent
+    
+    if total_received >= expected_quantity:
+        job_work.status = 'completed'
+    else:
+        job_work.status = 'partial_received'
+    
+    # Add GRN reference to job work notes
+    completion_note = f"[{datetime.utcnow().strftime('%Y-%m-%d %H:%M')}] GRN {grn.grn_number} - {total_received} units received with batch tracking"
+    
+    if job_work.notes:
+        job_work.notes += f"\n{completion_note}"
+    else:
+        job_work.notes = completion_note
 
 
 grn_bp = Blueprint('grn', __name__)
@@ -467,16 +527,18 @@ def quick_receive(job_work_id):
             else:
                 grn.add_to_inventory = False  # Set the flag to False when inventory is not updated
             
-            # Mark GRN as completed if no further inspection needed
+            # Process GRN with comprehensive batch tracking
             if form.inspection_status.data in ['passed', 'rejected']:
-                grn.status = 'completed'
-                grn.inspection_status = 'completed'
-                grn.inspected_by = current_user.id
-                grn.inspected_at = datetime.utcnow()
+                add_to_inventory = form.add_to_inventory.data if hasattr(form, 'add_to_inventory') else True
+                success, message = process_grn_with_batch_tracking(grn, add_to_inventory)
+                
+                if not success:
+                    flash(f'Error processing GRN: {message}', 'error')
+                    return redirect(url_for('grn.dashboard'))
+            else:
+                db.session.commit()
             
-            db.session.commit()
-            
-            flash(f'Materials received successfully! GRN {grn.grn_number} created.', 'success')
+            flash(f'Materials received successfully! GRN {grn.grn_number} created with batch tracking.', 'success')
             return redirect(url_for('jobwork.detail', id=job_work_id))
             
         except Exception as e:
@@ -779,19 +841,18 @@ def quick_receive_po(purchase_order_id, item_id):
             else:
                 grn.add_to_inventory = False  # Set the flag to False when inventory is not updated
             
-            # Mark GRN as completed if no further inspection needed
+            # Process GRN with comprehensive batch tracking  
             if form.inspection_status.data in ['passed', 'rejected']:
-                grn.status = 'completed'
-                grn.inspection_status = 'completed'
-                grn.inspected_by = current_user.id
-                grn.inspected_at = datetime.utcnow()
+                add_to_inventory = form.add_to_inventory.data if hasattr(form, 'add_to_inventory') else True
+                success, message = process_grn_with_batch_tracking(grn, add_to_inventory)
+                
+                if not success:
+                    flash(f'Error processing GRN: {message}', 'error')
+                    return redirect(url_for('grn.dashboard'))
+            else:
+                db.session.commit()
             
-            db.session.commit()
-            
-            # Update PO status automatically based on GRN receipt
-            update_po_status_based_on_grn(purchase_order_id)
-            
-            flash(f'Materials received successfully! GRN {grn.grn_number} created for PO {purchase_order.po_number}.', 'success')
+            flash(f'Materials received successfully! GRN {grn.grn_number} created for PO {purchase_order.po_number} with batch tracking.', 'success')
             return redirect(url_for('grn.dashboard'))
             
         except Exception as e:

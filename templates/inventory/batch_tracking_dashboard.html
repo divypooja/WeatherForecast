@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block title %}Batch Tracking Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-boxes"></i> Batch Tracking Dashboard</h1>
+                <div class="btn-group">
+                    <a href="{{ url_for('inventory.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-warehouse"></i> Inventory
+                    </a>
+                    <a href="{{ url_for('grn.dashboard') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-truck"></i> GRN
+                    </a>
+                    <a href="{{ url_for('jobwork.dashboard') }}" class="btn btn-outline-success">
+                        <i class="fas fa-cogs"></i> Job Work
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Batches</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.total_batches }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-boxes fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Active Batches</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.active_batches }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Expiring Soon</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.batches_expiring_soon }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Expired Batches</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.expired_batches }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-times-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Recent Batch Movements -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Batch Movements</h6>
+                    <div class="dropdown no-arrow">
+                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown">
+                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right shadow">
+                            <a class="dropdown-item" href="#">View All Movements</a>
+                            <a class="dropdown-item" href="#">Export Report</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Batch</th>
+                                    <th>Item</th>
+                                    <th>Movement</th>
+                                    <th>Quantity</th>
+                                    <th>Reference</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for movement in recent_movements %}
+                                <tr>
+                                    <td>{{ movement.movement_date.strftime('%m/%d/%Y') }}</td>
+                                    <td>
+                                        <a href="{{ url_for('inventory.batch_traceability', batch_id=movement.batch_id) }}" 
+                                           class="text-primary">
+                                            {{ movement.batch.batch_number }}
+                                        </a>
+                                    </td>
+                                    <td>{{ movement.item.name }}</td>
+                                    <td>
+                                        <span class="badge badge-{% if movement.to_state == 'Raw' %}primary{% elif movement.to_state.startswith('WIP') %}warning{% elif movement.to_state == 'Finished' %}success{% elif movement.to_state == 'Scrap' %}danger{% else %}secondary{% endif %}">
+                                            {{ movement.movement_description }}
+                                        </span>
+                                    </td>
+                                    <td>{{ "%.2f"|format(movement.quantity) }} {{ movement.unit_of_measure }}</td>
+                                    <td>{{ movement.ref_type }}-{{ movement.ref_id }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Batches Requiring Attention -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Batches Requiring Attention</h6>
+                </div>
+                <div class="card-body">
+                    {% for batch in attention_batches %}
+                    <div class="media mb-3">
+                        <div class="media-body">
+                            <div class="small text-gray-500">
+                                {{ batch.item.name }}
+                                {% if batch.expiry_date and batch.expiry_date <= (moment().add(7, 'days').format('YYYY-MM-DD')|strptime('%Y-%m-%d')).date() %}
+                                <span class="badge badge-warning">Expiring Soon</span>
+                                {% endif %}
+                                {% if batch.quality_status == 'pending_inspection' %}
+                                <span class="badge badge-info">Pending Inspection</span>
+                                {% endif %}
+                                {% if batch.total_quantity <= 10 %}
+                                <span class="badge badge-danger">Low Quantity</span>
+                                {% endif %}
+                            </div>
+                            <div class="font-weight-bold">
+                                <a href="{{ url_for('inventory.batch_traceability', batch_id=batch.id) }}">
+                                    {{ batch.batch_number }}
+                                </a>
+                            </div>
+                            <div class="text-gray-600 small">
+                                {% if batch.expiry_date %}
+                                Expires: {{ batch.expiry_date.strftime('%m/%d/%Y') }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Consumption Reports -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Batch Consumption Summary</h6>
+                </div>
+                <div class="card-body">
+                    {% for report in consumption_reports %}
+                    <div class="media mb-3">
+                        <div class="media-body">
+                            <div class="font-weight-bold">{{ report.batch_number }}</div>
+                            <div class="small text-gray-500">{{ report.item.name }}</div>
+                            <div class="progress mb-2" style="height: 10px;">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: {{ report.utilization_percentage or 0 }}%">
+                                </div>
+                            </div>
+                            <div class="row text-center">
+                                <div class="col">
+                                    <div class="small text-gray-500">Yield</div>
+                                    <div class="font-weight-bold">{{ "%.1f"|format(report.yield_percentage or 0) }}%</div>
+                                </div>
+                                <div class="col">
+                                    <div class="small text-gray-500">Scrap</div>
+                                    <div class="font-weight-bold text-danger">{{ "%.1f"|format(report.scrap_percentage or 0) }}%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.border-left-primary {
+    border-left: 0.25rem solid #4e73df !important;
+}
+.border-left-success {
+    border-left: 0.25rem solid #1cc88a !important;
+}
+.border-left-warning {
+    border-left: 0.25rem solid #f6c23e !important;
+}
+.border-left-danger {
+    border-left: 0.25rem solid #e74a3b !important;
+}
+</style>
+{% endblock %}

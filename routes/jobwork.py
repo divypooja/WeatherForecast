@@ -2,10 +2,12 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from forms import JobWorkForm, JobWorkQuantityUpdateForm, DailyJobWorkForm, JobWorkTeamAssignmentForm, JobWorkBatchReturnForm
 from models import JobWork, Supplier, Item, BOM, BOMItem, CompanySettings, DailyJobWorkEntry, JobWorkTeamAssignment, Employee, JobWorkBatch, ItemBatch
+from models_batch_movement import BatchMovementLedger, BatchConsumptionReport
 from utils_batch_tracking import BatchTracker, BatchValidator, get_batch_options_for_item_api, validate_batch_selection_api
+from services_batch_management import BatchManager, BatchValidator as BatchValidatorService
 from app import db
-from sqlalchemy import func
-from datetime import datetime
+from sqlalchemy import func, or_
+from datetime import datetime, timedelta
 from utils import generate_job_number  
 from services.notification_helpers import send_email_notification, send_whatsapp_notification, send_email_with_attachment
 from utils_documents import get_documents_for_transaction
@@ -280,6 +282,122 @@ def api_get_items():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@jobwork_bp.route('/api/batches/<int:item_id>')
+@login_required
+def api_get_item_batches(item_id):
+    """API endpoint to get available batches for an item"""
+    try:
+        item = Item.query.get_or_404(item_id)
+        
+        # Get available batches with raw material quantity
+        available_batches = ItemBatch.query.filter(
+            ItemBatch.item_id == item_id,
+            ItemBatch.qty_raw > 0,
+            ItemBatch.quality_status.in_(['good', 'pending_inspection'])
+        ).order_by(ItemBatch.manufacture_date.asc()).all()  # FIFO order
+        
+        batches_data = []
+        for batch in available_batches:
+            batches_data.append({
+                'id': batch.id,
+                'batch_number': batch.batch_number,
+                'supplier_batch': batch.supplier_batch or '',
+                'manufacture_date': batch.manufacture_date.isoformat() if batch.manufacture_date else '',
+                'expiry_date': batch.expiry_date.isoformat() if batch.expiry_date else '',
+                'available_quantity': batch.qty_raw or 0,
+                'unit_of_measure': item.unit_of_measure,
+                'quality_status': batch.quality_status,
+                'storage_location': batch.storage_location or 'Default',
+                'unit_cost': batch.unit_cost or 0,
+                'is_expiring_soon': batch.expiry_date and batch.expiry_date <= (datetime.now().date() + timedelta(days=7)) if batch.expiry_date else False
+            })
+        
+        return jsonify({
+            'item_id': item_id,
+            'item_name': item.name,
+            'item_code': item.code,
+            'batches': batches_data,
+            'total_available': sum(b['available_quantity'] for b in batches_data)
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@jobwork_bp.route('/api/batch/validate', methods=['POST'])
+@login_required
+def api_validate_batch_selection():
+    """API endpoint to validate batch selection for job work"""
+    try:
+        data = request.get_json()
+        batch_selections = data.get('batch_selections', [])
+        
+        if not batch_selections:
+            return jsonify({'is_valid': False, 'errors': ['No batches selected']})
+        
+        # Validate batch selection using BatchValidator
+        validation_result = BatchValidatorService.validate_batch_selection(batch_selections)
+        
+        # Check FIFO compliance if requested
+        if data.get('check_fifo', True) and batch_selections:
+            first_selection = batch_selections[0]
+            if 'item_id' in first_selection:
+                item_id = first_selection['item_id']
+                batch_ids = [sel['batch_id'] for sel in batch_selections]
+                fifo_result = BatchValidatorService.validate_fifo_compliance(item_id, batch_ids)
+                
+                if not fifo_result['compliant']:
+                    validation_result['warnings'].append(fifo_result['message'])
+                    validation_result['fifo_suggestion'] = fifo_result.get('suggested_batch')
+        
+        return jsonify(validation_result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@jobwork_bp.route('/api/batch/issue', methods=['POST'])
+@login_required
+def api_issue_batch_to_jobwork():
+    """API endpoint to issue batches to job work"""
+    try:
+        data = request.get_json()
+        job_work_id = data.get('job_work_id')
+        batch_selections = data.get('batch_selections', [])
+        
+        if not job_work_id or not batch_selections:
+            return jsonify({'success': False, 'message': 'Missing job work ID or batch selections'})
+        
+        # Issue batches using BatchManager
+        success, message = BatchManager.issue_batch_to_jobwork(job_work_id, batch_selections)
+        
+        if success:
+            return jsonify({'success': True, 'message': message})
+        else:
+            return jsonify({'success': False, 'message': message})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error issuing batches: {str(e)}'})
+
+@jobwork_bp.route('/api/batch/receive', methods=['POST'])
+@login_required
+def api_receive_from_jobwork():
+    """API endpoint to receive materials back from job work"""
+    try:
+        data = request.get_json()
+        job_work_id = data.get('job_work_id')
+        return_data = data.get('return_data', [])
+        
+        if not job_work_id or not return_data:
+            return jsonify({'success': False, 'message': 'Missing job work ID or return data'})
+        
+        # Receive materials using BatchManager
+        success, message = BatchManager.receive_from_jobwork(job_work_id, return_data)
+        
+        if success:
+            return jsonify({'success': True, 'message': message})
+        else:
+            return jsonify({'success': False, 'message': message})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error receiving materials: {str(e)}'})
+
+# API endpoint handled in inventory module
+
 @jobwork_bp.route('/add', methods=['GET', 'POST'])
 @login_required
 def add_job_work():
@@ -503,44 +621,8 @@ def api_bom_production_check(bom_id, qty):
         return jsonify({'error': str(e)}), 500
 
 # Comprehensive Batch Tracking API Endpoints
-@jobwork_bp.route('/api/item/<int:item_id>/batches')
-@login_required
-def api_get_item_batches(item_id):
-    """Get available batches for an item with process-specific information"""
-    try:
-        process_name = request.args.get('process_name')
-        required_quantity = request.args.get('required_quantity', type=float)
-        
-        batches_data = get_batch_options_for_item_api(item_id)
-        
-        if process_name:
-            # Filter batches based on process requirements
-            filtered_batches = []
-            for batch in batches_data['batches']:
-                # Add process-specific availability information
-                batch['process_availability'] = {
-                    'raw': batch.get('available_quantity', 0),
-                    'wip_breakdown': batch.get('wip_breakdown', {})
-                }
-                filtered_batches.append(batch)
-            batches_data['batches'] = filtered_batches
-        
-        return jsonify(batches_data)
-        
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
 
-@jobwork_bp.route('/api/validate-batch-selection', methods=['POST'])
-@login_required
-def api_validate_batch_selection():
-    """Validate batch selection for job work"""
-    try:
-        batch_selections = request.json.get('batch_selections', [])
-        validation_result = validate_batch_selection_api(batch_selections)
-        return jsonify(validation_result)
-        
-    except Exception as e:
-        return jsonify({'is_valid': False, 'errors': [str(e)]}), 500
+# This function is handled by the earlier defined api_validate_batch_selection
 
 @jobwork_bp.route('/api/issue-material-with-batches', methods=['POST'])
 @login_required
@@ -587,26 +669,7 @@ def api_receive_material_with_batches():
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
-@jobwork_bp.route('/api/batch/<int:batch_id>/traceability')
-@login_required
-def api_batch_traceability(batch_id):
-    """Get complete traceability report for a batch"""
-    try:
-        traceability_data = BatchTracker.get_batch_traceability_report(batch_id)
-        
-        if traceability_data:
-            return jsonify({
-                'success': True,
-                'data': traceability_data
-            })
-        else:
-            return jsonify({
-                'success': False,
-                'error': 'Batch not found or no traceability data available'
-            })
-        
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+# Batch traceability API moved to inventory module to avoid conflicts
 
 @jobwork_bp.route('/api/transfer-batches-between-processes', methods=['POST'])
 @login_required
@@ -1961,7 +2024,7 @@ def batch_tracking():
     ).order_by(JobWorkBatch.issue_date.desc()).all()
     
     # Get completed batch records for the last 30 days
-    from datetime import timedelta
+# timedelta already imported at top
     thirty_days_ago = datetime.utcnow().date() - timedelta(days=30)
     recent_returns = JobWorkBatch.query.filter(
         JobWorkBatch.status == 'returned',

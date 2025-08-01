@@ -1,5 +1,5 @@
 """
-Batch Movement Ledger Models
+Batch Movement Ledger Models - Fixed Version
 Tracks every batch movement across all modules for complete traceability
 """
 
@@ -21,8 +21,8 @@ class BatchMovementLedger(db.Model):
     ref_id = db.Column(db.Integer, nullable=False)  # ID of the reference document
     ref_number = db.Column(db.String(100))  # Human-readable reference number
     
-    # Batch Information
-    batch_id = db.Column(db.Integer, db.ForeignKey('item_batch.id'), nullable=False)
+    # Batch Information - Fixed foreign key reference
+    batch_id = db.Column(db.Integer, db.ForeignKey('item_batches.id'), nullable=False)
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     
     # Movement Details
@@ -115,8 +115,8 @@ class BatchConsumptionReport(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     
-    # Batch Information
-    batch_id = db.Column(db.Integer, db.ForeignKey('item_batch.id'), nullable=False)
+    # Batch Information - Fixed foreign key reference
+    batch_id = db.Column(db.Integer, db.ForeignKey('item_batches.id'), nullable=False)
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     batch_number = db.Column(db.String(100), nullable=False)
     

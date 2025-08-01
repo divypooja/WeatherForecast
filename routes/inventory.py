@@ -2,12 +2,15 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from forms import ItemForm
 from models import Item, ItemType, ItemBatch
+from models_batch_movement import BatchMovementLedger, BatchConsumptionReport
+from services_batch_management import BatchManager, BatchValidator
 from app import db
 from sqlalchemy import func, desc
 from utils import generate_item_code
 from utils_export import export_inventory_items
 from utils_batch_tracking import BatchTracker
-from datetime import datetime
+from datetime import datetime, timedelta
+from sqlalchemy import or_
 
 inventory_bp = Blueprint('inventory', __name__)
 
@@ -40,6 +43,63 @@ def dashboard():
                          recent_items=recent_items,
                          low_stock_items=low_stock_items,
                          uom_stats=uom_stats)
+
+@inventory_bp.route('/batch-tracking')
+@login_required
+def batch_tracking_dashboard():
+    """Enhanced batch tracking dashboard with comprehensive views"""
+    # Batch statistics
+    stats = {
+        'total_batches': ItemBatch.query.count(),
+        'active_batches': ItemBatch.query.filter(ItemBatch.total_quantity > 0).count(),
+        'expired_batches': ItemBatch.query.filter(
+            ItemBatch.expiry_date <= datetime.now().date()
+        ).count() if ItemBatch.query.filter(ItemBatch.expiry_date.isnot(None)).count() > 0 else 0,
+        'batches_expiring_soon': ItemBatch.query.filter(
+            ItemBatch.expiry_date <= (datetime.now().date() + timedelta(days=7)),
+            ItemBatch.expiry_date > datetime.now().date()
+        ).count() if ItemBatch.query.filter(ItemBatch.expiry_date.isnot(None)).count() > 0 else 0
+    }
+    
+    # Get recent batch movements
+    recent_movements = BatchMovementLedger.query.order_by(
+        BatchMovementLedger.created_at.desc()
+    ).limit(20).all()
+    
+    # Get batches requiring attention (expiring, low quantity, etc.)
+    attention_batches = ItemBatch.query.filter(
+        or_(
+            ItemBatch.expiry_date <= (datetime.now().date() + timedelta(days=7)),
+            ItemBatch.quality_status == 'pending_inspection',
+            ItemBatch.total_quantity <= 10  # Low quantity threshold
+        )
+    ).order_by(ItemBatch.expiry_date).limit(15).all()
+    
+    # Get consumption reports for active batches
+    consumption_reports = BatchConsumptionReport.query.filter(
+        BatchConsumptionReport.total_received > 0
+    ).order_by(BatchConsumptionReport.last_movement.desc()).limit(10).all()
+    
+    return render_template('inventory/batch_tracking_dashboard.html',
+                         title='Batch Tracking Dashboard',
+                         stats=stats,
+                         recent_movements=recent_movements,
+                         attention_batches=attention_batches,
+                         consumption_reports=consumption_reports)
+
+@inventory_bp.route('/batch/<int:batch_id>/traceability')
+@login_required
+def batch_traceability(batch_id):
+    """View complete traceability for a specific batch"""
+    traceability_data = BatchManager.get_batch_traceability(batch_id)
+    
+    if 'error' in traceability_data:
+        flash(f'Error getting batch traceability: {traceability_data["error"]}', 'error')
+        return redirect(url_for('inventory.batch_tracking_dashboard'))
+    
+    return render_template('inventory/batch_traceability.html',
+                         title=f'Batch Traceability - {traceability_data["batch"]["batch_number"]}',
+                         traceability=traceability_data)
 
 @inventory_bp.route('/multi-state')
 @login_required
