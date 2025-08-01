@@ -2,12 +2,13 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from forms import ProductionForm, BOMForm, BOMItemForm, BOMProcessForm
-from models import Production, Item, BOM, BOMItem, BOMProcess, Supplier
+from models import Production, Item, BOM, BOMItem, BOMProcess, Supplier, ItemBatch, ProductionBatch
 from services.process_integration import ProcessIntegrationService
 from app import db
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from utils import generate_production_number
-from datetime import datetime
+from utils_batch_tracking import BatchTracker
+from datetime import datetime, timedelta
 import json
 
 production_bp = Blueprint('production', __name__)
@@ -54,6 +55,194 @@ def list_productions():
         page=page, per_page=20, error_out=False)
     
     return render_template('production/list.html', productions=productions, status_filter=status_filter)
+
+# Enhanced Batch Tracking API Endpoints for Production
+
+@production_bp.route('/api/production/<int:production_id>/available-batches')
+@login_required
+def api_get_available_batches_for_production(production_id):
+    """Get available material batches for a production order"""
+    try:
+        production = Production.query.get_or_404(production_id)
+        bom = production.bom
+        
+        if not bom:
+            return jsonify({'success': False, 'message': 'No BOM associated with this production'})
+        
+        # Get all BOM materials and their available batches
+        materials_with_batches = []
+        for bom_item in bom.items:
+            material = bom_item.material
+            if material.batch_required:
+                # Get available batches for this material
+                available_batches = ItemBatch.query.filter(
+                    ItemBatch.item_id == material.id,
+                    ItemBatch.qty_raw > 0
+                ).order_by(ItemBatch.manufacture_date).all()
+                
+                batch_data = []
+                for batch in available_batches:
+                    batch_data.append({
+                        'batch_id': batch.id,
+                        'batch_number': batch.batch_number,
+                        'available_qty': batch.qty_raw,
+                        'unit_of_measure': material.unit_of_measure,
+                        'expiry_date': batch.expiry_date.isoformat() if batch.expiry_date else None,
+                        'quality_status': batch.quality_status,
+                        'storage_location': batch.storage_location
+                    })
+                
+                materials_with_batches.append({
+                    'material_id': material.id,
+                    'material_name': material.name,
+                    'material_code': material.code,
+                    'required_qty': bom_item.quantity_required * production.quantity_planned,
+                    'unit_of_measure': material.unit_of_measure,
+                    'available_batches': batch_data
+                })
+        
+        return jsonify({
+            'success': True,
+            'production_number': production.production_number,
+            'materials': materials_with_batches
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@production_bp.route('/api/production/<int:production_id>/issue-materials', methods=['POST'])
+@login_required
+def api_issue_materials_for_production(production_id):
+    """Issue materials from specific batches for production"""
+    try:
+        production = Production.query.get_or_404(production_id)
+        data = request.json
+        batch_selections = data.get('batch_selections', [])
+        
+        # Validate and process each batch selection
+        for selection in batch_selections:
+            batch_id = selection.get('batch_id')
+            quantity_to_issue = selection.get('quantity')
+            bom_item_id = selection.get('bom_item_id')
+            
+            batch = ItemBatch.query.get(batch_id)
+            if not batch:
+                return jsonify({'success': False, 'message': f'Batch {batch_id} not found'})
+            
+            if batch.qty_raw < quantity_to_issue:
+                return jsonify({'success': False, 'message': f'Insufficient quantity in batch {batch.batch_number}'})
+            
+            # Create production batch record
+            production_batch = ProductionBatch(
+                production_id=production_id,
+                material_batch_id=batch_id,
+                quantity_consumed=quantity_to_issue,
+                quantity_remaining=batch.qty_raw - quantity_to_issue,
+                bom_item_id=bom_item_id,
+                notes=f"Issued for production {production.production_number}"
+            )
+            
+            # Update batch inventory - move from raw to WIP
+            success = batch.issue_to_production(quantity_to_issue, production.production_number)
+            if not success:
+                return jsonify({'success': False, 'message': f'Failed to issue from batch {batch.batch_number}'})
+            
+            db.session.add(production_batch)
+        
+        # Update production status
+        production.status = 'in_progress'
+        production.batch_tracking_enabled = True
+        production.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Materials issued successfully for production {production.production_number}'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@production_bp.route('/api/production/<int:production_id>/complete-production', methods=['POST'])
+@login_required
+def api_complete_production(production_id):
+    """Complete production and create output batches"""
+    try:
+        production = Production.query.get_or_404(production_id)
+        data = request.json
+        
+        quantity_good = data.get('quantity_good', 0)
+        quantity_damaged = data.get('quantity_damaged', 0)
+        scrap_quantity = data.get('scrap_quantity', 0)
+        quality_control_passed = data.get('quality_control_passed', False)
+        
+        # Update production quantities
+        production.quantity_produced = quantity_good + quantity_damaged
+        production.quantity_good = quantity_good
+        production.quantity_damaged = quantity_damaged
+        production.scrap_quantity = scrap_quantity
+        production.quality_control_passed = quality_control_passed
+        production.status = 'completed'
+        production.updated_at = datetime.utcnow()
+        
+        # Create output batch if batch tracking is enabled
+        if production.batch_tracking_enabled and quantity_good > 0:
+            output_batch = production.create_output_batch()
+            if output_batch:
+                # Create batch movement record
+                BatchTracker.record_batch_movement(
+                    batch_id=output_batch.id,
+                    from_state=None,
+                    to_state='Finished',
+                    quantity=quantity_good,
+                    ref_type='PRODUCTION',
+                    ref_id=production_id,
+                    ref_number=production.production_number,
+                    notes=f"Production completed - {production.production_number}"
+                )
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Production {production.production_number} completed successfully',
+            'output_batch_id': production.output_batch_id
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@production_bp.route('/api/production/<int:production_id>/batch-consumption')
+@login_required
+def api_get_production_batch_consumption(production_id):
+    """Get batch consumption details for a production"""
+    try:
+        production = Production.query.get_or_404(production_id)
+        production_batches = ProductionBatch.query.filter_by(production_id=production_id).all()
+        
+        consumption_data = []
+        for pb in production_batches:
+            consumption_data.append({
+                'material_name': pb.material_name,
+                'batch_number': pb.batch_number,
+                'quantity_consumed': pb.quantity_consumed,
+                'consumption_date': pb.consumption_date.isoformat(),
+                'bom_item_name': pb.bom_item.material.name if pb.bom_item else 'Unknown',
+                'notes': pb.notes
+            })
+        
+        return jsonify({
+            'success': True,
+            'production_number': production.production_number,
+            'batch_consumption': consumption_data,
+            'output_batch_number': production.output_batch.batch_number if production.output_batch else None
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @production_bp.route('/add', methods=['GET', 'POST'])
 @login_required
