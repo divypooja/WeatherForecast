@@ -1372,8 +1372,11 @@ function loadJobWorkRate(itemId, processType, rateInput, vendorName) {
     const assignedToSelect = document.getElementById('assigned_to');
     const currentAssignedTo = assignedToSelect ? assignedToSelect.value : '';
     
-    // Use the current assigned to value, not the passed parameter
-    const effectiveVendorName = currentAssignedTo || vendorName || '';
+    // Extract vendor name from assignment (remove dept_ prefix if it exists)
+    let effectiveVendorName = currentAssignedTo || vendorName || '';
+    if (effectiveVendorName.startsWith('dept_')) {
+        effectiveVendorName = ''; // Don't use department codes for vendor rates
+    }
     
     console.log(`Loading rate for item ${itemId}, process: ${processType}, assigned to: ${effectiveVendorName}`);
     
