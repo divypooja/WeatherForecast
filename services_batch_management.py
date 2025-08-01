@@ -47,10 +47,11 @@ class BatchManager:
                 manufacture_date=grn_line_item.grn.received_date,
                 expiry_date=expiry_date,
                 qty_raw=grn_line_item.quantity_received,
-                total_quantity=grn_line_item.quantity_received,
-                storage_location=grn_line_item.storage_location or 'MAIN-STORE',
-                purchase_rate=grn_line_item.quantity_received * (getattr(grn_line_item, 'unit_price', 0) or 0),
-                quality_status='pending_inspection'
+                storage_location=getattr(grn_line_item, 'storage_location', None) or 'MAIN-STORE',
+                purchase_rate=grn_line_item.quantity_received * (getattr(grn_line_item, 'rate_per_unit', 0) or 0),
+                quality_status='pending_inspection',
+                grn_id=grn_line_item.grn_id,
+                created_by=1  # Default admin user
             )
             
             db.session.add(batch)
@@ -67,10 +68,10 @@ class BatchManager:
                 to_state='Raw',
                 quantity=grn_line_item.quantity_received,
                 unit_of_measure=item.unit_of_measure,
-                vendor_id=grn_line_item.grn.supplier_id,
+                vendor_id=getattr(grn_line_item.grn, 'supplier_id', None),
                 storage_location=batch.storage_location,
-                cost_per_unit=grn_line_item.unit_price or 0.0,
-                total_cost=(grn_line_item.quantity_received * (grn_line_item.unit_price or 0.0)),
+                cost_per_unit=getattr(grn_line_item, 'rate_per_unit', 0) or 0.0,
+                total_cost=(grn_line_item.quantity_received * (getattr(grn_line_item, 'rate_per_unit', 0) or 0.0)),
                 movement_date=grn_line_item.grn.received_date,
                 notes=f"Material received from GRN {grn_line_item.grn.grn_number}"
             )
