@@ -25,13 +25,13 @@ class BatchManager:
         try:
             item = grn_line_item.item
             
-            # Check if item requires batch tracking
-            if not item.batch_required:
+            # Check if item requires batch tracking (default to True for comprehensive tracking)
+            if hasattr(item, 'batch_required') and item.batch_required is False:
                 return None, "Item does not require batch tracking"
             
             # Generate batch number
             batch_number = BatchManager._generate_batch_number(
-                item, supplier_batch_number
+                item, supplier_batch_number or ""
             )
             
             # Calculate expiry date if shelf life is defined
@@ -44,12 +44,12 @@ class BatchManager:
                 item_id=item.id,
                 batch_number=batch_number,
                 supplier_batch=supplier_batch_number or '',
-                manufacture_date=grn_line_item.grn.receipt_date,
+                manufacture_date=grn_line_item.grn.received_date,
                 expiry_date=expiry_date,
                 qty_raw=grn_line_item.quantity_received,
                 total_quantity=grn_line_item.quantity_received,
                 storage_location=grn_line_item.storage_location or 'MAIN-STORE',
-                unit_cost=grn_line_item.unit_price or 0.0,
+                purchase_rate=grn_line_item.quantity_received * (getattr(grn_line_item, 'unit_price', 0) or 0),
                 quality_status='pending_inspection'
             )
             
@@ -71,7 +71,7 @@ class BatchManager:
                 storage_location=batch.storage_location,
                 cost_per_unit=grn_line_item.unit_price or 0.0,
                 total_cost=(grn_line_item.quantity_received * (grn_line_item.unit_price or 0.0)),
-                movement_date=grn_line_item.grn.receipt_date,
+                movement_date=grn_line_item.grn.received_date,
                 notes=f"Material received from GRN {grn_line_item.grn.grn_number}"
             )
             
