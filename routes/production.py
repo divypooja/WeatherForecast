@@ -277,7 +277,15 @@ def add_production():
             
             # Check material availability for each BOM item using multi-state inventory
             for bom_item in bom_items:
-                required_qty = bom_item.quantity_required * form.quantity_planned.data
+                # Calculate material requirement based on BOM output quantity
+                # BOM shows: 1 Ms sheet → 400 Mounted Plates
+                # If producing 10,000 plates, need: 10,000 ÷ 400 = 25 Ms sheets
+                
+                material_qty_per_output = bom_item.quantity_required or bom_item.qty_required
+                bom_output_qty = active_bom.output_quantity or 1.0  # Default to 1 if not set
+                
+                # Calculate actual material needed: (planned_qty / bom_output_qty) * material_qty_per_output
+                required_qty = (form.quantity_planned.data / bom_output_qty) * material_qty_per_output
                 
                 # Check available quantity from multi-state inventory (Raw + Finished for materials)
                 item = bom_item.item
