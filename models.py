@@ -1744,8 +1744,8 @@ class JobWorkBatch(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    job_work = db.relationship('JobWork', backref='batch_records')
-    process = db.relationship('JobWorkProcess', backref='batch_records')
+    job_work = db.relationship('JobWork', backref='jobwork_batch_records')
+    process = db.relationship('JobWorkProcess', backref='process_batch_records')
     input_batch = db.relationship('ItemBatch', foreign_keys=[input_batch_id], backref='jobwork_issues')
     output_batch = db.relationship('ItemBatch', foreign_keys=[output_batch_id], backref='jobwork_returns')
     input_item = db.relationship('Item', foreign_keys=[input_item_id])

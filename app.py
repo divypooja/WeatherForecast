@@ -82,6 +82,10 @@ def create_app():
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(inventory_bp, url_prefix='/inventory')
+    
+    # Register unified inventory routes
+    from routes.inventory_unified import inventory_unified_bp
+    app.register_blueprint(inventory_unified_bp, url_prefix='/inventory-unified')
     app.register_blueprint(purchase_bp, url_prefix='/purchase')
     app.register_blueprint(sales_bp, url_prefix='/sales')
     app.register_blueprint(jobwork_bp, url_prefix='/jobwork')
