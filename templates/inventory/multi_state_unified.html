@@ -207,25 +207,44 @@
 <script>
 // Parent-Child Table Functionality
 $(document).ready(function() {
-    // Click handler for parent rows
-    $('.parent-row').click(function(e) {
+    console.log('Parent-Child functionality loaded');
+    console.log('Found parent rows:', $('.parent-row').length);
+    
+    // Click handler for parent rows - using event delegation
+    $(document).on('click', '.parent-row', function(e) {
         e.preventDefault();
+        e.stopPropagation();
+        
+        console.log('Parent row clicked');
         const itemCode = $(this).data('item-code');
+        console.log('Item code:', itemCode);
+        
         const childRow = $(`.child-row[data-parent="${itemCode}"]`);
         const expandIcon = $(this).find('.expand-icon');
+        
+        console.log('Child row found:', childRow.length);
         
         if (childRow.is(':visible')) {
             // Collapse
             childRow.hide();
             expandIcon.removeClass('fa-chevron-down').addClass('fa-chevron-right');
+            console.log('Collapsed item:', itemCode);
         } else {
             // Expand
             childRow.show();
             expandIcon.removeClass('fa-chevron-right').addClass('fa-chevron-down');
+            console.log('Expanded item:', itemCode);
             
             // Load batch details if not already loaded
             loadBatchDetails(itemCode);
         }
+    });
+    
+    // Click handler for expand icons specifically
+    $(document).on('click', '.expand-icon', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $(this).closest('.parent-row').click();
     });
 });
 
@@ -239,10 +258,15 @@ function loadBatchDetails(itemCode) {
     }
     
     // Make AJAX request to get batch details
+    console.log('Loading batch details for:', itemCode);
     $.ajax({
         url: `/inventory/api/item-batch-details/${itemCode}`,
         method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
         success: function(response) {
+            console.log('Batch details response:', response);
             if (response.success && response.batches && response.batches.length > 0) {
                 let batchHtml = `
                     <div class="table-responsive">
