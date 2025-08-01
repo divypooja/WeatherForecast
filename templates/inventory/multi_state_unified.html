@@ -2,6 +2,11 @@
 
 {% block title %}Unified Multi-State Inventory - AK Innovations Factory Management{% endblock %}
 
+{% block extra_head %}
+<!-- Ensure jQuery is loaded -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <div class="d-flex justify-content-between align-items-center">
@@ -205,8 +210,15 @@
 </div>
 
 <script>
+// Ensure jQuery is loaded before running
+if (typeof jQuery === 'undefined') {
+    console.error('jQuery is not loaded!');
+} else {
+    console.log('jQuery loaded successfully:', jQuery.fn.jquery);
+}
+
 // Parent-Child Table Functionality
-$(document).ready(function() {
+jQuery(document).ready(function($) {
     console.log('Parent-Child functionality loaded');
     console.log('Found parent rows:', $('.parent-row').length);
     
@@ -367,6 +379,33 @@ function filterItems() {
             $(this).hide();
             $(`.child-row[data-parent="${$(this).data('item-code')}"]`).hide();
         }
+    });
+}
+
+// Fallback for browsers that don't support jQuery via CDN
+if (typeof jQuery === 'undefined') {
+    window.addEventListener('DOMContentLoaded', function() {
+        console.log('Using vanilla JS fallback for expand/collapse');
+        document.querySelectorAll('.parent-row').forEach(function(row) {
+            row.addEventListener('click', function(e) {
+                e.preventDefault();
+                const itemCode = this.getAttribute('data-item-code');
+                const childRow = document.querySelector('.child-row[data-parent="' + itemCode + '"]');
+                const expandIcon = this.querySelector('.expand-icon');
+                
+                if (childRow.style.display === 'none' || !childRow.style.display) {
+                    childRow.style.display = 'table-row';
+                    expandIcon.classList.remove('fa-chevron-right');
+                    expandIcon.classList.add('fa-chevron-down');
+                    console.log('Expanded:', itemCode);
+                } else {
+                    childRow.style.display = 'none';
+                    expandIcon.classList.remove('fa-chevron-down');
+                    expandIcon.classList.add('fa-chevron-right');
+                    console.log('Collapsed:', itemCode);
+                }
+            });
+        });
     });
 }
 </script>
