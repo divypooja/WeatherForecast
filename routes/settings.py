@@ -570,8 +570,12 @@ def reset_database():
         if reset_inspections or reset_production or reset_purchase_sales or reset_inventory:
             print("Deleting all related child records first...")
             
-            # List of child tables to delete in correct order
+            # List of child tables to delete in correct order (batch tables first)
             child_tables = [
+                "batch_movement_ledger",      # Most dependent batch table
+                "batch_consumption_reports",  # Batch consumption tracking
+                "production_batches",         # Production batch tracking
+                "inventory_batches",          # Batch inventory data
                 "grn_line_items",
                 "grn", 
                 "daily_job_work_entries",
@@ -686,7 +690,18 @@ def reset_database():
             print("Database changes committed successfully")
             
             if deleted_items:
+                # Check if batch data was cleared
+                try:
+                    batch_count = db.session.execute(db.text("SELECT COUNT(*) FROM inventory_batches")).scalar() or 0
+                except:
+                    batch_count = 0
+                    
                 success_msg = f'Database reset successful! Cleared: {", ".join(deleted_items)}'
+                if batch_count == 0:
+                    success_msg += ", Batch Data (All cleared)"
+                else:
+                    success_msg += f", Batch Data ({batch_count} records remaining)"
+                    
                 print(f"Success message: {success_msg}")
                 flash(success_msg, 'success')
             else:
