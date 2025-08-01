@@ -1,7 +1,7 @@
-modules = ["python-3.11", "postgresql-16"]
+modules = ["web", "python-3.11", "nodejs-20", "bash"]
 
 [nix]
-channel = "stable-24_05"
+channel = "stable-25_05"
 packages = ["fontconfig", "freetype", "ghostscript", "glib", "glibcLocales", "harfbuzz", "lcms2", "libGL", "libGLU", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "openssl", "pango", "postgresql", "tcl", "tesseract", "tk", "zlib"]
 
 [deployment]
