@@ -113,7 +113,8 @@ def api_suppliers():
     """API to get suppliers/vendors for dropdown population"""
     try:
         suppliers = Supplier.query.filter(
-            Supplier.partner_type.in_(['customer', 'vendor', 'both'])
+            Supplier.partner_type.in_(['supplier', 'vendor', 'both']),
+            Supplier.is_active == True
         ).order_by(Supplier.name).all()
         suppliers_data = []
         for supplier in suppliers:
