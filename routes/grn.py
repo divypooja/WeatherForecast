@@ -6,6 +6,8 @@ from models_grn import GRN, GRNLineItem
 from models_batch_movement import BatchMovementLedger, BatchConsumptionReport
 from forms_grn import GRNForm, GRNLineItemForm, QuickReceiveForm, QuickReceivePOForm, GRNSearchForm, MultiProcessQuickReceiveForm
 from services_batch_management import BatchManager, BatchValidator
+from utils_documents import DocumentUploadManager, save_uploaded_documents
+from models_document import create_document_record
 from datetime import datetime, date
 from utils import generate_next_number
 from sqlalchemy import func, and_, or_
@@ -621,6 +623,30 @@ def quick_receive(job_work_id):
             else:
                 grn.add_to_inventory = False  # Set the flag to False when inventory is not updated
             
+            # Handle document uploads
+            uploaded_documents = []
+            if hasattr(form, 'supporting_documents') and form.supporting_documents.data:
+                try:
+                    # Process uploaded documents
+                    doc_manager = DocumentUploadManager('grn')
+                    uploaded_files = doc_manager.process_form_files(form)
+                    
+                    for file_info in uploaded_files:
+                        if file_info.get('success'):
+                            document = create_document_record(
+                                file_info=file_info,
+                                module_name='grn',
+                                reference_type='grn',
+                                reference_id=grn.id,
+                                document_type='supporting_document',
+                                description=form.document_description.data if hasattr(form, 'document_description') else None,
+                                user_id=current_user.id
+                            )
+                            if document:
+                                uploaded_documents.append(document)
+                except Exception as e:
+                    print(f"Error processing documents: {e}")
+            
             # Process GRN with comprehensive batch tracking
             if form.inspection_status.data in ['passed', 'rejected']:
                 add_to_inventory = form.add_to_inventory.data if hasattr(form, 'add_to_inventory') else True
@@ -632,7 +658,11 @@ def quick_receive(job_work_id):
             else:
                 db.session.commit()
             
-            flash(f'Materials received successfully! GRN {grn.grn_number} created with batch tracking.', 'success')
+            success_message = f'Materials received successfully! GRN {grn.grn_number} created with batch tracking.'
+            if uploaded_documents:
+                success_message += f' {len(uploaded_documents)} document(s) uploaded.'
+            
+            flash(success_message, 'success')
             return redirect(url_for('jobwork.detail', id=job_work_id))
             
         except Exception as e:
@@ -935,6 +965,30 @@ def quick_receive_po(purchase_order_id, item_id):
             else:
                 grn.add_to_inventory = False  # Set the flag to False when inventory is not updated
             
+            # Handle document uploads
+            uploaded_documents = []
+            if hasattr(form, 'supporting_documents') and form.supporting_documents.data:
+                try:
+                    # Process uploaded documents
+                    doc_manager = DocumentUploadManager('grn')
+                    uploaded_files = doc_manager.process_form_files(form)
+                    
+                    for file_info in uploaded_files:
+                        if file_info.get('success'):
+                            document = create_document_record(
+                                file_info=file_info,
+                                module_name='grn',
+                                reference_type='grn',
+                                reference_id=grn.id,
+                                document_type='supporting_document',
+                                description=form.document_description.data if hasattr(form, 'document_description') else None,
+                                user_id=current_user.id
+                            )
+                            if document:
+                                uploaded_documents.append(document)
+                except Exception as e:
+                    print(f"Error processing documents: {e}")
+            
             # Process GRN with comprehensive batch tracking  
             if form.inspection_status.data in ['passed', 'rejected']:
                 add_to_inventory = form.add_to_inventory.data if hasattr(form, 'add_to_inventory') else True
@@ -946,7 +1000,11 @@ def quick_receive_po(purchase_order_id, item_id):
             else:
                 db.session.commit()
             
-            flash(f'Materials received successfully! GRN {grn.grn_number} created for PO {purchase_order.po_number} with batch tracking.', 'success')
+            success_message = f'Materials received successfully! GRN {grn.grn_number} created for PO {purchase_order.po_number} with batch tracking.'
+            if uploaded_documents:
+                success_message += f' {len(uploaded_documents)} document(s) uploaded.'
+            
+            flash(success_message, 'success')
             return redirect(url_for('grn.dashboard'))
             
         except Exception as e:

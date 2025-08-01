@@ -39,7 +39,8 @@ def create_app():
     login_manager.login_message_category = 'info'
     
     # Import models
-    from models import User, Item, Supplier, PurchaseOrder, SalesOrder, Employee, JobWork, Production, BOM, NotificationSettings, NotificationLog, NotificationRecipient, CompanySettings, QualityIssue, QualityControlLog, FactoryExpense, Document
+    from models import User, Item, Supplier, PurchaseOrder, SalesOrder, Employee, JobWork, Production, BOM, NotificationSettings, NotificationLog, NotificationRecipient, CompanySettings, QualityIssue, QualityControlLog, FactoryExpense
+    from models_document import Document, DocumentAccessLog
     from models_uom import UnitOfMeasure, UOMConversion, ItemUOMConversion, UOMConversionLog
     from models_department import Department
     from models_batch_movement import BatchMovementLedger, BatchConsumptionReport
@@ -146,6 +147,7 @@ def create_app():
         import models_dashboard  # Dashboard preference models
         import models_custom_reports  # Custom report models
         import models_intelligence  # Manufacturing intelligence models
+        import models_document  # Document upload models
         
         db.create_all()
         
