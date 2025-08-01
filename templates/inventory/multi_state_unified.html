@@ -16,8 +16,11 @@
             <a href="{{ url_for('inventory.dashboard') }}" class="btn btn-secondary me-2">
                 <i class="fas fa-arrow-left"></i> Back to Dashboard
             </a>
-            <a href="{{ url_for('inventory.batch_wise_view') }}" class="btn btn-info">
+            <a href="{{ url_for('inventory.batch_wise_view') }}" class="btn btn-info me-2">
                 <i class="fas fa-barcode"></i> Batch-wise View
+            </a>
+            <a href="{{ url_for('inventory.export_unified_inventory') }}" class="btn btn-success">
+                <i class="fas fa-file-excel"></i> Export to Excel
             </a>
         </div>
     </div>
