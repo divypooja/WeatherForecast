@@ -79,7 +79,7 @@ def batch_tracking_dashboard():
     
     for po in purchase_orders:
         # Calculate totals for this PO
-        total_qty = sum(item.quantity for item in po.items)
+        total_qty = sum(item.qty for item in po.items)
         grn_count = len(po.grn_receipts_po)
         
         # Determine status based on GRN completion
@@ -127,7 +127,7 @@ def batch_tracking_dashboard():
     
     for jw in job_works:
         # Calculate totals for this Job Work
-        total_qty = jw.quantity or 0
+        total_qty = jw.quantity_ordered if hasattr(jw, 'quantity_ordered') else (jw.quantity or 0)
         grn_count = len(jw.grn_receipts)
         
         # Determine status based on GRN completion
