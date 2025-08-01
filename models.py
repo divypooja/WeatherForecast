@@ -1848,6 +1848,37 @@ class JobWorkBatch(db.Model):
     def __repr__(self):
         return f'<JobWorkBatch {self.job_work.job_number if self.job_work else "Unknown"}: {self.process_name}>'
 
+class ProductionBatch(db.Model):
+    """Track material batches consumed in production"""
+    __tablename__ = 'production_batches'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    production_id = db.Column(db.Integer, db.ForeignKey('productions.id'), nullable=False)
+    material_batch_id = db.Column(db.Integer, db.ForeignKey('item_batches.id'), nullable=False)
+    quantity_consumed = db.Column(db.Float, nullable=False)
+    quantity_remaining = db.Column(db.Float, default=0.0)
+    consumption_date = db.Column(db.Date, default=datetime.utcnow().date())
+    bom_item_id = db.Column(db.Integer, db.ForeignKey('bom_items.id'), nullable=True)  # Link to BOM material
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    material_batch = db.relationship('ItemBatch', foreign_keys=[material_batch_id], backref='production_consumptions')
+    bom_item = db.relationship('BOMItem', foreign_keys=[bom_item_id], backref='production_batch_usages')
+    
+    @property
+    def material_name(self):
+        """Get material name from batch"""
+        return self.material_batch.item.name if self.material_batch and self.material_batch.item else "Unknown"
+    
+    @property
+    def batch_number(self):
+        """Get batch number"""
+        return self.material_batch.batch_number if self.material_batch else "Unknown"
+    
+    def __repr__(self):
+        return f'<ProductionBatch {self.production.production_number if self.production else "Unknown"}: {self.batch_number}>'
+
 class Production(db.Model):
     __tablename__ = 'productions'
     
@@ -1870,13 +1901,94 @@ class Production(db.Model):
     production_date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date())
     status = db.Column(db.String(20), default='planned')  # planned, in_progress, completed
     notes = db.Column(db.Text)
+    
+    # Batch Tracking Fields
+    batch_tracking_enabled = db.Column(db.Boolean, default=False)  # Enable batch tracking for this production
+    output_batch_id = db.Column(db.Integer, db.ForeignKey('item_batches.id'), nullable=True)  # Output batch created
+    bom_id = db.Column(db.Integer, db.ForeignKey('boms.id'), nullable=True)  # BOM used for production
+    production_shift = db.Column(db.String(20), default='day')  # day, night, general
+    operator_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # Production operator
+    quality_control_passed = db.Column(db.Boolean, default=False)  # QC status for batch
+    
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
     produced_item = db.relationship('Item', backref='productions')
-    creator = db.relationship('User', backref='created_productions')
+    creator = db.relationship('User', foreign_keys=[created_by], backref='created_productions')
+    operator = db.relationship('User', foreign_keys=[operator_id], backref='operated_productions')
+    output_batch = db.relationship('ItemBatch', foreign_keys=[output_batch_id], backref='production_source')
+    bom = db.relationship('BOM', foreign_keys=[bom_id], backref='productions_using_bom')
     quality_issues = db.relationship('QualityIssue', backref='production', lazy=True, cascade='all, delete-orphan')
+    # production_batches relationship added at end of file
+    
+    @property
+    def completion_percentage(self):
+        """Calculate production completion percentage"""
+        if self.quantity_planned > 0:
+            return min((self.quantity_produced / self.quantity_planned) * 100, 100)
+        return 0
+    
+    @property
+    def efficiency_percentage(self):
+        """Calculate production efficiency (good items / planned items)"""
+        if self.quantity_planned > 0:
+            return min((self.quantity_good / self.quantity_planned) * 100, 100)
+        return 0
+    
+    @property
+    def defect_rate(self):
+        """Calculate defect rate percentage"""
+        if self.quantity_produced > 0:
+            return (self.quantity_damaged / self.quantity_produced) * 100
+        return 0
+    
+    @property
+    def scrap_rate(self):
+        """Calculate scrap rate percentage"""
+        if self.quantity_produced > 0:
+            return (self.scrap_quantity / self.quantity_produced) * 100
+        return 0
+    
+    @property
+    def status_badge_class(self):
+        """Return Bootstrap badge class for status"""
+        status_classes = {
+            'planned': 'bg-primary',
+            'in_progress': 'bg-warning',
+            'completed': 'bg-success',
+            'cancelled': 'bg-danger'
+        }
+        return status_classes.get(self.status, 'bg-secondary')
+    
+    def create_output_batch(self):
+        """Create output batch when production is completed"""
+        if self.quantity_good > 0 and not self.output_batch_id:
+            # Generate batch number
+            batch_number = f"PROD-{self.production_number}-{self.production_date.strftime('%Y%m%d')}"
+            
+            # Create new batch for finished goods
+            output_batch = ItemBatch(
+                item_id=self.item_id,
+                batch_number=batch_number,
+                qty_finished=self.quantity_good,
+                qty_scrap=self.quantity_damaged,
+                total_quantity=self.quantity_good,
+                manufacture_date=self.production_date,
+                quality_status='good' if self.quality_control_passed else 'pending_inspection',
+                storage_location='Finished Goods',
+                created_by=self.created_by
+            )
+            
+            db.session.add(output_batch)
+            db.session.flush()
+            
+            self.output_batch_id = output_batch.id
+            return output_batch
+        return None
+
+# Production-ProductionBatch relationship will be added at the very end of the file
 
 class BOM(db.Model):
     __tablename__ = 'boms'
@@ -2891,3 +3003,6 @@ class DailyJobWorkEntry(db.Model):
     
     def __repr__(self):
         return f'<DailyJobWorkEntry {self.worker_name} - {self.job_work.job_number} - {self.work_date}>'
+
+# Add Production-ProductionBatch relationship at the end after all models are defined
+Production.production_batches = db.relationship('ProductionBatch', backref='production', lazy=True, cascade='all, delete-orphan')
