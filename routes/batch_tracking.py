@@ -71,7 +71,18 @@ def dashboard():
     stats = {
         'total_batches': ItemBatch.query.count(),
         'active_batches': ItemBatch.query.filter(
-            ItemBatch.total_quantity > 0,
+            or_(
+                ItemBatch.qty_raw > 0,
+                ItemBatch.qty_wip_cutting > 0,
+                ItemBatch.qty_wip_bending > 0,
+                ItemBatch.qty_wip_welding > 0,
+                ItemBatch.qty_wip_zinc > 0,
+                ItemBatch.qty_wip_painting > 0,
+                ItemBatch.qty_wip_assembly > 0,
+                ItemBatch.qty_wip_machining > 0,
+                ItemBatch.qty_wip_polishing > 0,
+                ItemBatch.qty_finished > 0
+            ),
             ItemBatch.quality_status != 'expired'
         ).count(),
         'expired_batches': ItemBatch.query.filter(
@@ -339,7 +350,20 @@ def api_batch_summary():
     try:
         summary = {
             'total_batches': ItemBatch.query.count(),
-            'active_batches': ItemBatch.query.filter(ItemBatch.total_quantity > 0).count(),
+            'active_batches': ItemBatch.query.filter(
+                or_(
+                    ItemBatch.qty_raw > 0,
+                    ItemBatch.qty_wip_cutting > 0,
+                    ItemBatch.qty_wip_bending > 0,
+                    ItemBatch.qty_wip_welding > 0,
+                    ItemBatch.qty_wip_zinc > 0,
+                    ItemBatch.qty_wip_painting > 0,
+                    ItemBatch.qty_wip_assembly > 0,
+                    ItemBatch.qty_wip_machining > 0,
+                    ItemBatch.qty_wip_polishing > 0,
+                    ItemBatch.qty_finished > 0
+                )
+            ).count(),
             'quality_issues': ItemBatch.query.filter(ItemBatch.quality_status == 'defective').count(),
             'pending_inspection': ItemBatch.query.filter(ItemBatch.quality_status == 'pending_inspection').count(),
             'process_breakdown': {}
