@@ -275,10 +275,29 @@ def add_production():
             # Link the BOM to production order
             production_bom_id = active_bom.id
             
-            # Check material availability for each BOM item
+            # Check material availability for each BOM item using multi-state inventory
             for bom_item in bom_items:
                 required_qty = bom_item.quantity_required * form.quantity_planned.data
-                available_qty = bom_item.item.current_stock or 0
+                
+                # Check available quantity from multi-state inventory (Raw + Finished for materials)
+                item = bom_item.item
+                available_qty = 0
+                
+                # For materials, use raw + finished quantities
+                if hasattr(item, 'qty_raw') and hasattr(item, 'qty_finished'):
+                    available_qty = (item.qty_raw or 0) + (item.qty_finished or 0)
+                else:
+                    # Fallback to current_stock if multi-state not available
+                    available_qty = item.current_stock or 0
+                
+                # Also check batch-level availability
+                from models_batch import InventoryBatch
+                batch_qty = db.session.query(
+                    func.sum(InventoryBatch.qty_raw + InventoryBatch.qty_finished)
+                ).filter_by(item_id=item.id).scalar() or 0
+                
+                # Use the higher of the two (item-level or batch-level)
+                available_qty = max(available_qty, batch_qty)
                 
                 if available_qty < required_qty:
                     shortage_qty = required_qty - available_qty

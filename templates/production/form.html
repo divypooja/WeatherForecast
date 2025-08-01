@@ -279,7 +279,7 @@
                                     {% set planned_qty = form.quantity_planned.data %}
                                 {% endif %}
                                 {% set total_required = bom_item.quantity_required * planned_qty %}
-                                {% set available = bom_item.item.current_stock or 0 %}
+                                {% set available = (bom_item.item.qty_raw or 0) + (bom_item.item.qty_finished or 0) if bom_item.item.qty_raw is not none else (bom_item.item.current_stock or 0) %}
                                 {% set is_sufficient = available >= total_required %}
                                 <tr class="{% if not is_sufficient %}table-danger{% endif %}">
                                     <td>
