@@ -42,6 +42,7 @@ def create_app():
     from models import User, Item, Supplier, PurchaseOrder, SalesOrder, Employee, JobWork, Production, BOM, NotificationSettings, NotificationLog, NotificationRecipient, CompanySettings, QualityIssue, QualityControlLog, FactoryExpense, Document
     from models_uom import UnitOfMeasure, UOMConversion, ItemUOMConversion, UOMConversionLog
     from models_department import Department
+    from models_batch_movement import BatchMovementLedger, BatchConsumptionReport
 
     
     @login_manager.user_loader
