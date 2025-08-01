@@ -227,6 +227,11 @@ class ItemBatch(db.Model):
     qty_wip_machining = db.Column(db.Float, default=0.0)
     qty_wip_polishing = db.Column(db.Float, default=0.0)
     
+    # Enhanced batch metadata for job work tracking
+    purchase_rate = db.Column(db.Float, default=0.0)  # Purchase rate for cost tracking
+    storage_location = db.Column(db.String(100), default='Default')  # Storage location
+    grn_id = db.Column(db.Integer, db.ForeignKey('grn.id'))  # Source GRN reference
+    
     # Quality information
     quality_status = db.Column(db.String(20), default='good')  # good, defective, expired
     quality_notes = db.Column(db.Text)
@@ -234,6 +239,7 @@ class ItemBatch(db.Model):
     # Tracking information
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
     item = db.relationship('Item', backref='batches')
@@ -243,7 +249,21 @@ class ItemBatch(db.Model):
     def total_quantity(self):
         """Calculate total quantity across all states"""
         return (
-            (self.qty_raw or 0) + (self.qty_wip or 0) + (self.qty_finished or 0) + 
+            (self.qty_raw or 0) + (self.qty_wip or 0) + (self.qty_finished or 0) + (self.qty_scrap or 0) +
+            (self.qty_wip_cutting or 0) + (self.qty_wip_bending or 0) + (self.qty_wip_welding or 0) +
+            (self.qty_wip_zinc or 0) + (self.qty_wip_painting or 0) + (self.qty_wip_assembly or 0) +
+            (self.qty_wip_machining or 0) + (self.qty_wip_polishing or 0)
+        )
+    
+    @property
+    def available_quantity(self):
+        """Available quantity for issuing (Raw + Finished)"""
+        return (self.qty_raw or 0) + (self.qty_finished or 0)
+    
+    @property
+    def total_wip_quantity(self):
+        """Total WIP across all processes"""
+        return (
             (self.qty_wip_cutting or 0) + (self.qty_wip_bending or 0) + (self.qty_wip_welding or 0) +
             (self.qty_wip_zinc or 0) + (self.qty_wip_painting or 0) + (self.qty_wip_assembly or 0) +
             (self.qty_wip_machining or 0) + (self.qty_wip_polishing or 0)
@@ -255,6 +275,130 @@ class ItemBatch(db.Model):
         if self.expiry_date:
             return datetime.now().date() > self.expiry_date
         return False
+    
+    @property
+    def days_to_expiry(self):
+        """Days until expiry (negative if expired)"""
+        if self.expiry_date:
+            return (self.expiry_date - datetime.now().date()).days
+        return None
+    
+    @property
+    def age_days(self):
+        """Age of batch in days since manufacture"""
+        if self.manufacture_date:
+            return (datetime.now().date() - self.manufacture_date).days
+        return 0
+    
+    def move_quantity(self, quantity, from_state, to_state):
+        """Move quantity between states within this batch"""
+        if quantity <= 0:
+            return False
+            
+        # Get current quantity in from_state
+        from_qty = getattr(self, f'qty_{from_state}', 0) or 0
+        
+        if from_qty < quantity:
+            return False  # Insufficient quantity
+        
+        # Move the quantity
+        setattr(self, f'qty_{from_state}', from_qty - quantity)
+        to_qty = getattr(self, f'qty_{to_state}', 0) or 0
+        setattr(self, f'qty_{to_state}', to_qty + quantity)
+        
+        self.updated_at = datetime.utcnow()
+        return True
+    
+    def issue_for_jobwork(self, quantity, process):
+        """Issue quantity from raw to process-specific WIP"""
+        if self.qty_raw < quantity:
+            return False
+            
+        self.qty_raw -= quantity
+        
+        # Move to process-specific WIP
+        process_lower = process.lower()
+        if process_lower == 'cutting':
+            self.qty_wip_cutting += quantity
+        elif process_lower == 'bending':
+            self.qty_wip_bending += quantity
+        elif process_lower == 'welding':
+            self.qty_wip_welding += quantity
+        elif process_lower == 'zinc':
+            self.qty_wip_zinc += quantity
+        elif process_lower == 'painting':
+            self.qty_wip_painting += quantity
+        elif process_lower == 'assembly':
+            self.qty_wip_assembly += quantity
+        elif process_lower == 'machining':
+            self.qty_wip_machining += quantity
+        elif process_lower == 'polishing':
+            self.qty_wip_polishing += quantity
+        else:
+            # Unknown process, use legacy WIP
+            self.qty_wip += quantity
+        
+        self.updated_at = datetime.utcnow()
+        return True
+    
+    def receive_from_jobwork(self, finished_qty, scrap_qty, unused_qty, process):
+        """Receive finished goods, scrap, and unused material from job work"""
+        process_lower = process.lower()
+        
+        # Get WIP quantity for this process
+        if process_lower == 'cutting':
+            wip_qty = self.qty_wip_cutting
+        elif process_lower == 'bending':
+            wip_qty = self.qty_wip_bending
+        elif process_lower == 'welding':
+            wip_qty = self.qty_wip_welding
+        elif process_lower == 'zinc':
+            wip_qty = self.qty_wip_zinc
+        elif process_lower == 'painting':
+            wip_qty = self.qty_wip_painting
+        elif process_lower == 'assembly':
+            wip_qty = self.qty_wip_assembly
+        elif process_lower == 'machining':
+            wip_qty = self.qty_wip_machining
+        elif process_lower == 'polishing':
+            wip_qty = self.qty_wip_polishing
+        else:
+            wip_qty = self.qty_wip
+        
+        total_returned = finished_qty + scrap_qty + unused_qty
+        if wip_qty < total_returned:
+            return False  # Cannot return more than what was sent
+        
+        # Reduce WIP quantity
+        if process_lower == 'cutting':
+            self.qty_wip_cutting -= total_returned
+        elif process_lower == 'bending':
+            self.qty_wip_bending -= total_returned
+        elif process_lower == 'welding':
+            self.qty_wip_welding -= total_returned
+        elif process_lower == 'zinc':
+            self.qty_wip_zinc -= total_returned
+        elif process_lower == 'painting':
+            self.qty_wip_painting -= total_returned
+        elif process_lower == 'assembly':
+            self.qty_wip_assembly -= total_returned
+        elif process_lower == 'machining':
+            self.qty_wip_machining -= total_returned
+        elif process_lower == 'polishing':
+            self.qty_wip_polishing -= total_returned
+        else:
+            self.qty_wip -= total_returned
+        
+        # Add to respective states
+        if finished_qty > 0:
+            self.qty_finished += finished_qty
+        if scrap_qty > 0:
+            self.qty_scrap += scrap_qty
+        if unused_qty > 0:
+            self.qty_raw += unused_qty  # Return unused to raw
+        
+        self.updated_at = datetime.utcnow()
+        return True
     
     def __repr__(self):
         return f'<ItemBatch {self.batch_number} - {self.item.name if self.item else "Unknown"}>'
