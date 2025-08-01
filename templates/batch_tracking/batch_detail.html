@@ -1,0 +1,436 @@
+{% extends "base.html" %}
+
+{% block title %}Batch Details - {{ batch.batch_number }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.batch-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.batch-stats-card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.batch-stats-card:hover {
+    transform: translateY(-5px);
+}
+
+.process-badge {
+    display: inline-block;
+    padding: 0.4rem 0.8rem;
+    margin: 0.2rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: white;
+}
+
+.process-raw { background-color: #28a745; }
+.process-cutting { background-color: #dc3545; }
+.process-bending { background-color: #fd7e14; }
+.process-welding { background-color: #ffc107; color: #000; }
+.process-zinc { background-color: #20c997; }
+.process-painting { background-color: #6f42c1; }
+.process-assembly { background-color: #e83e8c; }
+.process-machining { background-color: #17a2b8; }
+.process-polishing { background-color: #6c757d; }
+.process-finished { background-color: #198754; }
+.process-scrap { background-color: #dc3545; }
+
+.timeline-item {
+    border-left: 3px solid #007bff;
+    padding-left: 1rem;
+    margin-bottom: 1rem;
+    position: relative;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: #007bff;
+}
+
+.quality-status {
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+}
+
+.quality-approved { background-color: #d4edda; color: #155724; }
+.quality-pending { background-color: #fff3cd; color: #856404; }
+.quality-rejected { background-color: #f8d7da; color: #721c24; }
+.quality-defective { background-color: #f8d7da; color: #721c24; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Batch Header -->
+    <div class="batch-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-0">
+                    <i class="fas fa-boxes mr-3"></i>
+                    {{ batch.batch_number }}
+                </h1>
+                <p class="mb-0 mt-2 opacity-75">
+                    <strong>{{ batch.item.name }}</strong> ({{ batch.item.code }})
+                </p>
+            </div>
+            <div class="col-md-4 text-right">
+                <div class="quality-status quality-{{ batch.quality_status }}">
+                    {{ batch.quality_status.replace('_', ' ').title() }}
+                </div>
+                <div class="mt-2">
+                    <small>Created: {{ batch.created_at.strftime('%d/%m/%Y %H:%M') }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Batch Information -->
+        <div class="col-xl-8">
+            <!-- Basic Information Card -->
+            <div class="card batch-stats-card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle"></i> Basic Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-5">Batch Number:</dt>
+                                <dd class="col-sm-7">{{ batch.batch_number }}</dd>
+                                
+                                <dt class="col-sm-5">Item:</dt>
+                                <dd class="col-sm-7">{{ batch.item.name }}</dd>
+                                
+                                <dt class="col-sm-5">Item Code:</dt>
+                                <dd class="col-sm-7">{{ batch.item.code }}</dd>
+                                
+                                <dt class="col-sm-5">Supplier Batch:</dt>
+                                <dd class="col-sm-7">{{ batch.supplier_batch or 'N/A' }}</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-5">Manufacturing Date:</dt>
+                                <dd class="col-sm-7">
+                                    {{ batch.manufacture_date.strftime('%d/%m/%Y') if batch.manufacture_date else 'N/A' }}
+                                </dd>
+                                
+                                <dt class="col-sm-5">Expiry Date:</dt>
+                                <dd class="col-sm-7">
+                                    {{ batch.expiry_date.strftime('%d/%m/%Y') if batch.expiry_date else 'N/A' }}
+                                </dd>
+                                
+                                <dt class="col-sm-5">Storage Location:</dt>
+                                <dd class="col-sm-7">{{ batch.storage_location or 'Not specified' }}</dd>
+                                
+                                <dt class="col-sm-5">Total Quantity:</dt>
+                                <dd class="col-sm-7"><strong>{{ batch.total_quantity }} {{ batch.item.unit_of_measure }}</strong></dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Process-wise Quantity Breakdown -->
+            <div class="card batch-stats-card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-industry"></i> Process-wise Quantity Breakdown
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap">
+                        {% if batch.qty_raw and batch.qty_raw > 0 %}
+                            <span class="process-badge process-raw">Raw Material: {{ batch.qty_raw }}</span>
+                        {% endif %}
+                        
+                        {% if batch.qty_wip_cutting and batch.qty_wip_cutting > 0 %}
+                            <span class="process-badge process-cutting">Cutting: {{ batch.qty_wip_cutting }}</span>
+                        {% endif %}
+                        
+                        {% if batch.qty_wip_bending and batch.qty_wip_bending > 0 %}
+                            <span class="process-badge process-bending">Bending: {{ batch.qty_wip_bending }}</span>
+                        {% endif %}
+                        
+                        {% if batch.qty_wip_welding and batch.qty_wip_welding > 0 %}
+                            <span class="process-badge process-welding">Welding: {{ batch.qty_wip_welding }}</span>
+                        {% endif %}
+                        
+                        {% if batch.qty_wip_zinc and batch.qty_wip_zinc > 0 %}
+                            <span class="process-badge process-zinc">Zinc Plating: {{ batch.qty_wip_zinc }}</span>
+                        {% endif %}
+                        
+                        {% if batch.qty_wip_painting and batch.qty_wip_painting > 0 %}
+                            <span class="process-badge process-painting">Painting: {{ batch.qty_wip_painting }}</span>
+                        {% endif %}
+                        
+                        {% if batch.qty_wip_assembly and batch.qty_wip_assembly > 0 %}
+                            <span class="process-badge process-assembly">Assembly: {{ batch.qty_wip_assembly }}</span>
+                        {% endif %}
+                        
+                        {% if batch.qty_wip_machining and batch.qty_wip_machining > 0 %}
+                            <span class="process-badge process-machining">Machining: {{ batch.qty_wip_machining }}</span>
+                        {% endif %}
+                        
+                        {% if batch.qty_wip_polishing and batch.qty_wip_polishing > 0 %}
+                            <span class="process-badge process-polishing">Polishing: {{ batch.qty_wip_polishing }}</span>
+                        {% endif %}
+                        
+                        {% if batch.qty_finished and batch.qty_finished > 0 %}
+                            <span class="process-badge process-finished">Finished Goods: {{ batch.qty_finished }}</span>
+                        {% endif %}
+                        
+                        {% if batch.qty_scrap and batch.qty_scrap > 0 %}
+                            <span class="process-badge process-scrap">Scrap: {{ batch.qty_scrap }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    {% if not (batch.qty_raw or batch.qty_wip_cutting or batch.qty_wip_bending or batch.qty_wip_welding or batch.qty_wip_zinc or batch.qty_wip_painting or batch.qty_wip_assembly or batch.qty_wip_machining or batch.qty_wip_polishing or batch.qty_finished or batch.qty_scrap) %}
+                        <p class="text-muted">No quantity breakdown available.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Job Work History -->
+            {% if job_work_batches %}
+            <div class="card batch-stats-card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-history"></i> Job Work History
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for jw_batch in job_work_batches %}
+                    <div class="timeline-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">
+                                    <a href="{{ url_for('jobwork.detail', job_id=jw_batch.job_work.id) }}">
+                                        {{ jw_batch.job_work.job_number }}
+                                    </a>
+                                </h6>
+                                <p class="mb-1 text-muted">
+                                    {{ jw_batch.job_work.process_name }} - {{ jw_batch.job_work.vendor.name if jw_batch.job_work.vendor else 'In-House' }}
+                                </p>
+                                <small class="text-muted">
+                                    {% if jw_batch.input_batch_id == batch.id %}
+                                        Used as input material
+                                    {% else %}
+                                        Generated as output
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <small class="text-muted">{{ jw_batch.created_at.strftime('%d/%m/%Y') }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-xl-4">
+            <!-- Quick Actions -->
+            <div class="card batch-stats-card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-tools"></i> Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('batch_tracking.traceability_report', type='batch', batch_id=batch.id) }}" 
+                           class="btn btn-outline-primary">
+                            <i class="fas fa-route"></i> Complete Traceability
+                        </a>
+                        
+                        <button class="btn btn-outline-success" onclick="updateQualityStatus()">
+                            <i class="fas fa-check-circle"></i> Update Quality Status
+                        </button>
+                        
+                        <button class="btn btn-outline-warning" onclick="moveToLocation()">
+                            <i class="fas fa-map-marker-alt"></i> Change Storage Location
+                        </button>
+                        
+                        <a href="{{ url_for('batch_tracking.dashboard') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics Summary -->
+            <div class="card batch-stats-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie"></i> Batch Statistics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <h4 class="text-primary">{{ batch.total_quantity }}</h4>
+                            <small class="text-muted">Total Quantity</small>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <h4 class="text-success">{{ batch.available_quantity }}</h4>
+                            <small class="text-muted">Available</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-warning">{{ batch.reserved_quantity or 0 }}</h4>
+                            <small class="text-muted">Reserved</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-danger">{{ batch.qty_scrap or 0 }}</h4>
+                            <small class="text-muted">Scrap</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quality Status Update Modal -->
+<div class="modal fade" id="qualityModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Quality Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="qualityForm">
+                    <div class="mb-3">
+                        <label class="form-label">Quality Status</label>
+                        <select class="form-select" name="quality_status" required>
+                            <option value="pending_inspection" {{ 'selected' if batch.quality_status == 'pending_inspection' }}>Pending Inspection</option>
+                            <option value="approved" {{ 'selected' if batch.quality_status == 'approved' }}>Approved</option>
+                            <option value="rejected" {{ 'selected' if batch.quality_status == 'rejected' }}>Rejected</option>
+                            <option value="defective" {{ 'selected' if batch.quality_status == 'defective' }}>Defective</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Quality Notes</label>
+                        <textarea class="form-control" name="quality_notes" rows="3" placeholder="Add quality inspection notes...">{{ batch.quality_notes or '' }}</textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveQualityStatus()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Storage Location Modal -->
+<div class="modal fade" id="locationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Change Storage Location</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="locationForm">
+                    <div class="mb-3">
+                        <label class="form-label">New Storage Location</label>
+                        <input type="text" class="form-control" name="storage_location" 
+                               value="{{ batch.storage_location or '' }}" 
+                               placeholder="Enter storage location..." required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveStorageLocation()">Update Location</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateQualityStatus() {
+    $('#qualityModal').modal('show');
+}
+
+function moveToLocation() {
+    $('#locationModal').modal('show');
+}
+
+function saveQualityStatus() {
+    const formData = new FormData(document.getElementById('qualityForm'));
+    
+    fetch(`{{ url_for('batch_tracking.api_update_batch_quality', batch_id=batch.id) }}`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to update quality status');
+    });
+}
+
+function saveStorageLocation() {
+    const formData = new FormData(document.getElementById('locationForm'));
+    
+    fetch(`{{ url_for('batch_tracking.api_update_batch_location', batch_id=batch.id) }}`, {
+        method: 'POST',
+        body: JSON.stringify({
+            storage_location: formData.get('storage_location')
+        }),
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to update storage location');
+    });
+}
+</script>
+{% endblock %}
