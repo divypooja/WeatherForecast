@@ -266,6 +266,7 @@
                                     <th>Material</th>
                                     <th>Per Unit</th>
                                     <th>Available</th>
+                                    <th>Batches</th>
                                     <th>Status</th>
                                 </tr>
                             </thead>
@@ -289,6 +290,16 @@
                                     <td>
                                         <strong>{{ available }}</strong> {{ bom_item.item.unit_of_measure }}
                                         <br><small class="text-muted">Need: {{ total_required }}</small>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-info" 
+                                                onclick="showBatchDetails('{{ bom_item.item.code }}')" 
+                                                title="View available batches">
+                                            <i class="fas fa-eye"></i> View
+                                        </button>
+                                        <div id="batch-info-{{ bom_item.item.code }}" class="mt-1" style="display: none;">
+                                            <small class="text-muted">Loading batches...</small>
+                                        </div>
                                     </td>
                                     <td>
                                         {% if is_sufficient %}
@@ -421,10 +432,66 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (itemSelect) {
         itemSelect.addEventListener('change', function() {
-            // Reload page to get new BOM data when item changes
-            if (this.value) {
-                const form = document.querySelector('form');
-                if (form) {
+            // Reload page to get new BOM data when item changes  
+            if (this.value && this.value !== '0') {
+                const currentUrl = new URL(window.location);
+                currentUrl.searchParams.set('item_id', this.value);
+                window.location.href = currentUrl.toString();
+            }
+        });
+    }
+});
+
+// Function to show batch details
+function showBatchDetails(itemCode) {
+    const batchInfo = document.getElementById(`batch-info-${itemCode}`);
+    const button = event.target.closest('button');
+    
+    if (batchInfo.style.display === 'none') {
+        batchInfo.style.display = 'block';
+        button.innerHTML = '<i class="fas fa-eye-slash"></i> Hide';
+        
+        // Load batch data via API
+        fetch(`/inventory/api/item-batch-details/${itemCode}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.batches && data.batches.length > 0) {
+                    let batchHtml = '<div class="small">';
+                    data.batches.forEach(batch => {
+                        const totalQty = batch.qty_raw + batch.qty_finished;
+                        if (totalQty > 0) {
+                            batchHtml += `<div class="badge bg-light text-dark me-1 mb-1">
+                                ${batch.batch_code}: ${totalQty.toFixed(1)} ${batch.uom}
+                            </div>`;
+                        }
+                    });
+                    batchHtml += '</div>';
+                    batchInfo.innerHTML = batchHtml;
+                } else {
+                    batchInfo.innerHTML = '<small class="text-muted">No batches available</small>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading batch details:', error);
+                batchInfo.innerHTML = '<small class="text-danger">Error loading batches</small>';
+            });
+    } else {
+        batchInfo.style.display = 'none';
+        button.innerHTML = '<i class="fas fa-eye"></i> View';
+    }
+}
+
+// Auto-load BOM when page loads with item_id parameter
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const itemId = urlParams.get('item_id');
+    const itemSelect = document.getElementById('item_id');
+    
+    if (itemId && itemSelect) {
+        itemSelect.value = itemId;
+        // Trigger change event to load BOM if needed
+        itemSelect.dispatchEvent(new Event('change'));
+    }
                     // Set a flag to indicate we want to see BOM
                     const hiddenInput = document.createElement('input');
                     hiddenInput.type = 'hidden';

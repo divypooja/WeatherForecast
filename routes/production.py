@@ -272,6 +272,9 @@ def add_production():
         if active_bom:
             bom_items = BOMItem.query.filter_by(bom_id=active_bom.id).all()
             
+            # Link the BOM to production order
+            production_bom_id = active_bom.id
+            
             # Check material availability for each BOM item
             for bom_item in bom_items:
                 required_qty = bom_item.quantity_required * form.quantity_planned.data
@@ -309,12 +312,16 @@ def add_production():
             production_number=form.production_number.data,
             item_id=form.item_id.data,
             quantity_planned=form.quantity_planned.data,
+            planned_uom=form.planned_uom.data,
             quantity_produced=form.quantity_produced.data or 0.0,
             quantity_good=form.quantity_good.data or 0.0,
             quantity_damaged=form.quantity_damaged.data or 0.0,
+            scrap_quantity=form.scrap_quantity.data or 0.0,
             production_date=form.production_date.data,
             status=form.status.data,
             notes=form.notes.data,
+            bom_id=active_bom.id if active_bom else None,
+            batch_tracking_enabled=True,  # Enable batch tracking by default
             created_by=current_user.id
         )
         db.session.add(production)
@@ -322,10 +329,19 @@ def add_production():
         flash('Production order created successfully! All required materials are available.', 'success')
         return redirect(url_for('production.list_productions'))
     
-    # Get BOM items for display if an item is selected
+    # Get BOM items for display if an item is selected (including from URL parameters)
     bom_items = []
     selected_item = None
-    if form.item_id.data:
+    
+    # Check for item_id in URL parameters (for direct BOM loading)
+    item_id_param = request.args.get('item_id')
+    if item_id_param and not form.item_id.data:
+        try:
+            form.item_id.data = int(item_id_param)
+        except (ValueError, TypeError):
+            pass
+    
+    if form.item_id.data and form.item_id.data != 0:
         selected_item = Item.query.get(form.item_id.data)
         active_bom = BOM.query.filter_by(product_id=form.item_id.data, is_active=True).first()
         if active_bom:
