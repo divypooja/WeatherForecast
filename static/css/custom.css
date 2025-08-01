@@ -451,3 +451,22 @@
 .border-start-danger {
     border-left: 3px solid var(--bs-danger) !important;
 }
+
+/* Remove number input spinners completely */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+/* Remove spinners on all number inputs */
+input[type="number"]::-webkit-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
