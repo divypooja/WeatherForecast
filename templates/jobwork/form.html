@@ -1291,13 +1291,10 @@ function addProcessRow() {
             shouldLoad: processName && outputProductId && workType === 'vendor'
         });
         
-        // Allow testing rate loading regardless of work type (for debugging)
+        // Load rates for all work types (both in-house and vendor work can have rates)
         if (processName && outputProductId) {
-            if (workType === 'vendor') {
-                loadJobWorkRate(outputProductId, processName, rateInput);
-            } else {
-                console.log('Rate loading skipped - work type is not vendor:', workType);
-            }
+            loadJobWorkRate(outputProductId, processName, rateInput);
+            console.log('Loading rate for item:', outputProductId, 'process:', processName, 'work type:', workType);
         }
     };
     
@@ -1465,27 +1462,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const assignedToSelect = document.getElementById('assigned_to');
     
     function triggerRateLoading() {
-        if (workTypeSelect && workTypeSelect.value === 'vendor') {
-            // Trigger rate loading for all existing process rows
-            const processRows = document.querySelectorAll('#processTableBody tr');
-            processRows.forEach(row => {
-                const processSelect = row.querySelectorAll('select')[0]; // Process Name
-                const outputProductSelect = row.querySelectorAll('select')[1]; // Output Product
-                const rateInput = row.querySelector('.rate-input');
-                
-                if (processSelect && outputProductSelect && rateInput && 
-                    processSelect.value && outputProductSelect.value) {
-                    const vendorName = assignedToSelect ? assignedToSelect.value : '';
-                    loadJobWorkRate(outputProductSelect.value, processSelect.value, rateInput, vendorName);
-                }
-            });
-        } else {
-            // Clear rate highlighting when not vendor work type
-            const rateInputs = document.querySelectorAll('.rate-input');
-            rateInputs.forEach(input => {
-                input.style.backgroundColor = '';
-            });
-        }
+        // Trigger rate loading for all existing process rows (both in-house and vendor work)
+        const processRows = document.querySelectorAll('#processTableBody tr');
+        processRows.forEach(row => {
+            const processSelect = row.querySelectorAll('select')[0]; // Process Name
+            const outputProductSelect = row.querySelectorAll('select')[1]; // Output Product
+            const rateInput = row.querySelector('.rate-input');
+            
+            if (processSelect && outputProductSelect && rateInput && 
+                processSelect.value && outputProductSelect.value) {
+                const vendorName = assignedToSelect ? assignedToSelect.value : '';
+                loadJobWorkRate(outputProductSelect.value, processSelect.value, rateInput, vendorName);
+            }
+        });
     }
     
     // Add event listeners
