@@ -115,6 +115,25 @@
                             </div>
                         </div>
 
+                        <!-- Batch Information -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Batch Number</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="batch_number" name="batch_number" readonly value="{{ item.name[:3] | upper }}-AUTO-GENERATED">
+                                    <button type="button" class="btn btn-outline-info" onclick="updateBatchPreview()">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted">Batch will be created automatically upon receipt</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Expiry Date (Optional)</label>
+                                <input type="date" class="form-control" id="expiry_date" name="expiry_date">
+                                <small class="text-muted">Leave blank for non-perishable items</small>
+                            </div>
+                        </div>
+
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 {{ form.inspection_status.label(class="form-label") }}
@@ -138,10 +157,21 @@
                             {{ form.remarks(class="form-control", rows="3", placeholder="Any additional notes about this receipt") }}
                         </div>
 
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle me-2"></i>Batch Tracking Information</h6>
+                            <ul class="mb-0">
+                                <li>A new batch will be automatically created when materials are received</li>
+                                <li>Batch number format: <code>{{ item.name[:3] | upper }}-YYYYMMDD-001</code></li>
+                                <li>All received materials will be tagged with this batch for complete traceability</li>
+                                <li>You can view batch details in the Batch Tracking dashboard after receipt</li>
+                                <li><strong>Status:</strong> <span id="batch_status" class="text-muted">Ready to create batch on receipt</span></li>
+                            </ul>
+                        </div>
+
                         <div class="d-flex justify-content-end">
                             <a href="{{ url_for('purchase.edit_purchase_order', id=purchase_order.id) }}" class="btn btn-secondary me-2">Cancel</a>
                             <button type="submit" class="btn btn-success">
-                                <i class="fas fa-check me-1"></i>Receive Materials
+                                <i class="fas fa-check me-1"></i>Receive Materials & Create Batch
                             </button>
                         </div>
                     </form>
@@ -237,6 +267,26 @@
 </div>
 
 <script>
+// Update batch preview
+function updateBatchPreview() {
+    const today = new Date();
+    const dateStr = today.getFullYear() + 
+                   String(today.getMonth() + 1).padStart(2, '0') + 
+                   String(today.getDate()).padStart(2, '0');
+    const batchNumber = '{{ item.name[:3] | upper }}-' + dateStr + '-001';
+    document.getElementById('batch_number').value = batchNumber;
+}
+
+// Update batch status based on quantities
+function updateBatchStatus(receivedQty) {
+    const batchStatus = document.getElementById('batch_status');
+    if (receivedQty > 0) {
+        batchStatus.innerHTML = '<span class="text-success"><i class="fas fa-check-circle me-1"></i>Ready to create batch for ' + receivedQty.toFixed(2) + ' {{ po_item.uom or item.unit_of_measure }}</span>';
+    } else {
+        batchStatus.innerHTML = '<span class="text-muted">Enter received quantity to preview batch</span>';
+    }
+}
+
 // Auto-calculate passed quantity and update summary
 function updateCalculations() {
     const received = parseFloat(document.getElementById('quantity_received').value) || 0;
@@ -263,6 +313,9 @@ function updateCalculations() {
     const newProgress = Math.min(100, (newReceived / orderedQty) * 100);
     document.getElementById('new_progress_bar').style.width = newProgress + '%';
     document.getElementById('new_progress_text').textContent = newProgress.toFixed(1) + '%';
+    
+    // Update batch status
+    updateBatchStatus(received);
 }
 
 // Add event listeners
@@ -292,7 +345,8 @@ document.getElementById('quantity_rejected').addEventListener('change', function
     }
 });
 
-// Initialize calculations
+// Initialize calculations and batch preview
 updateCalculations();
+updateBatchPreview();
 </script>
 {% endblock %}
