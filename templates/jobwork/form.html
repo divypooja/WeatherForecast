@@ -58,17 +58,12 @@
                             <tr>
                                 <td><strong>Job Work Title</strong></td>
                                 <td>
-                                    <div class="input-group">
-                                        {{ form.job_title(class="form-control") }}
-                                        <button type="button" class="btn btn-outline-info btn-sm" id="generateTitleBtn" onclick="autoFillJobTitle(true)" title="Auto-generate title">
-                                            <i class="fas fa-magic"></i>
-                                        </button>
-                                    </div>
+                                    {{ form.job_title(class="form-control") }}
                                     {% for error in form.job_title.errors %}
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
                                 </td>
-                                <td>"JW-008 – Base Plate Work" <i class="fas fa-magic text-info" title="Auto-generated for Manual jobs"></i></td>
+                                <td>"JW-008 – Base Plate Work" <span class="text-info small">(Auto-generated for Manual jobs)</span></td>
                             </tr>
                             <tr>
                                 <td><strong>Work Type</strong></td>
@@ -943,12 +938,7 @@ function autoFillJobTitle(force = false) {
     console.log('autoFillJobTitle called:', {jobWorkType, force, hasField: !!titleField, currentValue: titleField?.value});
     
     if (jobWorkType === 'manual' && titleField && (force || !titleField.value.trim())) {
-        // Show loading state
-        const generateBtn = document.getElementById('generateTitleBtn');
-        if (generateBtn) {
-            generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            generateBtn.disabled = true;
-        }
+        // Auto-generate title for manual jobs
         
         // Get CSRF token
         const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
@@ -994,11 +984,7 @@ function autoFillJobTitle(force = false) {
                 }, 2000);
             })
             .finally(() => {
-                // Reset button state
-                if (generateBtn) {
-                    generateBtn.innerHTML = '<i class="fas fa-magic"></i>';
-                    generateBtn.disabled = false;
-                }
+                // Button removed for cleaner UI
             });
     }
 }
