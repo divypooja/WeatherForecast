@@ -271,6 +271,12 @@
                             </a>
                         </div>
                         <div class="col-md-3">
+                            <a href="{{ url_for('accounting.list_invoices') }}" class="btn btn-outline-primary w-100 mb-2">
+                                <i class="fas fa-file-invoice"></i><br>
+                                Invoices
+                            </a>
+                        </div>
+                        <div class="col-md-3">
                             <a href="{{ url_for('accounting.add_payment') }}" class="btn btn-outline-success w-100 mb-2">
                                 <i class="fas fa-hand-holding-usd"></i><br>
                                 Record Payment
@@ -282,10 +288,30 @@
                                 Trial Balance
                             </a>
                         </div>
+                    </div>
+                    <div class="row mt-2">
                         <div class="col-md-3">
                             <a href="{{ url_for('accounting.profit_loss') }}" class="btn btn-outline-warning w-100 mb-2">
                                 <i class="fas fa-chart-pie"></i><br>
                                 P&L Statement
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('accounting.add_invoice') }}" class="btn btn-outline-secondary w-100 mb-2">
+                                <i class="fas fa-plus"></i><br>
+                                Create Invoice
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('accounting.gst_summary') }}" class="btn btn-outline-info w-100 mb-2">
+                                <i class="fas fa-percentage"></i><br>
+                                GST Summary
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('accounting.balance_sheet') }}" class="btn btn-outline-dark w-100 mb-2">
+                                <i class="fas fa-file-alt"></i><br>
+                                Balance Sheet
                             </a>
                         </div>
                     </div>

@@ -1311,6 +1311,238 @@ class AccountingAutomation:
             return False
     
     @staticmethod
+    def create_sales_invoice_entry(invoice):
+        """Create accounting entries for sales invoice"""
+        try:
+            from models_accounting import VoucherType, Voucher, JournalEntry, Account, AccountGroup
+            
+            # Get or create sales voucher type
+            voucher_type = VoucherType.query.filter_by(code='SAL').first()
+            if not voucher_type:
+                voucher_type = VoucherType(
+                    name='Sales Invoice',
+                    code='SAL',
+                    description='Sales Invoice Entries'
+                )
+                db.session.add(voucher_type)
+                db.session.flush()
+            
+            # Create voucher
+            voucher = Voucher(
+                voucher_number=Voucher.generate_voucher_number('SAL'),
+                voucher_type_id=voucher_type.id,
+                transaction_date=invoice.invoice_date,
+                reference_number=invoice.invoice_number,
+                narration=f"Sales invoice - {invoice.invoice_number}",
+                party_id=invoice.party_id,
+                party_type='customer',
+                total_amount=invoice.total_amount,
+                created_by=invoice.created_by
+            )
+            
+            db.session.add(voucher)
+            db.session.flush()
+            
+            # Get or create accounts
+            customer_account = AccountingAutomation.get_or_create_party_account(invoice.party)
+            sales_account = Account.query.filter_by(code='SALES').first()
+            gst_output_account = Account.query.filter_by(code='GST_OUTPUT').first()
+            
+            if not sales_account:
+                # Create sales account
+                income_group = AccountGroup.query.filter_by(name='Sales & Income').first()
+                if income_group:
+                    sales_account = Account(
+                        name='Sales Account',
+                        code='SALES',
+                        account_group_id=income_group.id,
+                        account_type='income'
+                    )
+                    db.session.add(sales_account)
+                    db.session.flush()
+            
+            if not gst_output_account and invoice.total_tax > 0:
+                # Create GST output account
+                liability_group = AccountGroup.query.filter_by(name='Duties & Taxes').first()
+                if liability_group:
+                    gst_output_account = Account(
+                        name='GST Output',
+                        code='GST_OUTPUT',
+                        account_group_id=liability_group.id,
+                        account_type='current_liability'
+                    )
+                    db.session.add(gst_output_account)
+                    db.session.flush()
+            
+            if not all([customer_account, sales_account]):
+                return False
+            
+            # Create journal entries
+            # Debit Customer Account (Accounts Receivable)
+            customer_entry = JournalEntry(
+                voucher_id=voucher.id,
+                account_id=customer_account.id,
+                entry_type='debit',
+                amount=invoice.total_amount,
+                narration=f"Sales to {invoice.party_name}",
+                transaction_date=voucher.transaction_date,
+                reference_type='invoice',
+                reference_id=invoice.id
+            )
+            db.session.add(customer_entry)
+            
+            # Credit Sales Account
+            sales_entry = JournalEntry(
+                voucher_id=voucher.id,
+                account_id=sales_account.id,
+                entry_type='credit',
+                amount=invoice.subtotal,
+                narration=f"Sales revenue - {invoice.invoice_number}",
+                transaction_date=voucher.transaction_date,
+                reference_type='invoice',
+                reference_id=invoice.id
+            )
+            db.session.add(sales_entry)
+            
+            # Credit GST Output Account (if applicable)
+            if invoice.total_tax > 0 and gst_output_account:
+                gst_entry = JournalEntry(
+                    voucher_id=voucher.id,
+                    account_id=gst_output_account.id,
+                    entry_type='credit',
+                    amount=invoice.total_tax,
+                    narration=f"Output GST - {invoice.invoice_number}",
+                    transaction_date=voucher.transaction_date,
+                    reference_type='invoice',
+                    reference_id=invoice.id
+                )
+                db.session.add(gst_entry)
+            
+            db.session.commit()
+            return voucher
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error creating sales invoice entry: {str(e)}")
+            return False
+    
+    @staticmethod
+    def create_purchase_invoice_entry(invoice):
+        """Create accounting entries for purchase invoice"""
+        try:
+            from models_accounting import VoucherType, Voucher, JournalEntry, Account, AccountGroup
+            
+            # Get or create purchase voucher type
+            voucher_type = VoucherType.query.filter_by(code='PUR').first()
+            if not voucher_type:
+                voucher_type = VoucherType(
+                    name='Purchase Invoice',
+                    code='PUR',
+                    description='Purchase Invoice Entries'
+                )
+                db.session.add(voucher_type)
+                db.session.flush()
+            
+            # Create voucher
+            voucher = Voucher(
+                voucher_number=Voucher.generate_voucher_number('PUR'),
+                voucher_type_id=voucher_type.id,
+                transaction_date=invoice.invoice_date,
+                reference_number=invoice.invoice_number,
+                narration=f"Purchase invoice - {invoice.invoice_number}",
+                party_id=invoice.party_id,
+                party_type='supplier',
+                total_amount=invoice.total_amount,
+                created_by=invoice.created_by
+            )
+            
+            db.session.add(voucher)
+            db.session.flush()
+            
+            # Get or create accounts
+            supplier_account = AccountingAutomation.get_or_create_party_account(invoice.party)
+            purchase_account = Account.query.filter_by(code='PURCHASES').first()
+            gst_input_account = Account.query.filter_by(code='GST_INPUT').first()
+            
+            if not purchase_account:
+                # Create purchase account
+                expense_group = AccountGroup.query.filter_by(name='Direct Expenses').first()
+                if expense_group:
+                    purchase_account = Account(
+                        name='Purchase Account',
+                        code='PURCHASES',
+                        account_group_id=expense_group.id,
+                        account_type='expense'
+                    )
+                    db.session.add(purchase_account)
+                    db.session.flush()
+            
+            if not gst_input_account and invoice.total_tax > 0:
+                # Create GST input account
+                asset_group = AccountGroup.query.filter_by(name='Current Assets').first()
+                if asset_group:
+                    gst_input_account = Account(
+                        name='GST Input',
+                        code='GST_INPUT',
+                        account_group_id=asset_group.id,
+                        account_type='current_asset'
+                    )
+                    db.session.add(gst_input_account)
+                    db.session.flush()
+            
+            if not all([supplier_account, purchase_account]):
+                return False
+            
+            # Create journal entries
+            # Debit Purchase Account
+            purchase_entry = JournalEntry(
+                voucher_id=voucher.id,
+                account_id=purchase_account.id,
+                entry_type='debit',
+                amount=invoice.subtotal,
+                narration=f"Purchase from {invoice.party_name}",
+                transaction_date=voucher.transaction_date,
+                reference_type='invoice',
+                reference_id=invoice.id
+            )
+            db.session.add(purchase_entry)
+            
+            # Debit GST Input Account (if applicable)
+            if invoice.total_tax > 0 and gst_input_account:
+                gst_entry = JournalEntry(
+                    voucher_id=voucher.id,
+                    account_id=gst_input_account.id,
+                    entry_type='debit',
+                    amount=invoice.total_tax,
+                    narration=f"Input GST - {invoice.invoice_number}",
+                    transaction_date=voucher.transaction_date,
+                    reference_type='invoice',
+                    reference_id=invoice.id
+                )
+                db.session.add(gst_entry)
+            
+            # Credit Supplier Account (Accounts Payable)
+            supplier_entry = JournalEntry(
+                voucher_id=voucher.id,
+                account_id=supplier_account.id,
+                entry_type='credit',
+                amount=invoice.total_amount,
+                narration=f"Purchase from {invoice.party_name}",
+                transaction_date=voucher.transaction_date,
+                reference_type='invoice',
+                reference_id=invoice.id
+            )
+            db.session.add(supplier_entry)
+            
+            db.session.commit()
+            return voucher
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error creating purchase invoice entry: {str(e)}")
+            return False
+    
+    @staticmethod
     def create_inventory_valuation_entry(item, quantity_change, valuation_change, movement_type):
         """Create inventory valuation entry for stock movements"""
         try:

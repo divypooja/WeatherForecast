@@ -1039,3 +1039,233 @@ def api_party_account(party_id):
         'name': account.name if account else party.name,
         'balance': account.calculate_balance() if account else 0
     })
+
+# Invoice Management Routes
+@accounting_bp.route('/invoices')
+@login_required
+def list_invoices():
+    """List all invoices"""
+    page = request.args.get('page', 1, type=int)
+    invoice_type = request.args.get('type', '', type=str)
+    status_filter = request.args.get('status', '', type=str)
+    
+    query = Invoice.query
+    if invoice_type:
+        query = query.filter_by(invoice_type=invoice_type)
+    if status_filter:
+        query = query.filter_by(status=status_filter)
+    
+    invoices = query.order_by(desc(Invoice.created_at)).paginate(
+        page=page, per_page=20, error_out=False)
+    
+    return render_template('accounting/invoices_list.html', 
+                         invoices=invoices,
+                         invoice_type=invoice_type,
+                         status_filter=status_filter)
+
+@accounting_bp.route('/invoices/add', methods=['GET', 'POST'])
+@login_required
+def add_invoice():
+    """Add new invoice"""
+    form = InvoiceForm()
+    
+    # Populate party choices
+    form.party_id.choices = [(s.id, f"{s.name} ({s.partner_type})") for s in Supplier.query.filter_by(is_active=True).all()]
+    
+    if form.validate_on_submit():
+        try:
+            # Generate invoice number
+            invoice_number = Invoice.generate_invoice_number(form.invoice_type.data)
+            
+            # Get party details
+            party = Supplier.query.get(form.party_id.data)
+            
+            invoice = Invoice(
+                invoice_number=invoice_number,
+                invoice_type=form.invoice_type.data,
+                party_id=form.party_id.data,
+                party_name=party.name,
+                party_gst=party.gst_number,
+                party_address=party.address,
+                invoice_date=form.invoice_date.data,
+                due_date=form.due_date.data,
+                place_of_supply=form.place_of_supply.data,
+                reference_type=form.reference_type.data,
+                reference_id=form.reference_id.data,
+                subtotal=0,  # Will be calculated when items are added
+                total_amount=0,
+                created_by=current_user.id
+            )
+            
+            db.session.add(invoice)
+            db.session.commit()
+            
+            flash(f'Invoice "{invoice.invoice_number}" created successfully!', 'success')
+            return redirect(url_for('accounting.edit_invoice', id=invoice.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error creating invoice: {str(e)}', 'error')
+    
+    return render_template('accounting/invoice_form.html', form=form, title='Create Invoice')
+
+@accounting_bp.route('/invoices/<int:id>')
+@login_required
+def view_invoice(id):
+    """View invoice details"""
+    invoice = Invoice.query.get_or_404(id)
+    return render_template('accounting/invoice_detail.html', invoice=invoice)
+
+@accounting_bp.route('/invoices/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_invoice(id):
+    """Edit invoice and manage line items"""
+    invoice = Invoice.query.get_or_404(id)
+    form = InvoiceForm(obj=invoice)
+    
+    # Populate party choices
+    form.party_id.choices = [(s.id, f"{s.name} ({s.partner_type})") for s in Supplier.query.filter_by(is_active=True).all()]
+    
+    if form.validate_on_submit():
+        try:
+            form.populate_obj(invoice)
+            
+            # Recalculate totals
+            invoice.calculate_tax()
+            
+            db.session.commit()
+            
+            flash(f'Invoice "{invoice.invoice_number}" updated successfully!', 'success')
+            return redirect(url_for('accounting.view_invoice', id=invoice.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating invoice: {str(e)}', 'error')
+    
+    # Get all items for dropdown
+    items = Item.query.filter_by(is_active=True).all()
+    
+    return render_template('accounting/invoice_edit.html', 
+                         form=form, 
+                         invoice=invoice, 
+                         items=items,
+                         title='Edit Invoice')
+
+@accounting_bp.route('/invoices/<int:invoice_id>/items/add', methods=['POST'])
+@login_required
+def add_invoice_item(invoice_id):
+    """Add item to invoice via AJAX"""
+    invoice = Invoice.query.get_or_404(invoice_id)
+    
+    try:
+        data = request.get_json()
+        
+        # Get item details if item_id provided
+        item = None
+        if data.get('item_id'):
+            item = Item.query.get(data['item_id'])
+        
+        invoice_item = InvoiceItem(
+            invoice_id=invoice.id,
+            item_id=data.get('item_id'),
+            item_name=data.get('item_name') or (item.name if item else ''),
+            item_code=data.get('item_code') or (item.code if item else ''),
+            hsn_code=data.get('hsn_code') or (item.hsn_code if item else ''),
+            quantity=float(data['quantity']),
+            unit=data.get('unit') or (item.unit_of_measure if item else 'Nos'),
+            rate=float(data['rate']),
+            line_total=float(data['quantity']) * float(data['rate']),
+            gst_rate=float(data.get('gst_rate', 0))
+        )
+        
+        db.session.add(invoice_item)
+        
+        # Recalculate invoice totals
+        invoice.calculate_tax()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Item added successfully',
+            'item_id': invoice_item.id,
+            'subtotal': float(invoice.subtotal),
+            'total_tax': float(invoice.total_tax),
+            'total_amount': float(invoice.total_amount)
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 400
+
+@accounting_bp.route('/invoices/items/<int:item_id>/delete', methods=['DELETE'])
+@login_required
+def delete_invoice_item(item_id):
+    """Delete invoice item via AJAX"""
+    try:
+        invoice_item = InvoiceItem.query.get_or_404(item_id)
+        invoice = invoice_item.invoice
+        
+        db.session.delete(invoice_item)
+        
+        # Recalculate invoice totals
+        invoice.calculate_tax()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Item deleted successfully',
+            'subtotal': float(invoice.subtotal),
+            'total_tax': float(invoice.total_tax),
+            'total_amount': float(invoice.total_amount)
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 400
+
+@accounting_bp.route('/invoices/<int:id>/finalize', methods=['POST'])
+@login_required
+def finalize_invoice(id):
+    """Finalize invoice and create accounting entries"""
+    invoice = Invoice.query.get_or_404(id)
+    
+    if invoice.status != 'draft':
+        flash('Invoice is already finalized', 'warning')
+        return redirect(url_for('accounting.view_invoice', id=id))
+    
+    try:
+        # Update invoice status
+        invoice.status = 'sent'
+        
+        # Create accounting entries
+        from services.accounting_automation import AccountingAutomation
+        
+        if invoice.invoice_type == 'sales':
+            AccountingAutomation.create_sales_invoice_entry(invoice)
+        else:
+            AccountingAutomation.create_purchase_invoice_entry(invoice)
+        
+        db.session.commit()
+        
+        flash(f'Invoice "{invoice.invoice_number}" finalized and accounting entries created!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error finalizing invoice: {str(e)}', 'error')
+    
+    return redirect(url_for('accounting.view_invoice', id=id))
+
+@accounting_bp.route('/invoices/<int:id>/print')
+@login_required
+def print_invoice(id):
+    """Print invoice"""
+    invoice = Invoice.query.get_or_404(id)
+    
+    # Get company details
+    company = CompanySettings.query.first()
+    
+    return render_template('accounting/invoice_print.html', 
+                         invoice=invoice, 
+                         company=company)
