@@ -3,12 +3,14 @@ from flask_login import login_required, current_user
 from forms import PurchaseOrderForm, SupplierForm
 from models import PurchaseOrder, PurchaseOrderItem, Supplier, Item, DeliverySchedule, CompanySettings, BOMItem, MaterialInspection
 from models_uom import ItemUOMConversion, UnitOfMeasure
+from models_accounting import Account, AccountGroup
 from app import db
 from utils_documents import get_documents_for_transaction
 from sqlalchemy import func
 from datetime import datetime
 from utils import generate_po_number
 from services.notification_helpers import send_email_notification, send_whatsapp_notification, send_email_with_attachment
+from services.accounting_automation import AccountingAutomation
 from utils_documents import get_documents_for_transaction
 
 purchase_bp = Blueprint('purchase', __name__)
@@ -408,8 +410,19 @@ def add_supplier():
             is_active=form.is_active.data
         )
         db.session.add(supplier)
+        db.session.flush()  # Get the ID before committing
+        
+        # Create accounting ledger entry for the business partner
+        try:
+            account = AccountingAutomation.get_or_create_party_account(supplier)
+            if account:
+                flash(f'Business Partner "{supplier.name}" and accounting ledger account "{account.name}" created successfully!', 'success')
+            else:
+                flash(f'Business Partner "{supplier.name}" created successfully, but accounting ledger creation failed. Please check accounting setup.', 'warning')
+        except Exception as e:
+            flash(f'Business Partner "{supplier.name}" created successfully, but accounting integration error: {str(e)}', 'warning')
+            
         db.session.commit()
-        flash('Supplier added successfully', 'success')
         return redirect(url_for('purchase.list_suppliers'))
     
     return render_template('purchase/supplier_form.html', form=form, title='Add Supplier')
@@ -421,6 +434,9 @@ def edit_supplier(id):
     form = SupplierForm(obj=supplier)
     
     if form.validate_on_submit():
+        # Store original name to check if it changed
+        original_name = supplier.name
+        
         supplier.name = form.name.data
         supplier.contact_person = form.contact_person.data
         supplier.phone = form.phone.data
@@ -440,8 +456,27 @@ def edit_supplier(id):
         supplier.remarks = form.remarks.data
         supplier.is_active = form.is_active.data
         
+        # Update accounting ledger if name changed
+        if original_name != supplier.name:
+            try:
+                # Find existing account and update name
+                account = Account.query.filter_by(name=original_name).first()
+                if account:
+                    account.name = supplier.name
+                    flash(f'Business Partner and accounting ledger account updated successfully!', 'success')
+                else:
+                    # Create new account if doesn't exist
+                    account = AccountingAutomation.get_or_create_party_account(supplier)
+                    if account:
+                        flash(f'Business Partner updated and new accounting ledger account created!', 'success')
+                    else:
+                        flash(f'Business Partner updated, but accounting ledger update failed.', 'warning')
+            except Exception as e:
+                flash(f'Business Partner updated, but accounting integration error: {str(e)}', 'warning')
+        else:
+            flash('Business Partner updated successfully', 'success')
+        
         db.session.commit()
-        flash('Supplier updated successfully', 'success')
         return redirect(url_for('purchase.list_suppliers'))
     
     return render_template('purchase/supplier_form.html', form=form, title='Edit Supplier', supplier=supplier)
