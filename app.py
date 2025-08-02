@@ -43,6 +43,7 @@ def create_app():
     from models_document import Document, DocumentAccessLog
     from models_uom import UnitOfMeasure, UOMConversion, ItemUOMConversion, UOMConversionLog
     from models_department import Department
+    from models_batch import InventoryBatch, BatchMovement
     from models_batch_movement import BatchMovementLedger, BatchConsumptionReport
 
     
