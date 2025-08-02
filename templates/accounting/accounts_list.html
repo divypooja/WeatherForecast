@@ -78,7 +78,7 @@
                                            class="btn btn-outline-primary btn-sm">
                                             <i class="fas fa-edit"></i> Edit
                                         </a>
-                                        <a href="{{ url_for('accounting.account_ledger', id=account.id) }}" 
+                                        <a href="{{ url_for('accounting.account_ledgers') }}?account_id={{ account.id }}" 
                                            class="btn btn-outline-info btn-sm">
                                             <i class="fas fa-book"></i> Ledger
                                         </a>
