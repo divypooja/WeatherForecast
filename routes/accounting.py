@@ -712,6 +712,13 @@ def inventory_valuation():
     return render_template('accounting/inventory_valuation.html', 
                          title='Inventory Valuation Report')
 
+@accounting_bp.route('/reports/cogs')
+@login_required
+def cogs_report():
+    """Cost of Goods Sold Report"""
+    return render_template('accounting/cogs_report.html', 
+                         title='Cost of Goods Sold Report')
+
 @accounting_bp.route('/reports/trial-balance')
 @login_required
 def trial_balance():
