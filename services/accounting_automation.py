@@ -1311,7 +1311,7 @@ class AccountingAutomation:
             return False
     
     @staticmethod
-    def create_inventory_valuation_entry(item, quantity_change, valuation_change, movement_type):
+    def create_inventory_valuation_entry(item, quantity_change, valuation_change, movement_type, material_destination='raw_material'):
         """Create inventory valuation entry for stock movements"""
         try:
             # Get journal voucher type
@@ -1325,7 +1325,7 @@ class AccountingAutomation:
                 voucher_type_id=voucher_type.id,
                 transaction_date=date.today(),
                 reference_number=f'INV-{item.code}',
-                narration=f"Inventory {movement_type} for {item.name}",
+                narration=f"Inventory {movement_type} for {item.name} - {material_destination}",
                 total_amount=abs(valuation_change),
                 created_by=1  # System user
             )
@@ -1333,22 +1333,32 @@ class AccountingAutomation:
             db.session.add(voucher)
             db.session.flush()
             
-            # Get inventory accounts based on item state
+            # Get inventory accounts based on material destination
             raw_material_account = Account.query.filter_by(code='RM_INV').first()
             wip_account = Account.query.filter_by(code='WIP_INV').first()
             finished_goods_account = Account.query.filter_by(code='FG_INV').first()
             scrap_account = Account.query.filter_by(code='SCRAP_INV').first()
             cogs_account = Account.query.filter_by(code='COGS').first()
             
-            # Determine which inventory account to use
+            # Determine which inventory account to use based on material destination
             inventory_account = raw_material_account  # Default
-            if hasattr(item, 'item_type') and item.item_type:
-                if item.item_type in ['finished_goods', 'finished']:
-                    inventory_account = finished_goods_account
-                elif item.item_type in ['work_in_progress', 'wip']:
-                    inventory_account = wip_account
-                elif item.item_type in ['scrap']:
-                    inventory_account = scrap_account
+            if material_destination == 'finished' or material_destination == 'finished_goods':
+                inventory_account = finished_goods_account
+            elif material_destination == 'wip' or material_destination == 'work_in_progress':
+                inventory_account = wip_account
+            elif material_destination == 'scrap':
+                inventory_account = scrap_account
+            elif material_destination == 'raw_material' or material_destination == 'raw':
+                inventory_account = raw_material_account
+            else:
+                # Fallback to item type if available
+                if hasattr(item, 'item_type') and item.item_type:
+                    if item.item_type in ['finished_goods', 'finished']:
+                        inventory_account = finished_goods_account
+                    elif item.item_type in ['work_in_progress', 'wip']:
+                        inventory_account = wip_account
+                    elif item.item_type in ['scrap']:
+                        inventory_account = scrap_account
             
             if not all([inventory_account, cogs_account]):
                 return False
