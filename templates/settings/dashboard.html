@@ -261,7 +261,7 @@
 
 <!-- Hidden form for database reset -->
 <form id="resetForm" method="POST" action="{{ url_for('settings.reset_database') }}" style="display: none;">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}"/>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"/>
     <input type="hidden" name="reset_purchase_sales" id="hiddenPurchaseSales"/>
     <input type="hidden" name="reset_inventory" id="hiddenInventory"/>
     <input type="hidden" name="reset_production" id="hiddenProduction"/>
