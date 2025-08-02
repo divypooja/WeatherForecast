@@ -24,7 +24,7 @@
                                     <h6 class="card-title">{{ account.name }}</h6>
                                     <p class="card-text text-muted">{{ account.code }}</p>
                                     <p class="card-text">
-                                        <small class="text-muted">Group: {{ account.account_group.name }}</small>
+                                        <small class="text-muted">Group: {{ account.group.name }}</small>
                                     </p>
                                     <a href="{{ url_for('accounting.account_ledger_detail', account_id=account.id) }}" class="btn btn-primary btn-sm">
                                         <i class="fas fa-eye"></i> View Ledger
