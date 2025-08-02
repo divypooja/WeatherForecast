@@ -578,10 +578,10 @@ def reset_database():
             
             # List of child tables to delete in correct order (batch tables first)
             child_tables = [
-                "batch_movement_ledger",      # Most dependent batch table
-                "batch_consumption_reports",  # Batch consumption tracking
-                "production_batches",         # Production batch tracking
-                "inventory_batches",          # Batch inventory data
+                "jobwork_batches",           # Job work batch tracking
+                "batch_traceability",        # Batch traceability records  
+                "batch_movements",           # Batch movement history
+                "item_batches",              # Main batch inventory data
                 "grn_line_items",
                 "grn", 
                 "daily_job_work_entries",
@@ -698,7 +698,7 @@ def reset_database():
             if deleted_items:
                 # Check if batch data was cleared
                 try:
-                    batch_count = db.session.execute(db.text("SELECT COUNT(*) FROM inventory_batches")).scalar() or 0
+                    batch_count = db.session.execute(db.text("SELECT COUNT(*) FROM item_batches")).scalar() or 0
                 except:
                     batch_count = 0
                     
