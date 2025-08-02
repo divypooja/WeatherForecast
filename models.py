@@ -697,7 +697,7 @@ class Item(db.Model):
     
     # Relationships
     purchase_order_items = db.relationship('PurchaseOrderItem', backref='item_ref', lazy=True)
-    sales_order_items = db.relationship('SalesOrderItem', backref='item', lazy=True)
+    sales_order_items = db.relationship('SalesOrderItem', lazy=True)
     # Removed conflicting backref - BOMItem has its own 'item' relationship
     item_type_obj = db.relationship('ItemType', backref='items', lazy=True)
     
@@ -906,6 +906,13 @@ class PurchaseOrder(db.Model):
     # Tally integration
     tally_synced = db.Column(db.Boolean, default=False)
     
+    # Accounting integration
+    supplier_account_id = db.Column(db.Integer, db.ForeignKey('accounts.id'))
+    purchase_commitment_voucher_id = db.Column(db.Integer, db.ForeignKey('vouchers.id'))
+    advance_payment_voucher_id = db.Column(db.Integer, db.ForeignKey('vouchers.id'))
+    advance_amount_paid = db.Column(db.Float, default=0.0)
+    accounting_status = db.Column(db.String(20), default='pending')  # pending, committed, advance_paid, invoiced, closed
+    
     # Inspection workflow fields
     inspection_required = db.Column(db.Boolean, default=True)
     inspection_status = db.Column(db.String(20), default='pending')  # pending, in_progress, completed, failed
@@ -918,6 +925,11 @@ class PurchaseOrder(db.Model):
     creator = db.relationship('User', foreign_keys=[created_by], backref='created_purchase_orders')
     inspector = db.relationship('User', foreign_keys=[inspected_by], backref='inspected_purchase_orders')
     material_inspections = db.relationship('MaterialInspection', backref='purchase_order', lazy=True, cascade='all, delete-orphan')
+    
+    # Accounting relationships
+    supplier_account = db.relationship('Account', foreign_keys=[supplier_account_id])
+    commitment_voucher = db.relationship('Voucher', foreign_keys=[purchase_commitment_voucher_id])
+    advance_voucher = db.relationship('Voucher', foreign_keys=[advance_payment_voucher_id])
 
 class PurchaseOrderItem(db.Model):
     __tablename__ = 'purchase_order_items'
@@ -991,9 +1003,25 @@ class SalesOrder(db.Model):
     # Tally integration
     tally_synced = db.Column(db.Boolean, default=False)
     
+    # Accounting integration
+    customer_account_id = db.Column(db.Integer, db.ForeignKey('accounts.id'))
+    sales_booking_voucher_id = db.Column(db.Integer, db.ForeignKey('vouchers.id'))
+    advance_receipt_voucher_id = db.Column(db.Integer, db.ForeignKey('vouchers.id'))
+    sales_voucher_id = db.Column(db.Integer, db.ForeignKey('vouchers.id'))
+    advance_amount_received = db.Column(db.Float, default=0.0)
+    accounting_status = db.Column(db.String(20), default='pending')  # pending, booked, advance_received, delivered, invoiced, closed
+    subtotal = db.Column(db.Float, default=0.0)
+    gst_amount = db.Column(db.Float, default=0.0)
+    
     # Relationships
     items = db.relationship('SalesOrderItem', backref='sales_order', lazy=True, cascade='all, delete-orphan')
     creator = db.relationship('User', backref='created_sales_orders')
+    
+    # Accounting relationships
+    customer_account = db.relationship('Account', foreign_keys=[customer_account_id])
+    booking_voucher = db.relationship('Voucher', foreign_keys=[sales_booking_voucher_id])
+    advance_voucher = db.relationship('Voucher', foreign_keys=[advance_receipt_voucher_id])
+    sales_voucher = db.relationship('Voucher', foreign_keys=[sales_voucher_id])
 
 class SalesOrderItem(db.Model):
     __tablename__ = 'sales_order_items'
@@ -1007,6 +1035,15 @@ class SalesOrderItem(db.Model):
     total_price = db.Column(db.Float, nullable=False)
     unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
     total_weight = db.Column(db.Float, default=0.0)  # Total weight (qty × unit_weight)
+    
+    # GST and accounting fields
+    hsn_code = db.Column(db.String(20))  # HSN Code
+    gst_rate = db.Column(db.Float, default=18.0)  # GST Rate %
+    gst_amount = db.Column(db.Float, default=0.0)  # GST Amount
+    taxable_amount = db.Column(db.Float, default=0.0)  # Amount before GST
+    
+    # Relationships
+    item = db.relationship('Item')
 
 class Employee(db.Model):
     __tablename__ = 'employees'

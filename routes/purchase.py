@@ -199,8 +199,17 @@ def add_purchase_order():
         # Process enhanced PO items from form
         process_po_items(po, request.form)
         
+        # Create accounting entries for PO commitment
+        from services.accounting_automation import AccountingAutomation
+        accounting_result = AccountingAutomation.create_purchase_order_voucher(po)
+        
         db.session.commit()
-        flash('Purchase Order created successfully', 'success')
+        
+        if accounting_result:
+            flash('Purchase Order created successfully with accounting entries', 'success')
+        else:
+            flash('Purchase Order created successfully but accounting integration failed', 'warning')
+        
         return redirect(url_for('purchase.list_purchase_orders'))
     
     # Get items with BOM rates and UOM conversion data
@@ -587,11 +596,20 @@ def change_po_status(po_id):
     
     old_status = po.status
     po.status = 'cancelled'
+    
+    # Close accounting entries when PO is cancelled
+    from services.accounting_automation import AccountingAutomation
+    accounting_result = AccountingAutomation.close_purchase_order_voucher(po)
+    
     db.session.commit()
+    
+    message = f'Purchase Order {po.po_number} cancelled (was {old_status.title()})'
+    if not accounting_result:
+        message += ' - Warning: Accounting entries could not be closed'
     
     return jsonify({
         'success': True, 
-        'message': f'Purchase Order {po.po_number} cancelled (was {old_status.title()})'
+        'message': message
     })
 
 def process_po_items(po, form_data):

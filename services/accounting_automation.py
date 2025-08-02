@@ -663,3 +663,585 @@ class AccountingAutomation:
             db.session.rollback()
             print(f"Error creating production voucher: {str(e)}")
             return False
+    
+    @staticmethod
+    def create_purchase_order_voucher(purchase_order):
+        """Create purchase commitment voucher when PO is confirmed"""
+        try:
+            from models_accounting import VoucherType, Voucher, JournalEntry, Account
+            
+            # Get or create purchase order voucher type
+            voucher_type = VoucherType.query.filter_by(code='POV').first()
+            if not voucher_type:
+                voucher_type = VoucherType(
+                    name='Purchase Order Voucher',
+                    code='POV',
+                    description='Purchase Order Commitments'
+                )
+                db.session.add(voucher_type)
+                db.session.flush()
+            
+            # Create voucher
+            voucher = Voucher(
+                voucher_number=Voucher.generate_voucher_number('POV'),
+                voucher_type_id=voucher_type.id,
+                transaction_date=purchase_order.order_date,
+                reference_number=purchase_order.po_number,
+                narration=f"Purchase Order commitment - {purchase_order.po_number}",
+                party_id=purchase_order.supplier_id,
+                party_type='supplier',
+                total_amount=purchase_order.total_amount,
+                created_by=purchase_order.created_by
+            )
+            
+            db.session.add(voucher)
+            db.session.flush()
+            
+            # Get or create accounts
+            supplier_account = AccountingAutomation.get_or_create_party_account(purchase_order.supplier)
+            commitment_account = Account.query.filter_by(code='PO_COMMIT').first()
+            
+            if not commitment_account:
+                # Create purchase commitment account
+                from models_accounting import AccountGroup
+                liability_group = AccountGroup.query.filter_by(name='Current Liabilities').first()
+                if liability_group:
+                    commitment_account = Account(
+                        name='Purchase Order Commitments',
+                        code='PO_COMMIT',
+                        account_group_id=liability_group.id,
+                        account_type='current_liability'
+                    )
+                    db.session.add(commitment_account)
+                    db.session.flush()
+            
+            if not all([supplier_account, commitment_account]):
+                return False
+            
+            # Create journal entries
+            # Debit Purchase Commitments (Asset/Expense)
+            commitment_entry = JournalEntry(
+                voucher_id=voucher.id,
+                account_id=commitment_account.id,
+                entry_type='debit',
+                amount=purchase_order.total_amount,
+                narration=f"Purchase commitment for {purchase_order.supplier.name}",
+                transaction_date=voucher.transaction_date,
+                reference_type='purchase_order',
+                reference_id=purchase_order.id
+            )
+            db.session.add(commitment_entry)
+            
+            # Credit Supplier Account (Liability)
+            supplier_entry = JournalEntry(
+                voucher_id=voucher.id,
+                account_id=supplier_account.id,
+                entry_type='credit',
+                amount=purchase_order.total_amount,
+                narration=f"Purchase commitment to {purchase_order.supplier.name}",
+                transaction_date=voucher.transaction_date,
+                reference_type='purchase_order',
+                reference_id=purchase_order.id
+            )
+            db.session.add(supplier_entry)
+            
+            # Update PO with accounting references
+            purchase_order.supplier_account_id = supplier_account.id
+            purchase_order.purchase_commitment_voucher_id = voucher.id
+            purchase_order.accounting_status = 'committed'
+            
+            db.session.commit()
+            return voucher
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error creating purchase order voucher: {str(e)}")
+            return False
+    
+    @staticmethod
+    def create_advance_payment_voucher(purchase_order, amount, payment_account_id, notes=None):
+        """Create advance payment voucher for PO"""
+        try:
+            from models_accounting import VoucherType, Voucher, JournalEntry, Account
+            
+            # Get payment voucher type
+            voucher_type = VoucherType.query.filter_by(code='PAY').first()
+            if not voucher_type:
+                return False
+            
+            # Create voucher
+            voucher = Voucher(
+                voucher_number=Voucher.generate_voucher_number('APV'),
+                voucher_type_id=voucher_type.id,
+                transaction_date=datetime.now().date(),
+                reference_number=f"ADV-{purchase_order.po_number}",
+                narration=f"Advance payment for PO {purchase_order.po_number}",
+                party_id=purchase_order.supplier_id,
+                party_type='supplier',
+                total_amount=amount,
+                created_by=purchase_order.created_by
+            )
+            
+            db.session.add(voucher)
+            db.session.flush()
+            
+            # Get accounts
+            supplier_account = Account.query.get(purchase_order.supplier_account_id)
+            payment_account = Account.query.get(payment_account_id)
+            
+            if not all([supplier_account, payment_account]):
+                return False
+            
+            # Create journal entries
+            # Debit Supplier Account (reduce liability)
+            supplier_entry = JournalEntry(
+                voucher_id=voucher.id,
+                account_id=supplier_account.id,
+                entry_type='debit',
+                amount=amount,
+                narration=f"Advance payment to {purchase_order.supplier.name}",
+                transaction_date=voucher.transaction_date,
+                reference_type='purchase_order',
+                reference_id=purchase_order.id
+            )
+            db.session.add(supplier_entry)
+            
+            # Credit Bank/Cash Account
+            payment_entry = JournalEntry(
+                voucher_id=voucher.id,
+                account_id=payment_account.id,
+                entry_type='credit',
+                amount=amount,
+                narration=f"Advance payment for PO {purchase_order.po_number}",
+                transaction_date=voucher.transaction_date,
+                reference_type='purchase_order',
+                reference_id=purchase_order.id
+            )
+            db.session.add(payment_entry)
+            
+            # Update PO
+            purchase_order.advance_payment_voucher_id = voucher.id
+            purchase_order.advance_amount_paid += amount
+            if purchase_order.advance_amount_paid > 0:
+                purchase_order.accounting_status = 'advance_paid'
+            
+            db.session.commit()
+            return voucher
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error creating advance payment voucher: {str(e)}")
+            return False
+    
+    @staticmethod
+    def create_sales_order_voucher(sales_order):
+        """Create sales booking voucher when SO is confirmed"""
+        try:
+            from models_accounting import VoucherType, Voucher, JournalEntry, Account, AccountGroup
+            
+            # Get or create sales order voucher type
+            voucher_type = VoucherType.query.filter_by(code='SOV').first()
+            if not voucher_type:
+                voucher_type = VoucherType(
+                    name='Sales Order Voucher',
+                    code='SOV',
+                    description='Sales Order Bookings'
+                )
+                db.session.add(voucher_type)
+                db.session.flush()
+            
+            # Create voucher
+            voucher = Voucher(
+                voucher_number=Voucher.generate_voucher_number('SOV'),
+                voucher_type_id=voucher_type.id,
+                transaction_date=sales_order.order_date,
+                reference_number=sales_order.so_number,
+                narration=f"Sales Order booking - {sales_order.so_number}",
+                party_id=sales_order.customer_id,
+                party_type='customer',
+                total_amount=sales_order.total_amount,
+                created_by=sales_order.created_by
+            )
+            
+            db.session.add(voucher)
+            db.session.flush()
+            
+            # Get or create accounts
+            customer_account = AccountingAutomation.get_or_create_party_account(sales_order.customer)
+            booking_account = Account.query.filter_by(code='SO_BOOKING').first()
+            
+            if not booking_account:
+                # Create sales booking account
+                asset_group = AccountGroup.query.filter_by(name='Current Assets').first()
+                if asset_group:
+                    booking_account = Account(
+                        name='Sales Order Bookings',
+                        code='SO_BOOKING',
+                        account_group_id=asset_group.id,
+                        account_type='current_asset'
+                    )
+                    db.session.add(booking_account)
+                    db.session.flush()
+            
+            if not all([customer_account, booking_account]):
+                return False
+            
+            # Create journal entries
+            # Debit Customer Account (Asset)
+            customer_entry = JournalEntry(
+                voucher_id=voucher.id,
+                account_id=customer_account.id,
+                entry_type='debit',
+                amount=sales_order.total_amount,
+                narration=f"Sales booking from {sales_order.customer.name}",
+                transaction_date=voucher.transaction_date,
+                reference_type='sales_order',
+                reference_id=sales_order.id
+            )
+            db.session.add(customer_entry)
+            
+            # Credit Sales Booking Account
+            booking_entry = JournalEntry(
+                voucher_id=voucher.id,
+                account_id=booking_account.id,
+                entry_type='credit',
+                amount=sales_order.total_amount,
+                narration=f"Sales order booking - {sales_order.so_number}",
+                transaction_date=voucher.transaction_date,
+                reference_type='sales_order',
+                reference_id=sales_order.id
+            )
+            db.session.add(booking_entry)
+            
+            # Update SO with accounting references
+            sales_order.customer_account_id = customer_account.id
+            sales_order.sales_booking_voucher_id = voucher.id
+            sales_order.accounting_status = 'booked'
+            
+            db.session.commit()
+            return voucher
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error creating sales order voucher: {str(e)}")
+            return False
+    
+    @staticmethod
+    def create_advance_receipt_voucher(sales_order, amount, receipt_account_id, notes=None):
+        """Create advance receipt voucher for SO"""
+        try:
+            from models_accounting import VoucherType, Voucher, JournalEntry, Account
+            
+            # Get receipt voucher type
+            voucher_type = VoucherType.query.filter_by(code='REC').first()
+            if not voucher_type:
+                return False
+            
+            # Create voucher
+            voucher = Voucher(
+                voucher_number=Voucher.generate_voucher_number('ARV'),
+                voucher_type_id=voucher_type.id,
+                transaction_date=datetime.now().date(),
+                reference_number=f"ADV-{sales_order.so_number}",
+                narration=f"Advance receipt for SO {sales_order.so_number}",
+                party_id=sales_order.customer_id,
+                party_type='customer',
+                total_amount=amount,
+                created_by=sales_order.created_by
+            )
+            
+            db.session.add(voucher)
+            db.session.flush()
+            
+            # Get accounts
+            customer_account = Account.query.get(sales_order.customer_account_id)
+            receipt_account = Account.query.get(receipt_account_id)
+            
+            if not all([customer_account, receipt_account]):
+                return False
+            
+            # Create journal entries
+            # Debit Bank/Cash Account
+            receipt_entry = JournalEntry(
+                voucher_id=voucher.id,
+                account_id=receipt_account.id,
+                entry_type='debit',
+                amount=amount,
+                narration=f"Advance receipt for SO {sales_order.so_number}",
+                transaction_date=voucher.transaction_date,
+                reference_type='sales_order',
+                reference_id=sales_order.id
+            )
+            db.session.add(receipt_entry)
+            
+            # Credit Customer Account (reduce asset)
+            customer_entry = JournalEntry(
+                voucher_id=voucher.id,
+                account_id=customer_account.id,
+                entry_type='credit',
+                amount=amount,
+                narration=f"Advance from {sales_order.customer.name}",
+                transaction_date=voucher.transaction_date,
+                reference_type='sales_order',
+                reference_id=sales_order.id
+            )
+            db.session.add(customer_entry)
+            
+            # Update SO
+            sales_order.advance_receipt_voucher_id = voucher.id
+            sales_order.advance_amount_received += amount
+            if sales_order.advance_amount_received > 0:
+                sales_order.accounting_status = 'advance_received'
+            
+            db.session.commit()
+            return voucher
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error creating advance receipt voucher: {str(e)}")
+            return False
+    
+    @staticmethod
+    def create_sales_delivery_voucher(sales_order):
+        """Create sales voucher when SO is delivered (revenue recognition)"""
+        try:
+            from models_accounting import VoucherType, Voucher, JournalEntry, Account, AccountGroup
+            
+            # Get sales voucher type
+            voucher_type = VoucherType.query.filter_by(code='SAL').first()
+            if not voucher_type:
+                return False
+            
+            # Create voucher
+            voucher = Voucher(
+                voucher_number=Voucher.generate_voucher_number('SAL'),
+                voucher_type_id=voucher_type.id,
+                transaction_date=datetime.now().date(),
+                reference_number=sales_order.so_number,
+                narration=f"Sales delivery - {sales_order.so_number}",
+                party_id=sales_order.customer_id,
+                party_type='customer',
+                total_amount=sales_order.total_amount,
+                created_by=sales_order.created_by
+            )
+            
+            db.session.add(voucher)
+            db.session.flush()
+            
+            # Get accounts
+            customer_account = Account.query.get(sales_order.customer_account_id)
+            sales_account = Account.query.filter_by(code='SALES').first()
+            gst_output_account = Account.query.filter_by(code='GST_OUTPUT').first()
+            booking_account = Account.query.filter_by(code='SO_BOOKING').first()
+            
+            if not all([customer_account, sales_account, booking_account]):
+                return False
+            
+            # Create journal entries
+            # Debit Sales Booking Account (reverse booking)
+            booking_reverse_entry = JournalEntry(
+                voucher_id=voucher.id,
+                account_id=booking_account.id,
+                entry_type='debit',
+                amount=sales_order.total_amount,
+                narration=f"Reverse sales booking - {sales_order.so_number}",
+                transaction_date=voucher.transaction_date,
+                reference_type='sales_order',
+                reference_id=sales_order.id
+            )
+            db.session.add(booking_reverse_entry)
+            
+            # Credit Sales Account (Revenue recognition)
+            sales_entry = JournalEntry(
+                voucher_id=voucher.id,
+                account_id=sales_account.id,
+                entry_type='credit',
+                amount=sales_order.subtotal,
+                narration=f"Sales revenue - {sales_order.so_number}",
+                transaction_date=voucher.transaction_date,
+                reference_type='sales_order',
+                reference_id=sales_order.id
+            )
+            db.session.add(sales_entry)
+            
+            # Credit GST Output (if applicable)
+            if sales_order.gst_amount > 0 and gst_output_account:
+                gst_entry = JournalEntry(
+                    voucher_id=voucher.id,
+                    account_id=gst_output_account.id,
+                    entry_type='credit',
+                    amount=sales_order.gst_amount,
+                    narration=f"Output GST - {sales_order.so_number}",
+                    transaction_date=voucher.transaction_date,
+                    reference_type='sales_order',
+                    reference_id=sales_order.id
+                )
+                db.session.add(gst_entry)
+            
+            # Update SO
+            sales_order.sales_voucher_id = voucher.id
+            sales_order.accounting_status = 'delivered'
+            
+            db.session.commit()
+            return voucher
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error creating sales delivery voucher: {str(e)}")
+            return False
+    
+    @staticmethod
+    def close_purchase_order_voucher(purchase_order):
+        """Close PO accounting entries when PO is completed"""
+        try:
+            from models_accounting import VoucherType, Voucher, JournalEntry, Account
+            
+            if not purchase_order.purchase_commitment_voucher_id:
+                return True  # No commitment to close
+            
+            # Get journal voucher type
+            voucher_type = VoucherType.query.filter_by(code='JOU').first()
+            if not voucher_type:
+                return False
+            
+            # Create closing voucher
+            voucher = Voucher(
+                voucher_number=Voucher.generate_voucher_number('JOU'),
+                voucher_type_id=voucher_type.id,
+                transaction_date=datetime.now().date(),
+                reference_number=f"CLOSE-{purchase_order.po_number}",
+                narration=f"Close PO commitment - {purchase_order.po_number}",
+                party_id=purchase_order.supplier_id,
+                party_type='supplier',
+                total_amount=purchase_order.total_amount,
+                created_by=purchase_order.created_by
+            )
+            
+            db.session.add(voucher)
+            db.session.flush()
+            
+            # Get accounts
+            supplier_account = Account.query.get(purchase_order.supplier_account_id)
+            commitment_account = Account.query.filter_by(code='PO_COMMIT').first()
+            
+            if not all([supplier_account, commitment_account]):
+                return False
+            
+            # Reverse the commitment entries
+            # Credit Purchase Commitments
+            commitment_entry = JournalEntry(
+                voucher_id=voucher.id,
+                account_id=commitment_account.id,
+                entry_type='credit',
+                amount=purchase_order.total_amount,
+                narration=f"Close purchase commitment",
+                transaction_date=voucher.transaction_date,
+                reference_type='purchase_order',
+                reference_id=purchase_order.id
+            )
+            db.session.add(commitment_entry)
+            
+            # Debit Supplier Account
+            supplier_entry = JournalEntry(
+                voucher_id=voucher.id,
+                account_id=supplier_account.id,
+                entry_type='debit',
+                amount=purchase_order.total_amount,
+                narration=f"Close supplier commitment",
+                transaction_date=voucher.transaction_date,
+                reference_type='purchase_order',
+                reference_id=purchase_order.id
+            )
+            db.session.add(supplier_entry)
+            
+            # Update PO status
+            purchase_order.accounting_status = 'closed'
+            
+            db.session.commit()
+            return voucher
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error closing purchase order voucher: {str(e)}")
+            return False
+    
+    @staticmethod
+    def close_sales_order_voucher(sales_order):
+        """Close SO accounting entries when SO is completed"""
+        try:
+            from models_accounting import VoucherType, Voucher, JournalEntry, Account
+            
+            if not sales_order.sales_booking_voucher_id:
+                return True  # No booking to close
+            
+            # If already delivered, just update status
+            if sales_order.accounting_status == 'delivered':
+                sales_order.accounting_status = 'closed'
+                db.session.commit()
+                return True
+            
+            # Get journal voucher type
+            voucher_type = VoucherType.query.filter_by(code='JOU').first()
+            if not voucher_type:
+                return False
+            
+            # Create closing voucher
+            voucher = Voucher(
+                voucher_number=Voucher.generate_voucher_number('JOU'),
+                voucher_type_id=voucher_type.id,
+                transaction_date=datetime.now().date(),
+                reference_number=f"CLOSE-{sales_order.so_number}",
+                narration=f"Close SO booking - {sales_order.so_number}",
+                party_id=sales_order.customer_id,
+                party_type='customer',
+                total_amount=sales_order.total_amount,
+                created_by=sales_order.created_by
+            )
+            
+            db.session.add(voucher)
+            db.session.flush()
+            
+            # Get accounts
+            customer_account = Account.query.get(sales_order.customer_account_id)
+            booking_account = Account.query.filter_by(code='SO_BOOKING').first()
+            
+            if not all([customer_account, booking_account]):
+                return False
+            
+            # Reverse the booking entries
+            # Debit Sales Booking Account
+            booking_entry = JournalEntry(
+                voucher_id=voucher.id,
+                account_id=booking_account.id,
+                entry_type='debit',
+                amount=sales_order.total_amount,
+                narration=f"Close sales booking",
+                transaction_date=voucher.transaction_date,
+                reference_type='sales_order',
+                reference_id=sales_order.id
+            )
+            db.session.add(booking_entry)
+            
+            # Credit Customer Account
+            customer_entry = JournalEntry(
+                voucher_id=voucher.id,
+                account_id=customer_account.id,
+                entry_type='credit',
+                amount=sales_order.total_amount,
+                narration=f"Close customer booking",
+                transaction_date=voucher.transaction_date,
+                reference_type='sales_order',
+                reference_id=sales_order.id
+            )
+            db.session.add(customer_entry)
+            
+            # Update SO status
+            sales_order.accounting_status = 'closed'
+            
+            db.session.commit()
+            return voucher
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error closing sales order voucher: {str(e)}")
+            return False

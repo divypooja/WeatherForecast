@@ -174,8 +174,19 @@ def add_sales_order():
             created_by=current_user.id
         )
         db.session.add(so)
+        db.session.flush()  # Get the SO ID
+        
+        # Create accounting entries for SO booking
+        from services.accounting_automation import AccountingAutomation
+        accounting_result = AccountingAutomation.create_sales_order_voucher(so)
+        
         db.session.commit()
-        flash('Sales Order created successfully', 'success')
+        
+        if accounting_result:
+            flash('Sales Order created successfully with accounting entries', 'success')
+        else:
+            flash('Sales Order created successfully but accounting integration failed', 'warning')
+        
         return redirect(url_for('sales.edit_sales_order', id=so.id))
     
     # Get items with BOM rates for the items section
@@ -241,6 +252,9 @@ def edit_sales_order(id):
         old_status = so.status
         so.status = form.status.data
         
+        # Import accounting automation
+        from services.accounting_automation import AccountingAutomation
+        
         # If status changed from any status to 'confirmed', deduct inventory
         if old_status != 'confirmed' and so.status == 'confirmed':
             inventory_deduction_result = deduct_inventory_for_sales_order(so)
@@ -265,6 +279,15 @@ def edit_sales_order(id):
         # If status changed from 'confirmed' to another status, restore inventory
         elif old_status == 'confirmed' and so.status != 'confirmed':
             restore_inventory_for_sales_order(so)
+        
+        # Handle accounting status transitions
+        if old_status != so.status:
+            if so.status == 'delivered':
+                # Create sales voucher for revenue recognition
+                AccountingAutomation.create_sales_delivery_voucher(so)
+            elif so.status == 'cancelled':
+                # Close sales order voucher
+                AccountingAutomation.close_sales_order_voucher(so)
         
         db.session.commit()
         flash('Sales Order updated successfully', 'success')

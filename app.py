@@ -139,7 +139,11 @@ def create_app():
     from routes.manufacturing_intelligence import manufacturing_intelligence_bp
     app.register_blueprint(manufacturing_intelligence_bp)
     
-
+    # Register PO/SO Accounting blueprints
+    from routes.po_accounting import po_accounting_bp
+    from routes.so_accounting import so_accounting_bp
+    app.register_blueprint(po_accounting_bp, url_prefix='/po_accounting')
+    app.register_blueprint(so_accounting_bp, url_prefix='/so_accounting')
     
     # Register placeholder routes for new dashboard modules
     from routes.module_placeholders import register_placeholder_routes
