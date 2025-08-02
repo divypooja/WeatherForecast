@@ -697,11 +697,46 @@ def add_bom_item(bom_id):
         if item and item.unit_price:
             unit_cost = item.unit_price
     
+    # Get default UOM for the item or create a default one
+    uom_id = None
+    try:
+        from models_uom import UnitOfMeasure
+        
+        # Try to get item's default UOM
+        item = Item.query.get(item_id)
+        if item and item.unit_of_measure:
+            # Find UOM by symbol
+            uom = UnitOfMeasure.query.filter_by(symbol=item.unit_of_measure).first()
+            if uom:
+                uom_id = uom.id
+        
+        # If no UOM found, get default "Pieces" UOM
+        if not uom_id:
+            uom = UnitOfMeasure.query.filter_by(symbol='Pcs').first()
+            if not uom:
+                # Create default UOM if it doesn't exist
+                uom = UnitOfMeasure(
+                    name='Pieces',
+                    symbol='Pcs',
+                    category='Count',
+                    base_unit=True
+                )
+                db.session.add(uom)
+                db.session.flush()  # Get ID without committing
+            uom_id = uom.id
+            
+    except Exception as e:
+        flash(f'Error setting UOM: {str(e)}', 'danger')
+        return redirect(url_for('production.edit_bom', id=bom_id))
+    
     bom_item = BOMItem(
         bom_id=bom_id,
-        item_id=item_id,
-        quantity_required=quantity_required,
-        unit=unit,
+        material_id=item_id,  # Use new field
+        item_id=item_id,      # Keep legacy field for compatibility
+        qty_required=quantity_required,  # Use new field
+        quantity_required=quantity_required,  # Keep legacy field for compatibility
+        uom_id=uom_id,        # Required UOM ID
+        unit=unit,            # Keep legacy field for compatibility
         unit_cost=unit_cost
     )
     

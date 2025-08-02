@@ -792,7 +792,7 @@ class BOMItemForm(FlaskForm):
     # New advanced fields
     material_id = SelectField('Material/Component', validators=[DataRequired()], coerce=int)
     qty_required = FloatField('Quantity Required', validators=[DataRequired(), NumberRange(min=0)])
-    uom_id = SelectField('Unit of Measure', validators=[Optional()], coerce=int)
+    uom_id = SelectField('Unit of Measure', validators=[DataRequired()], coerce=int)
     unit_cost = FloatField('Unit Cost', validators=[Optional(), NumberRange(min=0)], default=0.0)
     scrap_percent = FloatField('Expected Scrap %', validators=[Optional(), NumberRange(min=0, max=100)], default=0.0)
     process_step = IntegerField('Process Step', validators=[Optional(), NumberRange(min=1)], default=1)
