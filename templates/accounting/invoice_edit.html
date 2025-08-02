@@ -15,88 +15,11 @@
         border-radius: 8px;
         padding: 15px;
     }
-    /* Custom Modal Styles */
-    .custom-modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 9999;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    .add-item-form {
+        transition: all 0.3s ease;
     }
-    
-    .modal-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
-    }
-    
-    .modal-container {
-        position: relative;
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        max-width: 600px;
-        width: 90%;
-        max-height: 90vh;
-        overflow-y: auto;
-        z-index: 10000;
-    }
-    
-    .modal-header {
-        padding: 1rem 1.5rem;
-        border-bottom: 1px solid #dee2e6;
-        display: flex;
-        justify-content: between;
-        align-items: center;
-        background-color: #f8f9fa;
-        border-radius: 8px 8px 0 0;
-    }
-    
-    .modal-title {
-        margin: 0;
-        font-size: 1.25rem;
-        font-weight: 500;
-        flex: 1;
-    }
-    
-    .close-btn {
-        background: none;
-        border: none;
-        font-size: 1.5rem;
-        line-height: 1;
-        color: #6c757d;
-        cursor: pointer;
-        padding: 0;
-        width: 30px;
-        height: 30px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    .close-btn:hover {
-        color: #000;
-    }
-    
-    .modal-body {
-        padding: 1.5rem;
-    }
-    
-    .modal-footer {
-        padding: 1rem 1.5rem;
-        border-top: 1px solid #dee2e6;
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-        background-color: #f8f9fa;
-        border-radius: 0 0 8px 8px;
+    .add-item-form.show {
+        display: block !important;
     }
 </style>
 {% endblock %}
@@ -168,166 +91,72 @@
         </div>
     </form>
 
-    <!-- Invoice Items -->
-    <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="card-title mb-0">Invoice Items</h5>
-            <button type="button" class="btn btn-sm btn-primary" onclick="addInvoiceItem()">
-                <i class="fas fa-plus"></i> Add Item
-            </button>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-sm" id="invoiceItemsTable">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Item</th>
-                            <th>HSN Code</th>
-                            <th>Qty</th>
-                            <th>Unit</th>
-                            <th>Rate</th>
-                            <th>Amount</th>
-                            <th>GST%</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in invoice.invoice_items %}
-                        <tr class="invoice-item-row" data-item-id="{{ item.id }}">
-                            <td>
-                                <strong>{{ item.item_name }}</strong>
-                                {% if item.item_code %}<br><small class="text-muted">{{ item.item_code }}</small>{% endif %}
-                            </td>
-                            <td>{{ item.hsn_code or '-' }}</td>
-                            <td class="text-center">{{ item.quantity }}</td>
-                            <td>{{ item.unit }}</td>
-                            <td class="text-end">₹{{ "%.2f"|format(item.rate) }}</td>
-                            <td class="text-end">₹{{ "%.2f"|format(item.line_total) }}</td>
-                            <td class="text-center">{{ item.gst_rate }}%</td>
-                            <td>
-                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteInvoiceItem({{ item.id }})">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr id="noItemsRow">
-                            <td colspan="8" class="text-center py-4 text-muted">
-                                <i class="fas fa-box-open fa-2x mb-2"></i>
-                                <p>No items added yet</p>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- Invoice Totals -->
     <div class="row">
-        <div class="col-md-8"></div>
-        <div class="col-md-4">
-            <div class="invoice-totals">
-                <div class="d-flex justify-content-between">
-                    <span>Subtotal:</span>
-                    <span id="invoiceSubtotal">₹{{ "%.2f"|format(invoice.subtotal or 0) }}</span>
-                </div>
-                <div class="d-flex justify-content-between">
-                    <span>GST:</span>
-                    <span id="invoiceTax">₹{{ "%.2f"|format(invoice.total_tax or 0) }}</span>
-                </div>
-                <hr>
-                <div class="d-flex justify-content-between h5">
-                    <span>Total:</span>
-                    <span id="invoiceTotal">₹{{ "%.2f"|format(invoice.total_amount or 0) }}</span>
+        <div class="col-md-8">
+            <!-- Invoice Items Section -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Invoice Items</h5>
+                        <button type="button" class="btn btn-sm btn-primary" onclick="toggleAddItemForm()">
+                            <i class="fas fa-plus"></i> <span id="addItemBtnText">Add Item</span>
+                        </button>
+                    </div>
                 </div>
                 
-                {% if invoice.status == 'draft' %}
-                <div class="mt-3">
-                    <form method="POST" action="{{ url_for('accounting.finalize_invoice', id=invoice.id) }}">
-                        <button type="submit" class="btn btn-success w-100" onclick="return confirm('Are you sure you want to finalize this invoice? This action cannot be undone.')">
-                            <i class="fas fa-check"></i> Finalize Invoice
-                        </button>
-                    </form>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <!-- Add Item Modal -->
-    <div id="addItemModal" class="custom-modal" style="display: none;">
-        <div class="modal-overlay" onclick="closeModal()"></div>
-        <div class="modal-container">
-            <div class="modal-header">
-                <h5 class="modal-title">Add Invoice Item</h5>
-                <button type="button" class="close-btn" onclick="closeModal()">&times;</button>
-            </div>
-                <div class="modal-body">
-                    <form id="addItemForm">
-                        <div class="mb-3">
-                            <label class="form-label">Item</label>
-                            <select class="form-select" id="itemSelect" onchange="populateItemDetails()">
-                                <option value="">Select Item</option>
-                                {% for item in items %}
-                                <option value="{{ item.id }}" 
-                                        data-name="{{ item.name }}"
-                                        data-code="{{ item.code }}"
-                                        data-hsn="{{ item.hsn_code or '' }}"
-                                        data-unit="{{ item.unit_of_measure }}"
-                                        data-rate="{{ item.unit_price or 0 }}"
-                                        data-gst="{{ item.gst_rate or 0 }}">
-                                    {{ item.code }} - {{ item.name }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
+                <!-- Inline Add Item Form -->
+                <div id="addItemFormContainer" class="add-item-form" style="display: none;">
+                    <div class="card-body border-bottom bg-light">
+                        <h6 class="text-primary mb-3"><i class="fas fa-plus-circle"></i> Add New Item</h6>
                         
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="form-label">Item Name</label>
-                                    <input type="text" class="form-control" id="itemName" required>
+                                    <label class="form-label">Select Item</label>
+                                    <select class="form-select" id="itemSelect" onchange="populateItemDetails()">
+                                        <option value="">Select Item or Enter Manually</option>
+                                        {% for item in items %}
+                                        <option value="{{ item.id }}" 
+                                                data-name="{{ item.name }}"
+                                                data-code="{{ item.code }}"
+                                                data-hsn="{{ item.hsn_code or '' }}"
+                                                data-unit="{{ item.unit_of_measure }}"
+                                                data-rate="{{ item.unit_price or 0 }}"
+                                                data-gst="{{ item.gst_rate or 0 }}">
+                                            {{ item.code }} - {{ item.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
                                 </div>
                             </div>
                             <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Item Name *</label>
+                                    <input type="text" class="form-control" id="itemName" required placeholder="Enter item name">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-3">
                                 <div class="mb-3">
                                     <label class="form-label">Item Code</label>
-                                    <input type="text" class="form-control" id="itemCode">
+                                    <input type="text" class="form-control" id="itemCode" placeholder="Optional">
                                 </div>
                             </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-3">
                                 <div class="mb-3">
                                     <label class="form-label">HSN Code</label>
-                                    <input type="text" class="form-control" id="hsnCode">
+                                    <input type="text" class="form-control" id="hsnCode" placeholder="Optional">
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-3">
                                 <div class="mb-3">
                                     <label class="form-label">Unit</label>
-                                    <input type="text" class="form-control" id="unit" value="Nos" required>
+                                    <input type="text" class="form-control" id="unit" value="Nos" placeholder="Unit">
                                 </div>
                             </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label class="form-label">Quantity</label>
-                                    <input type="number" class="form-control" id="quantity" step="0.01" min="0.01" required onchange="calculateAmount()">
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label class="form-label">Rate</label>
-                                    <input type="number" class="form-control" id="rate" step="0.01" min="0" required onchange="calculateAmount()">
-                                </div>
-                            </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="mb-3">
                                     <label class="form-label">GST %</label>
                                     <input type="number" class="form-control" id="gstRate" step="0.01" min="0" max="100" value="18">
@@ -335,15 +164,117 @@
                             </div>
                         </div>
                         
-                        <div class="mb-3">
-                            <label class="form-label">Amount</label>
-                            <input type="number" class="form-control" id="amount" readonly>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Quantity *</label>
+                                    <input type="number" class="form-control" id="quantity" step="0.01" min="0.01" required onchange="calculateAmount()" placeholder="0.00">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Rate *</label>
+                                    <input type="number" class="form-control" id="rate" step="0.01" min="0" required onchange="calculateAmount()" placeholder="0.00">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Amount</label>
+                                    <input type="number" class="form-control" id="amount" readonly placeholder="0.00">
+                                </div>
+                            </div>
                         </div>
-                    </form>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-success" onclick="saveInvoiceItem()">
+                                <i class="fas fa-save"></i> Save Item
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="cancelAddItem()">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="saveInvoiceItem()">Add Item</button>
+                
+                <div class="card-body">
+                    {% if invoice.invoice_items %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>HSN Code</th>
+                                        <th>Qty</th>
+                                        <th>Unit</th>
+                                        <th>Rate</th>
+                                        <th>Amount</th>
+                                        <th>GST%</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in invoice.invoice_items %}
+                                    <tr class="invoice-item-row">
+                                        <td>
+                                            <strong>{{ item.item_name }}</strong>
+                                            {% if item.item_code %}<br><small class="text-muted">{{ item.item_code }}</small>{% endif %}
+                                        </td>
+                                        <td>{{ item.hsn_code or '-' }}</td>
+                                        <td>{{ "%.2f"|format(item.quantity) }}</td>
+                                        <td>{{ item.unit }}</td>
+                                        <td>₹{{ "%.2f"|format(item.rate) }}</td>
+                                        <td>₹{{ "%.2f"|format(item.line_total) }}</td>
+                                        <td>{{ "%.1f"|format(item.gst_rate) }}%</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteInvoiceItem({{ item.id }})">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No items added yet</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <!-- Invoice Totals -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Invoice Summary</h5>
+                </div>
+                <div class="card-body invoice-totals">
+                    <div class="d-flex justify-content-between">
+                        <span>Subtotal:</span>
+                        <span id="invoiceSubtotal">₹{{ "%.2f"|format(invoice.subtotal or 0) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>GST:</span>
+                        <span id="invoiceTax">₹{{ "%.2f"|format(invoice.total_tax or 0) }}</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between h5">
+                        <span>Total:</span>
+                        <span id="invoiceTotal">₹{{ "%.2f"|format(invoice.total_amount or 0) }}</span>
+                    </div>
+                    
+                    {% if invoice.status == 'draft' %}
+                    <div class="mt-3">
+                        <form method="POST" action="{{ url_for('accounting.finalize_invoice', id=invoice.id) }}">
+                            <button type="submit" class="btn btn-success w-100" onclick="return confirm('Are you sure you want to finalize this invoice? This action cannot be undone.')">
+                                <i class="fas fa-check"></i> Finalize Invoice
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -351,20 +282,39 @@
 </div>
 
 <script>
-function addInvoiceItem() {
-    console.log('addInvoiceItem function called');
+function toggleAddItemForm() {
+    const form = document.getElementById('addItemFormContainer');
+    const btnText = document.getElementById('addItemBtnText');
     
-    // Reset form before showing
-    document.getElementById('addItemForm').reset();
+    if (form.style.display === 'none') {
+        form.style.display = 'block';
+        btnText.textContent = 'Cancel';
+        resetAddItemForm();
+    } else {
+        form.style.display = 'none';
+        btnText.textContent = 'Add Item';
+    }
+}
+
+function cancelAddItem() {
+    const form = document.getElementById('addItemFormContainer');
+    const btnText = document.getElementById('addItemBtnText');
     
-    // Show custom modal
-    const modal = document.getElementById('addItemModal');
-    modal.style.display = 'flex';
-    
-    // Prevent body scrolling
-    document.body.style.overflow = 'hidden';
-    
-    console.log('Custom modal shown successfully');
+    form.style.display = 'none';
+    btnText.textContent = 'Add Item';
+    resetAddItemForm();
+}
+
+function resetAddItemForm() {
+    document.getElementById('itemSelect').value = '';
+    document.getElementById('itemName').value = '';
+    document.getElementById('itemCode').value = '';
+    document.getElementById('hsnCode').value = '';
+    document.getElementById('unit').value = 'Nos';
+    document.getElementById('quantity').value = '';
+    document.getElementById('rate').value = '';
+    document.getElementById('gstRate').value = '18';
+    document.getElementById('amount').value = '';
 }
 
 function populateItemDetails() {
@@ -372,12 +322,12 @@ function populateItemDetails() {
     const selectedOption = select.options[select.selectedIndex];
     
     if (selectedOption.value) {
-        document.getElementById('itemName').value = selectedOption.dataset.name;
-        document.getElementById('itemCode').value = selectedOption.dataset.code;
-        document.getElementById('hsnCode').value = selectedOption.dataset.hsn;
-        document.getElementById('unit').value = selectedOption.dataset.unit;
-        document.getElementById('rate').value = selectedOption.dataset.rate;
-        document.getElementById('gstRate').value = selectedOption.dataset.gst;
+        document.getElementById('itemName').value = selectedOption.dataset.name || '';
+        document.getElementById('itemCode').value = selectedOption.dataset.code || '';
+        document.getElementById('hsnCode').value = selectedOption.dataset.hsn || '';
+        document.getElementById('unit').value = selectedOption.dataset.unit || 'Nos';
+        document.getElementById('rate').value = selectedOption.dataset.rate || '';
+        document.getElementById('gstRate').value = selectedOption.dataset.gst || '18';
         calculateAmount();
     }
 }
@@ -406,7 +356,7 @@ function saveInvoiceItem() {
     console.log('Form data:', formData);
     
     if (!formData.item_name || !formData.quantity || !formData.rate) {
-        alert('Please fill in all required fields');
+        alert('Please fill in all required fields (Item Name, Quantity, Rate)');
         return;
     }
     
@@ -421,7 +371,7 @@ function saveInvoiceItem() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            closeModal(); // Close modal first
+            alert('Item added successfully!');
             location.reload(); // Refresh page to show new item
         } else {
             alert('Error adding item: ' + data.message);
@@ -429,21 +379,8 @@ function saveInvoiceItem() {
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error adding item');
+        alert('Error adding item. Please try again.');
     });
-}
-
-function closeModal() {
-    console.log('Closing custom modal');
-    
-    // Hide modal
-    const modal = document.getElementById('addItemModal');
-    modal.style.display = 'none';
-    
-    // Restore body scrolling
-    document.body.style.overflow = 'auto';
-    
-    console.log('Custom modal closed successfully');
 }
 
 function deleteInvoiceItem(itemId) {
