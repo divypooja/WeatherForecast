@@ -113,7 +113,23 @@ def dashboard():
     
     except Exception as e:
         flash(f'Error loading dashboard: {str(e)}', 'error')
-        return render_template('accounting/dashboard.html', stats={}, recent_vouchers=[], bank_accounts=[])
+        # Create stats dictionary with all required fields
+        stats = {
+            'total_assets': total_assets,
+            'total_liabilities': total_liabilities,
+            'total_income': total_income,
+            'total_expenses': total_expenses,
+            'net_worth': total_assets - total_liabilities,
+            'monthly_vouchers': monthly_vouchers,
+            'outstanding_receivables': outstanding_receivables,
+            'outstanding_payables': outstanding_payables
+        }
+        
+        return render_template('accounting/dashboard.html', 
+                             stats=stats, 
+                             recent_vouchers=recent_vouchers, 
+                             bank_accounts=bank_accounts,
+                             monthly_trend=monthly_trend)
 
 # Chart of Accounts Management
 @accounting_bp.route('/accounts')
@@ -524,48 +540,200 @@ def profit_loss():
     
     income_accounts = []
     expense_accounts = []
-    total_income = 0
-    total_expenses = 0
     
     if form.validate_on_submit() or request.method == 'GET':
-        from_date = form.from_date.data if form.from_date.data else date.today().replace(day=1)
-        to_date = form.to_date.data if form.to_date.data else date.today()
-        
         # Get income accounts
-        income_group = AccountGroup.query.filter_by(group_type='income').all()
-        for group in income_group:
+        income_groups = AccountGroup.query.filter_by(group_type='income', is_active=True).all()
+        for group in income_groups:
             for account in group.accounts:
                 if account.is_active:
-                    balance = account.calculate_balance(to_date)
+                    balance = account.calculate_balance(form.to_date.data if form.to_date.data else date.today())
                     if balance != 0:
                         income_accounts.append({
                             'account': account,
-                            'amount': balance
+                            'balance': balance
                         })
-                        total_income += balance
         
         # Get expense accounts
-        expense_group = AccountGroup.query.filter_by(group_type='expenses').all()
-        for group in expense_group:
+        expense_groups = AccountGroup.query.filter_by(group_type='expenses', is_active=True).all()
+        for group in expense_groups:
             for account in group.accounts:
                 if account.is_active:
-                    balance = account.calculate_balance(to_date)
+                    balance = account.calculate_balance(form.to_date.data if form.to_date.data else date.today())
                     if balance != 0:
                         expense_accounts.append({
                             'account': account,
-                            'amount': balance
+                            'balance': balance
                         })
-                        total_expenses += balance
     
+    total_income = sum(acc['balance'] for acc in income_accounts)
+    total_expenses = sum(acc['balance'] for acc in expense_accounts)
     net_profit = total_income - total_expenses
     
-    return render_template('accounting/profit_loss.html', 
+    return render_template('accounting/profit_loss.html',
                          form=form,
                          income_accounts=income_accounts,
                          expense_accounts=expense_accounts,
                          total_income=total_income,
                          total_expenses=total_expenses,
                          net_profit=net_profit)
+
+@accounting_bp.route('/reports/balance-sheet')
+@login_required
+def balance_sheet():
+    """Balance Sheet Report"""
+    form = ReportFilterForm()
+    
+    if request.method == 'GET':
+        # Default to current date
+        form.to_date.data = date.today()
+    
+    assets = []
+    liabilities = []
+    equity = []
+    
+    if form.validate_on_submit() or request.method == 'GET':
+        # Get asset accounts
+        asset_groups = AccountGroup.query.filter_by(group_type='assets', is_active=True).all()
+        for group in asset_groups:
+            group_accounts = []
+            for account in group.accounts:
+                if account.is_active:
+                    balance = account.calculate_balance(form.to_date.data if form.to_date.data else date.today())
+                    if balance != 0:
+                        group_accounts.append({
+                            'account': account,
+                            'balance': balance
+                        })
+            if group_accounts:
+                assets.append({
+                    'group': group,
+                    'accounts': group_accounts,
+                    'total': sum(acc['balance'] for acc in group_accounts)
+                })
+        
+        # Get liability accounts
+        liability_groups = AccountGroup.query.filter_by(group_type='liabilities', is_active=True).all()
+        for group in liability_groups:
+            group_accounts = []
+            for account in group.accounts:
+                if account.is_active:
+                    balance = account.calculate_balance(form.to_date.data if form.to_date.data else date.today())
+                    if balance != 0:
+                        group_accounts.append({
+                            'account': account,
+                            'balance': balance
+                        })
+            if group_accounts:
+                liabilities.append({
+                    'group': group,
+                    'accounts': group_accounts,
+                    'total': sum(acc['balance'] for acc in group_accounts)
+                })
+        
+        # Get equity accounts
+        equity_groups = AccountGroup.query.filter_by(group_type='equity', is_active=True).all()
+        for group in equity_groups:
+            group_accounts = []
+            for account in group.accounts:
+                if account.is_active:
+                    balance = account.calculate_balance(form.to_date.data if form.to_date.data else date.today())
+                    if balance != 0:
+                        group_accounts.append({
+                            'account': account,
+                            'balance': balance
+                        })
+            if group_accounts:
+                equity.append({
+                    'group': group,
+                    'accounts': group_accounts,
+                    'total': sum(acc['balance'] for acc in group_accounts)
+                })
+    
+    total_assets = sum(group['total'] for group in assets)
+    total_liabilities = sum(group['total'] for group in liabilities)
+    total_equity = sum(group['total'] for group in equity)
+    
+    return render_template('accounting/balance_sheet.html',
+                         form=form,
+                         assets=assets,
+                         liabilities=liabilities,
+                         equity=equity,
+                         total_assets=total_assets,
+                         total_liabilities=total_liabilities,
+                         total_equity=total_equity)
+
+@accounting_bp.route('/reports/cash-flow')
+@login_required
+def cash_flow():
+    """Cash Flow Statement"""
+    form = ReportFilterForm()
+    
+    if request.method == 'GET':
+        # Default to current month
+        form.from_date.data = date.today().replace(day=1)
+        form.to_date.data = date.today()
+    
+    operating_activities = []
+    investing_activities = []
+    financing_activities = []
+    
+    if form.validate_on_submit() or request.method == 'GET':
+        from_date = form.from_date.data if form.from_date.data else date.today().replace(day=1)
+        to_date = form.to_date.data if form.to_date.data else date.today()
+        
+        # Get cash movements for the period
+        cash_accounts = Account.query.filter_by(is_cash_account=True, is_active=True).all()
+        bank_accounts = Account.query.filter_by(is_bank_account=True, is_active=True).all()
+        
+        cash_and_bank_accounts = cash_accounts + bank_accounts
+        
+        for account in cash_and_bank_accounts:
+            entries = JournalEntry.query.filter(
+                JournalEntry.account_id == account.id,
+                JournalEntry.transaction_date >= from_date,
+                JournalEntry.transaction_date <= to_date
+            ).all()
+            
+            for entry in entries:
+                activity_type = 'operating'  # Default classification
+                
+                # Classify based on voucher type or narration
+                if entry.voucher.voucher_type.code in ['SAL', 'PUR']:
+                    activity_type = 'operating'
+                elif 'investment' in entry.narration.lower() or 'asset' in entry.narration.lower():
+                    activity_type = 'investing'
+                elif 'loan' in entry.narration.lower() or 'capital' in entry.narration.lower():
+                    activity_type = 'financing'
+                
+                activity_data = {
+                    'description': entry.narration,
+                    'amount': entry.amount if entry.entry_type == 'debit' else -entry.amount,
+                    'date': entry.transaction_date,
+                    'voucher': entry.voucher
+                }
+                
+                if activity_type == 'operating':
+                    operating_activities.append(activity_data)
+                elif activity_type == 'investing':
+                    investing_activities.append(activity_data)
+                else:
+                    financing_activities.append(activity_data)
+    
+    net_operating = sum(act['amount'] for act in operating_activities)
+    net_investing = sum(act['amount'] for act in investing_activities)
+    net_financing = sum(act['amount'] for act in financing_activities)
+    net_cash_flow = net_operating + net_investing + net_financing
+    
+    return render_template('accounting/cash_flow.html',
+                         form=form,
+                         operating_activities=operating_activities,
+                         investing_activities=investing_activities,
+                         financing_activities=financing_activities,
+                         net_operating=net_operating,
+                         net_investing=net_investing,
+                         net_financing=net_financing,
+                         net_cash_flow=net_cash_flow)
 
 # API Endpoints
 @accounting_bp.route('/api/accounts')
