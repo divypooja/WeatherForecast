@@ -391,10 +391,10 @@
         <div class="footer-section">
             <div class="footer-left">
                 <strong>Bank Details:</strong><br>
-                Bank Name: {{ company.bank_name if company and hasattr(company, 'bank_name') else 'Bank Name' }}<br>
-                A/c No: {{ company.account_number if company and hasattr(company, 'account_number') else 'Account Number' }}<br>
-                IFSC Code: {{ company.ifsc_code if company and hasattr(company, 'ifsc_code') else 'IFSC Code' }}<br>
-                Branch: {{ company.branch if company and hasattr(company, 'branch') else 'Branch Name' }}
+                Bank Name: {{ company.bank_name if company and company.bank_name else 'Bank Name' }}<br>
+                A/c No: {{ company.account_number if company and company.account_number else 'Account Number' }}<br>
+                IFSC Code: {{ company.ifsc_code if company and company.ifsc_code else 'IFSC Code' }}<br>
+                Branch: {{ company.branch if company and company.branch else 'Branch Name' }}
             </div>
             <div class="footer-right">
                 <strong>For {{ company.company_name if company else 'Company Name' }}</strong>
