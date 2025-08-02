@@ -19,14 +19,10 @@ class InventoryBatch(db.Model):
     batch_code = db.Column(db.String(50), nullable=False, index=True)
     
     # Quantities by state
-    qty_inspection = db.Column(db.Float, default=0.0)  # Materials awaiting inspection
     qty_raw = db.Column(db.Float, default=0.0)
     qty_wip = db.Column(db.Float, default=0.0)
     qty_finished = db.Column(db.Float, default=0.0)
     qty_scrap = db.Column(db.Float, default=0.0)
-    
-    # Inspection status for this batch
-    inspection_status = db.Column(db.String(20), default='pending')  # pending, passed, failed, quarantine
     
     # Batch metadata
     uom = db.Column(db.String(20), nullable=False)
@@ -52,17 +48,12 @@ class InventoryBatch(db.Model):
     @property
     def total_quantity(self):
         """Total quantity across all states"""
-        return (self.qty_inspection or 0) + (self.qty_raw or 0) + (self.qty_wip or 0) + (self.qty_finished or 0) + (self.qty_scrap or 0)
+        return (self.qty_raw or 0) + (self.qty_wip or 0) + (self.qty_finished or 0) + (self.qty_scrap or 0)
     
     @property
     def available_quantity(self):
-        """Available quantity (Raw + Finished) - NOT including inspection"""
+        """Available quantity (Raw + Finished)"""
         return (self.qty_raw or 0) + (self.qty_finished or 0)
-    
-    @property
-    def inspection_quantity(self):
-        """Quantity awaiting inspection (not available for use)"""
-        return self.qty_inspection or 0
     
     @property
     def is_expired(self):
