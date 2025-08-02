@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block title %}Settings Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+.settings-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease-in-out;
+}
+
+.settings-card:hover {
+    transform: translateY(-5px);
+}
+
+.settings-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.stat-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.recent-changes {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+}
+
+.premium-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.feature-highlight {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Premium Header -->
+    <div class="premium-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2><i class="fas fa-cogs"></i> Settings Dashboard</h2>
+                <p class="mb-0 opacity-75">Complete control over your ERP system configuration</p>
+            </div>
+            <div class="btn-group">
+                <a href="{{ url_for('settings_advanced.settings_dashboard') }}" class="btn btn-light btn-lg">
+                    <i class="fas fa-sliders-h"></i> Advanced Settings
+                </a>
+                <a href="{{ url_for('settings.user_management') }}" class="btn btn-outline-light">
+                    <i class="fas fa-users"></i> Users
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>1</h4>
+                        <p class="mb-0">Companies</p>
+                    </div>
+                    <i class="fas fa-building fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>1</h4>
+                        <p class="mb-0">Active Companies</p>
+                    </div>
+                    <i class="fas fa-check-circle fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%);">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ settings.total_users if settings else '1' }}</h4>
+                        <p class="mb-0">Total Users</p>
+                    </div>
+                    <i class="fas fa-users fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #c2185b 0%, #e91e63 100%);">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>50+</h4>
+                        <p class="mb-0">Configuration Items</p>
+                    </div>
+                    <i class="fas fa-sliders-h fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feature Highlight -->
+    <div class="feature-highlight">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h5><i class="fas fa-star"></i> Centralized Multi-Company Settings</h5>
+                <p class="mb-0">
+                    Configure inventory behavior, accounting automation, production controls, and job work preferences 
+                    across multiple companies with role-based access control and audit trails.
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{{ url_for('settings_advanced.settings_dashboard') }}" class="btn btn-light btn-lg">
+                    Explore Advanced Settings <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Categories -->
+    <div class="settings-grid">
+        <!-- Company Management -->
+        <div class="card settings-card">
+            <div class="card-body text-center">
+                <div class="settings-icon mx-auto" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <i class="fas fa-building fa-2x"></i>
+                </div>
+                <h5>Company Management</h5>
+                <p class="text-muted">Add/edit companies, assign users, set default company</p>
+                <a href="{{ url_for('settings_advanced.company_management') }}" class="btn btn-primary">Configure</a>
+            </div>
+        </div>
+
+        <!-- Inventory Configuration -->
+        <div class="card settings-card">
+            <div class="card-body text-center">
+                <div class="settings-icon mx-auto" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white;">
+                    <i class="fas fa-boxes fa-2x"></i>
+                </div>
+                <h5>Inventory Configuration</h5>
+                <p class="text-muted">Stock valuation, batch tracking, multi-UOM settings</p>
+                <a href="{{ url_for('settings_advanced.inventory_settings') }}" class="btn btn-success">Configure</a>
+            </div>
+        </div>
+
+        <!-- Accounting Rules -->
+        <div class="card settings-card">
+            <div class="card-body text-center">
+                <div class="settings-icon mx-auto" style="background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%); color: white;">
+                    <i class="fas fa-calculator fa-2x"></i>
+                </div>
+                <h5>Accounting Rules</h5>
+                <p class="text-muted">Auto journal entries, default ledgers, GST settings</p>
+                <a href="{{ url_for('settings_advanced.accounting_settings') }}" class="btn btn-warning">Configure</a>
+            </div>
+        </div>
+
+        <!-- Production Controls -->
+        <div class="card settings-card">
+            <div class="card-body text-center">
+                <div class="settings-icon mx-auto" style="background: linear-gradient(135deg, #c2185b 0%, #e91e63 100%); color: white;">
+                    <i class="fas fa-industry fa-2x"></i>
+                </div>
+                <h5>Production Controls</h5>
+                <p class="text-muted">BOM settings, cost calculation, batch linking</p>
+                <a href="{{ url_for('settings_advanced.production_settings') }}" class="btn btn-danger">Configure</a>
+            </div>
+        </div>
+
+        <!-- Job Work Preferences -->
+        <div class="card settings-card">
+            <div class="card-body text-center">
+                <div class="settings-icon mx-auto" style="background: linear-gradient(135deg, #8E2DE2 0%, #4A00E0 100%); color: white;">
+                    <i class="fas fa-tools fa-2x"></i>
+                </div>
+                <h5>Job Work Preferences</h5>
+                <p class="text-muted">GRN requirements, vendor rates, billing modes</p>
+                <a href="{{ url_for('settings_advanced.jobwork_settings') }}" class="btn btn-info">Configure</a>
+            </div>
+        </div>
+
+        <!-- Basic Settings -->
+        <div class="card settings-card">
+            <div class="card-body text-center">
+                <div class="settings-icon mx-auto" style="background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%); color: white;">
+                    <i class="fas fa-cog fa-2x"></i>
+                </div>
+                <h5>Basic Settings</h5>
+                <p class="text-muted">Company info, notifications, user management</p>
+                <div class="btn-group-vertical d-grid">
+                    <a href="{{ url_for('settings.company_settings') }}" class="btn btn-sm btn-outline-primary mb-1">Company Info</a>
+                    <a href="{{ url_for('settings.notification_settings') }}" class="btn btn-sm btn-outline-success">Notifications</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Changes -->
+    <div class="recent-changes">
+        <h5><i class="fas fa-history"></i> System Status</h5>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-check-circle text-success me-2"></i>
+                    <span>Centralized settings active</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-check-circle text-success me-2"></i>
+                    <span>Multi-company support enabled</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-check-circle text-success me-2"></i>
+                    <span>Default company configured</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

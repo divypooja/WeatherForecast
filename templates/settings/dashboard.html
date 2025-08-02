@@ -4,132 +4,150 @@
 
 {% block extra_css %}
 <style>
-.settings-card {
-    border: none;
-    border-radius: 15px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s ease-in-out;
-}
-
-.settings-card:hover {
-    transform: translateY(-5px);
-}
-
-.settings-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 15px;
+.stats-row {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 1rem;
+    gap: 1rem;
+    margin-bottom: 2rem;
 }
 
 .stat-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-radius: 15px;
+    flex: 1;
     padding: 1.5rem;
+    border-radius: 10px;
+    color: white;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card h3 {
+    font-size: 2rem;
+    font-weight: bold;
+    margin: 0;
+}
+
+.stat-card p {
+    margin: 0.5rem 0 0 0;
+    opacity: 0.9;
+}
+
+.stat-card-companies {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.stat-card-active {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.stat-card-users {
+    background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%);
+}
+
+.stat-card-config {
+    background: linear-gradient(135deg, #c2185b 0%, #e91e63 100%);
+}
+
+.feature-highlight {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border-left: 4px solid #007bff;
+}
+
+.settings-section {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.settings-section h5 {
+    margin-bottom: 1rem;
+    color: #495057;
+}
+
+.settings-section p {
+    color: #6c757d;
     margin-bottom: 1rem;
 }
 
 .settings-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 2rem;
-    margin-top: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
 }
 
-.recent-changes {
-    background: #f8f9fa;
-    border-radius: 10px;
-    padding: 1.5rem;
-    margin-top: 2rem;
-}
-
-.premium-header {
+.setting-card {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    border-radius: 15px;
-    padding: 2rem;
-    margin-bottom: 2rem;
-}
-
-.feature-highlight {
-    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-    color: white;
     border-radius: 10px;
     padding: 1.5rem;
-    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.setting-card h6 {
+    margin-bottom: 0.5rem;
+}
+
+.setting-card p {
+    margin-bottom: 1rem;
+    opacity: 0.9;
+}
+
+.setting-inventory {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.setting-accounting {
+    background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%);
+}
+
+.setting-production {
+    background: linear-gradient(135deg, #c2185b 0%, #e91e63 100%);
+}
+
+.setting-jobwork {
+    background: linear-gradient(135deg, #8E2DE2 0%, #4A00E0 100%);
+}
+
+.setting-admin {
+    background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%);
 }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid">
-    <!-- Premium Header -->
-    <div class="premium-header">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h2><i class="fas fa-cogs"></i> Settings Dashboard</h2>
-                <p class="mb-0 opacity-75">Complete control over your ERP system configuration</p>
-            </div>
-            <div class="btn-group">
-                <a href="{{ url_for('settings_advanced.settings_dashboard') }}" class="btn btn-light btn-lg">
-                    <i class="fas fa-sliders-h"></i> Advanced Settings
-                </a>
-                <a href="{{ url_for('settings.user_management') }}" class="btn btn-outline-light">
-                    <i class="fas fa-users"></i> Users
-                </a>
-            </div>
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-cogs"></i> Settings Dashboard</h2>
+            <p class="text-muted mb-0">Complete control over your ERP system configuration</p>
         </div>
+        <a href="{{ url_for('settings_advanced.settings_dashboard') }}" class="btn btn-primary">
+            <i class="fas fa-sliders-h"></i> Advanced Settings
+        </a>
     </div>
 
     <!-- Statistics Cards -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="stat-card">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h4>1</h4>
-                        <p class="mb-0">Companies</p>
-                    </div>
-                    <i class="fas fa-building fa-2x opacity-75"></i>
-                </div>
-            </div>
+    <div class="stats-row">
+        <div class="stat-card stat-card-companies">
+            <h3>1</h3>
+            <p>Companies</p>
         </div>
-        <div class="col-md-3">
-            <div class="stat-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h4>1</h4>
-                        <p class="mb-0">Active Companies</p>
-                    </div>
-                    <i class="fas fa-check-circle fa-2x opacity-75"></i>
-                </div>
-            </div>
+        <div class="stat-card stat-card-active">
+            <h3>1</h3>
+            <p>Active Companies</p>
         </div>
-        <div class="col-md-3">
-            <div class="stat-card" style="background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%);">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h4>{{ settings.total_users if settings else '1' }}</h4>
-                        <p class="mb-0">Total Users</p>
-                    </div>
-                    <i class="fas fa-users fa-2x opacity-75"></i>
-                </div>
-            </div>
+        <div class="stat-card stat-card-users">
+            <h3>{{ settings.total_users if settings else '1' }}</h3>
+            <p>Total Users</p>
         </div>
-        <div class="col-md-3">
-            <div class="stat-card" style="background: linear-gradient(135deg, #c2185b 0%, #e91e63 100%);">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h4>50+</h4>
-                        <p class="mb-0">Configuration Items</p>
-                    </div>
-                    <i class="fas fa-sliders-h fa-2x opacity-75"></i>
-                </div>
-            </div>
+        <div class="stat-card stat-card-config">
+            <h3>50+</h3>
+            <p>Configuration Items</p>
         </div>
     </div>
 
@@ -144,112 +162,62 @@
                 </p>
             </div>
             <div class="col-md-4 text-end">
-                <a href="{{ url_for('settings_advanced.settings_dashboard') }}" class="btn btn-light btn-lg">
-                    Explore Advanced Settings <i class="fas fa-arrow-right"></i>
-                </a>
+                <span class="badge bg-primary p-2">Explore Advanced Settings →</span>
             </div>
         </div>
     </div>
 
-    <!-- Settings Categories -->
+    <!-- Settings Grid -->
     <div class="settings-grid">
         <!-- Company Management -->
-        <div class="card settings-card">
-            <div class="card-body text-center">
-                <div class="settings-icon mx-auto" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                    <i class="fas fa-building fa-2x"></i>
-                </div>
-                <h5>Company Management</h5>
-                <p class="text-muted">Add/edit companies, assign users, set default company</p>
-                <a href="{{ url_for('settings_advanced.company_management') }}" class="btn btn-primary">Configure</a>
-            </div>
+        <div class="setting-card">
+            <i class="fas fa-building fa-3x mb-3"></i>
+            <h6>Company Management</h6>
+            <p>Add/edit companies, assign users, set default company</p>
+            <a href="{{ url_for('settings_advanced.company_management') }}" class="btn btn-light">Configure</a>
         </div>
 
         <!-- Inventory Configuration -->
-        <div class="card settings-card">
-            <div class="card-body text-center">
-                <div class="settings-icon mx-auto" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white;">
-                    <i class="fas fa-boxes fa-2x"></i>
-                </div>
-                <h5>Inventory Configuration</h5>
-                <p class="text-muted">Stock valuation, batch tracking, multi-UOM settings</p>
-                <a href="{{ url_for('settings_advanced.inventory_settings') }}" class="btn btn-success">Configure</a>
-            </div>
+        <div class="setting-card setting-inventory">
+            <i class="fas fa-boxes fa-3x mb-3"></i>
+            <h6>Inventory Configuration</h6>
+            <p>Stock valuation, batch tracking, multi-UOM settings</p>
+            <a href="{{ url_for('settings_advanced.inventory_settings') }}" class="btn btn-light">Configure</a>
         </div>
 
         <!-- Accounting Rules -->
-        <div class="card settings-card">
-            <div class="card-body text-center">
-                <div class="settings-icon mx-auto" style="background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%); color: white;">
-                    <i class="fas fa-calculator fa-2x"></i>
-                </div>
-                <h5>Accounting Rules</h5>
-                <p class="text-muted">Auto journal entries, default ledgers, GST settings</p>
-                <a href="{{ url_for('settings_advanced.accounting_settings') }}" class="btn btn-warning">Configure</a>
-            </div>
+        <div class="setting-card setting-accounting">
+            <i class="fas fa-calculator fa-3x mb-3"></i>
+            <h6>Accounting Rules</h6>
+            <p>Auto journal entries, default ledgers, GST settings</p>
+            <a href="{{ url_for('settings_advanced.accounting_settings') }}" class="btn btn-light">Configure</a>
         </div>
 
         <!-- Production Controls -->
-        <div class="card settings-card">
-            <div class="card-body text-center">
-                <div class="settings-icon mx-auto" style="background: linear-gradient(135deg, #c2185b 0%, #e91e63 100%); color: white;">
-                    <i class="fas fa-industry fa-2x"></i>
-                </div>
-                <h5>Production Controls</h5>
-                <p class="text-muted">BOM settings, cost calculation, batch linking</p>
-                <a href="{{ url_for('settings_advanced.production_settings') }}" class="btn btn-danger">Configure</a>
-            </div>
+        <div class="setting-card setting-production">
+            <i class="fas fa-industry fa-3x mb-3"></i>
+            <h6>Production Controls</h6>
+            <p>BOM settings, cost calculation, batch linking</p>
+            <a href="{{ url_for('settings_advanced.production_settings') }}" class="btn btn-light">Configure</a>
         </div>
 
         <!-- Job Work Preferences -->
-        <div class="card settings-card">
-            <div class="card-body text-center">
-                <div class="settings-icon mx-auto" style="background: linear-gradient(135deg, #8E2DE2 0%, #4A00E0 100%); color: white;">
-                    <i class="fas fa-tools fa-2x"></i>
-                </div>
-                <h5>Job Work Preferences</h5>
-                <p class="text-muted">GRN requirements, vendor rates, billing modes</p>
-                <a href="{{ url_for('settings_advanced.jobwork_settings') }}" class="btn btn-info">Configure</a>
-            </div>
+        <div class="setting-card setting-jobwork">
+            <i class="fas fa-tools fa-3x mb-3"></i>
+            <h6>Job Work Preferences</h6>
+            <p>GRN requirements, vendor rates, billing modes</p>
+            <a href="{{ url_for('settings_advanced.jobwork_settings') }}" class="btn btn-light">Configure</a>
         </div>
 
         <!-- Basic Settings -->
-        <div class="card settings-card">
-            <div class="card-body text-center">
-                <div class="settings-icon mx-auto" style="background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%); color: white;">
-                    <i class="fas fa-cog fa-2x"></i>
-                </div>
-                <h5>Basic Settings</h5>
-                <p class="text-muted">Company info, notifications, user management</p>
-                <div class="btn-group-vertical d-grid">
-                    <a href="{{ url_for('settings.company_settings') }}" class="btn btn-sm btn-outline-primary mb-1">Company Info</a>
-                    <a href="{{ url_for('settings.notification_settings') }}" class="btn btn-sm btn-outline-success">Notifications</a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Recent Changes -->
-    <div class="recent-changes">
-        <h5><i class="fas fa-history"></i> System Status</h5>
-        <div class="row">
-            <div class="col-md-4">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-check-circle text-success me-2"></i>
-                    <span>Centralized settings active</span>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-check-circle text-success me-2"></i>
-                    <span>Multi-company support enabled</span>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-check-circle text-success me-2"></i>
-                    <span>Default company configured</span>
-                </div>
+        <div class="setting-card setting-admin">
+            <i class="fas fa-cog fa-3x mb-3"></i>
+            <h6>Basic Settings</h6>
+            <p>Company info, notifications, user management</p>
+            <div class="btn-group-vertical d-grid gap-1">
+                <a href="{{ url_for('settings.company_settings') }}" class="btn btn-light btn-sm">Company Info</a>
+                <a href="{{ url_for('settings.notification_settings') }}" class="btn btn-light btn-sm">Notifications</a>
+                <a href="{{ url_for('settings.user_management') }}" class="btn btn-light btn-sm">Users</a>
             </div>
         </div>
     </div>
