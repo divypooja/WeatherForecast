@@ -1070,7 +1070,7 @@ def add_invoice():
     form = InvoiceForm()
     
     # Populate party choices
-    form.party_id.choices = [(s.id, f"{s.name} ({s.partner_type})") for s in Supplier.query.filter_by(is_active=True).all()]
+    form.party_id.choices = [(s.id, f"{s.name} ({s.partner_type})") for s in Supplier.query.all()]
     
     if form.validate_on_submit():
         try:
@@ -1124,7 +1124,7 @@ def edit_invoice(id):
     form = InvoiceForm(obj=invoice)
     
     # Populate party choices
-    form.party_id.choices = [(s.id, f"{s.name} ({s.partner_type})") for s in Supplier.query.filter_by(is_active=True).all()]
+    form.party_id.choices = [(s.id, f"{s.name} ({s.partner_type})") for s in Supplier.query.all()]
     
     if form.validate_on_submit():
         try:
@@ -1143,7 +1143,7 @@ def edit_invoice(id):
             flash(f'Error updating invoice: {str(e)}', 'error')
     
     # Get all items for dropdown
-    items = Item.query.filter_by(is_active=True).all()
+    items = Item.query.all()
     
     return render_template('accounting/invoice_edit.html', 
                          form=form, 
