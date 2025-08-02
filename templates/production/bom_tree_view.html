@@ -81,11 +81,6 @@
     border-top: 1px solid #dee2e6;
 }
 
-.tree-actions {
-    margin-left: 1rem;
-    margin-top: 0.5rem;
-}
-
 .cost-summary {
     background-color: #fff3cd;
     border: 1px solid #ffeaa7;
@@ -142,8 +137,73 @@
                 </div>
 
                 <div class="tree-view">
-                    {{ render_tree_node(tree, '', True) }}
+                    <!-- Root Product -->
+                    <div class="tree-node">
+                        <span class="tree-product">{{ tree.product.name }}</span>
+                        {% if tree.bom.output_quantity and tree.bom.output_quantity != 1.0 %}
+                            <span class="tree-quantity">({{ tree.bom.output_quantity }} units)</span>
+                        {% endif %}
+                        {% if tree.bom.intermediate_product %}
+                            <span class="intermediate-badge">Intermediate</span>
+                        {% endif %}
+                        {% if tree.bom.is_phantom_bom %}
+                            <span class="phantom-badge">Phantom</span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Direct Materials -->
+                    {% for material in tree.materials %}
+                        {% set is_last_material = loop.last and not tree.sub_boms %}
+                        <div class="tree-node">
+                            <span class="tree-connector">{{ '└── ' if is_last_material else '├── ' }}</span>
+                            <span class="tree-material">{{ material.item.name }} ({{ material.item.code }})</span>
+                            <span class="tree-quantity"> - {{ material.quantity }} {{ material.unit }}</span>
+                            {% if material.cost > 0 %}
+                                <span class="tree-cost"> @ ₹{{ "%.2f"|format(material.cost) }}/{{ material.unit }}</span>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+
+                    <!-- Sub-BOMs -->
+                    {% for sub_bom in tree.sub_boms %}
+                        {% set is_last_sub_bom = loop.last %}
+                        <div class="tree-node">
+                            <span class="tree-connector">{{ '└── ' if is_last_sub_bom else '├── ' }}</span>
+                            <span class="tree-product">{{ sub_bom.product.name }}</span>
+                            {% if sub_bom.bom.output_quantity and sub_bom.bom.output_quantity != 1.0 %}
+                                <span class="tree-quantity">({{ sub_bom.bom.output_quantity }} units)</span>
+                            {% endif %}
+                            {% if sub_bom.bom.intermediate_product %}
+                                <span class="intermediate-badge">Intermediate</span>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Sub-BOM Materials -->
+                        {% for sub_material in sub_bom.materials %}
+                            {% set sub_prefix = '│   ' if not is_last_sub_bom else '    ' %}
+                            {% set is_last_sub_material = loop.last %}
+                            <div class="tree-node">
+                                <span class="tree-connector">{{ sub_prefix }}{{ '└── ' if is_last_sub_material else '├── ' }}</span>
+                                <span class="tree-material">{{ sub_material.item.name }} ({{ sub_material.item.code }})</span>
+                                <span class="tree-quantity"> - {{ sub_material.quantity }} {{ sub_material.unit }}</span>
+                                {% if sub_material.cost > 0 %}
+                                    <span class="tree-cost"> @ ₹{{ "%.2f"|format(sub_material.cost) }}/{{ sub_material.unit }}</span>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
                 </div>
+
+                <!-- Cost Summary -->
+                {% if tree.bom.total_material_cost and tree.bom.total_material_cost > 0 %}
+                <div class="cost-summary">
+                    <i class="fas fa-calculator"></i> 
+                    <strong>Material Cost: ₹{{ "%.2f"|format(tree.bom.total_material_cost) }}</strong>
+                    {% if tree.bom.total_cost_per_unit and tree.bom.total_cost_per_unit != tree.bom.total_material_cost %}
+                        | Total with Overhead: ₹{{ "%.2f"|format(tree.bom.total_cost_per_unit) }}
+                    {% endif %}
+                </div>
+                {% endif %}
 
                 <div class="actions-container">
                     <a href="{{ url_for('production.edit_bom', id=tree.bom.id) }}" class="btn btn-primary btn-sm">
@@ -169,55 +229,6 @@
         </div>
     {% endif %}
 </div>
-
-<!-- Macro to recursively render tree nodes -->
-{% macro render_tree_node(node, prefix, is_last) %}
-<div class="tree-node">
-    <span class="tree-connector">{{ prefix }}{{ '└── ' if is_last else '├── ' }}</span>
-    <span class="tree-product">{{ node.product.name }}</span>
-    {% if node.bom.output_quantity and node.bom.output_quantity != 1.0 %}
-        <span class="tree-quantity">({{ node.bom.output_quantity }} units)</span>
-    {% endif %}
-    {% if node.bom.intermediate_product %}
-        <span class="intermediate-badge">Intermediate</span>
-    {% endif %}
-    {% if node.bom.is_phantom_bom %}
-        <span class="phantom-badge">Phantom</span>
-    {% endif %}
-</div>
-
-{% set new_prefix = prefix + ('    ' if is_last else '│   ') %}
-
-<!-- Render materials first -->
-{% for material in node.materials %}
-    {% set material_is_last = loop.last and not node.sub_boms %}
-    <div class="tree-node">
-        <span class="tree-connector">{{ new_prefix }}{{ '└── ' if material_is_last else '├── ' }}</span>
-        <span class="tree-material">{{ material.item.name }} ({{ material.item.code }})</span>
-        <span class="tree-quantity"> - {{ material.quantity }} {{ material.unit }}</span>
-        {% if material.cost > 0 %}
-            <span class="tree-cost"> @ ₹{{ "%.2f"|format(material.cost) }}/{{ material.unit }}</span>
-        {% endif %}
-    </div>
-{% endfor %}
-
-<!-- Render sub-BOMs recursively -->
-{% for sub_bom in node.sub_boms %}
-    {% set sub_is_last = loop.last %}
-    {{ render_tree_node(sub_bom, new_prefix, sub_is_last) }}
-{% endfor %}
-
-<!-- Cost Summary for this level -->
-{% if node.bom.total_material_cost and node.bom.total_material_cost > 0 %}
-<div class="cost-summary" style="margin-left: {{ new_prefix|length * 0.6 }}rem;">
-    <i class="fas fa-calculator"></i> 
-    <strong>Level Cost: ₹{{ "%.2f"|format(node.bom.total_material_cost) }}</strong>
-    {% if node.bom.total_cost_per_unit and node.bom.total_cost_per_unit != node.bom.total_material_cost %}
-        | Total with Overhead: ₹{{ "%.2f"|format(node.bom.total_cost_per_unit) }}
-    {% endif %}
-</div>
-{% endif %}
-{% endmacro %}
 {% endblock %}
 
 {% block scripts %}
