@@ -385,18 +385,7 @@ function addJournalEntry() {
 
 function postVoucher() {
     if (confirm('Post this voucher? This action cannot be undone.')) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '{{ url_for("accounting.post_voucher", id=voucher.id if voucher else 0) }}';
-        
-        const csrf = document.createElement('input');
-        csrf.type = 'hidden';
-        csrf.name = 'csrf_token';
-        csrf.value = '{{ csrf_token() }}';
-        form.appendChild(csrf);
-        
-        document.body.appendChild(form);
-        form.submit();
+        window.location.href = '{{ url_for("accounting.post_voucher", id=voucher.id if voucher else 0) }}';
     }
 }
 

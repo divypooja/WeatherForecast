@@ -41,7 +41,7 @@ class VoucherForm(FlaskForm):
     transaction_date = DateField('Transaction Date', validators=[DataRequired()], default=date.today)
     reference_number = StringField('Reference Number', validators=[Optional(), Length(max=100)])
     narration = TextAreaField('Narration', validators=[Optional(), Length(max=500)])
-    party_id = SelectField('Party', coerce=int, validators=[Optional()])
+    party_id = SelectField('Party', coerce=lambda x: int(x) if x else None, validators=[Optional()])
     party_type = SelectField('Party Type', validators=[Optional()], choices=[
         ('', 'Select Party Type'),
         ('supplier', 'Supplier'),
@@ -151,9 +151,9 @@ class ReportFilterForm(FlaskForm):
     """Form for financial report filters"""
     from_date = DateField('From Date', validators=[DataRequired()], default=date.today().replace(day=1))
     to_date = DateField('To Date', validators=[DataRequired()], default=date.today)
-    account_group_id = SelectField('Account Group', coerce=int, validators=[Optional()])
-    account_id = SelectField('Specific Account', coerce=int, validators=[Optional()])
-    party_id = SelectField('Party', coerce=int, validators=[Optional()])
+    account_group_id = SelectField('Account Group', coerce=lambda x: int(x) if x else None, validators=[Optional()])
+    account_id = SelectField('Specific Account', coerce=lambda x: int(x) if x else None, validators=[Optional()])
+    party_id = SelectField('Party', coerce=lambda x: int(x) if x else None, validators=[Optional()])
     voucher_type_id = SelectField('Voucher Type', coerce=int, validators=[Optional()])
     
 class GSATReportForm(FlaskForm):
