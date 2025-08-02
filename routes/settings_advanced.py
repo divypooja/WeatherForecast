@@ -15,7 +15,7 @@ from models_accounting import Account
 
 settings_advanced_bp = Blueprint('settings_advanced', __name__, url_prefix='/settings')
 
-@settings_advanced_bp.route('/dashboard')
+@settings_advanced_bp.route('/advanced')
 @login_required
 def settings_dashboard():
     """Centralized settings dashboard"""
