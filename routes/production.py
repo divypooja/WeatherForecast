@@ -441,6 +441,46 @@ def list_bom():
     
     return render_template('production/bom_list.html', boms=boms)
 
+@production_bp.route('/bom/tree-view')
+@login_required
+def bom_tree_view():
+    """Display BOMs in hierarchical tree structure"""
+    # Get all top-level BOMs (those without parent)
+    top_level_boms = BOM.query.filter_by(is_active=True, parent_bom_id=None).order_by(BOM.product_id).all()
+    
+    def build_bom_tree(bom):
+        """Recursively build BOM tree structure"""
+        tree_node = {
+            'bom': bom,
+            'product': bom.product,
+            'materials': [],
+            'sub_boms': []
+        }
+        
+        # Add direct materials
+        for bom_item in bom.items:
+            if bom_item.material:
+                tree_node['materials'].append({
+                    'item': bom_item.material,
+                    'quantity': bom_item.qty_required or bom_item.quantity_required,
+                    'unit': bom_item.uom.symbol if bom_item.uom else (bom_item.unit or 'pcs'),
+                    'cost': bom_item.unit_cost or 0
+                })
+        
+        # Add sub-BOMs (child BOMs that have this BOM as parent)
+        child_boms = BOM.query.filter_by(parent_bom_id=bom.id, is_active=True).all()
+        for child_bom in child_boms:
+            tree_node['sub_boms'].append(build_bom_tree(child_bom))
+        
+        return tree_node
+    
+    # Build tree structure for all top-level BOMs
+    bom_trees = []
+    for bom in top_level_boms:
+        bom_trees.append(build_bom_tree(bom))
+    
+    return render_template('production/bom_tree_view.html', bom_trees=bom_trees)
+
 @production_bp.route('/bom/add', methods=['GET', 'POST'])
 @login_required
 def add_bom():

@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+
+{% block title %}BOM Tree View - Factory Management System{% endblock %}
+
+{% block head %}
+<style>
+.tree-view {
+    font-family: 'Courier New', monospace;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin: 1rem 0;
+}
+
+.tree-node {
+    margin: 0.25rem 0;
+    position: relative;
+}
+
+.tree-product {
+    font-weight: bold;
+    color: #0d6efd;
+    font-size: 1.1em;
+}
+
+.tree-material {
+    color: #6f42c1;
+    margin-left: 1rem;
+}
+
+.tree-sub-bom {
+    color: #198754;
+    margin-left: 1rem;
+}
+
+.tree-connector {
+    color: #6c757d;
+    font-weight: normal;
+}
+
+.tree-quantity {
+    color: #fd7e14;
+    font-weight: 600;
+}
+
+.tree-cost {
+    color: #dc3545;
+    font-size: 0.9em;
+}
+
+.bom-info {
+    background-color: #e3f2fd;
+    border-left: 4px solid #2196f3;
+    padding: 0.75rem;
+    margin: 0.5rem 0;
+    border-radius: 0.25rem;
+}
+
+.intermediate-badge {
+    background-color: #ffc107;
+    color: #000;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.8em;
+    margin-left: 0.5rem;
+}
+
+.phantom-badge {
+    background-color: #6c757d;
+    color: #fff;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.8em;
+    margin-left: 0.5rem;
+}
+
+.actions-container {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #dee2e6;
+}
+
+.tree-actions {
+    margin-left: 1rem;
+    margin-top: 0.5rem;
+}
+
+.cost-summary {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    margin-top: 0.5rem;
+    font-size: 0.9em;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-sitemap"></i> BOM Tree View</h1>
+            <p class="text-muted">Hierarchical visualization of multi-level Bill of Materials</p>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('production.list_bom') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-list"></i> List View
+                </a>
+                <a href="{{ url_for('production.add_bom') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add BOM
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% if bom_trees %}
+        {% for tree in bom_trees %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-project-diagram"></i> 
+                    {{ tree.product.name }} ({{ tree.product.code }})
+                    {% if tree.bom.intermediate_product %}
+                        <span class="intermediate-badge">Intermediate Product</span>
+                    {% endif %}
+                    {% if tree.bom.is_phantom_bom %}
+                        <span class="phantom-badge">Phantom BOM</span>
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="bom-info">
+                    <strong>BOM Code:</strong> {{ tree.bom.bom_code }}<br>
+                    <strong>Output Quantity:</strong> {{ tree.bom.output_quantity or 1.0 }} units<br>
+                    <strong>Version:</strong> {{ tree.bom.version or '1.0' }}<br>
+                    {% if tree.bom.description %}
+                    <strong>Description:</strong> {{ tree.bom.description }}
+                    {% endif %}
+                </div>
+
+                <div class="tree-view">
+                    {{ render_tree_node(tree, '', True) }}
+                </div>
+
+                <div class="actions-container">
+                    <a href="{{ url_for('production.edit_bom', id=tree.bom.id) }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-edit"></i> Edit BOM
+                    </a>
+                    <a href="{{ url_for('production.add_production') }}?item_id={{ tree.product.id }}" class="btn btn-success btn-sm">
+                        <i class="fas fa-play"></i> Start Production
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-sitemap fa-3x text-muted mb-3"></i>
+                <h4>No BOMs Found</h4>
+                <p class="text-muted">Create your first Bill of Materials to see the tree structure here.</p>
+                <a href="{{ url_for('production.add_bom') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Create First BOM
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Macro to recursively render tree nodes -->
+{% macro render_tree_node(node, prefix, is_last) %}
+<div class="tree-node">
+    <span class="tree-connector">{{ prefix }}{{ '└── ' if is_last else '├── ' }}</span>
+    <span class="tree-product">{{ node.product.name }}</span>
+    {% if node.bom.output_quantity and node.bom.output_quantity != 1.0 %}
+        <span class="tree-quantity">({{ node.bom.output_quantity }} units)</span>
+    {% endif %}
+    {% if node.bom.intermediate_product %}
+        <span class="intermediate-badge">Intermediate</span>
+    {% endif %}
+    {% if node.bom.is_phantom_bom %}
+        <span class="phantom-badge">Phantom</span>
+    {% endif %}
+</div>
+
+{% set new_prefix = prefix + ('    ' if is_last else '│   ') %}
+
+<!-- Render materials first -->
+{% for material in node.materials %}
+    {% set material_is_last = loop.last and not node.sub_boms %}
+    <div class="tree-node">
+        <span class="tree-connector">{{ new_prefix }}{{ '└── ' if material_is_last else '├── ' }}</span>
+        <span class="tree-material">{{ material.item.name }} ({{ material.item.code }})</span>
+        <span class="tree-quantity"> - {{ material.quantity }} {{ material.unit }}</span>
+        {% if material.cost > 0 %}
+            <span class="tree-cost"> @ ₹{{ "%.2f"|format(material.cost) }}/{{ material.unit }}</span>
+        {% endif %}
+    </div>
+{% endfor %}
+
+<!-- Render sub-BOMs recursively -->
+{% for sub_bom in node.sub_boms %}
+    {% set sub_is_last = loop.last %}
+    {{ render_tree_node(sub_bom, new_prefix, sub_is_last) }}
+{% endfor %}
+
+<!-- Cost Summary for this level -->
+{% if node.bom.total_material_cost and node.bom.total_material_cost > 0 %}
+<div class="cost-summary" style="margin-left: {{ new_prefix|length * 0.6 }}rem;">
+    <i class="fas fa-calculator"></i> 
+    <strong>Level Cost: ₹{{ "%.2f"|format(node.bom.total_material_cost) }}</strong>
+    {% if node.bom.total_cost_per_unit and node.bom.total_cost_per_unit != node.bom.total_material_cost %}
+        | Total with Overhead: ₹{{ "%.2f"|format(node.bom.total_cost_per_unit) }}
+    {% endif %}
+</div>
+{% endif %}
+{% endmacro %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Add interactive features
+document.addEventListener('DOMContentLoaded', function() {
+    // Add hover effects to tree nodes
+    const treeNodes = document.querySelectorAll('.tree-node');
+    treeNodes.forEach(node => {
+        node.addEventListener('mouseenter', function() {
+            this.style.backgroundColor = '#e9ecef';
+            this.style.borderRadius = '3px';
+        });
+        node.addEventListener('mouseleave', function() {
+            this.style.backgroundColor = 'transparent';
+        });
+    });
+
+    // Add expand/collapse functionality for large trees
+    const treeBranches = document.querySelectorAll('.tree-view');
+    treeBranches.forEach(tree => {
+        if (tree.children.length > 20) {
+            const toggleBtn = document.createElement('button');
+            toggleBtn.className = 'btn btn-sm btn-outline-secondary mt-2';
+            toggleBtn.innerHTML = '<i class="fas fa-compress"></i> Collapse';
+            toggleBtn.onclick = function() {
+                const nodes = tree.querySelectorAll('.tree-node');
+                const isCollapsed = tree.classList.contains('collapsed');
+                
+                if (isCollapsed) {
+                    nodes.forEach((node, index) => {
+                        if (index > 5) node.style.display = 'block';
+                    });
+                    tree.classList.remove('collapsed');
+                    this.innerHTML = '<i class="fas fa-compress"></i> Collapse';
+                } else {
+                    nodes.forEach((node, index) => {
+                        if (index > 5) node.style.display = 'none';
+                    });
+                    tree.classList.add('collapsed');
+                    this.innerHTML = '<i class="fas fa-expand"></i> Expand All';
+                }
+            };
+            tree.parentNode.appendChild(toggleBtn);
+        }
+    });
+});
+</script>
+{% endblock %}

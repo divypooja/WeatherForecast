@@ -9,9 +9,14 @@
             <h1><i class="fas fa-sitemap"></i> Bill of Materials (BOM)</h1>
         </div>
         <div class="col-auto">
-            <a href="{{ url_for('production.add_bom') }}" class="btn btn-primary">
-                <i class="fas fa-plus"></i> Add New BOM
-            </a>
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('production.bom_tree_view') }}" class="btn btn-outline-success">
+                    <i class="fas fa-sitemap"></i> Tree View
+                </a>
+                <a href="{{ url_for('production.add_bom') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add New BOM
+                </a>
+            </div>
         </div>
     </div>
 
