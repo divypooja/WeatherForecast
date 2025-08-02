@@ -34,7 +34,7 @@
                                         <label for="receiptImage" class="form-label">
                                             <i class="fas fa-upload me-1"></i>Upload Receipt/Invoice Image
                                         </label>
-                                        <input type="file" class="form-control" id="receiptImage" accept="image/*,.pdf" capture="camera">
+                                        <input type="file" class="form-control" id="receiptImage" name="receiptImage" accept="image/*,.pdf" capture="camera">
                                         <div class="form-text">
                                             <i class="fas fa-info-circle me-1"></i>
                                             Upload receipt/invoice image or PDF to automatically extract data (Date, Amount, Vendor, GST, etc.)
@@ -210,7 +210,7 @@
                                 </div>
                                 <div class="col-md-4">
                                     <div class="mb-3">
-                                        <label class="form-label">Total Amount</label>
+                                        <label for="total_amount" class="form-label">Total Amount</label>
                                         <div class="input-group">
                                             <span class="input-group-text">₹</span>
                                             <input type="text" class="form-control" id="total_amount" readonly placeholder="0.00">
@@ -322,8 +322,8 @@
                                 <i class="fas fa-file-upload me-2"></i>Supporting Documents <small class="text-muted">(Optional)</small>
                             </h5>
                             <div class="mb-3">
-                                <label class="form-label">Upload Documents</label>
-                                <input type="file" class="form-control" id="documentFiles" multiple 
+                                <label for="documentFiles" class="form-label">Upload Documents</label>
+                                <input type="file" class="form-control" id="documentFiles" name="documentFiles" multiple 
                                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" 
                                        onchange="handleDocumentUpload(event)">
                                 <div class="form-text">
