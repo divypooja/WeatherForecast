@@ -159,17 +159,26 @@ def update_inventory_with_batch_tracking(grn):
 def process_grn_with_batch_tracking(grn, add_to_inventory=True):
     """Process GRN completion with comprehensive batch tracking"""
     try:
-        if add_to_inventory:
-            # Update inventory with batch tracking
+        # PROPER WORKFLOW: Only add to inventory AFTER inspection passes
+        if add_to_inventory and grn.inspection_status == 'passed':
+            # Update inventory with batch tracking ONLY for passed inspection
             success = update_inventory_with_batch_tracking(grn)
             if not success:
                 return False, "Failed to update inventory with batch tracking"
+        elif grn.inspection_status == 'pending':
+            # Create batches but keep them in receiving/inspection area (qty_inspection)
+            success = create_inspection_batches(grn)
+            if not success:
+                return False, "Failed to create inspection batches"
         
-        # Mark GRN as completed
-        grn.status = 'completed'
-        grn.inspection_status = 'completed'
-        grn.inspected_by = current_user.id
-        grn.inspected_at = datetime.utcnow()
+        # Mark GRN as completed only if inspection is done
+        if grn.inspection_status in ['passed', 'failed']:
+            grn.status = 'completed'
+            grn.inspected_by = current_user.id
+            grn.inspected_at = datetime.utcnow()
+        else:
+            grn.status = 'received'  # Received but awaiting inspection
+        
         grn.add_to_inventory = add_to_inventory
         
         # Update job work status if applicable
@@ -186,6 +195,43 @@ def process_grn_with_batch_tracking(grn, add_to_inventory=True):
     except Exception as e:
         db.session.rollback()
         return False, f"Error processing GRN: {str(e)}"
+
+def create_inspection_batches(grn):
+    """Create batches for materials in inspection area (not yet in inventory)"""
+    try:
+        from models_batch import InventoryBatch
+        
+        for line_item in grn.line_items:
+            # Create batch in inspection area
+            batch_code = f"{line_item.item.code}-{grn.grn_number[-3:]}" if line_item.item.code else f"GRN-{grn.id}-{line_item.id}"
+            
+            batch = InventoryBatch(
+                item_id=line_item.item.id,
+                batch_code=batch_code,
+                qty_inspection=line_item.quantity_received,  # Place in inspection area
+                qty_raw=0.0,  # NOT in inventory yet
+                qty_wip=0.0,
+                qty_finished=0.0,
+                qty_scrap=0.0,
+                uom=line_item.item.unit_of_measure or 'PCS',
+                location='INSPECTION-AREA',
+                inspection_status='pending',
+                grn_id=grn.id,
+                source_type='purchase',
+                supplier_batch_no=getattr(line_item, 'supplier_batch_no', None),
+                purchase_rate=getattr(line_item, 'rate', 0.0)
+            )
+            
+            db.session.add(batch)
+            line_item.batch_id = batch.id
+            
+        db.session.commit()
+        return True
+        
+    except Exception as e:
+        print(f"Error creating inspection batches: {str(e)}")
+        db.session.rollback()
+        return False
 
 def update_job_work_status_from_grn(grn):
     """Update job work status based on GRN receipt with batch tracking"""
@@ -210,6 +256,50 @@ def update_job_work_status_from_grn(grn):
         job_work.notes += f"\n{completion_note}"
     else:
         job_work.notes = completion_note
+
+def approve_inspection_and_move_to_inventory(batch_id, inspection_result='passed'):
+    """Move batch from inspection area to inventory after inspection approval"""
+    try:
+        from models_batch import InventoryBatch
+        
+        batch = InventoryBatch.query.get(batch_id)
+        if not batch:
+            return False, "Batch not found"
+        
+        if batch.inspection_status != 'pending':
+            return False, f"Batch already inspected with status: {batch.inspection_status}"
+        
+        if inspection_result == 'passed':
+            # Move from inspection to raw materials inventory
+            batch.qty_raw = batch.qty_inspection
+            batch.qty_inspection = 0.0
+            batch.inspection_status = 'passed'
+            batch.location = 'MAIN-STORE'
+            
+            # Update item's inventory quantities
+            item = batch.item
+            if hasattr(item, 'qty_raw'):
+                item.qty_raw = (item.qty_raw or 0) + batch.qty_raw
+            item.sync_stock()
+            
+        elif inspection_result == 'failed':
+            # Move to scrap or quarantine
+            batch.qty_scrap = batch.qty_inspection
+            batch.qty_inspection = 0.0
+            batch.inspection_status = 'failed'
+            batch.location = 'QUARANTINE'
+            
+        elif inspection_result == 'quarantine':
+            # Keep in inspection but mark as quarantined
+            batch.inspection_status = 'quarantine'
+            batch.location = 'QUARANTINE'
+        
+        db.session.commit()
+        return True, f"Batch inspection completed: {inspection_result}"
+        
+    except Exception as e:
+        db.session.rollback()
+        return False, f"Error approving inspection: {str(e)}"
 
 
 grn_bp = Blueprint('grn', __name__)
