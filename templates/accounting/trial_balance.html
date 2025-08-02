@@ -7,7 +7,7 @@
     <div class="row mb-4">
         <div class="col">
             <h1><i class="fas fa-balance-scale"></i> Trial Balance</h1>
-            <p class="text-muted">View account balances as of a specific date</p>
+            <p class="text-muted">Statement of all account balances</p>
         </div>
         <div class="col-auto">
             <a href="{{ url_for('accounting.reports_dashboard') }}" class="btn btn-outline-secondary">
@@ -16,182 +16,238 @@
         </div>
     </div>
 
-    <!-- Filter Form -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5><i class="fas fa-filter"></i> Report Filters</h5>
+    <!-- Date Filter Form -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">From Date</label>
+                            <input type="date" name="from_date" class="form-control" value="{{ request.args.get('from_date', '') }}">
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label class="form-label">To Date</label>
+                            <input type="date" name="to_date" class="form-control" value="{{ request.args.get('to_date', '') }}">
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-filter"></i> Generate Report
+                                </button>
+                                <button type="button" class="btn btn-outline-success" onclick="window.print()">
+                                    <i class="fas fa-print"></i> Print
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            <form method="POST" class="row g-3">
-                {{ form.hidden_tag() }}
-                <div class="col-md-3">
-                    <label class="form-label">From Date</label>
-                    {{ form.from_date(class="form-control") }}
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">To Date</label>
-                    {{ form.to_date(class="form-control") }}
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Account Group</label>
-                    {{ form.account_group_id(class="form-select") }}
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">&nbsp;</label>
-                    <div>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-chart-bar"></i> Generate Report
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary" onclick="printReport()">
-                            <i class="fas fa-print"></i> Print
-                        </button>
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="mb-3">Balance Summary</h5>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <h6 class="text-success">Total Debits</h6>
+                                <h4 class="text-success">₹{{ "{:,.2f}".format(total_debit) }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <h6 class="text-info">Total Credits</h6>
+                            <h4 class="text-info">₹{{ "{:,.2f}".format(total_credit) }}</h4>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="mt-2">
+                        {% if total_debit == total_credit %}
+                        <small class="text-success">
+                            <i class="fas fa-check-circle"></i> Trial Balance is balanced
+                        </small>
+                        {% else %}
+                        <small class="text-warning">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            Difference: ₹{{ "{:,.2f}".format(total_debit - total_credit) }}
+                        </small>
+                        {% endif %}
                     </div>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 
-    <!-- Trial Balance Report -->
-    {% if accounts_data %}
-    <div class="card" id="reportContent">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="fas fa-table"></i> Trial Balance Report</h5>
-            <small class="text-muted">
-                As of {{ form.to_date.data.strftime('%d/%m/%Y') if form.to_date.data else 'Current Date' }}
-            </small>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Account Name</th>
-                            <th>Account Code</th>
-                            <th>Account Group</th>
-                            <th class="text-end">Debit Balance</th>
-                            <th class="text-end">Credit Balance</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for data in accounts_data %}
-                        <tr>
-                            <td><strong>{{ data.account.name }}</strong></td>
-                            <td><code>{{ data.account.code }}</code></td>
-                            <td>{{ data.account.group.name }}</td>
-                            <td class="text-end">
-                                {% if data.debit_balance > 0 %}
-                                    ₹{{ "{:,.2f}".format(data.debit_balance) }}
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </td>
-                            <td class="text-end">
-                                {% if data.credit_balance > 0 %}
-                                    ₹{{ "{:,.2f}".format(data.credit_balance) }}
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                    <tfoot class="table-warning">
-                        <tr>
-                            <th colspan="3" class="text-end"><strong>TOTAL:</strong></th>
-                            <th class="text-end"><strong>₹{{ "{:,.2f}".format(total_debit) }}</strong></th>
-                            <th class="text-end"><strong>₹{{ "{:,.2f}".format(total_credit) }}</strong></th>
-                        </tr>
-                        <tr>
-                            <th colspan="3" class="text-end">
-                                <strong>Difference:</strong>
-                                {% set difference = total_debit - total_credit %}
-                                {% if difference == 0 %}
-                                    <span class="text-success">(Balanced)</span>
-                                {% else %}
-                                    <span class="text-danger">(Unbalanced)</span>
-                                {% endif %}
-                            </th>
-                            <th colspan="2" class="text-center">
-                                {% if difference != 0 %}
-                                    <strong class="text-danger">₹{{ "{:,.2f}".format(abs(difference)) }}</strong>
-                                {% else %}
-                                    <strong class="text-success">₹0.00</strong>
-                                {% endif %}
-                            </th>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-
-            <!-- Balance Check Alert -->
-            {% set difference = total_debit - total_credit %}
-            {% if difference != 0 %}
-            <div class="alert alert-warning mt-3">
-                <h6><i class="fas fa-exclamation-triangle"></i> Trial Balance is Unbalanced</h6>
-                <p class="mb-0">
-                    The trial balance shows a difference of <strong>₹{{ "{:,.2f}".format(abs(difference)) }}</strong>.
-                    Please review your journal entries to ensure all transactions are properly recorded.
-                </p>
-            </div>
-            {% else %}
-            <div class="alert alert-success mt-3">
-                <h6><i class="fas fa-check-circle"></i> Trial Balance is Balanced</h6>
-                <p class="mb-0">
-                    All debits equal credits. Your books are balanced as of {{ form.to_date.data.strftime('%d/%m/%Y') if form.to_date.data else 'current date' }}.
-                </p>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-    {% else %}
-    <div class="card">
-        <div class="card-body text-center py-5">
-            <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
-            <h4>No Data Available</h4>
-            <p class="text-muted">No account balances found for the selected criteria. Adjust your filters and try again.</p>
-        </div>
-    </div>
-    {% endif %}
-</div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-function printReport() {
-    var printContents = document.getElementById('reportContent').innerHTML;
-    var originalContents = document.body.innerHTML;
-    
-    // Create print-friendly content
-    var printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-        <html>
-        <head>
-            <title>Trial Balance Report</title>
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-            <style>
-                @media print {
-                    .btn { display: none; }
-                    .card { border: none; box-shadow: none; }
-                    .card-header { background: #f8f9fa !important; }
-                }
-                body { font-size: 12px; }
-                table { font-size: 11px; }
-            </style>
-        </head>
-        <body>
-            <div class="container-fluid">
-                <div class="text-center mb-4">
-                    <h3>AK Innovations</h3>
-                    <h4>Trial Balance Report</h4>
-                    <p>As of ${form.to_date.data ? '{{ form.to_date.data.strftime("%d/%m/%Y") }}' : new Date().toLocaleDateString('en-GB')}</p>
+    <!-- Trial Balance Table -->
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-balance-scale"></i> Trial Balance</h5>
                 </div>
-                ${printContents}
+                <div class="card-body p-0">
+                    {% if accounts_data %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th>Account Code</th>
+                                        <th>Account Name</th>
+                                        <th>Account Group</th>
+                                        <th class="text-end">Debit Balance (₹)</th>
+                                        <th class="text-end">Credit Balance (₹)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for account_data in accounts_data %}
+                                    <tr>
+                                        <td>
+                                            <code class="text-muted">{{ account_data.account.code or 'N/A' }}</code>
+                                        </td>
+                                        <td>
+                                            <strong>{{ account_data.account.name }}</strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark">
+                                                {{ account_data.account.account_group.name }}
+                                            </span>
+                                        </td>
+                                        <td class="text-end">
+                                            {% if account_data.debit_balance > 0 %}
+                                                <span class="text-success">₹{{ "{:,.2f}".format(account_data.debit_balance) }}</span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end">
+                                            {% if account_data.credit_balance > 0 %}
+                                                <span class="text-info">₹{{ "{:,.2f}".format(account_data.credit_balance) }}</span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot class="table-dark">
+                                    <tr>
+                                        <th colspan="3"><strong>TOTALS</strong></th>
+                                        <th class="text-end"><strong>₹{{ "{:,.2f}".format(total_debit) }}</strong></th>
+                                        <th class="text-end"><strong>₹{{ "{:,.2f}".format(total_credit) }}</strong></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-balance-scale fa-3x text-muted mb-3"></i>
+                            <h5>No Account Balances</h5>
+                            <p class="text-muted">No accounts with balances found for the selected date range</p>
+                            <a href="{{ url_for('accounting.add_account') }}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Add Accounts
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
             </div>
-        </body>
-        </html>
-    `);
-    printWindow.document.close();
-    printWindow.print();
+        </div>
+    </div>
+
+    <!-- Balance Verification -->
+    <div class="row mt-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-calculator"></i> Balance Verification</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h6>Total Debit Balances</h6>
+                                <h4 class="text-success">₹{{ "{:,.2f}".format(total_debit) }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h6>Total Credit Balances</h6>
+                                <h4 class="text-info">₹{{ "{:,.2f}".format(total_credit) }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h6>Difference</h6>
+                                {% set difference = total_debit - total_credit %}
+                                <h4 class="{{ 'text-success' if difference == 0 else 'text-warning' }}">
+                                    ₹{{ "{:,.2f}".format(difference) }}
+                                </h4>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="text-center">
+                        {% if total_debit == total_credit %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i>
+                            <strong>Trial Balance is Balanced!</strong><br>
+                            Total Debits = Total Credits
+                        </div>
+                        {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Trial Balance is Unbalanced</strong><br>
+                            Difference: ₹{{ "{:,.2f}".format(total_debit - total_credit) }}<br>
+                            <small>Please check journal entries and account postings</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .btn, .card-header .btn, nav, .page-header {
+        display: none !important;
+    }
+    
+    .card {
+        border: 1px solid #000 !important;
+        break-inside: avoid;
+    }
+    
+    .table-light {
+        background: #f0f0f0 !important;
+        -webkit-print-color-adjust: exact;
+    }
+    
+    .table-dark {
+        background: #333 !important;
+        color: white !important;
+        -webkit-print-color-adjust: exact;
+    }
 }
-</script>
+
+.table th, .table td {
+    padding: 0.75rem;
+    vertical-align: middle;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.025);
+}
+
+.sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+</style>
 {% endblock %}

@@ -120,6 +120,7 @@ def dashboard():
             'total_income': total_income,
             'total_expenses': total_expenses,
             'net_worth': total_assets - total_liabilities,
+            'profit_loss': total_income - total_expenses,
             'monthly_vouchers': monthly_vouchers,
             'outstanding_receivables': outstanding_receivables,
             'outstanding_payables': outstanding_payables
