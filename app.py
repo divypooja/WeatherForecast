@@ -74,6 +74,16 @@ def create_app():
         from models_grn import GRN, GRNLineItem
     except ImportError:
         grn_bp = None
+    
+    # Import accounting blueprint
+    try:
+        from routes.accounting import accounting_bp
+        from models_accounting import (AccountGroup, Account, VoucherType, Voucher, 
+                                     JournalEntry, Invoice, InvoiceItem, TaxMaster, BankAccount)
+        app.register_blueprint(accounting_bp, url_prefix='/accounting')
+    except ImportError as e:
+        print(f"Accounting module import error: {e}")
+        accounting_bp = None
     from routes.uom import uom_bp
     from routes.batch_tracking import batch_tracking_bp
     from routes.tally import tally_bp
