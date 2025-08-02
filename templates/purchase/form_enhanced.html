@@ -146,14 +146,24 @@
                 <div class="table-responsive" style="overflow-x: auto; border: 2px solid #0d6efd; border-radius: 8px;">
                     <style>
                         #poItemsTable { 
-                            min-width: 1400px; 
+                            min-width: 1500px; 
                             table-layout: fixed; 
                             width: 100%;
                         }
                         #poItemsTable td {
                             position: relative;
-                            overflow: hidden;
+                            overflow: visible;
                             white-space: nowrap;
+                            padding: 6px 8px;
+                        }
+                        #poItemsTable th {
+                            position: relative;
+                            overflow: visible;
+                            white-space: nowrap;
+                            padding: 8px 8px;
+                            text-align: center;
+                            vertical-align: middle;
+                            font-weight: 600;
                         }
                         #poItemsTable input, #poItemsTable select, #poItemsTable textarea { 
                             box-sizing: border-box; 
@@ -163,40 +173,42 @@
                             max-height: 600px; 
                             overflow-y: auto; 
                         }
-                        /* Unit Weight Column Specific Styling */
-                        #poItemsTable td:nth-child(4) {
-                            width: 120px !important;
-                            max-width: 120px !important;
-                            min-width: 120px !important;
-                            padding: 4px !important;
-                        }
+                        /* Specific column widths to prevent overlap */
+                        #poItemsTable th:nth-child(1), #poItemsTable td:nth-child(1) { width: 50px !important; }
+                        #poItemsTable th:nth-child(2), #poItemsTable td:nth-child(2) { width: 100px !important; }
+                        #poItemsTable th:nth-child(3), #poItemsTable td:nth-child(3) { width: 220px !important; }
+                        #poItemsTable th:nth-child(4), #poItemsTable td:nth-child(4) { width: 130px !important; }
+                        #poItemsTable th:nth-child(5), #poItemsTable td:nth-child(5) { width: 100px !important; }
+                        #poItemsTable th:nth-child(6), #poItemsTable td:nth-child(6) { width: 120px !important; }
+                        #poItemsTable th:nth-child(7), #poItemsTable td:nth-child(7) { width: 160px !important; }
+                        #poItemsTable th:nth-child(8), #poItemsTable td:nth-child(8) { width: 80px !important; }
+                        #poItemsTable th:nth-child(9), #poItemsTable td:nth-child(9) { width: 100px !important; }
+                        #poItemsTable th:nth-child(10), #poItemsTable td:nth-child(10) { width: 130px !important; }
+                        #poItemsTable th:nth-child(11), #poItemsTable td:nth-child(11) { width: 130px !important; }
+                        #poItemsTable th:nth-child(12), #poItemsTable td:nth-child(12) { width: 80px !important; }
+                        
                         /* Material Destination Column Highlighting */
                         #poItemsTable th:nth-child(7), #poItemsTable td:nth-child(7) {
                             background-color: #fff3cd !important;
                             border-left: 3px solid #ffc107 !important;
                             font-weight: 600 !important;
                         }
-                        #poItemsTable th:nth-child(7) {
-                            position: sticky !important;
-                            left: 620px; /* Approximately where this column appears */
-                            z-index: 10;
-                        }
                     </style>
                     <table class="table table-bordered" id="poItemsTable">
                         <thead class="table-light">
                             <tr>
-                                <th style="min-width: 50px;">No.</th>
-                                <th style="min-width: 100px;">Item Code</th>
-                                <th style="min-width: 200px;">Item + Description</th>
-                                <th style="min-width: 120px;">Unit Weight</th>
-                                <th style="min-width: 100px;">HSN Code</th>
-                                <th style="min-width: 120px;">GST Rate</th>
-                                <th style="min-width: 140px;">Material Destination</th>
-                                <th style="min-width: 80px;">UOM</th>
-                                <th style="min-width: 100px;">Qty</th>
-                                <th style="min-width: 130px;">Rate</th>
-                                <th style="min-width: 130px;">Amount</th>
-                                <th style="min-width: 80px;">Action</th>
+                                <th>No.</th>
+                                <th>Item Code</th>
+                                <th>Item + Description</th>
+                                <th>Unit Weight</th>
+                                <th>HSN Code</th>
+                                <th>GST Rate</th>
+                                <th>Material<br>Destination</th>
+                                <th>UOM</th>
+                                <th>Qty</th>
+                                <th>Rate</th>
+                                <th>Amount</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody id="poItemsBody">
