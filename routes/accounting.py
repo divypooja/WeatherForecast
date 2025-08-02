@@ -19,6 +19,18 @@ accounting_bp = Blueprint('accounting', __name__)
 @login_required
 def dashboard():
     """Accounting Dashboard"""
+    # Initialize default values
+    total_assets = 0
+    total_liabilities = 0
+    total_income = 0
+    total_expenses = 0
+    monthly_vouchers = 0
+    outstanding_receivables = 0
+    outstanding_payables = 0
+    recent_vouchers = []
+    bank_accounts = []
+    monthly_trend = []
+    
     try:
         # Current month financial summary
         current_month = datetime.now().month
@@ -30,10 +42,10 @@ def dashboard():
         income_accounts = Account.query.join(AccountGroup).filter(AccountGroup.group_type == 'income').all()
         expense_accounts = Account.query.join(AccountGroup).filter(AccountGroup.group_type == 'expenses').all()
         
-        total_assets = sum(account.calculate_balance() for account in asset_accounts)
-        total_liabilities = sum(account.calculate_balance() for account in liability_accounts)
-        total_income = sum(account.calculate_balance() for account in income_accounts)
-        total_expenses = sum(account.calculate_balance() for account in expense_accounts)
+        total_assets = sum(getattr(account, 'current_balance', 0) or 0 for account in asset_accounts)
+        total_liabilities = sum(getattr(account, 'current_balance', 0) or 0 for account in liability_accounts)
+        total_income = sum(getattr(account, 'current_balance', 0) or 0 for account in income_accounts)
+        total_expenses = sum(getattr(account, 'current_balance', 0) or 0 for account in expense_accounts)
         
         # Current month transactions
         month_start = datetime(current_year, current_month, 1).date()
@@ -113,24 +125,25 @@ def dashboard():
     
     except Exception as e:
         flash(f'Error loading dashboard: {str(e)}', 'error')
-        # Create stats dictionary with all required fields
-        stats = {
-            'total_assets': total_assets,
-            'total_liabilities': total_liabilities,
-            'total_income': total_income,
-            'total_expenses': total_expenses,
-            'net_worth': total_assets - total_liabilities,
-            'profit_loss': total_income - total_expenses,
-            'monthly_vouchers': monthly_vouchers,
-            'outstanding_receivables': outstanding_receivables,
-            'outstanding_payables': outstanding_payables
-        }
         
-        return render_template('accounting/dashboard.html', 
-                             stats=stats, 
-                             recent_vouchers=recent_vouchers, 
-                             bank_accounts=bank_accounts,
-                             monthly_trend=monthly_trend)
+    # Create stats dictionary with all required fields
+    stats = {
+        'total_assets': total_assets,
+        'total_liabilities': total_liabilities,
+        'total_income': total_income,
+        'total_expenses': total_expenses,
+        'net_worth': total_assets - total_liabilities,
+        'profit_loss': total_income - total_expenses,
+        'monthly_vouchers': monthly_vouchers,
+        'outstanding_receivables': outstanding_receivables,
+        'outstanding_payables': outstanding_payables
+    }
+    
+    return render_template('accounting/dashboard.html', 
+                         stats=stats, 
+                         recent_vouchers=recent_vouchers, 
+                         bank_accounts=bank_accounts,
+                         monthly_trend=monthly_trend)
 
 # Chart of Accounts Management
 @accounting_bp.route('/accounts')
