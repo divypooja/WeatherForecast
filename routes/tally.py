@@ -16,7 +16,7 @@ tally_bp = Blueprint('tally', __name__)
 @login_required
 def export_ledgers():
     """Export Chart of Accounts (Ledgers) to Tally XML"""
-    suppliers = Supplier.query.filter_by(is_active=True).all()
+    suppliers = Supplier.query.all()
     
     # Create XML structure for Tally
     envelope = ET.Element('ENVELOPE')
@@ -77,7 +77,7 @@ def export_ledgers():
 @login_required
 def export_items():
     """Export Stock Items to Tally XML"""
-    items = Item.query.filter_by(is_active=True).all()
+    items = Item.query.all()
     
     # Create XML structure
     envelope = ET.Element('ENVELOPE')
@@ -651,7 +651,7 @@ def dashboard():
     # Get Tally sync statistics
     try:
         tally_stats = {
-            'total_ledgers': Supplier.query.filter_by(is_active=True).count() + Account.query.filter_by(is_active=True).count(),
+            'total_ledgers': Supplier.query.count() + Account.query.count(),
             'total_items': Item.query.count(),
             'pending_purchases': PurchaseOrder.query.count(),
             'pending_sales': SalesOrder.query.count(),  
