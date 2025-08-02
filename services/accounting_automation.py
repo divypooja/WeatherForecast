@@ -530,6 +530,70 @@ class AccountingAutomation:
             return False
     
     @staticmethod
+    def create_job_work_cost_entry(job_work_rate):
+        """Create cost accounting entry for job work rate updates"""
+        try:
+            # Get journal voucher type for cost allocation
+            voucher_type = VoucherType.query.filter_by(code='JNL').first()
+            if not voucher_type:
+                return False
+            
+            # Create voucher for cost allocation
+            voucher = Voucher(
+                voucher_number=Voucher.generate_voucher_number('JWR'),
+                voucher_type_id=voucher_type.id,
+                transaction_date=date.today(),
+                reference_number=f'JWR-{job_work_rate.id}',
+                narration=f"Job work rate allocation for {job_work_rate.item.name}",
+                total_amount=job_work_rate.rate_per_unit,
+                created_by=job_work_rate.created_by
+            )
+            
+            db.session.add(voucher)
+            db.session.flush()
+            
+            # Get cost accounts
+            work_in_process_account = Account.query.filter_by(code='WIP_INV').first()
+            job_work_charges_account = Account.query.filter_by(code='JW_CHARGES').first()
+            
+            if not all([work_in_process_account, job_work_charges_account]):
+                return False
+            
+            # Debit WIP account for job work allocation
+            wip_entry = JournalEntry(
+                voucher_id=voucher.id,
+                account_id=work_in_process_account.id,
+                entry_type='debit',
+                amount=job_work_rate.rate_per_unit,
+                narration=f"Job work allocation for {job_work_rate.item.name}",
+                transaction_date=voucher.transaction_date,
+                reference_type='job_work_rate',
+                reference_id=job_work_rate.id
+            )
+            db.session.add(wip_entry)
+            
+            # Credit job work charges account
+            charges_entry = JournalEntry(
+                voucher_id=voucher.id,
+                account_id=job_work_charges_account.id,
+                entry_type='credit',
+                amount=job_work_rate.rate_per_unit,
+                narration=f"Standard rate for {job_work_rate.item.name} - {job_work_rate.process_type or 'General'}",
+                transaction_date=voucher.transaction_date,
+                reference_type='job_work_rate',
+                reference_id=job_work_rate.id
+            )
+            db.session.add(charges_entry)
+            
+            db.session.commit()
+            return voucher
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error creating job work cost entry: {str(e)}")
+            return False
+    
+    @staticmethod
     def get_or_create_party_account(party):
         """Get or create account for supplier/customer"""
         try:
@@ -1244,4 +1308,226 @@ class AccountingAutomation:
         except Exception as e:
             db.session.rollback()
             print(f"Error closing sales order voucher: {str(e)}")
+            return False
+    
+    @staticmethod
+    def create_inventory_valuation_entry(item, quantity_change, valuation_change, movement_type):
+        """Create inventory valuation entry for stock movements"""
+        try:
+            # Get journal voucher type
+            voucher_type = VoucherType.query.filter_by(code='JNL').first()
+            if not voucher_type:
+                return False
+            
+            # Create voucher
+            voucher = Voucher(
+                voucher_number=Voucher.generate_voucher_number('INV'),
+                voucher_type_id=voucher_type.id,
+                transaction_date=date.today(),
+                reference_number=f'INV-{item.code}',
+                narration=f"Inventory {movement_type} for {item.name}",
+                total_amount=abs(valuation_change),
+                created_by=1  # System user
+            )
+            
+            db.session.add(voucher)
+            db.session.flush()
+            
+            # Get inventory accounts based on item state
+            raw_material_account = Account.query.filter_by(code='RM_INV').first()
+            wip_account = Account.query.filter_by(code='WIP_INV').first()
+            finished_goods_account = Account.query.filter_by(code='FG_INV').first()
+            scrap_account = Account.query.filter_by(code='SCRAP_INV').first()
+            cogs_account = Account.query.filter_by(code='COGS').first()
+            
+            # Determine which inventory account to use
+            inventory_account = raw_material_account  # Default
+            if hasattr(item, 'item_type') and item.item_type:
+                if item.item_type in ['finished_goods', 'finished']:
+                    inventory_account = finished_goods_account
+                elif item.item_type in ['work_in_progress', 'wip']:
+                    inventory_account = wip_account
+                elif item.item_type in ['scrap']:
+                    inventory_account = scrap_account
+            
+            if not all([inventory_account, cogs_account]):
+                return False
+            
+            # Create journal entries based on movement type
+            if movement_type in ['receipt', 'production', 'adjustment_in']:
+                # Debit inventory, Credit COGS (for positive adjustments)
+                inventory_entry = JournalEntry(
+                    voucher_id=voucher.id,
+                    account_id=inventory_account.id,
+                    entry_type='debit',
+                    amount=abs(valuation_change),
+                    narration=f"{movement_type.title()} - {item.name}",
+                    transaction_date=voucher.transaction_date,
+                    reference_type='inventory_movement',
+                    reference_id=item.id
+                )
+                db.session.add(inventory_entry)
+                
+                cogs_entry = JournalEntry(
+                    voucher_id=voucher.id,
+                    account_id=cogs_account.id,
+                    entry_type='credit',
+                    amount=abs(valuation_change),
+                    narration=f"Inventory increase - {item.name}",
+                    transaction_date=voucher.transaction_date,
+                    reference_type='inventory_movement',
+                    reference_id=item.id
+                )
+                db.session.add(cogs_entry)
+                
+            elif movement_type in ['issue', 'consumption', 'adjustment_out']:
+                # Credit inventory, Debit COGS (for negative adjustments)
+                cogs_entry = JournalEntry(
+                    voucher_id=voucher.id,
+                    account_id=cogs_account.id,
+                    entry_type='debit',
+                    amount=abs(valuation_change),
+                    narration=f"{movement_type.title()} - {item.name}",
+                    transaction_date=voucher.transaction_date,
+                    reference_type='inventory_movement',
+                    reference_id=item.id
+                )
+                db.session.add(cogs_entry)
+                
+                inventory_entry = JournalEntry(
+                    voucher_id=voucher.id,
+                    account_id=inventory_account.id,
+                    entry_type='credit',
+                    amount=abs(valuation_change),
+                    narration=f"Inventory decrease - {item.name}",
+                    transaction_date=voucher.transaction_date,
+                    reference_type='inventory_movement',
+                    reference_id=item.id
+                )
+                db.session.add(inventory_entry)
+            
+            db.session.commit()
+            return voucher
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error creating inventory valuation entry: {str(e)}")
+            return False
+    
+    @staticmethod
+    def create_bom_cost_allocation_entry(bom):
+        """Create cost allocation entries for BOM calculations"""
+        try:
+            # Get journal voucher type
+            voucher_type = VoucherType.query.filter_by(code='JNL').first()
+            if not voucher_type:
+                return False
+            
+            # Create voucher
+            voucher = Voucher(
+                voucher_number=Voucher.generate_voucher_number('BOM'),
+                voucher_type_id=voucher_type.id,
+                transaction_date=date.today(),
+                reference_number=f'BOM-{bom.id}',
+                narration=f"BOM cost allocation for {bom.item.name}",
+                total_amount=bom.total_cost_per_unit or 0,
+                created_by=1  # System user
+            )
+            
+            db.session.add(voucher)
+            db.session.flush()
+            
+            # Get cost accounts
+            material_cost_account = Account.query.filter_by(code='RM_INV').first()
+            labor_cost_account = Account.query.filter_by(code='WAGES').first()
+            overhead_account = Account.query.filter_by(code='OVERHEAD').first()
+            wip_account = Account.query.filter_by(code='WIP_INV').first()
+            
+            if not all([material_cost_account, wip_account]):
+                return False
+            
+            # Material cost allocation
+            if bom.material_cost_per_unit and bom.material_cost_per_unit > 0:
+                material_entry = JournalEntry(
+                    voucher_id=voucher.id,
+                    account_id=wip_account.id,
+                    entry_type='debit',
+                    amount=bom.material_cost_per_unit,
+                    narration=f"Material cost allocation - {bom.item.name}",
+                    transaction_date=voucher.transaction_date,
+                    reference_type='bom',
+                    reference_id=bom.id
+                )
+                db.session.add(material_entry)
+                
+                material_credit = JournalEntry(
+                    voucher_id=voucher.id,
+                    account_id=material_cost_account.id,
+                    entry_type='credit',
+                    amount=bom.material_cost_per_unit,
+                    narration=f"Material cost allocation - {bom.item.name}",
+                    transaction_date=voucher.transaction_date,
+                    reference_type='bom',
+                    reference_id=bom.id
+                )
+                db.session.add(material_credit)
+            
+            # Labor cost allocation
+            if bom.labor_cost_per_unit and bom.labor_cost_per_unit > 0 and labor_cost_account:
+                labor_entry = JournalEntry(
+                    voucher_id=voucher.id,
+                    account_id=wip_account.id,
+                    entry_type='debit',
+                    amount=bom.labor_cost_per_unit,
+                    narration=f"Labor cost allocation - {bom.item.name}",
+                    transaction_date=voucher.transaction_date,
+                    reference_type='bom',
+                    reference_id=bom.id
+                )
+                db.session.add(labor_entry)
+                
+                labor_credit = JournalEntry(
+                    voucher_id=voucher.id,
+                    account_id=labor_cost_account.id,
+                    entry_type='credit',
+                    amount=bom.labor_cost_per_unit,
+                    narration=f"Labor cost allocation - {bom.item.name}",
+                    transaction_date=voucher.transaction_date,
+                    reference_type='bom',
+                    reference_id=bom.id
+                )
+                db.session.add(labor_credit)
+            
+            # Overhead allocation
+            if bom.overhead_cost_per_unit and bom.overhead_cost_per_unit > 0 and overhead_account:
+                overhead_entry = JournalEntry(
+                    voucher_id=voucher.id,
+                    account_id=wip_account.id,
+                    entry_type='debit',
+                    amount=bom.overhead_cost_per_unit,
+                    narration=f"Overhead allocation - {bom.item.name}",
+                    transaction_date=voucher.transaction_date,
+                    reference_type='bom',
+                    reference_id=bom.id
+                )
+                db.session.add(overhead_entry)
+                
+                overhead_credit = JournalEntry(
+                    voucher_id=voucher.id,
+                    account_id=overhead_account.id,
+                    entry_type='credit',
+                    amount=bom.overhead_cost_per_unit,
+                    narration=f"Overhead allocation - {bom.item.name}",
+                    transaction_date=voucher.transaction_date,
+                    reference_type='bom',
+                    reference_id=bom.id
+                )
+                db.session.add(overhead_credit)
+            
+            db.session.commit()
+            return voucher
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error creating BOM cost allocation entry: {str(e)}")
             return False

@@ -79,13 +79,23 @@ def add_rate():
             process_type=form.process_type.data if form.process_type.data else None,
             vendor_name=form.vendor_name.data if form.vendor_name.data else None,
             notes=form.notes.data,
-            is_active=form.is_active.data
+            is_active=form.is_active.data,
+            created_by=current_user.id
         )
         
         db.session.add(rate)
+        db.session.flush()  # Get the rate ID
+        
+        # Create accounting cost allocation entry
+        from services.accounting_automation import AccountingAutomation
+        voucher = AccountingAutomation.create_job_work_cost_entry(rate)
+        
         db.session.commit()
         
-        flash('Job work rate added successfully!', 'success')
+        if voucher:
+            flash('Job work rate added successfully with cost accounting entries!', 'success')
+        else:
+            flash('Job work rate added successfully but accounting integration failed!', 'warning')
         return redirect(url_for('jobwork_rates.list_rates'))
     
     return render_template('jobwork_rates/form.html', form=form, title='Add Job Work Rate')

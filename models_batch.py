@@ -110,6 +110,21 @@ class InventoryBatch(db.Model):
         )
         db.session.add(movement)
         
+        # Create accounting entry for state transfer valuation impact
+        try:
+            from services.accounting_automation import AccountingAutomation
+            # Calculate valuation change based on transfer
+            estimated_unit_cost = getattr(self, 'purchase_rate', 0) / max(getattr(self, 'initial_qty_raw', 1), 1)
+            valuation_change = quantity * estimated_unit_cost
+            
+            # Create inventory valuation entry for internal movement
+            if valuation_change > 0:
+                AccountingAutomation.create_inventory_valuation_entry(
+                    self.item, quantity, valuation_change, 'internal_transfer'
+                )
+        except Exception as e:
+            print(f"Warning: Failed to create accounting entry for batch movement: {str(e)}")
+        
         self.updated_at = datetime.utcnow()
         return True
     

@@ -58,6 +58,13 @@ class ProcessIntegrationService:
         if process_notes:
             bom.remarks += f"\n\nProcess Notes:\n" + "\n".join(process_notes[:3])  # Limit to first 3 notes
         
+        # Create accounting cost allocation entry for BOM
+        try:
+            from services.accounting_automation import AccountingAutomation
+            AccountingAutomation.create_bom_cost_allocation_entry(bom)
+        except Exception as e:
+            print(f"Warning: Failed to create BOM accounting entry: {str(e)}")
+        
         db.session.commit()
         return True
     

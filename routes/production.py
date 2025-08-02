@@ -574,8 +574,15 @@ def add_bom():
         db.session.add(bom)
         db.session.flush()  # Get the BOM ID
         
+        # Create accounting cost allocation entry
+        try:
+            from services.accounting_automation import AccountingAutomation
+            AccountingAutomation.create_bom_cost_allocation_entry(bom)
+        except Exception as e:
+            print(f"Warning: Failed to create BOM accounting entry: {str(e)}")
+        
         db.session.commit()
-        flash('Advanced BOM created successfully with enhanced features', 'success')
+        flash('Advanced BOM created successfully with cost accounting entries!', 'success')
         
         # Check which action was clicked
         action = request.form.get('action', 'save_and_continue')

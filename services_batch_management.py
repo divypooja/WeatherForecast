@@ -76,6 +76,14 @@ class BatchManager:
                 notes=f"Material received from GRN {grn_line_item.grn.grn_number}"
             )
             
+            # Create accounting valuation entry for inventory receipt
+            from services.accounting_automation import AccountingAutomation
+            cost_per_unit = getattr(grn_line_item, 'rate_per_unit', 0) or 0.0
+            total_valuation = grn_line_item.quantity_received * cost_per_unit
+            AccountingAutomation.create_inventory_valuation_entry(
+                item, grn_line_item.quantity_received, total_valuation, 'receipt'
+            )
+            
             # Update consumption report
             report = BatchConsumptionReport.get_or_create(batch.id)
             if report:

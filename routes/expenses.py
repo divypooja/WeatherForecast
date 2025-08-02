@@ -234,9 +234,16 @@ def add_expense():
                         except Exception as e:
                             print(f"Error saving document: {str(e)}")
             
+            # Create accounting entries for the expense
+            from services.accounting_automation import AccountingAutomation
+            voucher = AccountingAutomation.create_expense_voucher(expense)
+            
             db.session.commit()
             
-            flash(f'Expense {expense.expense_number} created successfully!', 'success')
+            if voucher:
+                flash(f'Expense {expense.expense_number} created successfully with accounting entries!', 'success')
+            else:
+                flash(f'Expense {expense.expense_number} created successfully but accounting integration failed!', 'warning')
             return redirect(url_for('expenses.expense_detail', id=expense.id))
             
         except Exception as e:
@@ -349,12 +356,22 @@ def approve_expense(id):
         expense.approved_by_id = current_user.id
         expense.approval_date = datetime.utcnow()
         
+        # Create accounting entries upon approval
+        from services.accounting_automation import AccountingAutomation
+        voucher = AccountingAutomation.create_expense_voucher(expense)
+        
         db.session.commit()
         
-        return jsonify({
-            'success': True,
-            'message': f'Expense {expense.expense_number} approved successfully'
-        })
+        if voucher:
+            return jsonify({
+                'success': True,
+                'message': f'Expense {expense.expense_number} approved successfully with accounting entries'
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'message': f'Expense {expense.expense_number} approved successfully but accounting integration failed'
+            })
         
     except Exception as e:
         db.session.rollback()
