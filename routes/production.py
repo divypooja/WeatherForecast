@@ -524,6 +524,11 @@ def add_bom():
             freight_cost_per_unit=form.freight_cost_per_unit.data or 0.0,
             freight_unit_type=form.freight_unit_type.data or 'per_piece',
             markup_percentage=form.markup_percentage.data or 0.0,
+            # Multi-level BOM fields
+            parent_bom_id=form.parent_bom_id.data if form.parent_bom_id.data != 0 else None,
+            bom_level=form.bom_level.data or 0,
+            is_phantom_bom=form.is_phantom_bom.data,
+            intermediate_product=form.intermediate_product.data,
             created_by=current_user.id
         )
         db.session.add(bom)
@@ -587,6 +592,12 @@ def edit_bom(id):
         form.freight_cost_per_unit.data = bom.freight_cost_per_unit
         form.freight_unit_type.data = bom.freight_unit_type
         form.markup_percentage.data = bom.markup_percentage
+        
+        # Multi-level BOM fields - these were missing in form population!
+        form.parent_bom_id.data = bom.parent_bom_id
+        form.bom_level.data = bom.bom_level
+        form.is_phantom_bom.data = bom.is_phantom_bom
+        form.intermediate_product.data = bom.intermediate_product
     
     if form.validate_on_submit():
         # Check if BOM already exists for this product (excluding current BOM)
@@ -632,6 +643,13 @@ def edit_bom(id):
         bom.freight_cost_per_unit = form.freight_cost_per_unit.data or 0.0
         bom.freight_unit_type = form.freight_unit_type.data or 'per_piece'
         bom.markup_percentage = form.markup_percentage.data or 0.0
+        
+        # Multi-level BOM fields - these were missing!
+        bom.parent_bom_id = form.parent_bom_id.data if form.parent_bom_id.data != 0 else None
+        bom.bom_level = form.bom_level.data or 0
+        bom.is_phantom_bom = form.is_phantom_bom.data
+        bom.intermediate_product = form.intermediate_product.data
+        
         bom.updated_at = datetime.utcnow()
         
         db.session.commit()
