@@ -36,7 +36,7 @@ def settings_dashboard():
         SystemSettings.updated_at.desc()
     ).limit(10).all()
     
-    return render_template('settings/dashboard.html', 
+    return render_template('settings/dashboard_advanced.html', 
                          stats=stats, 
                          recent_changes=recent_changes)
 
