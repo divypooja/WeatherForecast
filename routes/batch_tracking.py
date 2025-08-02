@@ -13,6 +13,59 @@ from datetime import datetime, timedelta
 
 batch_tracking_bp = Blueprint('batch_tracking', __name__)
 
+@batch_tracking_bp.route('/reset_batch_data')
+@login_required
+def reset_batch_data():
+    """Reset batch data - create sample batches for testing"""
+    try:
+        from datetime import date
+        
+        # Clear existing batches
+        ItemBatch.query.delete()
+        
+        # Get first available item
+        item = Item.query.first()
+        if not item:
+            flash('No items found. Please create items first.', 'error')
+            return redirect(url_for('batch_tracking.dashboard'))
+        
+        # Create sample batches
+        batch1 = ItemBatch(
+            item_id=item.id,
+            batch_number='B25001-RESET',
+            manufacture_date=date.today(),
+            qty_raw=100.0,
+            qty_finished=0.0,
+            qty_scrap=5.0,
+            storage_location='MAIN-STORE',
+            quality_status='approved',
+            created_by=current_user.id
+        )
+        
+        batch2 = ItemBatch(
+            item_id=item.id,
+            batch_number='B25002-RESET',
+            manufacture_date=date.today(),
+            qty_raw=0.0,
+            qty_finished=50.0,
+            qty_scrap=2.0,
+            storage_location='FINISHED-GOODS',
+            quality_status='approved',
+            created_by=current_user.id
+        )
+        
+        db.session.add(batch1)
+        db.session.add(batch2)
+        db.session.commit()
+        
+        flash('Batch data has been reset with sample data.', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error resetting batch data: {str(e)}', 'error')
+    
+    return redirect(url_for('batch_tracking.dashboard'))
+
 @batch_tracking_bp.route('/dashboard')
 @login_required
 def dashboard():
@@ -25,8 +78,8 @@ def dashboard():
     date_from = request.args.get('date_from', '')
     date_to = request.args.get('date_to', '')
     
-    # Build base query
-    query = ItemBatch.query.join(Item)
+    # Build base query - use outerjoin to handle missing items
+    query = ItemBatch.query.outerjoin(Item)
     
     # Apply filters
     if item_filter:

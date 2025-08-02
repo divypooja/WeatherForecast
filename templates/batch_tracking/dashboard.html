@@ -61,6 +61,10 @@
             <a href="{{ url_for('batch_tracking.quality_control') }}" class="btn btn-outline-warning">
                 <i class="fas fa-shield-alt"></i> Quality Control
             </a>
+            <a href="{{ url_for('batch_tracking.reset_batch_data') }}" class="btn btn-outline-danger" 
+               onclick="return confirm('This will reset all batch data with sample data. Are you sure?')">
+                <i class="fas fa-redo"></i> Reset Data
+            </a>
         </div>
     </div>
 
@@ -205,23 +209,23 @@
                 <div class="col-lg-6 col-xl-4 mb-3">
                     <div class="card batch-card h-100">
                         <div class="card-header d-flex justify-content-between align-items-center py-2">
-                            <strong>{{ batch.batch_number }}</strong>
+                            <strong>{{ batch.batch_number or 'N/A' }}</strong>
                             <span class="badge bg-{{ 'success' if batch.quality_status == 'good' else 'warning' if batch.quality_status == 'pending_inspection' else 'danger' }}">
                                 {{ batch.quality_status.replace('_', ' ').title() }}
                             </span>
                         </div>
                         <div class="card-body">
-                            <h6 class="card-title">{{ batch.item.name }}</h6>
-                            <p class="card-text text-muted small">{{ batch.item.code }}</p>
+                            <h6 class="card-title">{{ batch.item.name if batch.item else 'Unknown Item' }}</h6>
+                            <p class="card-text text-muted small">{{ batch.item.code if batch.item else 'N/A' }}</p>
                             
                             <div class="mb-2">
                                 <small class="text-muted">Total: </small>
-                                <strong>{{ batch.total_quantity }} {{ batch.item.unit_of_measure }}</strong>
+                                <strong>{{ batch.total_quantity }} {{ batch.item.unit_of_measure if batch.item else 'Units' }}</strong>
                             </div>
                             
                             <div class="mb-2">
                                 <small class="text-muted">Available: </small>
-                                <strong>{{ batch.available_quantity }} {{ batch.item.unit_of_measure }}</strong>
+                                <strong>{{ batch.available_quantity }} {{ batch.item.unit_of_measure if batch.item else 'Units' }}</strong>
                             </div>
                             
                             {% if batch.storage_location %}
