@@ -11,6 +11,7 @@
                 <div class="badge-container">
                     <span class="badge bg-warning text-dark fs-6">{{ pending_pos|length }} Pending POs</span>
                     <span class="badge bg-info text-dark fs-6">{{ pending_productions|length }} Pending Productions</span>
+                    <span class="badge bg-danger text-dark fs-6">{{ pending_expenses|length }} Pending Expenses</span>
                     <span class="badge bg-success text-dark fs-6">{{ pending_sales|length }} Pending Sales</span>
                 </div>
             </div>
@@ -145,6 +146,77 @@
         </div>
     </div>
 
+    <!-- Pending Expenses -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-receipt text-danger"></i> 
+                Pending Factory Expense Approvals 
+                <span class="badge bg-danger text-white">{{ pending_expenses|length }}</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if pending_expenses %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Expense No.</th>
+                                <th>Description</th>
+                                <th>Category</th>
+                                <th>Amount</th>
+                                <th>Date</th>
+                                <th>Requested By</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for expense in pending_expenses %}
+                            <tr>
+                                <td><strong>{{ expense.expense_number }}</strong></td>
+                                <td>{{ expense.description[:50] }}{% if expense.description|length > 50 %}...{% endif %}</td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ expense.category }}</span>
+                                    {% if expense.subcategory %}
+                                        <br><small class="text-muted">{{ expense.subcategory }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>₹{{ "%.2f"|format(expense.total_amount or 0) }}</td>
+                                <td>{{ expense.expense_date.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ expense.requested_by.username if expense.requested_by else 'Unknown' }}</td>
+                                <td>
+                                    <span class="badge bg-warning text-dark">Pending Approval</span>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url_for('expenses.expense_detail', id=expense.id) }}" 
+                                           class="btn btn-sm btn-primary">
+                                            <i class="fas fa-eye"></i> Review
+                                        </a>
+                                        <button class="btn btn-sm btn-success" 
+                                                onclick="approveExpense({{ expense.id }}, '{{ expense.expense_number }}')">
+                                            <i class="fas fa-check"></i> Approve
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" 
+                                                onclick="rejectExpense({{ expense.id }}, '{{ expense.expense_number }}')">
+                                            <i class="fas fa-times"></i> Reject
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No pending Factory Expense approvals.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
     <!-- Recent Activity -->
     <div class="card">
         <div class="card-header">
@@ -235,6 +307,50 @@ function rejectOrder(orderType, orderId, orderNumber) {
     document.getElementById('confirmActionBtn').className = 'btn btn-danger';
     
     new bootstrap.Modal(document.getElementById('approvalModal')).show();
+}
+
+function approveExpense(expenseId, expenseNumber) {
+    // Send approval request directly to expense route
+    fetch(`/expenses/approve/${expenseId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload(); // Refresh the page to show updated status
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while approving the expense.');
+    });
+}
+
+function rejectExpense(expenseId, expenseNumber) {
+    // Send rejection request directly to expense route
+    fetch(`/expenses/reject/${expenseId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload(); // Refresh the page to show updated status
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while rejecting the expense.');
+    });
 }
 
 document.getElementById('confirmActionBtn').addEventListener('click', function() {

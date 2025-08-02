@@ -33,6 +33,10 @@ def approvals_dashboard():
     # Get pending sales orders (if they have approval workflow)
     pending_sales = []  # Can be implemented similar to POs
     
+    # Get pending expenses
+    from models import FactoryExpense
+    pending_expenses = FactoryExpense.query.filter_by(status='pending').order_by(FactoryExpense.created_at.desc()).all()
+    
     # Get recent approval activity (last 10 approvals)
     recent_approvals = []
     
@@ -57,6 +61,7 @@ def approvals_dashboard():
                          pending_pos=pending_pos,
                          pending_productions=pending_productions,
                          pending_sales=pending_sales,
+                         pending_expenses=pending_expenses,
                          recent_approvals=recent_approvals[:10])
 
 @admin_bp.route('/approval/approve', methods=['POST'])
