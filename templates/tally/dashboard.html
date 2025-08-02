@@ -159,12 +159,12 @@
 </div>
 
 <!-- Voucher Export Modal -->
-<div class="modal fade" id="voucherExportModal" tabindex="-1" aria-labelledby="voucherExportModalLabel" aria-hidden="true">
+<div class="modal fade" id="voucherExportModal" tabindex="-1" aria-labelledby="voucherExportModalLabel" aria-hidden="true" data-bs-backdrop="true" data-bs-keyboard="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="voucherExportModalLabel">Export Vouchers to Tally</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="clearModalBackdrops()"></button>
             </div>
             <form id="voucherExportForm" action="{{ url_for('tally.export_vouchers') }}" method="GET">
                 <div class="modal-body">
@@ -187,7 +187,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="clearModalBackdrops()">Cancel</button>
                     <button type="submit" class="btn btn-warning">
                         <i class="fas fa-download"></i> Export Vouchers
                     </button>
@@ -198,12 +198,12 @@
 </div>
 
 <!-- Journal Export Modal -->
-<div class="modal fade" id="journalExportModal" tabindex="-1" aria-labelledby="journalExportModalLabel" aria-hidden="true">
+<div class="modal fade" id="journalExportModal" tabindex="-1" aria-labelledby="journalExportModalLabel" aria-hidden="true" data-bs-backdrop="true" data-bs-keyboard="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="journalExportModalLabel">Export Journal Entries</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="clearModalBackdrops()"></button>
             </div>
             <form id="journalExportForm" action="{{ url_for('tally.export_journal_entries') }}" method="GET">
                 <div class="modal-body">
@@ -222,7 +222,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="clearModalBackdrops()">Cancel</button>
                     <button type="submit" class="btn btn-success">
                         <i class="fas fa-download"></i> Export Journal Entries
                     </button>
@@ -233,12 +233,12 @@
 </div>
 
 <!-- Import Modal -->
-<div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
+<div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true" data-bs-backdrop="true" data-bs-keyboard="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="importModalLabel">Import from Tally</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="clearModalBackdrops()"></button>
             </div>
             <form id="importForm" enctype="multipart/form-data">
                 <div class="modal-body">
@@ -257,7 +257,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="clearModalBackdrops()">Cancel</button>
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-upload"></i> Import Data
                     </button>
@@ -268,21 +268,80 @@
 </div>
 
 <script>
-// Tally Export/Import Functions
+// Clear any stuck modal backdrops on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Remove any stuck modal backdrops
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(backdrop => backdrop.remove());
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+});
+
+// Tally Export/Import Functions with proper cleanup
 function showVoucherExportModal() {
-    new bootstrap.Modal(document.getElementById('voucherExportModal')).show();
+    clearModalBackdrops();
+    const modal = new bootstrap.Modal(document.getElementById('voucherExportModal'), {
+        backdrop: true,
+        keyboard: true
+    });
+    modal.show();
 }
 
 function showJournalExportModal() {
-    new bootstrap.Modal(document.getElementById('journalExportModal')).show();
+    clearModalBackdrops();
+    const modal = new bootstrap.Modal(document.getElementById('journalExportModal'), {
+        backdrop: true,
+        keyboard: true
+    });
+    modal.show();
 }
 
 function showImportModal(type) {
-    const modal = new bootstrap.Modal(document.getElementById('importModal'));
+    clearModalBackdrops();
+    const modal = new bootstrap.Modal(document.getElementById('importModal'), {
+        backdrop: true,
+        keyboard: true
+    });
     document.getElementById('importModalLabel').textContent = `Import ${type.charAt(0).toUpperCase() + type.slice(1)} from Tally`;
     document.getElementById('importForm').setAttribute('data-import-type', type);
     modal.show();
 }
+
+// Function to clear stuck modal backdrops
+function clearModalBackdrops() {
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(backdrop => backdrop.remove());
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+}
+
+// Global escape key handler to close any stuck modals
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        // Close all open modals
+        const openModals = document.querySelectorAll('.modal.show');
+        openModals.forEach(modal => {
+            const modalInstance = bootstrap.Modal.getInstance(modal);
+            if (modalInstance) {
+                modalInstance.hide();
+            }
+        });
+        
+        // Force remove any stuck backdrops after a delay
+        setTimeout(() => {
+            clearModalBackdrops();
+        }, 300);
+    }
+});
+
+// Add click event to body to close stuck modals
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('modal-backdrop')) {
+        clearModalBackdrops();
+    }
+});
 
 // Handle import form submission
 document.getElementById('importForm').addEventListener('submit', async function(e) {
@@ -310,7 +369,18 @@ document.getElementById('importForm').addEventListener('submit', async function(
         alert(`Import failed: ${error.message}`);
     }
     
-    bootstrap.Modal.getInstance(document.getElementById('importModal')).hide();
+    const modalInstance = bootstrap.Modal.getInstance(document.getElementById('importModal'));
+    if (modalInstance) {
+        modalInstance.hide();
+    }
+    clearModalBackdrops();
+});
+
+// Add proper modal event listeners for cleanup
+document.querySelectorAll('.modal').forEach(modal => {
+    modal.addEventListener('hidden.bs.modal', function() {
+        clearModalBackdrops();
+    });
 });
 </script>
 
