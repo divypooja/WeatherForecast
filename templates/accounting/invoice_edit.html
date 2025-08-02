@@ -334,7 +334,7 @@ function saveInvoiceItem() {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token() }}',
+            'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value,
         },
         body: JSON.stringify(formData)
     })
@@ -357,7 +357,7 @@ function deleteInvoiceItem(itemId) {
         fetch(`{{ url_for('accounting.delete_invoice_item', item_id=0) }}`.replace('0', itemId), {
             method: 'DELETE',
             headers: {
-                'X-CSRFToken': '{{ csrf_token() }}',
+                'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value,
             }
         })
         .then(response => response.json())
