@@ -66,8 +66,6 @@ def update_po_status_based_on_grn(purchase_order_id):
         # Update PO status
         if all_items_fully_received:
             po.status = 'closed'
-            # Create accounting entries when PO is fully received
-            create_po_accounting_entries(po)
         elif any_items_partially_received:
             po.status = 'partial'
         else:
@@ -161,17 +159,26 @@ def update_inventory_with_batch_tracking(grn):
 def process_grn_with_batch_tracking(grn, add_to_inventory=True):
     """Process GRN completion with comprehensive batch tracking"""
     try:
-        if add_to_inventory:
-            # Update inventory with batch tracking
+        # PROPER WORKFLOW: Only add to inventory AFTER inspection passes
+        if add_to_inventory and grn.inspection_status == 'passed':
+            # Update inventory with batch tracking ONLY for passed inspection
             success = update_inventory_with_batch_tracking(grn)
             if not success:
                 return False, "Failed to update inventory with batch tracking"
+        elif grn.inspection_status == 'pending':
+            # Create batches but keep them in receiving/inspection area (qty_inspection)
+            success = create_inspection_batches(grn)
+            if not success:
+                return False, "Failed to create inspection batches"
         
-        # Mark GRN as completed
-        grn.status = 'completed'
-        grn.inspection_status = 'completed'
-        grn.inspected_by = current_user.id
-        grn.inspected_at = datetime.utcnow()
+        # Mark GRN as completed only if inspection is done
+        if grn.inspection_status in ['passed', 'failed']:
+            grn.status = 'completed'
+            grn.inspected_by = current_user.id
+            grn.inspected_at = datetime.utcnow()
+        else:
+            grn.status = 'received'  # Received but awaiting inspection
+        
         grn.add_to_inventory = add_to_inventory
         
         # Update job work status if applicable
@@ -188,6 +195,43 @@ def process_grn_with_batch_tracking(grn, add_to_inventory=True):
     except Exception as e:
         db.session.rollback()
         return False, f"Error processing GRN: {str(e)}"
+
+def create_inspection_batches(grn):
+    """Create batches for materials in inspection area (not yet in inventory)"""
+    try:
+        from models_batch import InventoryBatch
+        
+        for line_item in grn.line_items:
+            # Create batch in inspection area
+            batch_code = f"{line_item.item.code}-{grn.grn_number[-3:]}" if line_item.item.code else f"GRN-{grn.id}-{line_item.id}"
+            
+            batch = InventoryBatch(
+                item_id=line_item.item.id,
+                batch_code=batch_code,
+                qty_inspection=line_item.quantity_received,  # Place in inspection area
+                qty_raw=0.0,  # NOT in inventory yet
+                qty_wip=0.0,
+                qty_finished=0.0,
+                qty_scrap=0.0,
+                uom=line_item.item.unit_of_measure or 'PCS',
+                location='INSPECTION-AREA',
+                inspection_status='pending',
+                grn_id=grn.id,
+                source_type='purchase',
+                supplier_batch_no=getattr(line_item, 'supplier_batch_no', None),
+                purchase_rate=getattr(line_item, 'rate', 0.0)
+            )
+            
+            db.session.add(batch)
+            line_item.batch_id = batch.id
+            
+        db.session.commit()
+        return True
+        
+    except Exception as e:
+        print(f"Error creating inspection batches: {str(e)}")
+        db.session.rollback()
+        return False
 
 def update_job_work_status_from_grn(grn):
     """Update job work status based on GRN receipt with batch tracking"""
@@ -212,6 +256,50 @@ def update_job_work_status_from_grn(grn):
         job_work.notes += f"\n{completion_note}"
     else:
         job_work.notes = completion_note
+
+def approve_inspection_and_move_to_inventory(batch_id, inspection_result='passed'):
+    """Move batch from inspection area to inventory after inspection approval"""
+    try:
+        from models_batch import InventoryBatch
+        
+        batch = InventoryBatch.query.get(batch_id)
+        if not batch:
+            return False, "Batch not found"
+        
+        if batch.inspection_status != 'pending':
+            return False, f"Batch already inspected with status: {batch.inspection_status}"
+        
+        if inspection_result == 'passed':
+            # Move from inspection to raw materials inventory
+            batch.qty_raw = batch.qty_inspection
+            batch.qty_inspection = 0.0
+            batch.inspection_status = 'passed'
+            batch.location = 'MAIN-STORE'
+            
+            # Update item's inventory quantities
+            item = batch.item
+            if hasattr(item, 'qty_raw'):
+                item.qty_raw = (item.qty_raw or 0) + batch.qty_raw
+            item.sync_stock()
+            
+        elif inspection_result == 'failed':
+            # Move to scrap or quarantine
+            batch.qty_scrap = batch.qty_inspection
+            batch.qty_inspection = 0.0
+            batch.inspection_status = 'failed'
+            batch.location = 'QUARANTINE'
+            
+        elif inspection_result == 'quarantine':
+            # Keep in inspection but mark as quarantined
+            batch.inspection_status = 'quarantine'
+            batch.location = 'QUARANTINE'
+        
+        db.session.commit()
+        return True, f"Batch inspection completed: {inspection_result}"
+        
+    except Exception as e:
+        db.session.rollback()
+        return False, f"Error approving inspection: {str(e)}"
 
 
 grn_bp = Blueprint('grn', __name__)
@@ -1160,108 +1248,3 @@ def api_grn_summary(grn_id):
         'status': grn.status,
         'inspection_status': grn.inspection_status
     })
-
-
-def create_po_accounting_entries(purchase_order):
-    """Create accounting journal entries when Purchase Order is fully received"""
-    try:
-        # Import accounting models
-        from models_accounting import VoucherType, Voucher, JournalEntry, Account, AccountGroup
-        
-        # Skip if accounting entries already exist for this PO
-        existing_voucher = Voucher.query.filter_by(
-            reference_number=purchase_order.po_number
-        ).first()
-        
-        if existing_voucher:
-            print(f"Accounting entries already exist for PO {purchase_order.po_number}")
-            return
-        
-        # Get or create Purchase voucher type
-        purchase_voucher_type = VoucherType.query.filter_by(code='PUR').first()
-        if not purchase_voucher_type:
-            purchase_voucher_type = VoucherType(
-                name='Purchase',
-                code='PUR',
-                description='Purchase transactions'
-            )
-            db.session.add(purchase_voucher_type)
-            db.session.flush()
-        
-        # Generate voucher number
-        voucher_number = Voucher.generate_voucher_number('PUR')
-        
-        # Create voucher
-        voucher = Voucher(
-            voucher_number=voucher_number,
-            voucher_type_id=purchase_voucher_type.id,
-            transaction_date=purchase_order.order_date,
-            reference_number=purchase_order.po_number,
-            narration=f"Purchase Order {purchase_order.po_number} - {purchase_order.supplier.name}",
-            party_id=purchase_order.supplier_id,
-            party_type='supplier',
-            total_amount=purchase_order.total_amount,
-            created_by=1  # System user
-        )
-        
-        db.session.add(voucher)
-        db.session.flush()
-        
-        # Get or create supplier account
-        supplier_account = Account.query.filter_by(name=purchase_order.supplier.name).first()
-        if not supplier_account:
-            # Create supplier account under Sundry Creditors
-            creditors_group = AccountGroup.query.filter_by(name='Sundry Creditors').first()
-            if creditors_group:
-                supplier_account = Account(
-                    name=purchase_order.supplier.name,
-                    code=f"SUP_{purchase_order.supplier_id}",
-                    account_group_id=creditors_group.id,
-                    account_type='current_liability'
-                )
-                db.session.add(supplier_account)
-                db.session.flush()
-        
-        # Get or create Purchase account
-        purchase_account = Account.query.filter_by(name='Purchase').first()
-        if not purchase_account:
-            # Create under Direct Expenses
-            expenses_group = AccountGroup.query.filter_by(name='Direct Expenses').first()
-            if expenses_group:
-                purchase_account = Account(
-                    name='Purchase',
-                    code='PUR001',
-                    account_group_id=expenses_group.id,
-                    account_type='expense'
-                )
-                db.session.add(purchase_account)
-                db.session.flush()
-        
-        if supplier_account and purchase_account:
-            # Debit Purchase Account (Expense)
-            debit_entry = JournalEntry(
-                voucher_id=voucher.id,
-                account_id=purchase_account.id,
-                entry_type='debit',
-                amount=purchase_order.total_amount,
-                narration=f"Purchase from {purchase_order.supplier.name} - PO {purchase_order.po_number}",
-                transaction_date=purchase_order.order_date
-            )
-            db.session.add(debit_entry)
-            
-            # Credit Supplier Account (Liability)
-            credit_entry = JournalEntry(
-                voucher_id=voucher.id,
-                account_id=supplier_account.id,
-                entry_type='credit',
-                amount=purchase_order.total_amount,
-                narration=f"Amount payable to {purchase_order.supplier.name} - PO {purchase_order.po_number}",
-                transaction_date=purchase_order.order_date
-            )
-            db.session.add(credit_entry)
-            
-            print(f"Created accounting entries for PO {purchase_order.po_number} - Amount: {purchase_order.total_amount}")
-        
-    except Exception as e:
-        print(f"Error creating accounting entries for PO {purchase_order.po_number}: {str(e)}")
-        # Don't rollback here as it's called within a larger transaction
