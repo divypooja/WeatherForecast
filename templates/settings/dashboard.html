@@ -103,150 +103,19 @@
             </div>
         </div>
 
-        <!-- Tally Data Management -->
-        <div class="col-lg-12 mb-4">
+        <!-- Tally Integration Link -->
+        <div class="col-lg-6 mb-4">
             <div class="card h-100">
-                <div class="card-header bg-success text-white">
+                <div class="card-header">
                     <h5 class="card-title mb-0">
                         <i class="fas fa-calculator"></i> Tally ERP Integration
                     </h5>
                 </div>
                 <div class="card-body">
-                    <p class="card-text">Export your accounting and transaction data to Tally ERP format and manage data synchronization.</p>
-                    
-                    <!-- Tally Statistics -->
-                    <div class="row mb-4">
-                        <div class="col-md-2">
-                            <div class="text-center">
-                                <h4 class="text-primary mb-0">{{ tally_stats.total_ledgers }}</h4>
-                                <small class="text-muted">Ledgers</small>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="text-center">
-                                <h4 class="text-info mb-0">{{ tally_stats.total_items }}</h4>
-                                <small class="text-muted">Stock Items</small>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="text-center">
-                                <h4 class="text-warning mb-0">{{ tally_stats.pending_purchases }}</h4>
-                                <small class="text-muted">Purchase Orders</small>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="text-center">
-                                <h4 class="text-success mb-0">{{ tally_stats.pending_sales }}</h4>
-                                <small class="text-muted">Sales Orders</small>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="text-center">
-                                <h4 class="text-danger mb-0">{{ tally_stats.pending_expenses }}</h4>
-                                <small class="text-muted">Expenses</small>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="text-center">
-                                <h4 class="text-secondary mb-0">{{ tally_stats.total_vouchers }}</h4>
-                                <small class="text-muted">Vouchers</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Export Options -->
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <div class="card border-primary">
-                                <div class="card-body text-center">
-                                    <i class="fas fa-book text-primary fa-2x mb-2"></i>
-                                    <h6>Export Ledgers</h6>
-                                    <p class="small text-muted">Export Chart of Accounts and Supplier/Customer ledgers to Tally XML format</p>
-                                    <a href="{{ url_for('tally.export_ledgers') }}" class="btn btn-primary btn-sm">
-                                        <i class="fas fa-download"></i> Export Ledgers
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <div class="card border-info">
-                                <div class="card-body text-center">
-                                    <i class="fas fa-boxes text-info fa-2x mb-2"></i>
-                                    <h6>Export Stock Items</h6>
-                                    <p class="small text-muted">Export inventory items with units, rates, and opening balances to Tally XML</p>
-                                    <a href="{{ url_for('tally.export_items') }}" class="btn btn-info btn-sm">
-                                        <i class="fas fa-download"></i> Export Items
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <div class="card border-warning">
-                                <div class="card-body text-center">
-                                    <i class="fas fa-receipt text-warning fa-2x mb-2"></i>
-                                    <h6>Export Vouchers</h6>
-                                    <p class="small text-muted">Export Purchase/Sales/Expense transactions as Tally vouchers</p>
-                                    <button class="btn btn-warning btn-sm" onclick="showVoucherExportModal()">
-                                        <i class="fas fa-download"></i> Export Vouchers
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Accounting Data Export -->
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <div class="card border-success">
-                                <div class="card-body text-center">
-                                    <i class="fas fa-file-invoice-dollar text-success fa-2x mb-2"></i>
-                                    <h6>Export Journal Entries</h6>
-                                    <p class="small text-muted">Export journal entries and accounting vouchers with GST details</p>
-                                    <button class="btn btn-success btn-sm" onclick="showJournalExportModal()">
-                                        <i class="fas fa-download"></i> Export Journal Entries
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="card border-secondary">
-                                <div class="card-body text-center">
-                                    <i class="fas fa-sync text-secondary fa-2x mb-2"></i>
-                                    <h6>Sync Status</h6>
-                                    <p class="small text-muted">View synchronization status and manage Tally data updates</p>
-                                    <a href="{{ url_for('tally.sync_status_report') }}" class="btn btn-secondary btn-sm">
-                                        <i class="fas fa-chart-bar"></i> View Sync Status
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Import Options -->
-                    <hr>
-                    <div class="row">
-                        <div class="col-md-12">
-                            <h6><i class="fas fa-upload"></i> Import from Tally</h6>
-                            <p class="small text-muted mb-3">Upload Tally data files to import into your factory management system</p>
-                            <div class="row">
-                                <div class="col-md-4 mb-2">
-                                    <button class="btn btn-outline-primary btn-sm w-100" onclick="showImportModal('ledgers')">
-                                        <i class="fas fa-upload"></i> Import Ledgers
-                                    </button>
-                                </div>
-                                <div class="col-md-4 mb-2">
-                                    <button class="btn btn-outline-info btn-sm w-100" onclick="showImportModal('items')">
-                                        <i class="fas fa-upload"></i> Import Stock Items
-                                    </button>
-                                </div>
-                                <div class="col-md-4 mb-2">
-                                    <button class="btn btn-outline-warning btn-sm w-100" onclick="showImportModal('vouchers')">
-                                        <i class="fas fa-upload"></i> Import Vouchers
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <p class="card-text">Access comprehensive Tally ERP data export/import functionality and synchronization management.</p>
+                    <a href="{{ url_for('tally.dashboard') }}" class="btn btn-success">
+                        <i class="fas fa-external-link-alt"></i> Open Tally Integration
+                    </a>
                 </div>
             </div>
         </div>
@@ -402,114 +271,7 @@
     <input type="hidden" name="reset_documents" id="hiddenDocuments"/>
 </form>
 
-<!-- Voucher Export Modal -->
-<div class="modal fade" id="voucherExportModal" tabindex="-1" aria-labelledby="voucherExportModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="voucherExportModalLabel">Export Vouchers to Tally</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form id="voucherExportForm" action="{{ url_for('tally.export_vouchers') }}" method="GET">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="dateFrom" class="form-label">From Date</label>
-                        <input type="date" class="form-control" id="dateFrom" name="date_from">
-                    </div>
-                    <div class="mb-3">
-                        <label for="dateTo" class="form-label">To Date</label>
-                        <input type="date" class="form-control" id="dateTo" name="date_to">
-                    </div>
-                    <div class="mb-3">
-                        <label for="voucherType" class="form-label">Voucher Type</label>
-                        <select class="form-control" id="voucherType" name="type">
-                            <option value="all">All Vouchers</option>
-                            <option value="purchase">Purchase Vouchers</option>
-                            <option value="sales">Sales Vouchers</option>
-                            <option value="expense">Expense Vouchers</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-warning">
-                        <i class="fas fa-download"></i> Export Vouchers
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
-<!-- Journal Export Modal -->
-<div class="modal fade" id="journalExportModal" tabindex="-1" aria-labelledby="journalExportModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="journalExportModalLabel">Export Journal Entries</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form id="journalExportForm" action="{{ url_for('tally.export_journal_entries') }}" method="GET">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="journalDateFrom" class="form-label">From Date</label>
-                        <input type="date" class="form-control" id="journalDateFrom" name="date_from">
-                    </div>
-                    <div class="mb-3">
-                        <label for="journalDateTo" class="form-label">To Date</label>
-                        <input type="date" class="form-control" id="journalDateTo" name="date_to">
-                    </div>
-                    <div class="mb-3">
-                        <label for="includeGST" class="form-label">
-                            <input type="checkbox" id="includeGST" name="include_gst" checked> Include GST Details
-                        </label>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success">
-                        <i class="fas fa-download"></i> Export Journal Entries
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Import Modal -->
-<div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="importModalLabel">Import from Tally</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form id="importForm" enctype="multipart/form-data">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="importFile" class="form-label">Select Tally XML File</label>
-                        <input type="file" class="form-control" id="importFile" name="import_file" accept=".xml" required>
-                        <div class="form-text">Upload a Tally XML export file</div>
-                    </div>
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="overwriteExisting" name="overwrite">
-                            <label class="form-check-label" for="overwriteExisting">
-                                Overwrite existing records with same name/code
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-upload"></i> Import Data
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
 <script>
 function selectAll() {
@@ -552,49 +314,6 @@ function confirmCustomReset() {
     }
 }
 
-// Tally Export/Import Functions
-function showVoucherExportModal() {
-    new bootstrap.Modal(document.getElementById('voucherExportModal')).show();
-}
 
-function showJournalExportModal() {
-    new bootstrap.Modal(document.getElementById('journalExportModal')).show();
-}
-
-function showImportModal(type) {
-    const modal = new bootstrap.Modal(document.getElementById('importModal'));
-    document.getElementById('importModalLabel').textContent = `Import ${type.charAt(0).toUpperCase() + type.slice(1)} from Tally`;
-    document.getElementById('importForm').setAttribute('data-import-type', type);
-    modal.show();
-}
-
-// Handle import form submission
-document.getElementById('importForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    const importType = this.getAttribute('data-import-type');
-    formData.append('import_type', importType);
-    
-    try {
-        const response = await fetch('/tally/import', {
-            method: 'POST',
-            body: formData
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            alert(`Successfully imported ${result.imported_count} ${importType}`);
-            location.reload();
-        } else {
-            alert(`Import failed: ${result.error}`);
-        }
-    } catch (error) {
-        alert(`Import failed: ${error.message}`);
-    }
-    
-    bootstrap.Modal.getInstance(document.getElementById('importModal')).hide();
-});
 </script>
 {% endblock %}

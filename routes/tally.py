@@ -10,32 +10,7 @@ import io
 
 tally_bp = Blueprint('tally', __name__)
 
-@tally_bp.route('/dashboard')
-@login_required
-def dashboard():
-    """Tally Integration Dashboard"""
-    # Get statistics for Tally sync
-    stats = {
-        'total_ledgers': Supplier.query.count(),
-        'total_items': Item.query.count(),
-        'pending_vouchers': (PurchaseOrder.query.filter_by(tally_synced=False).count() + 
-                           SalesOrder.query.filter_by(tally_synced=False).count() +
-                           FactoryExpense.query.filter_by(tally_synced=False).count()),
-        'synced_vouchers': (PurchaseOrder.query.filter_by(tally_synced=True).count() + 
-                          SalesOrder.query.filter_by(tally_synced=True).count() +
-                          FactoryExpense.query.filter_by(tally_synced=True).count())
-    }
-    
-    # Recent sync activities
-    recent_purchases = PurchaseOrder.query.order_by(desc(PurchaseOrder.created_at)).limit(5).all()
-    recent_sales = SalesOrder.query.order_by(desc(SalesOrder.created_at)).limit(5).all()
-    recent_expenses = FactoryExpense.query.order_by(desc(FactoryExpense.created_at)).limit(5).all()
-    
-    return render_template('tally/dashboard.html', 
-                         stats=stats,
-                         recent_purchases=recent_purchases,
-                         recent_sales=recent_sales,
-                         recent_expenses=recent_expenses)
+
 
 @tally_bp.route('/export/ledgers')
 @login_required
@@ -666,6 +641,35 @@ def _import_vouchers(root, overwrite=False):
             continue
     
     return count
+
+@tally_bp.route('/')
+@login_required  
+def dashboard():
+    """Tally integration dashboard"""
+    from models_accounting import Account, Voucher
+    
+    # Get Tally sync statistics
+    try:
+        tally_stats = {
+            'total_ledgers': Supplier.query.filter_by(is_active=True).count() + Account.query.filter_by(is_active=True).count(),
+            'total_items': Item.query.count(),
+            'pending_purchases': PurchaseOrder.query.count(),
+            'pending_sales': SalesOrder.query.count(),  
+            'pending_expenses': FactoryExpense.query.count(),
+            'total_vouchers': Voucher.query.count()
+        }
+    except Exception as e:
+        # Fallback statistics if queries fail
+        tally_stats = {
+            'total_ledgers': 0,
+            'total_items': 0,
+            'pending_purchases': 0,
+            'pending_sales': 0,
+            'pending_expenses': 0,
+            'total_vouchers': 0
+        }
+    
+    return render_template('tally/dashboard.html', tally_stats=tally_stats)
 
 @tally_bp.route('/settings')
 @login_required
