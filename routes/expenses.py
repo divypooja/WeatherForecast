@@ -325,10 +325,10 @@ def expense_detail(id):
     
     # Get documents for this expense
     documents = Document.query.filter_by(
-        transaction_type='factory_expense',
-        transaction_id=expense.id,
+        reference_type='factory_expense',
+        reference_id=expense.id,
         is_active=True
-    ).order_by(Document.uploaded_at.desc()).all()
+    ).order_by(Document.upload_date.desc()).all()
     
     return render_template('expenses/detail.html', expense=expense, documents=documents)
 

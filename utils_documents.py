@@ -242,9 +242,42 @@ def save_uploaded_documents(files, reference_type, reference_id, module_name='ge
         print(f"Error saving documents: {e}")
         return []
 
-def save_uploaded_file_expense(file, expense_type='general'):
-    """Save expense-related uploaded file"""
-    return save_uploaded_file(file, subfolder=f'expenses/{expense_type}')
+def save_uploaded_file_expense(file, expense_id, document_type='Supporting Document', description=''):
+    """Save expense-related uploaded file and create document record"""
+    try:
+        from models_document import Document
+        from flask_login import current_user
+        from app import db
+        
+        # Save file to disk
+        file_info = save_uploaded_file(file, subfolder='expenses')
+        
+        if file_info and file_info.get('success'):
+            # Create document record
+            document = Document(
+                original_filename=file_info['original_filename'],
+                saved_filename=file_info['saved_filename'],
+                file_path=file_info['file_path'],
+                file_size=file_info['file_size'],
+                mime_type=file_info['mime_type'],
+                description=description,
+                uploaded_by=current_user.id if current_user.is_authenticated else None,
+                module_name='expenses',
+                reference_id=expense_id,
+                reference_type='factory_expense',
+                document_type=document_type
+            )
+            
+            db.session.add(document)
+            db.session.commit()
+            
+            return document
+        else:
+            return None
+            
+    except Exception as e:
+        print(f"Error saving expense document: {str(e)}")
+        return None
 
 def delete_document(document_id, user_id=None):
     """Delete a document and its file"""
