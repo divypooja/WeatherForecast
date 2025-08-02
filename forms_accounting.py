@@ -168,4 +168,6 @@ class GSATReportForm(FlaskForm):
         ('07', 'July'), ('08', 'August'), ('09', 'September'),
         ('10', 'October'), ('11', 'November'), ('12', 'December')
     ])
-    year = SelectField('Year', validators=[DataRequired()])
+    year = SelectField('Year', validators=[DataRequired()], choices=[
+        ('2023', '2023'), ('2024', '2024'), ('2025', '2025'), ('2026', '2026')
+    ])

@@ -480,6 +480,238 @@ def reports_dashboard():
     """Financial reports dashboard"""
     return render_template('accounting/reports_dashboard.html')
 
+@accounting_bp.route('/reports/day-book')
+@login_required
+def day_book():
+    """Day Book Report - All journal entries"""
+    form = ReportFilterForm()
+    
+    if request.method == 'GET':
+        # Default to current month
+        form.from_date.data = date.today().replace(day=1)
+        form.to_date.data = date.today()
+    
+    journal_entries = []
+    
+    if form.validate_on_submit() or request.method == 'GET':
+        from_date = form.from_date.data if form.from_date.data else date.today().replace(day=1)
+        to_date = form.to_date.data if form.to_date.data else date.today()
+        
+        journal_entries = JournalEntry.query.filter(
+            JournalEntry.transaction_date >= from_date,
+            JournalEntry.transaction_date <= to_date
+        ).order_by(JournalEntry.transaction_date.desc(), JournalEntry.id.desc()).all()
+    
+    return render_template('accounting/day_book.html', 
+                         form=form,
+                         journal_entries=journal_entries,
+                         title='Day Book Report')
+
+@accounting_bp.route('/reports/account-ledgers')
+@login_required
+def account_ledgers():
+    """Account Ledgers Report"""
+    accounts = Account.query.filter_by(is_active=True).order_by(Account.name).all()
+    return render_template('accounting/account_ledgers.html', 
+                         accounts=accounts,
+                         title='Account Ledgers')
+
+@accounting_bp.route('/reports/outstanding-payables')
+@login_required
+def outstanding_payables():
+    """Outstanding Payables Report"""
+    # Get outstanding amounts owed to suppliers
+    payables = db.session.execute(text("""
+        SELECT 
+            s.name as supplier_name,
+            SUM(je.amount) as outstanding_amount
+        FROM journal_entries je
+        JOIN vouchers v ON je.voucher_id = v.id
+        JOIN suppliers s ON v.party_id = s.id
+        WHERE je.entry_type = 'credit' 
+        AND v.party_type = 'supplier'
+        AND v.status = 'posted'
+        GROUP BY s.id, s.name
+        HAVING SUM(je.amount) > 0
+        ORDER BY SUM(je.amount) DESC
+    """)).fetchall()
+    
+    return render_template('accounting/outstanding_payables.html', 
+                         payables=payables,
+                         title='Outstanding Payables')
+
+@accounting_bp.route('/reports/outstanding-receivables')
+@login_required
+def outstanding_receivables():
+    """Outstanding Receivables Report"""
+    # Get outstanding amounts from customers
+    receivables = db.session.execute(text("""
+        SELECT 
+            s.name as customer_name,
+            SUM(je.amount) as outstanding_amount
+        FROM journal_entries je
+        JOIN vouchers v ON je.voucher_id = v.id
+        JOIN suppliers s ON v.party_id = s.id
+        WHERE je.entry_type = 'debit' 
+        AND v.party_type = 'customer'
+        AND v.status = 'posted'
+        GROUP BY s.id, s.name
+        HAVING SUM(je.amount) > 0
+        ORDER BY SUM(je.amount) DESC
+    """)).fetchall()
+    
+    return render_template('accounting/outstanding_receivables.html', 
+                         receivables=receivables,
+                         title='Outstanding Receivables')
+
+@accounting_bp.route('/reports/account-ledger/<int:account_id>')
+@login_required
+def account_ledger_detail(account_id):
+    """Individual Account Ledger Detail"""
+    account = Account.query.get_or_404(account_id)
+    form = ReportFilterForm()
+    
+    if request.method == 'GET':
+        form.from_date.data = date.today().replace(day=1)
+        form.to_date.data = date.today()
+    
+    journal_entries = []
+    
+    if form.validate_on_submit() or request.method == 'GET':
+        from_date = form.from_date.data if form.from_date.data else date.today().replace(day=1)
+        to_date = form.to_date.data if form.to_date.data else date.today()
+        
+        journal_entries = JournalEntry.query.filter(
+            JournalEntry.account_id == account_id,
+            JournalEntry.transaction_date >= from_date,
+            JournalEntry.transaction_date <= to_date
+        ).order_by(JournalEntry.transaction_date, JournalEntry.id).all()
+    
+    return render_template('accounting/account_ledger_detail.html', 
+                         account=account,
+                         form=form,
+                         journal_entries=journal_entries,
+                         title=f'Ledger - {account.name}')
+
+@accounting_bp.route('/reports/gstr1')
+@login_required
+def gstr1_report():
+    """GSTR-1 Report"""
+    form = GSATReportForm()
+    return render_template('accounting/gstr1_report.html', 
+                         form=form,
+                         title='GSTR-1 Report')
+
+@accounting_bp.route('/reports/gstr3b')
+@login_required
+def gstr3b_report():
+    """GSTR-3B Report"""
+    form = GSATReportForm()
+    return render_template('accounting/gstr3b_report.html', 
+                         form=form,
+                         title='GSTR-3B Report')
+
+@accounting_bp.route('/receipts/add', methods=['GET', 'POST'])
+@login_required
+def add_receipt():
+    """Add receipt voucher"""
+    form = ReceiptForm()
+    
+    # Populate choices
+    form.party_id.choices = [(s.id, s.name) for s in Supplier.query.filter_by(is_active=True).all()]
+    form.bank_account_id.choices = [('', 'Select Bank Account')] + [(ba.id, f"{ba.bank_name} - {ba.account_number}") for ba in BankAccount.query.filter_by(is_active=True).all()]
+    
+    if form.validate_on_submit():
+        try:
+            # Create receipt voucher
+            voucher_type = VoucherType.query.filter_by(code='RV').first()
+            voucher_number = Voucher.generate_voucher_number('RV')
+            
+            voucher = Voucher(
+                voucher_number=voucher_number,
+                voucher_type_id=voucher_type.id,
+                transaction_date=form.receipt_date.data,
+                reference_number=form.reference_number.data,
+                narration=form.narration.data,
+                party_id=form.party_id.data,
+                party_type='customer',
+                total_amount=form.amount.data,
+                created_by=current_user.id
+            )
+            
+            db.session.add(voucher)
+            db.session.flush()
+            
+            # Create journal entries
+            party = Supplier.query.get(form.party_id.data)
+            
+            # Debit entry for Cash/Bank
+            if form.receipt_mode.data == 'cash':
+                cash_account = Account.query.filter_by(is_cash_account=True).first()
+                debit_account_id = cash_account.id
+            else:
+                bank_account = BankAccount.query.get(form.bank_account_id.data)
+                debit_account_id = bank_account.account_id
+            
+            debit_entry = JournalEntry(
+                voucher_id=voucher.id,
+                account_id=debit_account_id,
+                entry_type='debit',
+                amount=form.amount.data,
+                narration=f"Receipt from {party.name} via {form.receipt_mode.data}",
+                transaction_date=form.receipt_date.data
+            )
+            db.session.add(debit_entry)
+            
+            # Credit entry for Customer
+            customer_account = Account.query.filter_by(name__ilike=f'%{party.name}%').first()
+            if not customer_account:
+                # Create customer account if doesn't exist
+                accounts_receivable_group = AccountGroup.query.filter_by(code='AR').first()
+                customer_account = Account(
+                    name=f'{party.name} - Customer',
+                    code=f'CUST-{party.id}',
+                    account_group_id=accounts_receivable_group.id,
+                    account_type='current_asset'
+                )
+                db.session.add(customer_account)
+                db.session.flush()
+            
+            credit_entry = JournalEntry(
+                voucher_id=voucher.id,
+                account_id=customer_account.id,
+                entry_type='credit',
+                amount=form.amount.data,
+                narration=f"Receipt from {party.name} via {form.receipt_mode.data}",
+                transaction_date=form.receipt_date.data
+            )
+            db.session.add(credit_entry)
+            
+            db.session.commit()
+            
+            flash(f'Receipt voucher "{voucher.voucher_number}" created successfully!', 'success')
+            return redirect(url_for('accounting.view_voucher', id=voucher.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error creating receipt: {str(e)}', 'error')
+    
+    return render_template('accounting/receipt_form.html', form=form, title='Add Receipt')
+
+@accounting_bp.route('/reports/gst-summary')
+@login_required
+def gst_summary():
+    """GST Summary Report"""
+    return render_template('accounting/gst_summary.html', 
+                         title='GST Summary Report')
+
+@accounting_bp.route('/reports/inventory-valuation')
+@login_required
+def inventory_valuation():
+    """Inventory Valuation Report"""
+    return render_template('accounting/inventory_valuation.html', 
+                         title='Inventory Valuation Report')
+
 @accounting_bp.route('/reports/trial-balance')
 @login_required
 def trial_balance():
