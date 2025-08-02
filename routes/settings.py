@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from forms import CompanySettingsForm, NotificationSettingsForm
-from models import User, CompanySettings, NotificationSettings, PurchaseOrder, SalesOrder, Item, JobWork, Production, MaterialInspection, QualityIssue, FactoryExpense, Employee, SalaryRecord, EmployeeAdvance
+from models import User, CompanySettings, NotificationSettings, PurchaseOrder, SalesOrder, Item, JobWork, Production, MaterialInspection, QualityIssue, FactoryExpense, Employee, SalaryRecord, EmployeeAdvance, Supplier
+from models_accounting import Account, AccountGroup, Voucher, VoucherType, JournalEntry
 from models_permissions import Permission, UserPermission, DEFAULT_PERMISSIONS, init_permissions
 from app import db
 from services.notifications import notification_service
@@ -14,9 +15,34 @@ settings_bp = Blueprint('settings', __name__)
 def dashboard():
     """Settings dashboard page"""
     settings = CompanySettings.get_settings()
+    
+    # Get Tally sync statistics
+    try:
+        tally_stats = {
+            'total_ledgers': Supplier.query.filter_by(is_active=True).count() + Account.query.filter_by(is_active=True).count(),
+            'total_items': Item.query.count(),  # Item model may not have is_active field
+            'pending_purchases': PurchaseOrder.query.count(),  # Simplified for now
+            'pending_sales': SalesOrder.query.count(),  # Simplified for now  
+            'pending_expenses': FactoryExpense.query.count(),  # Simplified for now
+            'total_vouchers': Voucher.query.count()
+        }
+    except Exception as e:
+        # Fallback statistics if queries fail
+        tally_stats = {
+            'total_ledgers': 0,
+            'total_items': 0,
+            'pending_purchases': 0,
+            'pending_sales': 0,
+            'pending_expenses': 0,
+            'total_vouchers': 0
+        }
+    
     # Import csrf token function
     from flask_wtf.csrf import generate_csrf
-    return render_template('settings/dashboard.html', settings=settings, csrf_token=generate_csrf)
+    return render_template('settings/dashboard.html', 
+                         settings=settings, 
+                         tally_stats=tally_stats,
+                         csrf_token=generate_csrf)
 
 @settings_bp.route('/company', methods=['GET', 'POST'])
 @login_required

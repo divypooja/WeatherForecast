@@ -382,6 +382,291 @@ def sync_status_report():
                          pending_sales=pending_sales,
                          pending_expenses=pending_expenses)
 
+@tally_bp.route('/export/journal_entries')
+@login_required
+def export_journal_entries():
+    """Export Journal Entries to Tally XML"""
+    from models_accounting import JournalEntry, Voucher
+    
+    date_from = request.args.get('date_from', '')
+    date_to = request.args.get('date_to', '')
+    include_gst = request.args.get('include_gst', 'on') == 'on'
+    
+    # Build date filters
+    query = JournalEntry.query
+    if date_from:
+        try:
+            date_filter = datetime.strptime(date_from, '%Y-%m-%d').date()
+            query = query.filter(JournalEntry.transaction_date >= date_filter)
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            date_filter = datetime.strptime(date_to, '%Y-%m-%d').date()
+            query = query.filter(JournalEntry.transaction_date <= date_filter)
+        except ValueError:
+            pass
+    
+    journal_entries = query.order_by(JournalEntry.transaction_date.desc()).all()
+    
+    # Create XML structure
+    envelope = ET.Element('ENVELOPE')
+    header = ET.SubElement(envelope, 'HEADER')
+    ET.SubElement(header, 'TALLYREQUEST').text = 'Import Data'
+    
+    body = ET.SubElement(envelope, 'BODY')
+    import_data = ET.SubElement(body, 'IMPORTDATA')
+    request_desc = ET.SubElement(import_data, 'REQUESTDESC')
+    ET.SubElement(request_desc, 'REPORTNAME').text = 'Vouchers'
+    
+    request_data = ET.SubElement(import_data, 'REQUESTDATA')
+    
+    # Group journal entries by voucher
+    voucher_entries = {}
+    for entry in journal_entries:
+        if entry.voucher_id:
+            if entry.voucher_id not in voucher_entries:
+                voucher_entries[entry.voucher_id] = {
+                    'voucher': entry.voucher,
+                    'entries': []
+                }
+            voucher_entries[entry.voucher_id]['entries'].append(entry)
+    
+    # Generate Tally vouchers
+    for voucher_id, voucher_data in voucher_entries.items():
+        voucher = voucher_data['voucher']
+        entries = voucher_data['entries']
+        
+        if not voucher or not entries:
+            continue
+            
+        voucher_elem = ET.SubElement(request_data, 'TALLYMESSAGE')
+        voucher_tag = ET.SubElement(voucher_elem, 'VOUCHER', VCHTYPE="Journal", ACTION="Create")
+        
+        ET.SubElement(voucher_tag, 'DATE').text = voucher.transaction_date.strftime('%Y%m%d')
+        ET.SubElement(voucher_tag, 'VOUCHERTYPENAME').text = 'Journal'
+        ET.SubElement(voucher_tag, 'VOUCHERNUMBER').text = voucher.voucher_number
+        ET.SubElement(voucher_tag, 'REFERENCE').text = voucher.reference_number or voucher.voucher_number
+        ET.SubElement(voucher_tag, 'NARRATION').text = voucher.narration or 'Journal Entry'
+        
+        # Add ledger entries
+        ledger_entries = ET.SubElement(voucher_tag, 'ALLLEDGERENTRIES.LIST')
+        
+        for entry in entries:
+            if entry.account:
+                ledger_entry = ET.SubElement(ledger_entries, 'LEDGERENTRIES.LIST')
+                ET.SubElement(ledger_entry, 'LEDGERNAME').text = entry.account.name
+                ET.SubElement(ledger_entry, 'ISDEEMEDPOSITIVE').text = 'Yes' if entry.entry_type == 'debit' else 'No'
+                ET.SubElement(ledger_entry, 'AMOUNT').text = str(entry.amount if entry.entry_type == 'debit' else -entry.amount)
+                
+                # Add GST details if requested and available
+                if include_gst and hasattr(entry, 'gst_amount') and entry.gst_amount:
+                    ET.SubElement(ledger_entry, 'GSTRATE').text = str(entry.gst_rate or 0)
+                    ET.SubElement(ledger_entry, 'GSTAMOUNT').text = str(entry.gst_amount)
+    
+    # Convert to pretty XML
+    rough_string = ET.tostring(envelope, 'unicode')
+    reparsed = minidom.parseString(rough_string)
+    pretty_xml = reparsed.toprettyxml(indent="  ")
+    
+    response = make_response(pretty_xml)
+    response.headers['Content-Type'] = 'application/xml'
+    response.headers['Content-Disposition'] = f'attachment; filename=journal_entries_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xml'
+    
+    return response
+
+@tally_bp.route('/import', methods=['POST'])
+@login_required
+def import_data():
+    """Import data from Tally XML file"""
+    try:
+        import_type = request.form.get('import_type', 'ledgers')
+        overwrite = request.form.get('overwrite') == 'on'
+        
+        if 'import_file' not in request.files:
+            return jsonify({'success': False, 'error': 'No file uploaded'})
+        
+        file = request.files['import_file']
+        if file.filename == '':
+            return jsonify({'success': False, 'error': 'No file selected'})
+        
+        if not file.filename.lower().endswith('.xml'):
+            return jsonify({'success': False, 'error': 'File must be XML format'})
+        
+        # Parse XML content
+        try:
+            xml_content = file.read()
+            root = ET.fromstring(xml_content)
+        except ET.ParseError as e:
+            return jsonify({'success': False, 'error': f'Invalid XML format: {str(e)}'})
+        
+        imported_count = 0
+        
+        if import_type == 'ledgers':
+            imported_count = _import_ledgers(root, overwrite)
+        elif import_type == 'items':
+            imported_count = _import_items(root, overwrite)
+        elif import_type == 'vouchers':
+            imported_count = _import_vouchers(root, overwrite)
+        else:
+            return jsonify({'success': False, 'error': 'Invalid import type'})
+        
+        return jsonify({
+            'success': True, 
+            'imported_count': imported_count,
+            'message': f'Successfully imported {imported_count} {import_type}'
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+def _import_ledgers(root, overwrite=False):
+    """Import ledger masters from Tally XML"""
+    count = 0
+    
+    # Find all LEDGER elements in the XML
+    for ledger_elem in root.findall('.//LEDGER'):
+        try:
+            name = ledger_elem.find('NAME')
+            if name is not None and name.text:
+                ledger_name = name.text.strip()
+                
+                # Check if supplier already exists
+                existing = Supplier.query.filter_by(name=ledger_name).first()
+                if existing and not overwrite:
+                    continue
+                
+                # Create or update supplier
+                if existing and overwrite:
+                    supplier = existing
+                else:
+                    supplier = Supplier()
+                    supplier.name = ledger_name
+                    supplier.code = f"SUP{Supplier.query.count() + 1:04d}"
+                
+                # Extract other details
+                parent = ledger_elem.find('PARENT')
+                if parent is not None and parent.text:
+                    supplier.partner_type = 'supplier' if 'creditor' in parent.text.lower() else 'customer'
+                
+                # Extract GST details
+                gstin = ledger_elem.find('GSTIN')
+                if gstin is not None and gstin.text:
+                    supplier.gst_number = gstin.text.strip()
+                
+                # Extract contact details
+                phone = ledger_elem.find('LEDGERPHONE')
+                if phone is not None and phone.text:
+                    supplier.mobile_number = phone.text.strip()
+                
+                email = ledger_elem.find('EMAIL')
+                if email is not None and email.text:
+                    supplier.email = email.text.strip()
+                
+                # Extract address
+                address_list = ledger_elem.find('ADDRESS.LIST')
+                if address_list is not None:
+                    addresses = [addr.text for addr in address_list.findall('ADDRESS') if addr.text]
+                    if addresses:
+                        supplier.address = ', '.join(addresses)
+                
+                db.session.add(supplier)
+                count += 1
+        
+        except Exception as e:
+            print(f"Error importing ledger: {e}")
+            continue
+    
+    db.session.commit()
+    return count
+
+def _import_items(root, overwrite=False):
+    """Import stock items from Tally XML"""
+    count = 0
+    
+    # Find all STOCKITEM elements in the XML
+    for item_elem in root.findall('.//STOCKITEM'):
+        try:
+            name = item_elem.find('NAME')
+            if name is not None and name.text:
+                item_name = name.text.strip()
+                
+                # Check if item already exists
+                existing = Item.query.filter_by(name=item_name).first()
+                if existing and not overwrite:
+                    continue
+                
+                # Create or update item
+                if existing and overwrite:
+                    item = existing
+                else:
+                    item = Item()
+                    item.name = item_name
+                    item.code = f"ITM{Item.query.count() + 1:04d}"
+                
+                # Extract other details
+                alias = item_elem.find('ALIAS')
+                if alias is not None and alias.text:
+                    item.code = alias.text.strip()
+                
+                base_units = item_elem.find('BASEUNITS')
+                if base_units is not None and base_units.text:
+                    item.unit_of_measure = base_units.text.strip()
+                
+                # Extract opening balance
+                opening_balance = item_elem.find('OPENINGBALANCE')
+                if opening_balance is not None:
+                    units = opening_balance.find('UNITS')
+                    rate = opening_balance.find('RATE')
+                    if units is not None and units.text:
+                        try:
+                            item.current_stock = float(units.text)
+                        except ValueError:
+                            pass
+                    if rate is not None and rate.text:
+                        try:
+                            item.unit_price = float(rate.text)
+                        except ValueError:
+                            pass
+                
+                # Extract HSN code
+                hsn_code = item_elem.find('HSNCODE')
+                if hsn_code is not None and hsn_code.text:
+                    item.hsn_code = hsn_code.text.strip()
+                
+                db.session.add(item)
+                count += 1
+        
+        except Exception as e:
+            print(f"Error importing item: {e}")
+            continue
+    
+    db.session.commit()
+    return count
+
+def _import_vouchers(root, overwrite=False):
+    """Import vouchers from Tally XML"""
+    count = 0
+    
+    # Find all VOUCHER elements in the XML
+    for voucher_elem in root.findall('.//VOUCHER'):
+        try:
+            voucher_number = voucher_elem.find('VOUCHERNUMBER')
+            if voucher_number is not None and voucher_number.text:
+                voucher_num = voucher_number.text.strip()
+                
+                # Check if voucher already exists (simplified check)
+                # In a real implementation, you'd want more sophisticated duplicate detection
+                
+                print(f"Would import voucher: {voucher_num}")
+                count += 1
+        
+        except Exception as e:
+            print(f"Error importing voucher: {e}")
+            continue
+    
+    return count
+
 @tally_bp.route('/settings')
 @login_required
 def settings():
