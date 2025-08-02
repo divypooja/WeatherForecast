@@ -66,6 +66,8 @@ def update_po_status_based_on_grn(purchase_order_id):
         # Update PO status
         if all_items_fully_received:
             po.status = 'closed'
+            # Create accounting entries when PO is fully received
+            create_po_accounting_entries(po)
         elif any_items_partially_received:
             po.status = 'partial'
         else:
@@ -1158,3 +1160,108 @@ def api_grn_summary(grn_id):
         'status': grn.status,
         'inspection_status': grn.inspection_status
     })
+
+
+def create_po_accounting_entries(purchase_order):
+    """Create accounting journal entries when Purchase Order is fully received"""
+    try:
+        # Import accounting models
+        from models_accounting import VoucherType, Voucher, JournalEntry, Account, AccountGroup
+        
+        # Skip if accounting entries already exist for this PO
+        existing_voucher = Voucher.query.filter_by(
+            reference_number=purchase_order.po_number
+        ).first()
+        
+        if existing_voucher:
+            print(f"Accounting entries already exist for PO {purchase_order.po_number}")
+            return
+        
+        # Get or create Purchase voucher type
+        purchase_voucher_type = VoucherType.query.filter_by(code='PUR').first()
+        if not purchase_voucher_type:
+            purchase_voucher_type = VoucherType(
+                name='Purchase',
+                code='PUR',
+                description='Purchase transactions'
+            )
+            db.session.add(purchase_voucher_type)
+            db.session.flush()
+        
+        # Generate voucher number
+        voucher_number = Voucher.generate_voucher_number('PUR')
+        
+        # Create voucher
+        voucher = Voucher(
+            voucher_number=voucher_number,
+            voucher_type_id=purchase_voucher_type.id,
+            transaction_date=purchase_order.order_date,
+            reference_number=purchase_order.po_number,
+            narration=f"Purchase Order {purchase_order.po_number} - {purchase_order.supplier.name}",
+            party_id=purchase_order.supplier_id,
+            party_type='supplier',
+            total_amount=purchase_order.total_amount,
+            created_by=1  # System user
+        )
+        
+        db.session.add(voucher)
+        db.session.flush()
+        
+        # Get or create supplier account
+        supplier_account = Account.query.filter_by(name=purchase_order.supplier.name).first()
+        if not supplier_account:
+            # Create supplier account under Sundry Creditors
+            creditors_group = AccountGroup.query.filter_by(name='Sundry Creditors').first()
+            if creditors_group:
+                supplier_account = Account(
+                    name=purchase_order.supplier.name,
+                    code=f"SUP_{purchase_order.supplier_id}",
+                    account_group_id=creditors_group.id,
+                    account_type='current_liability'
+                )
+                db.session.add(supplier_account)
+                db.session.flush()
+        
+        # Get or create Purchase account
+        purchase_account = Account.query.filter_by(name='Purchase').first()
+        if not purchase_account:
+            # Create under Direct Expenses
+            expenses_group = AccountGroup.query.filter_by(name='Direct Expenses').first()
+            if expenses_group:
+                purchase_account = Account(
+                    name='Purchase',
+                    code='PUR001',
+                    account_group_id=expenses_group.id,
+                    account_type='expense'
+                )
+                db.session.add(purchase_account)
+                db.session.flush()
+        
+        if supplier_account and purchase_account:
+            # Debit Purchase Account (Expense)
+            debit_entry = JournalEntry(
+                voucher_id=voucher.id,
+                account_id=purchase_account.id,
+                entry_type='debit',
+                amount=purchase_order.total_amount,
+                narration=f"Purchase from {purchase_order.supplier.name} - PO {purchase_order.po_number}",
+                transaction_date=purchase_order.order_date
+            )
+            db.session.add(debit_entry)
+            
+            # Credit Supplier Account (Liability)
+            credit_entry = JournalEntry(
+                voucher_id=voucher.id,
+                account_id=supplier_account.id,
+                entry_type='credit',
+                amount=purchase_order.total_amount,
+                narration=f"Amount payable to {purchase_order.supplier.name} - PO {purchase_order.po_number}",
+                transaction_date=purchase_order.order_date
+            )
+            db.session.add(credit_entry)
+            
+            print(f"Created accounting entries for PO {purchase_order.po_number} - Amount: {purchase_order.total_amount}")
+        
+    except Exception as e:
+        print(f"Error creating accounting entries for PO {purchase_order.po_number}: {str(e)}")
+        # Don't rollback here as it's called within a larger transaction
