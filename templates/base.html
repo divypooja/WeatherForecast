@@ -15,13 +15,33 @@
             top: 0;
             width: 250px;
             background-color: #f8f9fa;
-            padding: 20px 0;
+            padding: 20px 0 40px 0;
             border-right: 1px solid #dee2e6;
             overflow-y: auto;
             overflow-x: hidden;
             z-index: 1000;
             -webkit-transform: translateZ(0);
             transform: translateZ(0);
+            /* Ensure scrolling works properly */
+            scrollbar-width: thin;
+            scrollbar-color: #ccc #f8f9fa;
+        }
+        
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .sidebar::-webkit-scrollbar-track {
+            background: #f8f9fa;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 3px;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: #999;
         }
         .main-content {
             margin-left: 250px;
@@ -222,13 +242,18 @@
                     <span class="badge bg-success ms-2">NEW</span>
                 </a>
                 
+                <!-- Financial Management Section -->
+                <hr class="my-2">
+                <div class="nav-section-header px-3 py-1">
+                    <small class="text-muted text-uppercase fw-bold">Financial Management</small>
+                </div>
+                
                 <a class="nav-link {{ 'active' if 'accounting' in request.endpoint }}" href="{{ url_for('accounting.dashboard') }}">
                     <i class="fas fa-calculator text-warning"></i>
                     <span class="fw-bold">Accounting & Finance</span>
                     <span class="badge bg-warning ms-2">NEW</span>
                 </a>
                 
-
 
                 <hr class="my-2">
                 
