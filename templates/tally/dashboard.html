@@ -92,7 +92,7 @@
                     <i class="fas fa-receipt text-warning fa-3x mb-3"></i>
                     <h5>Export Vouchers</h5>
                     <p class="text-muted">Export Purchase/Sales/Expense transactions as Tally vouchers</p>
-                    <button class="btn btn-warning" onclick="showVoucherExportModal()">
+                    <button class="btn btn-warning" onclick="toggleVoucherForm()">
                         <i class="fas fa-download"></i> Export Vouchers
                     </button>
                 </div>
@@ -106,7 +106,7 @@
                     <i class="fas fa-file-invoice-dollar text-success fa-3x mb-3"></i>
                     <h5>Export Journal Entries</h5>
                     <p class="text-muted">Export journal entries and accounting vouchers with GST details</p>
-                    <button class="btn btn-success" onclick="showJournalExportModal()">
+                    <button class="btn btn-success" onclick="toggleJournalForm()">
                         <i class="fas fa-download"></i> Export Journal Entries
                     </button>
                 </div>
@@ -137,17 +137,17 @@
                     <p class="text-muted mb-3">Upload Tally data files to import into your factory management system</p>
                     <div class="row">
                         <div class="col-md-4 mb-2">
-                            <button class="btn btn-outline-primary w-100" onclick="showImportModal('ledgers')">
+                            <button class="btn btn-outline-primary w-100" onclick="toggleImportForm('ledgers')">
                                 <i class="fas fa-upload"></i> Import Ledgers
                             </button>
                         </div>
                         <div class="col-md-4 mb-2">
-                            <button class="btn btn-outline-info w-100" onclick="showImportModal('items')">
+                            <button class="btn btn-outline-info w-100" onclick="toggleImportForm('items')">
                                 <i class="fas fa-upload"></i> Import Stock Items
                             </button>
                         </div>
                         <div class="col-md-4 mb-2">
-                            <button class="btn btn-outline-warning w-100" onclick="showImportModal('vouchers')">
+                            <button class="btn btn-outline-warning w-100" onclick="toggleImportForm('vouchers')">
                                 <i class="fas fa-upload"></i> Import Vouchers
                             </button>
                         </div>
@@ -155,232 +155,207 @@
                 </div>
             </div>
         </div>
-    </div>
-</div>
 
-<!-- Voucher Export Modal -->
-<div class="modal fade" id="voucherExportModal" tabindex="-1" aria-labelledby="voucherExportModalLabel" aria-hidden="true" data-bs-backdrop="true" data-bs-keyboard="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="voucherExportModalLabel">Export Vouchers to Tally</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="clearModalBackdrops()"></button>
-            </div>
-            <form id="voucherExportForm" action="{{ url_for('tally.export_vouchers') }}" method="GET">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="dateFrom" class="form-label">From Date</label>
-                        <input type="date" class="form-control" id="dateFrom" name="date_from">
-                    </div>
-                    <div class="mb-3">
-                        <label for="dateTo" class="form-label">To Date</label>
-                        <input type="date" class="form-control" id="dateTo" name="date_to">
-                    </div>
-                    <div class="mb-3">
-                        <label for="voucherType" class="form-label">Voucher Type</label>
-                        <select class="form-control" id="voucherType" name="type">
-                            <option value="all">All Vouchers</option>
-                            <option value="purchase">Purchase Vouchers</option>
-                            <option value="sales">Sales Vouchers</option>
-                            <option value="expense">Expense Vouchers</option>
-                        </select>
-                    </div>
+        <!-- Inline Export/Import Forms -->
+        <!-- Voucher Export Form -->
+        <div class="col-lg-12 mb-4">
+            <div class="card" id="voucherExportForm" style="display: none;">
+                <div class="card-header bg-warning text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-download"></i> Export Vouchers to Tally
+                        <button type="button" class="btn btn-sm btn-light float-end" onclick="hideAllForms()">
+                            <i class="fas fa-times"></i> Close
+                        </button>
+                    </h5>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="clearModalBackdrops()">Cancel</button>
-                    <button type="submit" class="btn btn-warning">
-                        <i class="fas fa-download"></i> Export Vouchers
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Journal Export Modal -->
-<div class="modal fade" id="journalExportModal" tabindex="-1" aria-labelledby="journalExportModalLabel" aria-hidden="true" data-bs-backdrop="true" data-bs-keyboard="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="journalExportModalLabel">Export Journal Entries</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="clearModalBackdrops()"></button>
-            </div>
-            <form id="journalExportForm" action="{{ url_for('tally.export_journal_entries') }}" method="GET">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="journalDateFrom" class="form-label">From Date</label>
-                        <input type="date" class="form-control" id="journalDateFrom" name="date_from">
-                    </div>
-                    <div class="mb-3">
-                        <label for="journalDateTo" class="form-label">To Date</label>
-                        <input type="date" class="form-control" id="journalDateTo" name="date_to">
-                    </div>
-                    <div class="mb-3">
-                        <label for="includeGST" class="form-label">
-                            <input type="checkbox" id="includeGST" name="include_gst" checked> Include GST Details
-                        </label>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="clearModalBackdrops()">Cancel</button>
-                    <button type="submit" class="btn btn-success">
-                        <i class="fas fa-download"></i> Export Journal Entries
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Import Modal -->
-<div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true" data-bs-backdrop="true" data-bs-keyboard="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="importModalLabel">Import from Tally</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="clearModalBackdrops()"></button>
-            </div>
-            <form id="importForm" enctype="multipart/form-data">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="importFile" class="form-label">Select Tally XML File</label>
-                        <input type="file" class="form-control" id="importFile" name="import_file" accept=".xml" required>
-                        <div class="form-text">Upload a Tally XML export file</div>
-                    </div>
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="overwriteExisting" name="overwrite">
-                            <label class="form-check-label" for="overwriteExisting">
-                                Overwrite existing records with same name/code
-                            </label>
+                <div class="card-body">
+                    <form action="{{ url_for('tally.export_vouchers') }}" method="GET">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label for="dateFrom" class="form-label">From Date</label>
+                                <input type="date" class="form-control" id="dateFrom" name="date_from">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="dateTo" class="form-label">To Date</label>
+                                <input type="date" class="form-control" id="dateTo" name="date_to">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="voucherType" class="form-label">Voucher Type</label>
+                                <select class="form-control" id="voucherType" name="type">
+                                    <option value="all">All Vouchers</option>
+                                    <option value="purchase">Purchase Vouchers</option>
+                                    <option value="sales">Sales Vouchers</option>
+                                    <option value="expense">Expense Vouchers</option>
+                                </select>
+                            </div>
                         </div>
-                    </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="fas fa-download"></i> Export Vouchers
+                                </button>
+                                <button type="button" class="btn btn-secondary ms-2" onclick="hideAllForms()">Cancel</button>
+                            </div>
+                        </div>
+                    </form>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="clearModalBackdrops()">Cancel</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-upload"></i> Import Data
-                    </button>
+            </div>
+        </div>
+
+        <!-- Journal Export Form -->
+        <div class="col-lg-12 mb-4">
+            <div class="card" id="journalExportForm" style="display: none;">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-download"></i> Export Journal Entries
+                        <button type="button" class="btn btn-sm btn-light float-end" onclick="hideAllForms()">
+                            <i class="fas fa-times"></i> Close
+                        </button>
+                    </h5>
                 </div>
-            </form>
+                <div class="card-body">
+                    <form action="{{ url_for('tally.export_journal_entries') }}" method="GET">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label for="journalDateFrom" class="form-label">From Date</label>
+                                <input type="date" class="form-control" id="journalDateFrom" name="date_from">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="journalDateTo" class="form-label">To Date</label>
+                                <input type="date" class="form-control" id="journalDateTo" name="date_to">
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check mt-4">
+                                    <input class="form-check-input" type="checkbox" id="includeGST" name="include_gst" checked>
+                                    <label class="form-check-label" for="includeGST">
+                                        Include GST Details
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-download"></i> Export Journal Entries
+                                </button>
+                                <button type="button" class="btn btn-secondary ms-2" onclick="hideAllForms()">Cancel</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import Form -->
+        <div class="col-lg-12 mb-4">
+            <div class="card" id="importForm" style="display: none;">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-upload"></i> <span id="importTitle">Import from Tally</span>
+                        <button type="button" class="btn btn-sm btn-light float-end" onclick="hideAllForms()">
+                            <i class="fas fa-times"></i> Close
+                        </button>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="importDataForm" enctype="multipart/form-data">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="importFile" class="form-label">Select Tally XML File</label>
+                                <input type="file" class="form-control" id="importFile" name="import_file" accept=".xml" required>
+                                <div class="form-text">Upload a Tally XML export file</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check mt-4">
+                                    <input class="form-check-input" type="checkbox" id="overwriteExisting" name="overwrite">
+                                    <label class="form-check-label" for="overwriteExisting">
+                                        Overwrite existing records with same name/code
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-upload"></i> Import Data
+                                </button>
+                                <button type="button" class="btn btn-secondary ms-2" onclick="hideAllForms()">Cancel</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- Remove all modals completely -->
+
 
 <script>
-// Clear any stuck modal backdrops on page load
-document.addEventListener('DOMContentLoaded', function() {
-    // Remove any stuck modal backdrops
-    const backdrops = document.querySelectorAll('.modal-backdrop');
-    backdrops.forEach(backdrop => backdrop.remove());
-    document.body.classList.remove('modal-open');
-    document.body.style.overflow = '';
-    document.body.style.paddingRight = '';
-});
-
-// Tally Export/Import Functions with proper cleanup
-function showVoucherExportModal() {
-    clearModalBackdrops();
-    const modal = new bootstrap.Modal(document.getElementById('voucherExportModal'), {
-        backdrop: true,
-        keyboard: true
-    });
-    modal.show();
+// Simple inline form toggle functions - no modals!
+function toggleVoucherForm() {
+    hideAllForms();
+    document.getElementById('voucherExportForm').style.display = 'block';
+    document.getElementById('voucherExportForm').scrollIntoView({ behavior: 'smooth' });
 }
 
-function showJournalExportModal() {
-    clearModalBackdrops();
-    const modal = new bootstrap.Modal(document.getElementById('journalExportModal'), {
-        backdrop: true,
-        keyboard: true
-    });
-    modal.show();
+function toggleJournalForm() {
+    hideAllForms();
+    document.getElementById('journalExportForm').style.display = 'block';
+    document.getElementById('journalExportForm').scrollIntoView({ behavior: 'smooth' });
 }
 
-function showImportModal(type) {
-    clearModalBackdrops();
-    const modal = new bootstrap.Modal(document.getElementById('importModal'), {
-        backdrop: true,
-        keyboard: true
-    });
-    document.getElementById('importModalLabel').textContent = `Import ${type.charAt(0).toUpperCase() + type.slice(1)} from Tally`;
-    document.getElementById('importForm').setAttribute('data-import-type', type);
-    modal.show();
+function toggleImportForm(type) {
+    hideAllForms();
+    document.getElementById('importTitle').textContent = `Import ${type.charAt(0).toUpperCase() + type.slice(1)} from Tally`;
+    document.getElementById('importDataForm').setAttribute('data-import-type', type);
+    document.getElementById('importForm').style.display = 'block';
+    document.getElementById('importForm').scrollIntoView({ behavior: 'smooth' });
 }
 
-// Function to clear stuck modal backdrops
-function clearModalBackdrops() {
-    const backdrops = document.querySelectorAll('.modal-backdrop');
-    backdrops.forEach(backdrop => backdrop.remove());
-    document.body.classList.remove('modal-open');
-    document.body.style.overflow = '';
-    document.body.style.paddingRight = '';
+function hideAllForms() {
+    document.getElementById('voucherExportForm').style.display = 'none';
+    document.getElementById('journalExportForm').style.display = 'none';
+    document.getElementById('importForm').style.display = 'none';
 }
-
-// Global escape key handler to close any stuck modals
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        // Close all open modals
-        const openModals = document.querySelectorAll('.modal.show');
-        openModals.forEach(modal => {
-            const modalInstance = bootstrap.Modal.getInstance(modal);
-            if (modalInstance) {
-                modalInstance.hide();
-            }
-        });
-        
-        // Force remove any stuck backdrops after a delay
-        setTimeout(() => {
-            clearModalBackdrops();
-        }, 300);
-    }
-});
-
-// Add click event to body to close stuck modals
-document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('modal-backdrop')) {
-        clearModalBackdrops();
-    }
-});
 
 // Handle import form submission
-document.getElementById('importForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    const importType = this.getAttribute('data-import-type');
-    formData.append('import_type', importType);
-    
-    try {
-        const response = await fetch('/tally/import', {
-            method: 'POST',
-            body: formData
-        });
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('importDataForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
         
-        const result = await response.json();
+        const formData = new FormData(this);
+        const importType = this.getAttribute('data-import-type');
+        formData.append('import_type', importType);
         
-        if (result.success) {
-            alert(`Successfully imported ${result.imported_count} ${importType}`);
-            location.reload();
-        } else {
-            alert(`Import failed: ${result.error}`);
+        try {
+            const response = await fetch('/tally/import', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert(`Successfully imported ${result.imported_count} ${importType}`);
+                location.reload();
+            } else {
+                alert(`Import failed: ${result.error}`);
+            }
+        } catch (error) {
+            alert(`Import failed: ${error.message}`);
         }
-    } catch (error) {
-        alert(`Import failed: ${error.message}`);
-    }
-    
-    const modalInstance = bootstrap.Modal.getInstance(document.getElementById('importModal'));
-    if (modalInstance) {
-        modalInstance.hide();
-    }
-    clearModalBackdrops();
+        
+        hideAllForms();
+    });
 });
 
-// Add proper modal event listeners for cleanup
-document.querySelectorAll('.modal').forEach(modal => {
-    modal.addEventListener('hidden.bs.modal', function() {
-        clearModalBackdrops();
-    });
+// Escape key to close forms
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        hideAllForms();
+    }
 });
 </script>
 
