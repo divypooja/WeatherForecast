@@ -117,7 +117,7 @@ class BankAccountForm(FlaskForm):
 
 class PaymentForm(FlaskForm):
     """Form for payment vouchers"""
-    party_id = SelectField('Pay To', coerce=int, validators=[DataRequired()])
+    party_id = SelectField('Pay To', coerce=lambda x: int(x) if x else None, validators=[DataRequired()])
     payment_date = DateField('Payment Date', validators=[DataRequired()], default=date.today)
     payment_mode = SelectField('Payment Mode', validators=[DataRequired()], choices=[
         ('cash', 'Cash'),
@@ -126,14 +126,14 @@ class PaymentForm(FlaskForm):
         ('upi', 'UPI'),
         ('neft', 'NEFT/RTGS')
     ])
-    bank_account_id = SelectField('From Bank Account', coerce=int, validators=[Optional()])
+    bank_account_id = SelectField('From Bank Account', coerce=lambda x: int(x) if x else None, validators=[Optional()])
     amount = DecimalField('Amount', validators=[DataRequired(), NumberRange(min=0.01)])
     reference_number = StringField('Reference/Cheque Number', validators=[Optional(), Length(max=100)])
     narration = TextAreaField('Narration', validators=[Optional(), Length(max=500)])
 
 class ReceiptForm(FlaskForm):
     """Form for receipt vouchers"""
-    party_id = SelectField('Received From', coerce=int, validators=[DataRequired()])
+    party_id = SelectField('Received From', coerce=lambda x: int(x) if x else None, validators=[DataRequired()])
     receipt_date = DateField('Receipt Date', validators=[DataRequired()], default=date.today)
     receipt_mode = SelectField('Receipt Mode', validators=[DataRequired()], choices=[
         ('cash', 'Cash'),
@@ -142,7 +142,7 @@ class ReceiptForm(FlaskForm):
         ('upi', 'UPI'),
         ('neft', 'NEFT/RTGS')
     ])
-    bank_account_id = SelectField('To Bank Account', coerce=int, validators=[Optional()])
+    bank_account_id = SelectField('To Bank Account', coerce=lambda x: int(x) if x else None, validators=[Optional()])
     amount = DecimalField('Amount', validators=[DataRequired(), NumberRange(min=0.01)])
     reference_number = StringField('Reference/Cheque Number', validators=[Optional(), Length(max=100)])
     narration = TextAreaField('Narration', validators=[Optional(), Length(max=500)])
@@ -154,7 +154,7 @@ class ReportFilterForm(FlaskForm):
     account_group_id = SelectField('Account Group', coerce=lambda x: int(x) if x else None, validators=[Optional()])
     account_id = SelectField('Specific Account', coerce=lambda x: int(x) if x else None, validators=[Optional()])
     party_id = SelectField('Party', coerce=lambda x: int(x) if x else None, validators=[Optional()])
-    voucher_type_id = SelectField('Voucher Type', coerce=int, validators=[Optional()])
+    voucher_type_id = SelectField('Voucher Type', coerce=lambda x: int(x) if x else None, validators=[Optional()])
     
 class GSATReportForm(FlaskForm):
     """Form for GST reports"""
