@@ -15,6 +15,16 @@
         border-radius: 8px;
         padding: 15px;
     }
+    /* Ensure modal displays correctly */
+    .modal {
+        z-index: 1050;
+    }
+    .modal-backdrop {
+        z-index: 1040;
+    }
+    .modal-content {
+        z-index: 1060;
+    }
 </style>
 {% endblock %}
 
@@ -174,12 +184,12 @@
     </div>
 
     <!-- Add Item Modal -->
-    <div class="modal fade" id="addItemModal" tabindex="-1">
-        <div class="modal-dialog">
+    <div class="modal fade" id="addItemModal" tabindex="-1" role="dialog" aria-labelledby="addItemModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Add Invoice Item</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title" id="addItemModalLabel">Add Invoice Item</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <form id="addItemForm">
@@ -259,7 +269,7 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
                     <button type="button" class="btn btn-primary" onclick="saveInvoiceItem()">Add Item</button>
                 </div>
             </div>
@@ -271,19 +281,53 @@
 function addInvoiceItem() {
     console.log('addInvoiceItem function called');
     try {
-        // Use Bootstrap 5 modal API
+        // Use Bootstrap 5 modal API with proper options
         const modalElement = document.getElementById('addItemModal');
         if (!modalElement) {
             console.error('Modal element not found');
             return;
         }
         
-        const modal = new bootstrap.Modal(modalElement);
-        modal.show();
+        // Initialize modal with backdrop and keyboard options
+        const modal = new bootstrap.Modal(modalElement, {
+            backdrop: true,
+            keyboard: true
+        });
+        
+        // Reset form before showing
         document.getElementById('addItemForm').reset();
+        
+        // Show modal
+        modal.show();
+        
+        console.log('Modal shown successfully');
+        
+        // Fallback: If modal doesn't appear, try alternative method
+        setTimeout(() => {
+            const modalElement = document.getElementById('addItemModal');
+            if (!modalElement.classList.contains('show')) {
+                console.log('Modal not showing, trying alternative method');
+                modalElement.style.display = 'block';
+                modalElement.classList.add('show');
+                document.body.classList.add('modal-open');
+                
+                // Create backdrop if it doesn't exist
+                if (!document.querySelector('.modal-backdrop')) {
+                    const backdrop = document.createElement('div');
+                    backdrop.className = 'modal-backdrop fade show';
+                    document.body.appendChild(backdrop);
+                }
+            }
+        }, 100);
+        
     } catch (error) {
         console.error('Error showing modal:', error);
-        alert('Error opening add item dialog: ' + error.message);
+        // Fallback method without Bootstrap
+        console.log('Trying fallback modal display');
+        const modalElement = document.getElementById('addItemModal');
+        modalElement.style.display = 'block';
+        modalElement.classList.add('show');
+        document.body.classList.add('modal-open');
     }
 }
 
@@ -341,6 +385,7 @@ function saveInvoiceItem() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            closeModal(); // Close modal first
             location.reload(); // Refresh page to show new item
         } else {
             alert('Error adding item: ' + data.message);
@@ -350,6 +395,42 @@ function saveInvoiceItem() {
         console.error('Error:', error);
         alert('Error adding item');
     });
+}
+
+function closeModal() {
+    console.log('Closing modal');
+    const modalElement = document.getElementById('addItemModal');
+    
+    try {
+        // Try Bootstrap method
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
+        } else {
+            // Manual close
+            modalElement.style.display = 'none';
+            modalElement.classList.remove('show');
+            document.body.classList.remove('modal-open');
+            
+            // Remove backdrop
+            const backdrop = document.querySelector('.modal-backdrop');
+            if (backdrop) {
+                backdrop.remove();
+            }
+        }
+    } catch (error) {
+        console.error('Error closing modal:', error);
+        // Manual close fallback
+        modalElement.style.display = 'none';
+        modalElement.classList.remove('show');
+        document.body.classList.remove('modal-open');
+        
+        // Remove backdrop
+        const backdrop = document.querySelector('.modal-backdrop');
+        if (backdrop) {
+            backdrop.remove();
+        }
+    }
 }
 
 function deleteInvoiceItem(itemId) {
