@@ -1,319 +1,230 @@
 {% extends "base.html" %}
 
-{% block title %}Settings - Factory Management System{% endblock %}
+{% block title %}Basic Settings Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+.settings-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease-in-out;
+}
+
+.settings-card:hover {
+    transform: translateY(-5px);
+}
+
+.settings-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.stat-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.recent-changes {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+}
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-cogs"></i> Basic Settings Dashboard</h2>
+        <div class="btn-group">
+            <a href="{{ url_for('settings_advanced.settings_dashboard') }}" class="btn btn-primary">
+                <i class="fas fa-sliders-h"></i> Advanced Settings
+            </a>
+            <a href="{{ url_for('settings.user_management') }}" class="btn btn-outline-success">
+                <i class="fas fa-users"></i> Users
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
     <div class="row mb-4">
-        <div class="col">
-            <h1><i class="fas fa-cog"></i> Settings</h1>
-            <p class="text-muted">Manage your factory settings and configurations</p>
-        </div>
-    </div>
-
-    <div class="row">
-        <!-- Company Settings -->
-        <div class="col-lg-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-building"></i> Company Settings
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <p class="card-text">Configure your company information for invoices and documents.</p>
-                    <div class="mb-3">
-                        <small class="text-muted">Current Company: {{ settings.company_name }}</small>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ stats.total_companies }}</h4>
+                        <p class="mb-0">Total Companies</p>
                     </div>
-                    <a href="{{ url_for('settings.company_settings') }}" class="btn btn-primary">
-                        <i class="fas fa-edit"></i> Manage Company Settings
-                    </a>
+                    <i class="fas fa-building fa-2x opacity-75"></i>
                 </div>
             </div>
         </div>
-
-        <!-- Notification Settings -->
-        <div class="col-lg-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-bell"></i> Notification Settings
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <p class="card-text">Configure SMS, email, and WhatsApp notifications for alerts and updates.</p>
-                    <a href="{{ url_for('settings.notification_settings') }}" class="btn btn-primary">
-                        <i class="fas fa-edit"></i> Manage Notifications
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Item Types Management -->
-        <div class="col-lg-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-tags"></i> Item Types Management
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <p class="card-text">Manage and customize item categories for your inventory system.</p>
-                    <div class="mb-3">
-                        <small class="text-muted">Default types: Material, Product, Consumable, Tool, Spare Part, Packaging</small>
+        <div class="col-md-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ stats.active_companies }}</h4>
+                        <p class="mb-0">Active Companies</p>
                     </div>
-                    <a href="{{ url_for('item_types.list_item_types') }}" class="btn btn-primary">
-                        <i class="fas fa-cog"></i> Manage Item Types
-                    </a>
+                    <i class="fas fa-check-circle fa-2x opacity-75"></i>
                 </div>
             </div>
         </div>
-
-        <!-- Dashboard Customization -->
-        <div class="col-lg-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-th-large"></i> Dashboard Customization
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <p class="card-text">Customize your main dashboard layout, reorder modules, and control visibility.</p>
-                    <a href="{{ url_for('main.customize_dashboard') }}" class="btn btn-primary">
-                        <i class="fas fa-edit"></i> Customize Dashboard
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Data Backup -->
-        <div class="col-lg-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-cloud-download-alt"></i> Data Backup & Export
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <p class="card-text">Export your factory data to Excel or JSON format, and manage cloud backups.</p>
-                    <a href="{{ url_for('backup.backup_dashboard') }}" class="btn btn-primary">
-                        <i class="fas fa-download"></i> Backup Data
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tally Integration Link -->
-        <div class="col-lg-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-calculator"></i> Tally ERP Integration
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <p class="card-text">Access comprehensive Tally ERP data export/import functionality and synchronization management.</p>
-                    <a href="{{ url_for('tally.dashboard') }}" class="btn btn-success">
-                        <i class="fas fa-external-link-alt"></i> Open Tally Integration
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Department Management -->
-        <div class="col-lg-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-building"></i> Department Management
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <p class="card-text">Manage employee departments for better organization and reporting.</p>
-                    <div class="mb-3">
-                        <small class="text-muted">Organize employees by Production, Quality Control, Assembly, etc.</small>
+        <div class="col-md-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%);">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ stats.total_users }}</h4>
+                        <p class="mb-0">Total Users</p>
                     </div>
-                    <a href="{{ url_for('department.dashboard') }}" class="btn btn-primary">
-                        <i class="fas fa-cog"></i> Manage Departments
-                    </a>
+                    <i class="fas fa-users fa-2x opacity-75"></i>
                 </div>
             </div>
         </div>
-
-        <!-- User Management -->
-        {% if current_user.is_admin() %}
-        <div class="col-lg-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-users"></i> User Management
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <p class="card-text">Manage user accounts and permissions (Admin only).</p>
-                    <a href="{{ url_for('settings.user_management') }}" class="btn btn-primary me-2">
-                        <i class="fas fa-edit"></i> Manage Users
-                    </a>
-                    <a href="{{ url_for('settings.user_permissions') }}" class="btn btn-outline-primary">
-                        <i class="fas fa-user-shield"></i> Permissions
-                    </a>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Database Reset (Admin Only) -->
-        {% if current_user.is_admin() %}
-        <div class="col-lg-6 mb-4">
-            <div class="card h-100 border-danger">
-                <div class="card-header bg-danger text-white">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-database"></i> Database Reset
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <p class="card-text">Choose what data to clear and what to preserve:</p>
-                    
-                    <!-- Preserve Options -->
-                    <div class="mb-3">
-                        <h6 class="text-success"><i class="fas fa-shield-alt me-1"></i>Always Preserved:</h6>
-                        <ul class="small text-muted mb-0">
-                            <li>User accounts & login credentials</li>
-                            <li>Company settings & notification configuration</li>
-                        </ul>
+        <div class="col-md-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #c2185b 0%, #e91e63 100%);">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ stats.settings_count }}</h4>
+                        <p class="mb-0">Configuration Items</p>
                     </div>
-                    
-                    <!-- Reset Options -->
-                    <div class="mb-3">
-                        <h6 class="text-danger"><i class="fas fa-trash-alt me-1"></i>Select Data to Clear:</h6>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="resetPurchaseSales" checked>
-                            <label class="form-check-label small" for="resetPurchaseSales">Purchase Orders & Sales Orders</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="resetInventory" checked>
-                            <label class="form-check-label small" for="resetInventory">Inventory Items</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="resetProduction" checked>
-                            <label class="form-check-label small" for="resetProduction">Production Orders & Job Work</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="resetInspections" checked>
-                            <label class="form-check-label small" for="resetInspections">Material Inspections & Quality Issues</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="resetExpenses" checked>
-                            <label class="form-check-label small" for="resetExpenses">Factory Expenses</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="resetEmployees" checked>
-                            <label class="form-check-label small" for="resetEmployees">Employee Records & Payroll</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="resetDocuments" checked>
-                            <label class="form-check-label small" for="resetDocuments">Uploaded Documents</label>
-                        </div>
-                    </div>
-                    
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="selectAll()">
-                            <i class="fas fa-check-square me-1"></i>Select All
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="selectNone()">
-                            <i class="fas fa-square me-1"></i>Clear All
-                        </button>
-                    </div>
-                    
-                    <hr>
-                    <button type="button" class="btn btn-danger" onclick="confirmCustomReset()">
-                        <i class="fas fa-trash-alt"></i> Reset Selected Data
-                    </button>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- System Information -->
-        <div class="col-lg-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-info-circle"></i> System Information
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-sm-6">
-                            <strong>Version:</strong><br>
-                            <small class="text-muted">Factory Management v2.0</small>
-                        </div>
-                        <div class="col-sm-6">
-                            <strong>Last Updated:</strong><br>
-                            <small class="text-muted">{{ settings.updated_at.strftime('%Y-%m-%d') if settings.updated_at else 'N/A' }}</small>
-                        </div>
-                    </div>
+                    <i class="fas fa-sliders-h fa-2x opacity-75"></i>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Settings Categories -->
+    <div class="settings-grid">
+        <!-- Company Management -->
+        <div class="card settings-card">
+            <div class="card-body text-center">
+                <div class="settings-icon mx-auto" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <i class="fas fa-building fa-2x"></i>
+                </div>
+                <h5>Company Management</h5>
+                <p class="text-muted">Add/edit companies, assign users, set default company</p>
+                <a href="{{ url_for('settings_advanced.company_management') }}" class="btn btn-primary">Configure</a>
+            </div>
+        </div>
+
+        <!-- Inventory Configuration -->
+        <div class="card settings-card">
+            <div class="card-body text-center">
+                <div class="settings-icon mx-auto" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white;">
+                    <i class="fas fa-boxes fa-2x"></i>
+                </div>
+                <h5>Inventory Configuration</h5>
+                <p class="text-muted">Stock valuation, batch tracking, multi-UOM settings</p>
+                <a href="{{ url_for('settings_advanced.inventory_settings') }}" class="btn btn-success">Configure</a>
+            </div>
+        </div>
+
+        <!-- Accounting Rules -->
+        <div class="card settings-card">
+            <div class="card-body text-center">
+                <div class="settings-icon mx-auto" style="background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%); color: white;">
+                    <i class="fas fa-calculator fa-2x"></i>
+                </div>
+                <h5>Accounting Rules</h5>
+                <p class="text-muted">Auto journal entries, default ledgers, GST settings</p>
+                <a href="{{ url_for('settings_advanced.accounting_settings') }}" class="btn btn-warning">Configure</a>
+            </div>
+        </div>
+
+        <!-- Production Controls -->
+        <div class="card settings-card">
+            <div class="card-body text-center">
+                <div class="settings-icon mx-auto" style="background: linear-gradient(135deg, #c2185b 0%, #e91e63 100%); color: white;">
+                    <i class="fas fa-industry fa-2x"></i>
+                </div>
+                <h5>Production Controls</h5>
+                <p class="text-muted">BOM settings, cost calculation, batch linking</p>
+                <a href="{{ url_for('settings_advanced.production_settings') }}" class="btn btn-danger">Configure</a>
+            </div>
+        </div>
+
+        <!-- Job Work Preferences -->
+        <div class="card settings-card">
+            <div class="card-body text-center">
+                <div class="settings-icon mx-auto" style="background: linear-gradient(135deg, #8E2DE2 0%, #4A00E0 100%); color: white;">
+                    <i class="fas fa-tools fa-2x"></i>
+                </div>
+                <h5>Job Work Preferences</h5>
+                <p class="text-muted">GRN requirements, vendor rates, billing modes</p>
+                <a href="{{ url_for('settings_advanced.jobwork_settings') }}" class="btn btn-info">Configure</a>
+            </div>
+        </div>
+
+        <!-- User & Role Settings -->
+        <div class="card settings-card">
+            <div class="card-body text-center">
+                <div class="settings-icon mx-auto" style="background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%); color: white;">
+                    <i class="fas fa-user-shield fa-2x"></i>
+                </div>
+                <h5>User & Role Settings</h5>
+                <p class="text-muted">User permissions, role assignments, access control</p>
+                <a href="{{ url_for('settings.user_management') }}" class="btn btn-secondary">Configure</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Changes -->
+    {% if recent_changes %}
+    <div class="recent-changes">
+        <h5><i class="fas fa-history"></i> Recent Configuration Changes</h5>
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Setting</th>
+                        <th>Value</th>
+                        <th>Updated By</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for change in recent_changes %}
+                    <tr>
+                        <td><span class="badge badge-primary">{{ change.category.title() }}</span></td>
+                        <td>{{ change.setting_key.replace('_', ' ').title() }}</td>
+                        <td>
+                            {% if change.data_type == 'boolean' %}
+                                {% if change.setting_value.lower() in ['true', '1'] %}
+                                    <i class="fas fa-check-circle text-success"></i> Enabled
+                                {% else %}
+                                    <i class="fas fa-times-circle text-danger"></i> Disabled
+                                {% endif %}
+                            {% else %}
+                                {{ change.setting_value }}
+                            {% endif %}
+                        </td>
+                        <td>{{ change.updated_by_user.username if change.updated_by_user else 'System' }}</td>
+                        <td>{{ change.updated_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
 </div>
-
-<!-- Hidden form for database reset -->
-<form id="resetForm" method="POST" action="{{ url_for('settings.reset_database') }}" style="display: none;">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"/>
-    <input type="hidden" name="reset_purchase_sales" id="hiddenPurchaseSales"/>
-    <input type="hidden" name="reset_inventory" id="hiddenInventory"/>
-    <input type="hidden" name="reset_production" id="hiddenProduction"/>
-    <input type="hidden" name="reset_inspections" id="hiddenInspections"/>
-    <input type="hidden" name="reset_expenses" id="hiddenExpenses"/>
-    <input type="hidden" name="reset_employees" id="hiddenEmployees"/>
-    <input type="hidden" name="reset_documents" id="hiddenDocuments"/>
-</form>
-
-
-
-<script>
-function selectAll() {
-    document.querySelectorAll('.form-check-input').forEach(cb => cb.checked = true);
-}
-
-function selectNone() {
-    document.querySelectorAll('.form-check-input').forEach(cb => cb.checked = false);
-}
-
-function confirmCustomReset() {
-    // Get selected options
-    const selectedItems = [];
-    if (document.getElementById('resetPurchaseSales').checked) selectedItems.push('• Purchase Orders & Sales Orders');
-    if (document.getElementById('resetInventory').checked) selectedItems.push('• Inventory Items');
-    if (document.getElementById('resetProduction').checked) selectedItems.push('• Production Orders & Job Work');
-    if (document.getElementById('resetInspections').checked) selectedItems.push('• Material Inspections & Quality Issues');
-    if (document.getElementById('resetExpenses').checked) selectedItems.push('• Factory Expenses');
-    if (document.getElementById('resetEmployees').checked) selectedItems.push('• Employee Records & Payroll');
-    if (document.getElementById('resetDocuments').checked) selectedItems.push('• Uploaded Documents');
-    
-    if (selectedItems.length === 0) {
-        alert('Please select at least one item to reset.');
-        return;
-    }
-    
-    const confirmMessage = `Are you absolutely sure you want to reset the selected data?\n\nThis will permanently delete:\n${selectedItems.join('\n')}\n\nThis action cannot be undone!`;
-    
-    if (confirm(confirmMessage)) {
-        // Set hidden form values
-        document.getElementById('hiddenPurchaseSales').value = document.getElementById('resetPurchaseSales').checked;
-        document.getElementById('hiddenInventory').value = document.getElementById('resetInventory').checked;
-        document.getElementById('hiddenProduction').value = document.getElementById('resetProduction').checked;
-        document.getElementById('hiddenInspections').value = document.getElementById('resetInspections').checked;
-        document.getElementById('hiddenExpenses').value = document.getElementById('resetExpenses').checked;
-        document.getElementById('hiddenEmployees').value = document.getElementById('resetEmployees').checked;
-        document.getElementById('hiddenDocuments').value = document.getElementById('resetDocuments').checked;
-        
-        document.getElementById('resetForm').submit();
-    }
-}
-
-
-</script>
 {% endblock %}

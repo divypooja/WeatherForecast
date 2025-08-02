@@ -45,6 +45,7 @@ def create_app():
     from models_department import Department
     from models_batch import InventoryBatch, BatchMovement
     from models_batch_movement import BatchMovementLedger, BatchConsumptionReport
+    from models_settings import Company, UserCompanyAccess, SystemSettings, InventorySettings, AccountingSettings, ProductionSettings, JobWorkSettings
 
     
     @login_manager.user_loader
@@ -118,6 +119,10 @@ def create_app():
     app.register_blueprint(live_status_bp)
     from routes.backup import backup_bp
     app.register_blueprint(backup_bp, url_prefix='/backup')
+    
+    # Import and register advanced settings blueprint
+    from routes.settings_advanced import settings_advanced_bp
+    app.register_blueprint(settings_advanced_bp)
     
     # Register GRN blueprint if available
     if grn_bp:
