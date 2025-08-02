@@ -15,15 +15,88 @@
         border-radius: 8px;
         padding: 15px;
     }
-    /* Ensure modal displays correctly */
-    .modal {
-        z-index: 1050;
+    /* Custom Modal Styles */
+    .custom-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
-    .modal-backdrop {
-        z-index: 1040;
+    
+    .modal-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
     }
-    .modal-content {
-        z-index: 1060;
+    
+    .modal-container {
+        position: relative;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        max-width: 600px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+        z-index: 10000;
+    }
+    
+    .modal-header {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        background-color: #f8f9fa;
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .modal-title {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 500;
+        flex: 1;
+    }
+    
+    .close-btn {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        line-height: 1;
+        color: #6c757d;
+        cursor: pointer;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .close-btn:hover {
+        color: #000;
+    }
+    
+    .modal-body {
+        padding: 1.5rem;
+    }
+    
+    .modal-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #dee2e6;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        background-color: #f8f9fa;
+        border-radius: 0 0 8px 8px;
     }
 </style>
 {% endblock %}
@@ -184,13 +257,13 @@
     </div>
 
     <!-- Add Item Modal -->
-    <div class="modal fade" id="addItemModal" tabindex="-1" role="dialog" aria-labelledby="addItemModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="addItemModalLabel">Add Invoice Item</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
+    <div id="addItemModal" class="custom-modal" style="display: none;">
+        <div class="modal-overlay" onclick="closeModal()"></div>
+        <div class="modal-container">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Invoice Item</h5>
+                <button type="button" class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
                 <div class="modal-body">
                     <form id="addItemForm">
                         <div class="mb-3">
@@ -280,55 +353,18 @@
 <script>
 function addInvoiceItem() {
     console.log('addInvoiceItem function called');
-    try {
-        // Use Bootstrap 5 modal API with proper options
-        const modalElement = document.getElementById('addItemModal');
-        if (!modalElement) {
-            console.error('Modal element not found');
-            return;
-        }
-        
-        // Initialize modal with backdrop and keyboard options
-        const modal = new bootstrap.Modal(modalElement, {
-            backdrop: true,
-            keyboard: true
-        });
-        
-        // Reset form before showing
-        document.getElementById('addItemForm').reset();
-        
-        // Show modal
-        modal.show();
-        
-        console.log('Modal shown successfully');
-        
-        // Fallback: If modal doesn't appear, try alternative method
-        setTimeout(() => {
-            const modalElement = document.getElementById('addItemModal');
-            if (!modalElement.classList.contains('show')) {
-                console.log('Modal not showing, trying alternative method');
-                modalElement.style.display = 'block';
-                modalElement.classList.add('show');
-                document.body.classList.add('modal-open');
-                
-                // Create backdrop if it doesn't exist
-                if (!document.querySelector('.modal-backdrop')) {
-                    const backdrop = document.createElement('div');
-                    backdrop.className = 'modal-backdrop fade show';
-                    document.body.appendChild(backdrop);
-                }
-            }
-        }, 100);
-        
-    } catch (error) {
-        console.error('Error showing modal:', error);
-        // Fallback method without Bootstrap
-        console.log('Trying fallback modal display');
-        const modalElement = document.getElementById('addItemModal');
-        modalElement.style.display = 'block';
-        modalElement.classList.add('show');
-        document.body.classList.add('modal-open');
-    }
+    
+    // Reset form before showing
+    document.getElementById('addItemForm').reset();
+    
+    // Show custom modal
+    const modal = document.getElementById('addItemModal');
+    modal.style.display = 'flex';
+    
+    // Prevent body scrolling
+    document.body.style.overflow = 'hidden';
+    
+    console.log('Custom modal shown successfully');
 }
 
 function populateItemDetails() {
@@ -398,39 +434,16 @@ function saveInvoiceItem() {
 }
 
 function closeModal() {
-    console.log('Closing modal');
-    const modalElement = document.getElementById('addItemModal');
+    console.log('Closing custom modal');
     
-    try {
-        // Try Bootstrap method
-        const modal = bootstrap.Modal.getInstance(modalElement);
-        if (modal) {
-            modal.hide();
-        } else {
-            // Manual close
-            modalElement.style.display = 'none';
-            modalElement.classList.remove('show');
-            document.body.classList.remove('modal-open');
-            
-            // Remove backdrop
-            const backdrop = document.querySelector('.modal-backdrop');
-            if (backdrop) {
-                backdrop.remove();
-            }
-        }
-    } catch (error) {
-        console.error('Error closing modal:', error);
-        // Manual close fallback
-        modalElement.style.display = 'none';
-        modalElement.classList.remove('show');
-        document.body.classList.remove('modal-open');
-        
-        // Remove backdrop
-        const backdrop = document.querySelector('.modal-backdrop');
-        if (backdrop) {
-            backdrop.remove();
-        }
-    }
+    // Hide modal
+    const modal = document.getElementById('addItemModal');
+    modal.style.display = 'none';
+    
+    // Restore body scrolling
+    document.body.style.overflow = 'auto';
+    
+    console.log('Custom modal closed successfully');
 }
 
 function deleteInvoiceItem(itemId) {
