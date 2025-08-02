@@ -80,16 +80,8 @@ class BatchManager:
             from services.accounting_automation import AccountingAutomation
             cost_per_unit = getattr(grn_line_item, 'rate_per_unit', 0) or 0.0
             total_valuation = grn_line_item.quantity_received * cost_per_unit
-            
-            # Get material destination from PO item if available
-            material_destination = 'raw_material'  # Default
-            if grn_line_item.grn.purchase_order:
-                po_item = grn_line_item.grn.purchase_order.items.filter_by(item_id=item.id).first()
-                if po_item and po_item.material_destination:
-                    material_destination = po_item.material_destination
-            
             AccountingAutomation.create_inventory_valuation_entry(
-                item, grn_line_item.quantity_received, total_valuation, 'receipt', material_destination
+                item, grn_line_item.quantity_received, total_valuation, 'receipt'
             )
             
             # Update consumption report
