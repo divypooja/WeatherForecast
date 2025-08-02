@@ -269,8 +269,22 @@
 
 <script>
 function addInvoiceItem() {
-    $('#addItemModal').modal('show');
-    document.getElementById('addItemForm').reset();
+    console.log('addInvoiceItem function called');
+    try {
+        // Use Bootstrap 5 modal API
+        const modalElement = document.getElementById('addItemModal');
+        if (!modalElement) {
+            console.error('Modal element not found');
+            return;
+        }
+        
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+        document.getElementById('addItemForm').reset();
+    } catch (error) {
+        console.error('Error showing modal:', error);
+        alert('Error opening add item dialog: ' + error.message);
+    }
 }
 
 function populateItemDetails() {
@@ -296,6 +310,8 @@ function calculateAmount() {
 }
 
 function saveInvoiceItem() {
+    console.log('saveInvoiceItem function called');
+    
     const formData = {
         item_id: document.getElementById('itemSelect').value || null,
         item_name: document.getElementById('itemName').value,
@@ -307,6 +323,8 @@ function saveInvoiceItem() {
         gst_rate: document.getElementById('gstRate').value
     };
     
+    console.log('Form data:', formData);
+    
     if (!formData.item_name || !formData.quantity || !formData.rate) {
         alert('Please fill in all required fields');
         return;
@@ -316,6 +334,7 @@ function saveInvoiceItem() {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}',
         },
         body: JSON.stringify(formData)
     })
@@ -336,7 +355,10 @@ function saveInvoiceItem() {
 function deleteInvoiceItem(itemId) {
     if (confirm('Are you sure you want to delete this item?')) {
         fetch(`{{ url_for('accounting.delete_invoice_item', item_id=0) }}`.replace('0', itemId), {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}',
+            }
         })
         .then(response => response.json())
         .then(data => {
