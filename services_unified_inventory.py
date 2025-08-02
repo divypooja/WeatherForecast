@@ -27,7 +27,7 @@ class UnifiedInventoryService:
                 COUNT(CASE WHEN stock_status = 'Out of Stock' THEN 1 END) as out_of_stock_items,
                 SUM(CASE WHEN finished_qty > 0 THEN finished_qty * COALESCE(i.unit_price, 0) ELSE 0 END) as stock_value
             FROM inventory_multi_state ims
-            JOIN items i ON ims.item_id = i.id
+            LEFT JOIN items i ON ims.item_id = i.id
         """)).fetchone()
         
         return {
