@@ -13,29 +13,59 @@ admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 def approvals_dashboard():
     """Admin dashboard showing all pending approval requests"""
     
-    # Get pending purchase orders (where prepared_by is set but approved_by is empty)
+    # Get pending purchase orders - either 'draft' status or no approved_by but has prepared_by
     pending_pos = PurchaseOrder.query.filter(
-        and_(
-            PurchaseOrder.prepared_by.isnot(None),
-            PurchaseOrder.prepared_by != '',
-            or_(
-                PurchaseOrder.approved_by.is_(None),
-                PurchaseOrder.approved_by == ''
+        or_(
+            PurchaseOrder.status == 'draft',
+            and_(
+                PurchaseOrder.status.in_(['sent', 'partial']),
+                or_(
+                    PurchaseOrder.approved_by.is_(None),
+                    PurchaseOrder.approved_by == ''
+                ),
+                PurchaseOrder.prepared_by.isnot(None),
+                PurchaseOrder.prepared_by != ''
             )
         )
     ).order_by(PurchaseOrder.created_at.desc()).all()
     
-    # Get pending production orders (similar logic can be applied)
+    # Get pending production orders - status 'planned' indicates pending approval
     pending_productions = Production.query.filter(
-        Production.status == 'planned'  # or whatever status indicates pending
+        Production.status == 'planned'
     ).order_by(Production.created_at.desc()).all()
     
-    # Get pending sales orders (if they have approval workflow)
-    pending_sales = []  # Can be implemented similar to POs
+    # Get pending sales orders with draft status or needing approval
+    pending_sales = SalesOrder.query.filter(
+        or_(
+            SalesOrder.status == 'draft',
+            and_(
+                SalesOrder.status == 'pending',
+                or_(
+                    SalesOrder.approved_by.is_(None),
+                    SalesOrder.approved_by == ''
+                )
+            )
+        )
+    ).order_by(SalesOrder.created_at.desc()).all()
+    
+    # Get pending job work orders that need approval
+    try:
+        from models import JobWork
+        pending_jobwork = JobWork.query.filter(
+            or_(
+                JobWork.status == 'pending',
+                JobWork.status == 'draft'
+            )
+        ).order_by(JobWork.created_at.desc()).all()
+    except:
+        pending_jobwork = []
     
     # Get pending expenses
-    from models import FactoryExpense
-    pending_expenses = FactoryExpense.query.filter_by(status='pending').order_by(FactoryExpense.created_at.desc()).all()
+    try:
+        from models import FactoryExpense
+        pending_expenses = FactoryExpense.query.filter_by(status='pending').order_by(FactoryExpense.created_at.desc()).all()
+    except:
+        pending_expenses = []
     
     # Get recent approval activity (last 10 approvals)
     recent_approvals = []
@@ -61,6 +91,7 @@ def approvals_dashboard():
                          pending_pos=pending_pos,
                          pending_productions=pending_productions,
                          pending_sales=pending_sales,
+                         pending_jobwork=pending_jobwork,
                          pending_expenses=pending_expenses,
                          recent_approvals=recent_approvals[:10])
 
@@ -86,6 +117,19 @@ def approve_order():
             order.status = 'approved'
             # You might want to add approved_by field to Production model
             flash(f'Production Order {order.production_number} has been approved.', 'success')
+            
+        elif order_type == 'sales':
+            order = SalesOrder.query.get_or_404(order_id)
+            order.approved_by = current_user.username
+            order.status = 'approved'
+            flash(f'Sales Order {order.so_number} has been approved.', 'success')
+            
+        elif order_type == 'jobwork':
+            from models import JobWork
+            order = JobWork.query.get_or_404(order_id)
+            order.status = 'approved'
+            # Add approved_by field if needed
+            flash(f'Job Work {order.jobwork_number} has been approved.', 'success')
             
         db.session.commit()
         

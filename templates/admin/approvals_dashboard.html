@@ -13,6 +13,7 @@
                     <span class="badge bg-info text-dark fs-6">{{ pending_productions|length }} Pending Productions</span>
                     <span class="badge bg-danger text-dark fs-6">{{ pending_expenses|length }} Pending Expenses</span>
                     <span class="badge bg-success text-dark fs-6">{{ pending_sales|length }} Pending Sales</span>
+                    <span class="badge bg-secondary text-dark fs-6">{{ pending_jobwork|length }} Pending Job Work</span>
                 </div>
             </div>
         </div>
@@ -141,6 +142,140 @@
             {% else %}
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle"></i> No pending Production Order approvals.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pending Job Work Orders -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-tools text-secondary"></i> 
+                Pending Job Work Approvals 
+                <span class="badge bg-secondary text-white">{{ pending_jobwork|length }}</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if pending_jobwork %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Job Work No.</th>
+                                <th>Type</th>
+                                <th>Item</th>
+                                <th>Quantity</th>
+                                <th>Vendor</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for jobwork in pending_jobwork %}
+                            <tr>
+                                <td><strong>{{ jobwork.jobwork_number }}</strong></td>
+                                <td>
+                                    <span class="badge bg-{{ 'info' if jobwork.job_type == 'outsourced' else 'primary' }}">
+                                        {{ jobwork.job_type.title() }}
+                                    </span>
+                                </td>
+                                <td>{{ jobwork.item.name if jobwork.item else 'N/A' }}</td>
+                                <td>{{ jobwork.quantity or 0 }}</td>
+                                <td>{{ jobwork.vendor.name if jobwork.vendor else 'Internal' }}</td>
+                                <td>{{ jobwork.due_date.strftime('%d/%m/%Y') if jobwork.due_date else 'Not Set' }}</td>
+                                <td>
+                                    <span class="badge bg-warning text-dark">{{ jobwork.status.title() }}</span>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url_for('jobwork.edit_jobwork', id=jobwork.id) }}" 
+                                           class="btn btn-sm btn-primary">
+                                            <i class="fas fa-eye"></i> Review
+                                        </a>
+                                        <button class="btn btn-sm btn-success" 
+                                                onclick="approveOrder('jobwork', {{ jobwork.id }}, '{{ jobwork.jobwork_number }}')">
+                                            <i class="fas fa-check"></i> Approve
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" 
+                                                onclick="rejectOrder('jobwork', {{ jobwork.id }}, '{{ jobwork.jobwork_number }}')">
+                                            <i class="fas fa-times"></i> Reject
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No pending Job Work approvals.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pending Sales Orders -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-shopping-bag text-success"></i> 
+                Pending Sales Order Approvals 
+                <span class="badge bg-success text-white">{{ pending_sales|length }}</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if pending_sales %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>SO Number</th>
+                                <th>Customer</th>
+                                <th>Order Date</th>
+                                <th>Total Amount</th>
+                                <th>Prepared By</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for so in pending_sales %}
+                            <tr>
+                                <td><strong>{{ so.so_number }}</strong></td>
+                                <td>{{ so.customer.name if so.customer else 'N/A' }}</td>
+                                <td>{{ so.order_date.strftime('%d/%m/%Y') }}</td>
+                                <td>₹{{ "%.2f"|format(so.total_amount or 0) }}</td>
+                                <td>{{ so.prepared_by or 'Not Set' }}</td>
+                                <td>
+                                    <span class="badge bg-warning text-dark">{{ so.status.title() }}</span>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url_for('sales.edit_sales_order', id=so.id) }}" 
+                                           class="btn btn-sm btn-primary">
+                                            <i class="fas fa-eye"></i> Review
+                                        </a>
+                                        <button class="btn btn-sm btn-success" 
+                                                onclick="approveOrder('sales', {{ so.id }}, '{{ so.so_number }}')">
+                                            <i class="fas fa-check"></i> Approve
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" 
+                                                onclick="rejectOrder('sales', {{ so.id }}, '{{ so.so_number }}')">
+                                            <i class="fas fa-times"></i> Reject
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No pending Sales Order approvals.
                 </div>
             {% endif %}
         </div>
