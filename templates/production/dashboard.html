@@ -2,222 +2,627 @@
 
 {% block title %}Production Dashboard - Factory Management System{% endblock %}
 
+{% block extra_css %}
+<style>
+.production-header {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.production-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    margin-bottom: 1.5rem;
+}
+
+.production-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+.metric-card {
+    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+    border: none;
+    border-radius: 12px;
+    padding: 1.5rem;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--accent-color);
+}
+
+.metric-card.primary::before { background: #007bff; }
+.metric-card.warning::before { background: #ffc107; }
+.metric-card.info::before { background: #17a2b8; }
+.metric-card.success::before { background: #28a745; }
+
+.metric-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0;
+    color: #2c3e50;
+}
+
+.metric-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.process-pipeline {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 10px;
+    margin: 1rem 0;
+    overflow-x: auto;
+}
+
+.process-stage {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 120px;
+    padding: 1rem;
+    border-radius: 8px;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.process-stage.completed {
+    background: #d4edda;
+    border: 2px solid #155724;
+}
+
+.process-stage.in-progress {
+    background: #fff3cd;
+    border: 2px solid #856404;
+    animation: pulse 2s infinite;
+}
+
+.process-stage.pending {
+    background: #f8f9fa;
+    border: 2px dashed #6c757d;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.process-arrow {
+    font-size: 1.5rem;
+    color: #6c757d;
+    flex: 0 0 auto;
+}
+
+.stage-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.stage-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-align: center;
+    margin-bottom: 0.3rem;
+}
+
+.stage-info {
+    font-size: 0.75rem;
+    color: #6c757d;
+    text-align: center;
+}
+
+.production-summary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin: 2rem 0;
+}
+
+.batch-explorer {
+    background: #fff;
+    border-radius: 10px;
+    padding: 1rem;
+    border: 1px solid #e9ecef;
+    margin: 0.5rem 0;
+}
+
+.cost-widget {
+    position: sticky;
+    top: 20px;
+    background: #fff;
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.nav-tabs-custom {
+    border: none;
+    margin-bottom: 2rem;
+}
+
+.nav-tabs-custom .nav-link {
+    border: none;
+    border-radius: 25px;
+    margin-right: 0.5rem;
+    background: #f8f9fa;
+    color: #6c757d;
+    transition: all 0.3s ease;
+}
+
+.nav-tabs-custom .nav-link.active {
+    background: #007bff;
+    color: white;
+}
+
+.quick-action-btn {
+    border-radius: 25px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: none;
+    margin: 0.25rem;
+}
+
+.quick-action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container">
-    <div class="row mb-4">
-        <div class="col">
-            <h1><i class="fas fa-cogs"></i> Production Dashboard</h1>
-            <p class="text-muted">Manage production orders and bill of materials</p>
-        </div>
-        <div class="col-auto">
-            <a href="{{ url_for('production.add_production') }}" class="btn btn-primary">
-                <i class="fas fa-plus"></i> New Production Order
-            </a>
-        </div>
-    </div>
-
-    <!-- Statistics Cards -->
-    <div class="row mb-4">
-        <div class="col-md-3 mb-3">
-            <div class="card bg-primary">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h5 class="card-title">Total Productions</h5>
-                            <h3>{{ stats.total_productions }}</h3>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-industry fa-2x"></i>
-                        </div>
-                    </div>
-                </div>
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="production-header">
+        <div class="row align-items-center">
+            <div class="col">
+                <h1><i class="fas fa-industry"></i> Production Command Center</h1>
+                <p class="mb-0">Real-time production monitoring and control</p>
             </div>
-        </div>
-        
-        <div class="col-md-3 mb-3">
-            <div class="card bg-warning">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h5 class="card-title">Planned</h5>
-                            <h3>{{ stats.planned_productions }}</h3>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-clock fa-2x"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-3 mb-3">
-            <div class="card bg-info">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h5 class="card-title">In Progress</h5>
-                            <h3>{{ stats.in_progress_productions }}</h3>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-spinner fa-2x"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-3 mb-3">
-            <div class="card bg-success">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h5 class="card-title">Completed</h5>
-                            <h3>{{ stats.completed_productions }}</h3>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-check-circle fa-2x"></i>
-                        </div>
-                    </div>
-                </div>
+            <div class="col-auto">
+                <button class="btn btn-light btn-lg quick-action-btn" onclick="window.location.href='{{ url_for('production.add_production') }}'">
+                    <i class="fas fa-plus"></i> Start Production
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Quick Actions -->
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-tabs nav-tabs-custom" id="productionTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders" type="button">
+                <i class="fas fa-clipboard-list"></i> Orders
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="stages-tab" data-bs-toggle="tab" data-bs-target="#stages" type="button">
+                <i class="fas fa-route"></i> Job Work Stages
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="batches-tab" data-bs-toggle="tab" data-bs-target="#batches" type="button">
+                <i class="fas fa-boxes"></i> Batches
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="costing-tab" data-bs-toggle="tab" data-bs-target="#costing" type="button">
+                <i class="fas fa-calculator"></i> Costing
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="productionTabsContent">
+
+        <!-- Dashboard Tab -->
+        <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
+            <!-- Key Production Metrics -->
+            <div class="row mb-4">
+                <div class="col-md-3 mb-3">
+                    <div class="metric-card primary">
+                        <div class="metric-label">Production Target</div>
+                        <div class="metric-number">{{ stats.total_productions }}</div>
+                        <div class="d-flex align-items-center mt-2">
+                            <i class="fas fa-bullseye text-primary me-2"></i>
+                            <small class="text-muted">Total Orders</small>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-3 mb-2">
-                            <a href="{{ url_for('production.list_productions') }}" class="btn btn-outline-primary btn-sm w-100">
-                                <i class="fas fa-list"></i> View All Productions
-                            </a>
+                
+                <div class="col-md-3 mb-3">
+                    <div class="metric-card warning">
+                        <div class="metric-label">Pending Review</div>
+                        <div class="metric-number">{{ stats.planned_productions }}</div>
+                        <div class="d-flex align-items-center mt-2">
+                            <i class="fas fa-clock text-warning me-2"></i>
+                            <small class="text-muted">Planned Orders</small>
                         </div>
-                        <div class="col-md-3 mb-2">
-                            <a href="{{ url_for('production.list_bom') }}" class="btn btn-outline-info btn-sm w-100">
-                                <i class="fas fa-sitemap"></i> Manage BOM
-                            </a>
+                    </div>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <div class="metric-card info">
+                        <div class="metric-label">Active Job Stages</div>
+                        <div class="metric-number">{{ stats.in_progress_productions }}</div>
+                        <div class="d-flex align-items-center mt-2">
+                            <i class="fas fa-spinner text-info me-2"></i>
+                            <small class="text-muted">In Progress</small>
                         </div>
-                        <div class="col-md-3 mb-2">
-                            <a href="{{ url_for('production.list_productions', status='planned') }}" class="btn btn-outline-warning btn-sm w-100">
-                                <i class="fas fa-clock"></i> Planned Orders
-                            </a>
-                        </div>
-                        <div class="col-md-3 mb-2">
-                            <a href="{{ url_for('reports.production_report') }}" class="btn btn-outline-secondary btn-sm w-100">
-                                <i class="fas fa-chart-bar"></i> Production Report
-                            </a>
+                    </div>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <div class="metric-card success">
+                        <div class="metric-label">Cost per Unit</div>
+                        <div class="metric-number">₹{{ "%.0f"|format(stats.avg_cost_per_unit or 0) }}</div>
+                        <div class="d-flex align-items-center mt-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <small class="text-muted">Completed: {{ stats.completed_productions }}</small>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Recent Productions and Today's Production -->
-    <div class="row">
-        <div class="col-md-8 mb-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5><i class="fas fa-clock"></i> Recent Production Orders</h5>
-                </div>
-                <div class="card-body">
-                    {% if recent_productions %}
-                        <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Production Number</th>
-                                        <th>Product</th>
-                                        <th>Planned Qty</th>
-                                        <th>Produced</th>
-                                        <th>Status</th>
-                                        <th>Date</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for production in recent_productions %}
-                                    <tr>
-                                        <td>{{ production.production_number }}</td>
-                                        <td>{{ production.produced_item.name }}</td>
-                                        <td>{{ production.quantity_planned }}</td>
-                                        <td>{{ production.quantity_produced }}</td>
-                                        <td>
-                                            <span class="badge bg-{{ 'success' if production.status == 'completed' else 'warning' if production.status == 'in_progress' else 'primary' }}">
-                                                {{ production.status.replace('_', ' ').title() }}
-                                            </span>
-                                        </td>
-                                        <td>{{ production.production_date.strftime('%m/%d/%Y') }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+            <!-- Visual Job Work Tracker -->
+            {% if active_productions %}
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="production-card">
+                        <div class="card-header bg-transparent">
+                            <h5><i class="fas fa-route"></i> Active Production Pipeline</h5>
                         </div>
-                    {% else %}
-                        <p class="text-muted">No production orders found.</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-4 mb-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5><i class="fas fa-calendar-day"></i> Today's Production</h5>
-                </div>
-                <div class="card-body">
-                    {% if today_productions %}
-                        {% for production in today_productions %}
-                        <div class="border-bottom pb-2 mb-2">
-                            <div class="d-flex justify-content-between">
-                                <strong>{{ production.production_number }}</strong>
-                                <span class="badge bg-{{ 'success' if production.status == 'completed' else 'warning' if production.status == 'in_progress' else 'primary' }}">
-                                    {{ production.status.replace('_', ' ').title() }}
-                                </span>
+                        <div class="card-body">
+                            {% for production in active_productions[:3] %}
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6>{{ production.production_number }} - {{ production.produced_item.name }}</h6>
+                                    <span class="badge bg-info">{{ production.quantity_planned }} units</span>
+                                </div>
+                                
+                                <div class="process-pipeline">
+                                    {% if production.bom and production.bom.processes %}
+                                        {% for process in production.bom.processes[:4] %}
+                                        <div class="process-stage {{ 'completed' if loop.index <= 2 else 'in-progress' if loop.index == 3 else 'pending' }}">
+                                            <div class="stage-icon">
+                                                {% if process.is_outsourced %}
+                                                    <i class="fas fa-handshake"></i>
+                                                {% else %}
+                                                    <i class="fas fa-cogs"></i>
+                                                {% endif %}
+                                            </div>
+                                            <div class="stage-title">{{ process.process_name[:8] }}</div>
+                                            <div class="stage-info">
+                                                {% if process.is_outsourced %}
+                                                    External
+                                                {% else %}
+                                                    In-house
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% if not loop.last %}
+                                        <div class="process-arrow">
+                                            <i class="fas fa-arrow-right"></i>
+                                        </div>
+                                        {% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="process-stage in-progress">
+                                            <div class="stage-icon"><i class="fas fa-play"></i></div>
+                                            <div class="stage-title">Production</div>
+                                            <div class="stage-info">Ready to start</div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="row mt-3">
+                                    <div class="col-md-8">
+                                        <div class="progress" style="height: 8px;">
+                                            <div class="progress-bar bg-success" style="width: {{ (production.quantity_produced / production.quantity_planned * 100) if production.quantity_planned > 0 else 0 }}%"></div>
+                                        </div>
+                                        <small class="text-muted">{{ production.quantity_produced }}/{{ production.quantity_planned }} completed</small>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="viewProductionDetails({{ production.id }})">
+                                            <i class="fas fa-eye"></i> View Details
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                            <small class="text-muted">{{ production.produced_item.name }}</small>
-                            <div class="mt-1">
-                                <small>Planned: {{ production.quantity_planned }} | Produced: {{ production.quantity_produced }}</small>
-                            </div>
+                            {% if not loop.last %}<hr>{% endif %}
+                            {% endfor %}
                         </div>
-                        {% endfor %}
-                    {% else %}
-                        <p class="text-muted">No production scheduled for today.</p>
-                    {% endif %}
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
+            {% endif %}
 
-    <!-- Products with BOM -->
-    {% if products_with_bom %}
-    <div class="row">
-        <div class="col-md-12 mb-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5><i class="fas fa-sitemap"></i> Products with Bill of Materials</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        {% for product in products_with_bom %}
-                        <div class="col-md-3 mb-2">
-                            <div class="card bg-light">
-                                <div class="card-body text-center">
-                                    <h6>{{ product.name }}</h6>
-                                    <small class="text-muted">{{ product.code }}</small>
+            <!-- Smart Actions Section -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <div class="production-card">
+                        <div class="card-header bg-transparent">
+                            <h5><i class="fas fa-bolt"></i> Smart Actions</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <button class="btn btn-primary quick-action-btn w-100" onclick="window.location.href='{{ url_for('production.list_productions') }}'">
+                                        <i class="fas fa-list"></i> View All Productions
+                                    </button>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <button class="btn btn-info quick-action-btn w-100" onclick="window.location.href='{{ url_for('production.list_bom') }}'">
+                                        <i class="fas fa-sitemap"></i> Manage BOM
+                                    </button>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <button class="btn btn-warning quick-action-btn w-100" onclick="window.location.href='{{ url_for('production.list_productions', status='planned') }}'">
+                                        <i class="fas fa-clock"></i> Planned Orders
+                                    </button>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <button class="btn btn-secondary quick-action-btn w-100" onclick="window.location.href='{{ url_for('reports.production_report') }}'">
+                                        <i class="fas fa-chart-bar"></i> Reports
+                                    </button>
                                 </div>
                             </div>
                         </div>
-                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="cost-widget">
+                        <h6><i class="fas fa-calculator"></i> Cost Monitor</h6>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <span>Material Cost/unit</span>
+                                <strong>₹{{ "%.2f"|format(stats.avg_material_cost or 0) }}</strong>
+                            </div>
+                            <div class="progress mt-1" style="height: 4px;">
+                                <div class="progress-bar bg-info" style="width: 65%"></div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <span>Labor Cost</span>
+                                <strong>₹{{ "%.2f"|format(stats.avg_labor_cost or 0) }}</strong>
+                            </div>
+                            <div class="progress mt-1" style="height: 4px;">
+                                <div class="progress-bar bg-warning" style="width: 35%"></div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <span>Scrap %</span>
+                                <strong class="text-{{ 'danger' if (stats.avg_scrap_percent or 0) > 5 else 'success' }}">{{ "%.1f"|format(stats.avg_scrap_percent or 0) }}%</strong>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <span>Efficiency</span>
+                                <strong class="text-success">{{ "%.1f"|format(stats.avg_efficiency or 95) }}%</strong>
+                            </div>
+                            <div class="progress mt-1" style="height: 4px;">
+                                <div class="progress-bar bg-success" style="width: {{ stats.avg_efficiency or 95 }}%"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Recent Productions - Card View -->
+            <div class="row">
+                <div class="col-md-8 mb-4">
+                    <div class="production-card">
+                        <div class="card-header bg-transparent">
+                            <h5><i class="fas fa-history"></i> Recent Production Orders</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if recent_productions %}
+                                {% for production in recent_productions %}
+                                <div class="batch-explorer mb-3">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-3">
+                                            <h6 class="mb-1">{{ production.production_number }}</h6>
+                                            <small class="text-muted">{{ production.produced_item.name }}</small>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="text-center">
+                                                <div class="fw-bold">{{ production.quantity_planned }}</div>
+                                                <small class="text-muted">Planned</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="text-center">
+                                                <div class="fw-bold text-success">{{ production.quantity_produced }}</div>
+                                                <small class="text-muted">Produced</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="progress mb-1" style="height: 6px;">
+                                                <div class="progress-bar bg-{{ 'success' if production.status == 'completed' else 'info' if production.status == 'in_progress' else 'warning' }}" 
+                                                     style="width: {{ (production.quantity_produced / production.quantity_planned * 100) if production.quantity_planned > 0 else 0 }}%"></div>
+                                            </div>
+                                            <span class="badge bg-{{ 'success' if production.status == 'completed' else 'warning' if production.status == 'in_progress' else 'primary' }}">
+                                                {{ production.status.replace('_', ' ').title() }}
+                                            </span>
+                                        </div>
+                                        <div class="col-md-2 text-end">
+                                            <small class="text-muted">{{ production.production_date.strftime('%m/%d/%Y') }}</small>
+                                            <br>
+                                            <button class="btn btn-sm btn-outline-primary" onclick="viewProductionDetails({{ production.id }})">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                                    <h6>No production orders found</h6>
+                                    <p class="text-muted">Start your first production order to see activity here</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4 mb-4">
+                    <div class="production-card">
+                        <div class="card-header bg-transparent">
+                            <h5><i class="fas fa-calendar-day"></i> Today's Production</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if today_productions %}
+                                {% for production in today_productions %}
+                                <div class="batch-explorer mb-2">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">{{ production.production_number }}</h6>
+                                            <small class="text-muted">{{ production.produced_item.name }}</small>
+                                            <div class="mt-1">
+                                                <small><strong>{{ production.quantity_produced }}</strong> / {{ production.quantity_planned }} units</small>
+                                            </div>
+                                        </div>
+                                        <span class="badge bg-{{ 'success' if production.status == 'completed' else 'warning' if production.status == 'in_progress' else 'primary' }}">
+                                            {{ production.status.replace('_', ' ').title() }}
+                                        </span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="fas fa-calendar-alt fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted mb-0">No production scheduled for today</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Other Tabs Content -->
+        <div class="tab-pane fade" id="orders" role="tabpanel">
+            <div class="production-card">
+                <div class="card-body">
+                    <h5><i class="fas fa-clipboard-list"></i> Production Orders</h5>
+                    <p class="text-muted">Manage and track all production orders</p>
+                    <button class="btn btn-primary" onclick="window.location.href='{{ url_for('production.list_productions') }}'">
+                        View All Orders
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="stages" role="tabpanel">
+            <div class="production-card">
+                <div class="card-body">
+                    <h5><i class="fas fa-route"></i> Job Work Stages</h5>
+                    <p class="text-muted">Monitor job work progress across all stages</p>
+                    <button class="btn btn-info" onclick="window.location.href='{{ url_for('jobwork.dashboard') }}'">
+                        View Job Work
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="batches" role="tabpanel">
+            <div class="production-card">
+                <div class="card-body">
+                    <h5><i class="fas fa-boxes"></i> Batch Management</h5>
+                    <p class="text-muted">Track inventory batches and quality control</p>
+                    <button class="btn btn-success" onclick="window.location.href='{{ url_for('batch_tracking.dashboard') }}'">
+                        View Batches
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="costing" role="tabpanel">
+            <div class="production-card">
+                <div class="card-body">
+                    <h5><i class="fas fa-calculator"></i> Production Costing</h5>
+                    <p class="text-muted">Analyze costs and profitability</p>
+                    <button class="btn btn-warning" onclick="window.location.href='{{ url_for('reports.production_report') }}'">
+                        View Reports
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Products with BOM - Enhanced Display -->
+    {% if products_with_bom %}
+    <div class="production-summary">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h5><i class="fas fa-sitemap"></i> Products Ready for Production</h5>
+                <p class="mb-0">{{ products_with_bom|length }} products have active BOMs and are ready for production</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <button class="btn btn-light" onclick="window.location.href='{{ url_for('production.list_bom') }}'">
+                    <i class="fas fa-sitemap"></i> Manage BOMs
+                </button>
+            </div>
+        </div>
+        <div class="row mt-3">
+            {% for product in products_with_bom[:6] %}
+            <div class="col-md-2 mb-2">
+                <div class="text-center p-2 bg-white bg-opacity-25 rounded">
+                    <h6 class="mb-1">{{ product.name[:12] }}{{ '...' if product.name|length > 12 else '' }}</h6>
+                    <small>{{ product.code }}</small>
+                </div>
+            </div>
+            {% endfor %}
         </div>
     </div>
     {% endif %}
 </div>
+
+<script>
+function viewProductionDetails(productionId) {
+    window.location.href = `/production/view/${productionId}`;
+}
+
+// Tab initialization
+document.addEventListener('DOMContentLoaded', function() {
+    var triggerTabList = [].slice.call(document.querySelectorAll('#productionTabs button'));
+    triggerTabList.forEach(function (triggerEl) {
+        var tabTrigger = new bootstrap.Tab(triggerEl);
+        triggerEl.addEventListener('click', function (event) {
+            event.preventDefault();
+            tabTrigger.show();
+        });
+    });
+});
+</script>
 {% endblock %}
