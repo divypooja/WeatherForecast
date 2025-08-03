@@ -202,10 +202,11 @@
 
 {% block extra_js %}
 <script>
-console.log('Test Notifications JavaScript loaded');
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Test Notifications JavaScript loaded');
 
-// Quick test function for individual channels - make it global
-window.quickTest = function(channel) {
+    // Quick test function for individual channels - make it global
+    window.quickTest = function(channel) {
     console.log('quickTest called with channel:', channel);
     const adminEmail = 'admin@example.com'; // Replace with actual admin email
     const adminPhone = '+911234567890';     // Replace with actual admin phone
@@ -312,17 +313,22 @@ window.testScenario = function(scenario) {
 };
 
 // Update recipient placeholder based on notification type
-document.getElementById('notification_type').addEventListener('change', function() {
-    const recipientField = document.getElementById('recipient');
-    const type = this.value;
-    
-    if (type === 'email') {
-        recipientField.placeholder = 'user@example.com';
-    } else if (type === 'sms' || type === 'whatsapp') {
-        recipientField.placeholder = '+91 9876543210';
-    } else {
-        recipientField.placeholder = 'Email or Phone Number';
-    }
-});
+const notificationTypeElement = document.getElementById('notification_type');
+if (notificationTypeElement) {
+    notificationTypeElement.addEventListener('change', function() {
+        const recipientField = document.getElementById('recipient');
+        const type = this.value;
+        
+        if (type === 'email') {
+            recipientField.placeholder = 'user@example.com';
+        } else if (type === 'sms' || type === 'whatsapp') {
+            recipientField.placeholder = '+91 9876543210';
+        } else {
+            recipientField.placeholder = 'Email or Phone Number';
+        }
+    });
+}
+
+}); // End DOMContentLoaded
 </script>
 {% endblock %}
