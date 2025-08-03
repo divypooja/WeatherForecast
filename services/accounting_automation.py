@@ -595,7 +595,7 @@ class AccountingAutomation:
                 if not payment_account:
                     bank_group = AccountGroup.query.filter_by(name='Bank Accounts').first()
                     if not bank_group:
-                        bank_group = AccountGroup(name='Bank Accounts', group_type='asset')
+                        bank_group = AccountGroup(name='Bank Accounts', code='BA', group_type='asset')
                         db.session.add(bank_group)
                         db.session.flush()
                     
@@ -613,7 +613,7 @@ class AccountingAutomation:
                 if not payment_account:
                     cash_group = AccountGroup.query.filter_by(name='Cash-in-Hand').first()
                     if not cash_group:
-                        cash_group = AccountGroup(name='Cash-in-Hand', group_type='asset')
+                        cash_group = AccountGroup(name='Cash-in-Hand', code='CH', group_type='asset')
                         db.session.add(cash_group)
                         db.session.flush()
                     
@@ -695,7 +695,7 @@ class AccountingAutomation:
                 if not deduction_account:
                     liability_group = AccountGroup.query.filter_by(name='Current Liabilities').first()
                     if not liability_group:
-                        liability_group = AccountGroup(name='Current Liabilities', group_type='liability')
+                        liability_group = AccountGroup(name='Current Liabilities', code='CL', group_type='liability')
                         db.session.add(liability_group)
                         db.session.flush()
                     
@@ -726,7 +726,7 @@ class AccountingAutomation:
                 if not advance_account:
                     asset_group = AccountGroup.query.filter_by(name='Current Assets').first()
                     if not asset_group:
-                        asset_group = AccountGroup(name='Current Assets', group_type='asset')
+                        asset_group = AccountGroup(name='Current Assets', code='CA', group_type='asset')
                         db.session.add(asset_group)
                         db.session.flush()
                     
@@ -793,7 +793,7 @@ class AccountingAutomation:
             if not advance_account:
                 asset_group = AccountGroup.query.filter_by(name='Current Assets').first()
                 if not asset_group:
-                    asset_group = AccountGroup(name='Current Assets', group_type='asset')
+                    asset_group = AccountGroup(name='Current Assets', code='CA', group_type='asset')
                     db.session.add(asset_group)
                     db.session.flush()
                 
@@ -812,7 +812,7 @@ class AccountingAutomation:
                 if not payment_account:
                     bank_group = AccountGroup.query.filter_by(name='Bank Accounts').first()
                     if not bank_group:
-                        bank_group = AccountGroup(name='Bank Accounts', group_type='asset')
+                        bank_group = AccountGroup(name='Bank Accounts', code='BA', group_type='asset')
                         db.session.add(bank_group)
                         db.session.flush()
                     
@@ -830,7 +830,7 @@ class AccountingAutomation:
                 if not payment_account:
                     cash_group = AccountGroup.query.filter_by(name='Cash-in-Hand').first()
                     if not cash_group:
-                        cash_group = AccountGroup(name='Cash-in-Hand', group_type='asset')
+                        cash_group = AccountGroup(name='Cash-in-Hand', code='CH', group_type='asset')
                         db.session.add(cash_group)
                         db.session.flush()
                     
