@@ -196,7 +196,7 @@
                             <i class="fas fa-plus me-1"></i> Create New PO
                         </a>
                         {% if po.status != 'completed' %}
-                        <a href="{{ url_for('grn_workflow.create_grn') }}?po_id={{ po.id }}" 
+                        <a href="{{ url_for('grn.create_grn_for_po', purchase_order_id=po.id) }}" 
                            class="btn btn-outline-success">
                             <i class="fas fa-truck me-1"></i> Create GRN
                         </a>
