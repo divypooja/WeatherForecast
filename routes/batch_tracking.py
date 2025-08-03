@@ -171,7 +171,7 @@ def dashboard():
 @login_required
 def batch_detail(batch_id):
     """Detailed view of a specific batch with complete traceability"""
-    batch = ItemBatch.query.get_or_404(batch_id)
+    batch = InventoryBatch.query.get_or_404(batch_id)
     
     # Get traceability report
     traceability_data = BatchTracker.get_batch_traceability_report(batch_id)
@@ -205,14 +205,15 @@ def process_view():
     if process_filter:
         # Filter batches by process state
         if process_filter == 'raw':
-            batches = ItemBatch.query.filter(ItemBatch.qty_raw > 0).all()
+            batches = InventoryBatch.query.filter(InventoryBatch.qty_raw > 0).all()
         elif process_filter == 'finished':
-            batches = ItemBatch.query.filter(ItemBatch.qty_finished > 0).all()
+            batches = InventoryBatch.query.filter(InventoryBatch.qty_finished > 0).all()
+        elif process_filter == 'wip':
+            batches = InventoryBatch.query.filter(InventoryBatch.qty_wip > 0).all()
+        elif process_filter == 'inspection':
+            batches = InventoryBatch.query.filter(InventoryBatch.qty_inspection > 0).all()
         else:
-            # Process-specific WIP
-            batches = ItemBatch.query.filter(
-                getattr(ItemBatch, f'qty_wip_{process_filter}') > 0
-            ).all()
+            batches = []
     else:
         batches = []
     
@@ -237,7 +238,14 @@ def traceability_report():
         # Batch-wise traceability
         batch_id = request.args.get('batch_id', type=int)
         if batch_id:
-            traceability_data = BatchTracker.get_batch_traceability_report(batch_id)
+            batch = InventoryBatch.query.get_or_404(batch_id)
+            # Simple traceability data for now
+            traceability_data = {
+                'batch': batch,
+                'movements': batch.movements if hasattr(batch, 'movements') else [],
+                'total_quantity': batch.total_quantity,
+                'available_quantity': batch.available_quantity
+            }
             return render_template(
                 'batch_tracking/traceability_batch.html',
                 traceability_data=traceability_data,
@@ -389,36 +397,26 @@ def api_batch_summary():
     """Get batch summary statistics for dashboard widgets"""
     try:
         summary = {
-            'total_batches': ItemBatch.query.count(),
-            'active_batches': ItemBatch.query.filter(
+            'total_batches': InventoryBatch.query.count(),
+            'active_batches': InventoryBatch.query.filter(
                 or_(
-                    ItemBatch.qty_raw > 0,
-                    ItemBatch.qty_wip_cutting > 0,
-                    ItemBatch.qty_wip_bending > 0,
-                    ItemBatch.qty_wip_welding > 0,
-                    ItemBatch.qty_wip_zinc > 0,
-                    ItemBatch.qty_wip_painting > 0,
-                    ItemBatch.qty_wip_assembly > 0,
-                    ItemBatch.qty_wip_machining > 0,
-                    ItemBatch.qty_wip_polishing > 0,
-                    ItemBatch.qty_finished > 0
+                    InventoryBatch.qty_raw > 0,
+                    InventoryBatch.qty_wip > 0,
+                    InventoryBatch.qty_finished > 0,
+                    InventoryBatch.qty_inspection > 0
                 )
             ).count(),
-            'quality_issues': ItemBatch.query.filter(ItemBatch.quality_status == 'defective').count(),
-            'pending_inspection': ItemBatch.query.filter(ItemBatch.quality_status == 'pending_inspection').count(),
+            'quality_issues': InventoryBatch.query.filter(InventoryBatch.inspection_status == 'failed').count(),
+            'pending_inspection': InventoryBatch.query.filter(InventoryBatch.inspection_status == 'pending').count(),
             'process_breakdown': {}
         }
         
-        # Get process-wise breakdown
-        processes = ['cutting', 'bending', 'welding', 'zinc', 'painting', 'assembly', 'machining', 'polishing']
-        for process in processes:
-            qty = db.session.query(func.sum(getattr(ItemBatch, f'qty_wip_{process}'))).scalar() or 0
-            summary['process_breakdown'][process] = float(qty)
-        
-        # Add raw and finished quantities
-        summary['process_breakdown']['raw'] = float(db.session.query(func.sum(ItemBatch.qty_raw)).scalar() or 0)
-        summary['process_breakdown']['finished'] = float(db.session.query(func.sum(ItemBatch.qty_finished)).scalar() or 0)
-        summary['process_breakdown']['scrap'] = float(db.session.query(func.sum(ItemBatch.qty_scrap)).scalar() or 0)
+        # Add quantities by state
+        summary['process_breakdown']['inspection'] = float(db.session.query(func.sum(InventoryBatch.qty_inspection)).scalar() or 0)
+        summary['process_breakdown']['raw'] = float(db.session.query(func.sum(InventoryBatch.qty_raw)).scalar() or 0)
+        summary['process_breakdown']['wip'] = float(db.session.query(func.sum(InventoryBatch.qty_wip)).scalar() or 0)
+        summary['process_breakdown']['finished'] = float(db.session.query(func.sum(InventoryBatch.qty_finished)).scalar() or 0)
+        summary['process_breakdown']['scrap'] = float(db.session.query(func.sum(InventoryBatch.qty_scrap)).scalar() or 0)
         
         return jsonify(summary)
         
@@ -436,13 +434,13 @@ def api_search_batches():
         if not query_text:
             return jsonify({'batches': []})
         
-        # Search in batch number, item name, and supplier batch
-        batches = ItemBatch.query.join(Item).filter(
+        # Search in batch code, item name, and supplier batch
+        batches = InventoryBatch.query.join(Item).filter(
             or_(
-                ItemBatch.batch_number.ilike(f'%{query_text}%'),
+                InventoryBatch.batch_code.ilike(f'%{query_text}%'),
                 Item.name.ilike(f'%{query_text}%'),
                 Item.code.ilike(f'%{query_text}%'),
-                ItemBatch.supplier_batch.ilike(f'%{query_text}%')
+                InventoryBatch.supplier_batch_no.ilike(f'%{query_text}%')
             )
         ).limit(limit).all()
         
@@ -450,13 +448,13 @@ def api_search_batches():
         for batch in batches:
             batch_data.append({
                 'id': batch.id,
-                'batch_number': batch.batch_number,
-                'item_name': batch.item.name,
-                'item_code': batch.item.code,
+                'batch_code': batch.batch_code,
+                'item_name': batch.item.name if batch.item else 'Unknown',
+                'item_code': batch.item.code if batch.item else 'N/A',
                 'total_quantity': batch.total_quantity,
                 'available_quantity': batch.available_quantity,
-                'quality_status': batch.quality_status,
-                'storage_location': batch.storage_location,
+                'inspection_status': batch.inspection_status,
+                'location': batch.location,
                 'manufacture_date': batch.manufacture_date.isoformat() if batch.manufacture_date else None
             })
         
