@@ -351,17 +351,16 @@ def process_ocr():
             return jsonify({'success': False, 'message': 'No file selected'})
         
         # Process with OCR service
-        result = ocr_service.process_document(
+        result = ocr_service.process_uploaded_file(
             file=file,
             module_type='expense',
             reference_id=None,
             reference_type='factory_expense',
-            uploaded_by=current_user.id
+            user_id=current_user.id
         )
         
         if result['success']:
-            ocr_result = result['ocr_result']
-            extracted_fields = ocr_result.get_extracted_fields()
+            extracted_fields = result.get('extracted_fields', {})
             
             # Format data for expense form
             formatted_data = {
@@ -374,13 +373,13 @@ def process_ocr():
                 'category': extracted_fields.get('category'),
                 'department': extracted_fields.get('department'),
                 'gstin': extracted_fields.get('gstin'),
-                'confidence': ocr_result.confidence_score
+                'confidence': result.get('confidence', 0)
             }
             
             return jsonify({
                 'success': True,
                 'data': formatted_data,
-                'message': f'OCR processed successfully with {ocr_result.confidence_score:.1f}% confidence'
+                'message': f'OCR processed successfully with {result.get("confidence", 0):.1f}% confidence'
             })
         else:
             return jsonify({
