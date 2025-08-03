@@ -275,56 +275,40 @@
                         </div>
 
                         <!-- Save button for new BOM or when no components are added yet -->
-                        <div class="card-footer bg-light">
-                            <div class="row justify-content-center">
-                                <div class="col-12">
-                                    <div class="d-flex justify-content-center gap-3 flex-wrap">
-                                        {% if not bom %}
-                                        <!-- For new BOM creation -->
-                                        <button type="button" onclick="window.location.href='{{ url_for('production.list_bom') }}'" 
-                                                class="btn btn-outline-secondary btn-lg px-4 py-3" style="min-width: 140px;">
-                                            <i class="fas fa-times me-2"></i>
-                                            <div class="d-flex flex-column">
-                                                <span class="fw-bold">Cancel</span>
-                                            </div>
-                                        </button>
-                                        
-                                        <button type="submit" name="action" value="save_and_close" 
-                                                class="btn btn-success btn-lg px-4 py-3" style="min-width: 180px;">
-                                            <i class="fas fa-save me-2"></i>
-                                            <div class="d-flex flex-column">
-                                                <span class="fw-bold">Create BOM &</span>
-                                                <span>Close</span>
-                                            </div>
-                                        </button>
-                                        
-                                        <button type="submit" name="action" value="save_and_continue" 
-                                                class="btn btn-primary btn-lg px-4 py-3" style="min-width: 200px;">
-                                            <i class="fas fa-plus me-2"></i>
-                                            <div class="d-flex flex-column">
-                                                <span class="fw-bold">Create BOM &</span>
-                                                <span>Add Components</span>
-                                            </div>
-                                        </button>
-                                        {% else %}
-                                        <!-- For existing BOM update -->
-                                        <button type="button" onclick="window.location.href='{{ url_for('production.list_bom') }}'" 
-                                                class="btn btn-outline-secondary btn-lg px-4 py-3" style="min-width: 140px;">
-                                            <i class="fas fa-times me-2"></i>
-                                            <div class="d-flex flex-column">
-                                                <span class="fw-bold">Cancel</span>
-                                            </div>
-                                        </button>
-                                        
-                                        <button type="submit" class="btn btn-success btn-lg px-4 py-3" style="min-width: 180px;">
-                                            <i class="fas fa-save me-2"></i>
-                                            <div class="d-flex flex-column">
-                                                <span class="fw-bold">Update BOM</span>
-                                            </div>
-                                        </button>
-                                        {% endif %}
-                                    </div>
-                                </div>
+                        <div class="card-footer">
+                            <div class="d-flex justify-content-center gap-2">
+                                {% if not bom %}
+                                <!-- For new BOM creation -->
+                                <button type="button" onclick="window.location.href='{{ url_for('production.list_bom') }}'" 
+                                        class="btn btn-secondary px-3 py-2">
+                                    <i class="fas fa-times"></i>
+                                    Cancel
+                                </button>
+                                
+                                <button type="submit" name="action" value="save_and_close" 
+                                        class="btn btn-success px-3 py-2">
+                                    <i class="fas fa-save"></i>
+                                    Create BOM & Close
+                                </button>
+                                
+                                <button type="submit" name="action" value="save_and_continue" 
+                                        class="btn btn-primary px-3 py-2">
+                                    <i class="fas fa-plus"></i>
+                                    Create BOM & Add Components
+                                </button>
+                                {% else %}
+                                <!-- For existing BOM update -->
+                                <button type="button" onclick="window.location.href='{{ url_for('production.list_bom') }}'" 
+                                        class="btn btn-secondary px-3 py-2">
+                                    <i class="fas fa-times"></i>
+                                    Cancel
+                                </button>
+                                
+                                <button type="submit" class="btn btn-success px-3 py-2">
+                                    <i class="fas fa-save"></i>
+                                    Update BOM
+                                </button>
+                                {% endif %}
                             </div>
                         </div>
 
