@@ -98,9 +98,9 @@ class OCRService:
             # Update OCR result record
             ocr_result.status = 'completed' if processing_result.success else 'failed'
             ocr_result.raw_text = processing_result.text if settings.save_raw_text else None
-            ocr_result.confidence_score = processing_result.confidence
-            ocr_result.primary_engine = processing_result.engine_used
-            ocr_result.processing_time = processing_result.processing_time
+            ocr_result.confidence_score = processing_result.confidence or 0.0
+            ocr_result.primary_engine = processing_result.engine_used or "tesseract"
+            ocr_result.processing_time = processing_result.processing_time or 0.0
             ocr_result.error_message = processing_result.error_message
             
             if processing_result.extracted_fields:
@@ -111,22 +111,22 @@ class OCRService:
             
             db.session.commit()
             
-            # Update statistics
+            # Update statistics - ensure no None values
             OCRHistory.update_stats(
                 module_type=module_type,
                 success=processing_result.success,
-                processing_time=processing_result.processing_time,
-                confidence=processing_result.confidence,
-                engine=processing_result.engine_used
+                processing_time=processing_result.processing_time or 0.0,
+                confidence=processing_result.confidence or 0.0,
+                engine=processing_result.engine_used or "tesseract"
             )
             
             # Prepare response
             response = {
                 'success': processing_result.success,
                 'ocr_result_id': ocr_result.id,
-                'confidence': processing_result.confidence,
+                'confidence': processing_result.confidence or 0.0,
                 'confidence_level': ocr_result.confidence_level,
-                'processing_time': processing_result.processing_time,
+                'processing_time': processing_result.processing_time or 0.0,
                 'extracted_fields': processing_result.extracted_fields or {},
                 'line_items': processing_result.line_items or [],
                 'raw_text': processing_result.text if settings.save_raw_text else None
