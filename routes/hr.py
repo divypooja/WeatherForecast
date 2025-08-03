@@ -420,7 +420,18 @@ def add_salary():
                 
                 flash(f'✅ Attendance calculated successfully! {attendance_data["actual_days_worked"]} days worked out of {attendance_data["expected_working_days"]} expected days. Basic Amount: ₹{attendance_data["basic_amount"]:.2f}', 'success')
                 
-                return render_template('hr/salary_form.html', form=calculated_form, title='Add Salary Record')
+                # Pass the calculated values directly to template
+                calculated_values = {
+                    'expected_working_days': int(attendance_data['expected_working_days']),
+                    'actual_days_worked': int(attendance_data['actual_days_worked']),
+                    'basic_amount': float(attendance_data['basic_amount']),
+                    'overtime_hours': float(attendance_data['overtime_hours'])
+                }
+                
+                return render_template('hr/salary_form.html', 
+                                     form=calculated_form, 
+                                     title='Add Salary Record',
+                                     calculated_values=calculated_values)
                 
             except Exception as e:
                 flash(f'❌ Error calculating attendance: {str(e)}', 'error')

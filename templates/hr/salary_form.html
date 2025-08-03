@@ -121,19 +121,19 @@
                             </div>
                             <div class="col-md-3 mb-3">
                                 {{ form.expected_working_days.label(class="form-label") }}
-                                {{ form.expected_working_days(class="form-control bg-light", readonly=True) }}
+                                {{ form.expected_working_days(class="form-control bg-light", readonly=True, value=calculated_values.expected_working_days if calculated_values else (form.expected_working_days.data or '')) }}
                                 <small class="text-muted">Total working days in period</small>
                             </div>
                             <div class="col-md-3 mb-3">
                                 {{ form.actual_days_worked.label(class="form-label") }}
-                                {{ form.actual_days_worked(class="form-control bg-light", id="actual_days_worked", readonly=True) }}
+                                {{ form.actual_days_worked(class="form-control bg-light", id="actual_days_worked", readonly=True, value=calculated_values.actual_days_worked if calculated_values else (form.actual_days_worked.data or '')) }}
                                 <small class="text-muted">Days from attendance records</small>
                             </div>
                             <div class="col-md-6 mb-3">
                                 {{ form.basic_amount.label(class="form-label") }}
                                 <div class="input-group">
                                     <span class="input-group-text">₹</span>
-                                    {{ form.basic_amount(class="form-control bg-light", id="basic_amount", readonly=True) }}
+                                    {{ form.basic_amount(class="form-control bg-light", id="basic_amount", readonly=True, value=calculated_values.basic_amount if calculated_values else (form.basic_amount.data or '')) }}
                                 </div>
                                 {% if form.basic_amount.errors %}
                                     <div class="text-danger">
@@ -155,7 +155,7 @@
                             </div>
                             <div class="col-md-3 mb-3">
                                 {{ form.overtime_hours.label(class="form-label") }}
-                                {{ form.overtime_hours(class="form-control bg-light", id="overtime_hours", readonly=True) }}
+                                {{ form.overtime_hours(class="form-control bg-light", id="overtime_hours", readonly=True, value=calculated_values.overtime_hours if calculated_values else (form.overtime_hours.data or '')) }}
                                 {% if form.overtime_hours.errors %}
                                     <div class="text-danger">
                                         {% for error in form.overtime_hours.errors %}
