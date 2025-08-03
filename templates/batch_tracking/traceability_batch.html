@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Batch Traceability - {{ traceability_data.batch.batch_number }}{% endblock %}
+{% block title %}Batch Traceability - {{ traceability_data.batch.batch_code }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -73,7 +73,7 @@
                     Batch Traceability Report
                 </h1>
                 <p class="mb-0 mt-2 opacity-75">
-                    <strong>{{ traceability_data.batch.batch_number }}</strong> - {{ traceability_data.batch.item }}
+                    <strong>{{ traceability_data.batch.batch_code }}</strong> - {{ traceability_data.batch.item.name if traceability_data.batch.item else 'N/A' }}
                 </p>
             </div>
             <div class="col-md-4 text-right">
@@ -170,32 +170,39 @@
                 </div>
                 <div class="card-body">
                     <dl class="row mb-0">
-                        <dt class="col-sm-6">Batch Number:</dt>
-                        <dd class="col-sm-6">{{ traceability_data.batch.batch_number }}</dd>
+                        <dt class="col-sm-6">Batch Code:</dt>
+                        <dd class="col-sm-6">{{ traceability_data.batch.batch_code }}</dd>
                         
                         <dt class="col-sm-6">Item:</dt>
-                        <dd class="col-sm-6">{{ traceability_data.batch.item }}</dd>
+                        <dd class="col-sm-6">{{ traceability_data.batch.item.name if traceability_data.batch.item else 'N/A' }}</dd>
                         
                         <dt class="col-sm-6">Total Quantity:</dt>
-                        <dd class="col-sm-6">{{ traceability_data.batch.totals.total_quantity }}</dd>
+                        <dd class="col-sm-6">{{ traceability_data.batch.total_quantity }} {{ traceability_data.batch.item.uom.name if traceability_data.batch.item and traceability_data.batch.item.uom else '' }}</dd>
                         
                         <dt class="col-sm-6">Current State:</dt>
                         <dd class="col-sm-6">
-                            {% if traceability_data.batch.states.finished and traceability_data.batch.states.finished > 0 %}
-                                <span class="process-badge process-finished">Finished</span>
-                            {% elif traceability_data.batch.states.raw and traceability_data.batch.states.raw > 0 %}
-                                <span class="process-badge process-raw">Raw Material</span>
+                            {% if traceability_data.batch.qty_finished and traceability_data.batch.qty_finished > 0 %}
+                                <span class="process-badge process-finished">Finished ({{ traceability_data.batch.qty_finished }})</span>
+                            {% elif traceability_data.batch.qty_wip and traceability_data.batch.qty_wip > 0 %}
+                                <span class="process-badge process-wip bg-primary">WIP ({{ traceability_data.batch.qty_wip }})</span>
+                            {% elif traceability_data.batch.qty_raw and traceability_data.batch.qty_raw > 0 %}
+                                <span class="process-badge process-raw">Raw Material ({{ traceability_data.batch.qty_raw }})</span>
+                            {% elif traceability_data.batch.qty_inspection and traceability_data.batch.qty_inspection > 0 %}
+                                <span class="process-badge process-inspection bg-warning">Inspection ({{ traceability_data.batch.qty_inspection }})</span>
                             {% else %}
-                                <span class="process-badge process-cutting">In Process</span>
+                                <span class="process-badge bg-secondary">No Active Qty</span>
                             {% endif %}
                         </dd>
                         
-                        <dt class="col-sm-6">Quality Status:</dt>
+                        <dt class="col-sm-6">Inspection Status:</dt>
                         <dd class="col-sm-6">
-                            <span class="badge badge-{{ 'success' if traceability_data.batch.metadata.quality_status == 'approved' else 'warning' }}">
-                                {{ traceability_data.batch.metadata.quality_status.replace('_', ' ').title() if traceability_data.batch.metadata.quality_status else 'N/A' }}
+                            <span class="badge badge-{{ 'success' if traceability_data.batch.inspection_status == 'passed' else 'warning' if traceability_data.batch.inspection_status == 'pending' else 'danger' }}">
+                                {{ traceability_data.batch.inspection_status.replace('_', ' ').title() if traceability_data.batch.inspection_status else 'N/A' }}
                             </span>
                         </dd>
+                        
+                        <dt class="col-sm-6">Location:</dt>
+                        <dd class="col-sm-6">{{ traceability_data.batch.location or 'N/A' }}</dd>
                     </dl>
                 </div>
             </div>
