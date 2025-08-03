@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}Notification Recipients - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">Notification Recipients</h1>
+                    <p class="text-muted">Manage who receives automated notifications</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('notifications.admin_dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </a>
+                    <a href="{{ url_for('notifications.add_recipient') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Recipient
+                    </a>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Role Filter</label>
+                            <select name="role" class="form-select">
+                                <option value="">All Roles</option>
+                                {% for role in roles %}
+                                <option value="{{ role }}" {% if role_filter == role %}selected{% endif %}>{{ role }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Status Filter</label>
+                            <select name="status" class="form-select">
+                                <option value="">All Status</option>
+                                <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                                <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn btn-outline-primary me-2">
+                                <i class="fas fa-filter"></i> Filter
+                            </button>
+                            <a href="{{ url_for('notifications.admin_recipients') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Clear
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Recipients Table -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-users text-primary"></i>
+                        Recipients ({{ recipients.total }})
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if recipients.items %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Contact Info</th>
+                                    <th>Role</th>
+                                    <th>Channels</th>
+                                    <th>Events</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for recipient in recipients.items %}
+                                <tr>
+                                    <td>
+                                        <div>
+                                            <strong>{{ recipient.name }}</strong>
+                                            {% if recipient.recipient_name != recipient.name %}
+                                                <br><small class="text-muted">{{ recipient.recipient_name }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if recipient.email %}
+                                            <div><i class="fas fa-envelope text-primary"></i> {{ recipient.email }}</div>
+                                        {% endif %}
+                                        {% if recipient.phone %}
+                                            <div><i class="fas fa-phone text-success"></i> {{ recipient.phone }}</div>
+                                        {% endif %}
+                                        {% if not recipient.email and not recipient.phone %}
+                                            <span class="text-muted">No contact info</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ recipient.role or 'Not Set' }}</span>
+                                        {% if recipient.recipient_role and recipient.recipient_role != recipient.role %}
+                                            <br><small class="text-muted">{{ recipient.recipient_role }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if recipient.notification_types %}
+                                            {% for type in recipient.notification_types.split(',') %}
+                                                {% if type.strip() == 'email' %}
+                                                    <span class="badge bg-primary">Email</span>
+                                                {% elif type.strip() == 'sms' %}
+                                                    <span class="badge bg-success">SMS</span>
+                                                {% elif type.strip() == 'whatsapp' %}
+                                                    <span class="badge bg-success">WhatsApp</span>
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% else %}
+                                            <span class="text-muted">None</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="small">
+                                            {% if recipient.po_events %}
+                                                <span class="badge bg-info">PO</span>
+                                            {% endif %}
+                                            {% if recipient.grn_events %}
+                                                <span class="badge bg-info">GRN</span>
+                                            {% endif %}
+                                            {% if recipient.sales_events %}
+                                                <span class="badge bg-info">Sales</span>
+                                            {% endif %}
+                                            {% if recipient.production_events %}
+                                                <span class="badge bg-info">Production</span>
+                                            {% endif %}
+                                            {% if recipient.job_work_events %}
+                                                <span class="badge bg-info">Job Work</span>
+                                            {% endif %}
+                                            {% if recipient.inventory_events %}
+                                                <span class="badge bg-info">Inventory</span>
+                                            {% endif %}
+                                            {% if recipient.accounts_events %}
+                                                <span class="badge bg-info">Accounts</span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if recipient.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('notifications.edit_recipient', id=recipient.id) }}" class="btn btn-outline-primary">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button class="btn btn-outline-danger" onclick="deleteRecipient({{ recipient.id }}, '{{ recipient.name }}')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if recipients.pages > 1 %}
+                    <div class="card-footer">
+                        <nav aria-label="Recipients pagination">
+                            <ul class="pagination justify-content-center mb-0">
+                                {% if recipients.has_prev %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('notifications.admin_recipients', page=recipients.prev_num, role=role_filter, status=status_filter) }}">Previous</a>
+                                    </li>
+                                {% endif %}
+                                
+                                {% for page_num in recipients.iter_pages() %}
+                                    {% if page_num %}
+                                        {% if page_num != recipients.page %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="{{ url_for('notifications.admin_recipients', page=page_num, role=role_filter, status=status_filter) }}">{{ page_num }}</a>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ page_num }}</span>
+                                            </li>
+                                        {% endif %}
+                                    {% else %}
+                                        <li class="page-item disabled">
+                                            <span class="page-link">...</span>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if recipients.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('notifications.admin_recipients', page=recipients.next_num, role=role_filter, status=status_filter) }}">Next</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
+
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h5>No Recipients Found</h5>
+                        <p class="text-muted">
+                            {% if role_filter or status_filter %}
+                                No recipients match your current filters.
+                            {% else %}
+                                No notification recipients have been configured yet.
+                            {% endif %}
+                        </p>
+                        <a href="{{ url_for('notifications.add_recipient') }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Add First Recipient
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function deleteRecipient(id, name) {
+    if (confirm(`Are you sure you want to delete recipient "${name}"? This action cannot be undone.`)) {
+        fetch(`/notifications/admin/recipients/${id}/delete`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': $('meta[name=csrf-token]').attr('content')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Failed to delete recipient: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the recipient.');
+        });
+    }
+}
+</script>
+{% endblock %}

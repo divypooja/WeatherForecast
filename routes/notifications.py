@@ -325,11 +325,31 @@ def admin_logs():
     logs = query.order_by(desc(NotificationLog.sent_at)).paginate(
         page=page, per_page=50, error_out=False)
     
+    # Calculate statistics
+    total_logs = NotificationLog.query.count()
+    total_sent = NotificationLog.query.filter_by(success=True).count()
+    total_failed = NotificationLog.query.filter_by(success=False).count()
+    success_rate = round((total_sent / total_logs * 100) if total_logs > 0 else 0, 1)
+    
+    # Today's count
+    today = datetime.utcnow().date()
+    today_count = NotificationLog.query.filter(
+        func.date(NotificationLog.sent_at) == today
+    ).count()
+    
+    stats = {
+        'total_sent': total_sent,
+        'total_failed': total_failed,
+        'success_rate': success_rate,
+        'today_count': today_count
+    }
+    
     return render_template('notifications/admin/logs.html',
                          logs=logs,
                          type_filter=type_filter,
                          status_filter=status_filter,
-                         date_filter=date_filter)
+                         date_filter=date_filter,
+                         stats=stats)
 
 @notifications_bp.route('/admin/test', methods=['GET', 'POST'])
 @login_required
