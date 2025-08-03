@@ -373,8 +373,6 @@ def add_salary():
         # Validate required fields manually for calculation
         if employee_id and employee_id != '0' and pay_period_start and pay_period_end and daily_rate:
             try:
-                print(f"DEBUG: Processing calculation for employee_id={employee_id}, dates={pay_period_start} to {pay_period_end}, rate={daily_rate}")
-                
                 # Parse dates
                 start_date = datetime.strptime(pay_period_start, '%Y-%m-%d').date()
                 end_date = datetime.strptime(pay_period_end, '%Y-%m-%d').date()
@@ -392,7 +390,6 @@ def add_salary():
                 
                 # Calculate attendance-based values
                 attendance_data = temp_salary.calculate_attendance_based_salary()
-                print(f"DEBUG: Attendance calculation result: {attendance_data}")
                 
                 # Create a completely new form with calculated values to avoid WTForms issues
                 calculated_form = SalaryRecordForm()
@@ -411,8 +408,6 @@ def add_salary():
                 calculated_form.actual_days_worked.data = int(attendance_data['actual_days_worked'])
                 calculated_form.basic_amount.data = float(attendance_data['basic_amount'])
                 calculated_form.overtime_hours.data = float(attendance_data['overtime_hours'])
-                
-                print(f"DEBUG: Form fields set - actual_days_worked: {calculated_form.actual_days_worked.data}, basic_amount: {calculated_form.basic_amount.data}")
                 
                 # Populate employee choices for the new form
                 employees = Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
