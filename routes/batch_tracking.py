@@ -302,17 +302,17 @@ def quality_control():
     
     # Get batches based on filter
     if status_filter:
-        batches = ItemBatch.query.filter(
-            ItemBatch.quality_status == status_filter
-        ).order_by(desc(ItemBatch.created_at)).all()
+        batches = InventoryBatch.query.filter(
+            InventoryBatch.inspection_status == status_filter
+        ).order_by(desc(InventoryBatch.created_at)).all()
     else:
-        batches = ItemBatch.query.order_by(desc(ItemBatch.created_at)).limit(50).all()
+        batches = InventoryBatch.query.order_by(desc(InventoryBatch.created_at)).limit(50).all()
     
     # Calculate quality statistics
-    total_batches = ItemBatch.query.count()
-    pending_count = ItemBatch.query.filter(ItemBatch.quality_status == 'pending').count()
-    approved_count = ItemBatch.query.filter(ItemBatch.quality_status == 'approved').count()
-    rejected_count = ItemBatch.query.filter(ItemBatch.quality_status == 'rejected').count()
+    total_batches = InventoryBatch.query.count()
+    pending_count = InventoryBatch.query.filter(InventoryBatch.inspection_status == 'pending').count()
+    approved_count = InventoryBatch.query.filter(InventoryBatch.inspection_status == 'passed').count()
+    rejected_count = InventoryBatch.query.filter(InventoryBatch.inspection_status == 'failed').count()
     
     approval_rate = (approved_count / total_batches * 100) if total_batches > 0 else 0
     
@@ -336,24 +336,22 @@ def quality_control():
 def api_update_batch_quality(batch_id):
     """Update batch quality status"""
     try:
-        batch = ItemBatch.query.get_or_404(batch_id)
+        batch = InventoryBatch.query.get_or_404(batch_id)
         data = request.json
         
-        new_status = data.get('quality_status')
+        new_status = data.get('inspection_status')
         quality_notes = data.get('quality_notes', '')
         
-        if new_status not in ['approved', 'rejected', 'pending', 'defective', 'pending_inspection', 'expired', 'good']:
-            return jsonify({'success': False, 'error': 'Invalid quality status'}), 400
+        if new_status not in ['passed', 'failed', 'pending', 'quarantine']:
+            return jsonify({'success': False, 'error': 'Invalid inspection status'}), 400
         
-        batch.quality_status = new_status
-        if quality_notes:
-            batch.quality_notes = (batch.quality_notes or '') + f"\n[{datetime.now().strftime('%d/%m/%Y %H:%M')}] {quality_notes}"
+        batch.inspection_status = new_status
         
         db.session.commit()
         
         return jsonify({
             'success': True,
-            'message': f'Batch {batch.batch_number} quality status updated to {new_status}'
+            'message': f'Batch {batch.batch_code} inspection status updated to {new_status}'
         })
         
     except Exception as e:
@@ -364,22 +362,22 @@ def api_update_batch_quality(batch_id):
 def api_update_batch_location(batch_id):
     """Update batch storage location"""
     try:
-        batch = ItemBatch.query.get_or_404(batch_id)
+        batch = InventoryBatch.query.get_or_404(batch_id)
         data = request.json
         
-        new_location = data.get('storage_location', '').strip()
+        new_location = data.get('location', '').strip()
         if not new_location:
-            return jsonify({'success': False, 'error': 'Storage location is required'}), 400
+            return jsonify({'success': False, 'error': 'Location is required'}), 400
         
-        old_location = batch.storage_location
-        batch.storage_location = new_location
+        old_location = batch.location
+        batch.location = new_location
         batch.updated_at = datetime.utcnow()
         
         db.session.commit()
         
         return jsonify({
             'success': True,
-            'message': f'Batch {batch.batch_number} moved from {old_location} to {new_location}'
+            'message': f'Batch {batch.batch_code} moved from {old_location} to {new_location}'
         })
         
     except Exception as e:
