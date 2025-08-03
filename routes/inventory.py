@@ -16,41 +16,61 @@ inventory_bp = Blueprint('inventory', __name__)
 @inventory_bp.route('/dashboard')
 @login_required
 def dashboard():
-    """Unified inventory dashboard with enhanced statistics"""
+    """Enhanced inventory dashboard with multi-state tracking and modern UI"""
     try:
         from services_unified_inventory import UnifiedInventoryService
         
         # Get unified dashboard statistics
         stats = UnifiedInventoryService.get_inventory_dashboard_stats()
         
+        # Enhanced multi-state inventory counts
+        raw_material_count = Item.query.filter_by(item_type='raw_material').count()
+        finished_goods_count = Item.query.filter_by(item_type='finished_good').count()
+        
+        # Add multi-state data to stats
+        stats.update({
+            'raw_material_items': raw_material_count,
+            'finished_goods_items': finished_goods_count,
+            'wip_items': stats.get('wip_items', 0),
+            'scrap_items': stats.get('scrap_items', 0)
+        })
+        
         # Recent items and low stock alerts
-        recent_items = Item.query.order_by(Item.created_at.desc()).limit(5).all()
+        recent_items = Item.query.order_by(Item.created_at.desc()).limit(8).all()
         
         # Get low stock items using minimum_stock field
         low_stock_items = Item.query.filter(
             func.coalesce(Item.current_stock, 0) <= func.coalesce(Item.minimum_stock, 0),
             func.coalesce(Item.current_stock, 0) > 0
-        ).limit(10).all()
+        ).limit(15).all()
         
         # UOM summary
         uom_stats = db.session.query(Item.unit_of_measure, func.count(Item.id)).group_by(Item.unit_of_measure).all()
         
     except Exception as e:
         # Fallback to basic statistics if unified service fails
+        total_items = Item.query.count()
+        out_of_stock = Item.query.filter(func.coalesce(Item.current_stock, 0) == 0).count()
+        low_stock = Item.query.filter(
+            func.coalesce(Item.current_stock, 0) <= func.coalesce(Item.minimum_stock, 0)
+        ).count()
+        
         stats = {
-            'total_items': Item.query.count(),
-            'low_stock_items': Item.query.filter(
-                func.coalesce(Item.current_stock, 0) <= func.coalesce(Item.minimum_stock, 0)
-            ).count(),
+            'total_items': total_items,
+            'low_stock_items': low_stock,
             'total_stock_value': db.session.query(func.sum(
                 func.coalesce(Item.current_stock, 0) * func.coalesce(Item.unit_price, 0)
             )).scalar() or 0,
-            'out_of_stock_items': Item.query.filter(func.coalesce(Item.current_stock, 0) == 0).count()
+            'out_of_stock_items': out_of_stock,
+            'raw_material_items': Item.query.filter_by(item_type='raw_material').count(),
+            'finished_goods_items': Item.query.filter_by(item_type='finished_good').count(),
+            'wip_items': 0,
+            'scrap_items': 0
         }
-        recent_items = Item.query.order_by(Item.created_at.desc()).limit(5).all()
+        recent_items = Item.query.order_by(Item.created_at.desc()).limit(8).all()
         low_stock_items = Item.query.filter(
             func.coalesce(Item.current_stock, 0) <= func.coalesce(Item.minimum_stock, 0)
-        ).limit(10).all()
+        ).limit(15).all()
         uom_stats = db.session.query(Item.unit_of_measure, func.count(Item.id)).group_by(Item.unit_of_measure).all()
     
     return render_template('inventory/dashboard.html', 
