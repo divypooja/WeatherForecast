@@ -368,12 +368,18 @@ def process_ocr():
                 'base_amount': extracted_fields.get('base_amount'),
                 'tax_amount': extracted_fields.get('tax_amount') or extracted_fields.get('gst_amount'),
                 'vendor': extracted_fields.get('vendor_name') or extracted_fields.get('supplier_name'),
+                'vendor_name': extracted_fields.get('vendor_name'),
+                'customer_name': extracted_fields.get('customer_name'),
                 'invoice_number': extracted_fields.get('invoice_number') or extracted_fields.get('bill_number'),
+                'po_number': extracted_fields.get('po_number'),
                 'date': extracted_fields.get('invoice_date') or extracted_fields.get('date'),
                 'category': extracted_fields.get('category'),
                 'department': extracted_fields.get('department'),
                 'gstin': extracted_fields.get('gstin'),
-                'confidence': result.get('confidence', 0)
+                'quantity': extracted_fields.get('quantity'),
+                'discount': extracted_fields.get('discount'),
+                'confidence': result.get('confidence', 0),
+                'extracted_fields': extracted_fields  # Include raw extracted fields for debugging
             }
             
             return jsonify({
