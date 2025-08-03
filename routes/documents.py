@@ -85,6 +85,52 @@ def document_list():
                          transactions_with_docs=transactions_with_docs,
                          folder_structure=folder_structure)
 
+@documents_bp.route('/folder/<path:folder_path>/<filename>')
+@login_required
+def view_folder_file(folder_path, filename):
+    """View a file from the organized folder structure"""
+    try:
+        # Security check - ensure path is within uploads directory
+        safe_folder = folder_path.replace('..', '').strip('/')
+        safe_filename = filename.replace('..', '').strip('/')
+        
+        file_path = os.path.join(os.getcwd(), 'uploads', safe_folder, safe_filename)
+        
+        # Ensure file exists and is within uploads directory
+        uploads_dir = os.path.join(os.getcwd(), 'uploads')
+        if not file_path.startswith(uploads_dir) or not os.path.exists(file_path):
+            flash('File not found', 'error')
+            return redirect(url_for('documents.document_list'))
+        
+        return send_file(file_path, as_attachment=False, download_name=filename)
+        
+    except Exception as e:
+        flash(f'Error viewing file: {str(e)}', 'error')
+        return redirect(url_for('documents.document_list'))
+
+@documents_bp.route('/folder/<path:folder_path>/<filename>/download')
+@login_required
+def download_folder_file(folder_path, filename):
+    """Download a file from the organized folder structure"""
+    try:
+        # Security check - ensure path is within uploads directory
+        safe_folder = folder_path.replace('..', '').strip('/')
+        safe_filename = filename.replace('..', '').strip('/')
+        
+        file_path = os.path.join(os.getcwd(), 'uploads', safe_folder, safe_filename)
+        
+        # Ensure file exists and is within uploads directory
+        uploads_dir = os.path.join(os.getcwd(), 'uploads')
+        if not file_path.startswith(uploads_dir) or not os.path.exists(file_path):
+            flash('File not found', 'error')
+            return redirect(url_for('documents.document_list'))
+        
+        return send_file(file_path, as_attachment=True, download_name=filename)
+        
+    except Exception as e:
+        flash(f'Error downloading file: {str(e)}', 'error')
+        return redirect(url_for('documents.document_list'))
+
 @documents_bp.route('/upload/<transaction_type>/<int:transaction_id>', methods=['GET', 'POST'])
 @login_required
 def upload_document(transaction_type, transaction_id):

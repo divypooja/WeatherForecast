@@ -127,8 +127,26 @@
                             {% for file in folder_info.files[:3] %}
                             <div class="d-flex align-items-center mb-1">
                                 <i class="fas fa-file text-secondary me-1" style="font-size: 0.8em;"></i>
-                                <span class="text-truncate me-auto">{{ file.name }}</span>
-                                <small class="text-muted">{{ (file.size / 1024)|round(1) }} KB</small>
+                                <a href="{{ url_for('documents.view_folder_file', folder_path=folder_path, filename=file.name) }}" 
+                                   class="text-decoration-none text-truncate me-auto" 
+                                   target="_blank" 
+                                   title="Click to view {{ file.name }}">
+                                    {{ file.name }}
+                                </a>
+                                <div class="btn-group btn-group-sm ms-1">
+                                    <a href="{{ url_for('documents.view_folder_file', folder_path=folder_path, filename=file.name) }}" 
+                                       class="btn btn-outline-primary btn-sm" 
+                                       target="_blank" 
+                                       title="View">
+                                        <i class="fas fa-eye" style="font-size: 0.7em;"></i>
+                                    </a>
+                                    <a href="{{ url_for('documents.download_folder_file', folder_path=folder_path, filename=file.name) }}" 
+                                       class="btn btn-outline-secondary btn-sm" 
+                                       title="Download">
+                                        <i class="fas fa-download" style="font-size: 0.7em;"></i>
+                                    </a>
+                                </div>
+                                <small class="text-muted ms-1">{{ (file.size / 1024)|round(1) }} KB</small>
                             </div>
                             {% endfor %}
                             {% if folder_info.count > 3 %}
