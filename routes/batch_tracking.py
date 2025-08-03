@@ -257,8 +257,8 @@ def traceability_report():
         item_id = request.args.get('item_id', type=int)
         if item_id:
             item = Item.query.get_or_404(item_id)
-            batches = ItemBatch.query.filter_by(item_id=item_id).order_by(
-                desc(ItemBatch.created_at)
+            batches = InventoryBatch.query.filter_by(item_id=item_id).order_by(
+                desc(InventoryBatch.created_at)
             ).all()
             
             return render_template(
@@ -268,8 +268,8 @@ def traceability_report():
             )
     
     # Default: Show traceability options
-    items = Item.query.filter(Item.batches.any()).order_by(Item.name).all()
-    recent_batches = ItemBatch.query.order_by(desc(ItemBatch.created_at)).limit(20).all()
+    items = Item.query.join(InventoryBatch).order_by(Item.name).all()
+    recent_batches = InventoryBatch.query.order_by(desc(InventoryBatch.created_at)).limit(20).all()
     
     return render_template(
         'batch_tracking/traceability_options.html',
