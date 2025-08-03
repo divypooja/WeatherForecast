@@ -365,13 +365,15 @@ def get_grn_workflow_status(grn_id):
 def setup_clearing_accounts():
     """Setup required clearing accounts"""
     try:
+        print("Setup clearing accounts route called")
         success = GRNWorkflowService.setup_clearing_accounts()
+        print(f"Setup result: {success}")
         if success:
-            flash('✅ Clearing accounts setup completed successfully! GRN Clearing Account (2150) and GST Input Tax (1180) are ready.', 'success')
+            flash('Clearing accounts setup completed successfully! GRN Clearing Account (2150) and GST Input Tax (1180) are ready.', 'success')
         else:
-            flash('❌ Error setting up clearing accounts. Please check the logs.', 'error')
+            flash('Error setting up clearing accounts. Please check the logs.', 'error')
     except Exception as e:
-        flash(f'❌ Setup Error: {str(e)}', 'error')
+        flash(f'Setup Error: {str(e)}', 'error')
         print(f"Setup clearing accounts error: {e}")
     
     return redirect(url_for('grn_workflow.dashboard'))

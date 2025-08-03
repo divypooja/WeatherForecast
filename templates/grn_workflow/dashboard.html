@@ -28,7 +28,6 @@
         </div>
         <div class="col-auto">
             <form method="POST" action="{{ url_for('grn_workflow.setup_clearing_accounts') }}" style="display: inline;">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <button type="submit" class="btn btn-warning btn-sm">
                     <i class="fas fa-cog"></i> Setup Clearing Accounts
                 </button>
