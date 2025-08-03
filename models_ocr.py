@@ -260,8 +260,10 @@ class OCRHistory(db.Model):
         else:
             history.failed_extractions += 1
         
-        # Update averages
+        # Update averages - handle None values
         total = history.total_processed
+        processing_time = processing_time or 0.0
+        confidence = confidence or 0.0
         history.avg_processing_time = ((history.avg_processing_time * (total - 1)) + processing_time) / total
         history.avg_confidence_score = ((history.avg_confidence_score * (total - 1)) + confidence) / total
         
