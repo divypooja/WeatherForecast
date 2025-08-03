@@ -238,9 +238,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Update Quality Status</h5>
-                <button type="button" class="close" data-dismiss="modal">
-                    <span>&times;</span>
-                </button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="qualityForm">
@@ -261,7 +259,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" onclick="saveQualityUpdate()">Update Status</button>
             </div>
         </div>
@@ -279,7 +277,10 @@ function getCsrfToken() {
 function updateQualityStatus(batchId, status) {
     currentBatchId = batchId;
     document.querySelector('[name="quality_status"]').value = status;
-    $('#qualityModal').modal('show');
+    
+    // Use Bootstrap 5 modal API instead of jQuery
+    const modal = new bootstrap.Modal(document.getElementById('qualityModal'));
+    modal.show();
 }
 
 function saveQualityUpdate() {
@@ -304,7 +305,9 @@ function saveQualityUpdate() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            $('#qualityModal').modal('hide');
+            // Hide modal using Bootstrap 5 API
+            const modal = bootstrap.Modal.getInstance(document.getElementById('qualityModal'));
+            modal.hide();
             location.reload();
         } else {
             alert('Error updating quality status: ' + (data.error || data.message));
