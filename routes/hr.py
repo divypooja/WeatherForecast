@@ -271,7 +271,7 @@ def get_employee_hire_date(employee_id):
         return jsonify({'success': False, 'error': str(e)}), 400
 
 @hr_bp.route('/api/calculate-attendance', methods=['POST'])
-@login_required
+@login_required 
 def calculate_attendance_api():
     """AJAX endpoint to calculate attendance-based salary"""
     try:
@@ -292,11 +292,19 @@ def calculate_attendance_api():
         
         # Parse and validate data
         try:
-            employee_id = int(employee_id)
-            daily_rate = float(daily_rate)
-            overtime_rate = float(overtime_rate)
-            start_date = datetime.strptime(pay_period_start, '%Y-%m-%d').date()
-            end_date = datetime.strptime(pay_period_end, '%Y-%m-%d').date()
+            employee_id = int(employee_id) if employee_id else None
+            daily_rate = float(daily_rate) if daily_rate else None
+            overtime_rate = float(overtime_rate) if overtime_rate else 150.0
+            start_date = datetime.strptime(pay_period_start, '%Y-%m-%d').date() if pay_period_start else None
+            end_date = datetime.strptime(pay_period_end, '%Y-%m-%d').date() if pay_period_end else None
+            
+            # Check for None values after parsing
+            if not all([employee_id, daily_rate, start_date, end_date]):
+                return jsonify({
+                    'success': False,
+                    'error': 'Invalid or missing data after parsing'
+                }), 400
+                
         except (ValueError, TypeError) as e:
             return jsonify({
                 'success': False,

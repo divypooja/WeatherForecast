@@ -431,6 +431,15 @@ function calculateAttendanceAjax() {
     calculateBtn.value = 'Calculating...';
     calculateBtn.disabled = true;
     
+    // Debug logging
+    console.log('Making AJAX request with data:', {
+        employee_id: employeeId,
+        pay_period_start: payPeriodStart,
+        pay_period_end: payPeriodEnd,
+        daily_rate: dailyRate,
+        overtime_rate: overtimeRate
+    });
+    
     // Make AJAX request
     fetch('{{ url_for("hr.calculate_attendance_api") }}', {
         method: 'POST',
