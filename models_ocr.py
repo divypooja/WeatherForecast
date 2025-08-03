@@ -253,24 +253,26 @@ class OCRHistory(db.Model):
             history = cls(date=today, module_type=module_type)
             db.session.add(history)
         
-        # Update counts
-        history.total_processed += 1
+        # Update counts - ensure all values are initialized
+        history.total_processed = (history.total_processed or 0) + 1
         if success:
-            history.successful_extractions += 1
+            history.successful_extractions = (history.successful_extractions or 0) + 1
         else:
-            history.failed_extractions += 1
+            history.failed_extractions = (history.failed_extractions or 0) + 1
         
         # Update averages - handle None values
         total = history.total_processed
         processing_time = processing_time or 0.0
         confidence = confidence or 0.0
-        history.avg_processing_time = ((history.avg_processing_time * (total - 1)) + processing_time) / total
-        history.avg_confidence_score = ((history.avg_confidence_score * (total - 1)) + confidence) / total
+        current_avg_time = history.avg_processing_time or 0.0
+        current_avg_conf = history.avg_confidence_score or 0.0
+        history.avg_processing_time = ((current_avg_time * (total - 1)) + processing_time) / total
+        history.avg_confidence_score = ((current_avg_conf * (total - 1)) + confidence) / total
         
         # Update engine usage
         if engine == 'tesseract':
-            history.tesseract_usage += 1
+            history.tesseract_usage = (history.tesseract_usage or 0) + 1
         else:
-            history.fallback_usage += 1
+            history.fallback_usage = (history.fallback_usage or 0) + 1
         
         db.session.commit()

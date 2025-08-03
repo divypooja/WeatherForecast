@@ -112,13 +112,17 @@ class OCRService:
             db.session.commit()
             
             # Update statistics - ensure no None values
-            OCRHistory.update_stats(
-                module_type=module_type,
-                success=processing_result.success,
-                processing_time=processing_result.processing_time or 0.0,
-                confidence=processing_result.confidence or 0.0,
-                engine=processing_result.engine_used or "tesseract"
-            )
+            try:
+                OCRHistory.update_stats(
+                    module_type=module_type,
+                    success=processing_result.success,
+                    processing_time=processing_result.processing_time or 0.0,
+                    confidence=processing_result.confidence or 0.0,
+                    engine=processing_result.engine_used or "tesseract"
+                )
+            except Exception as stats_error:
+                logger.error(f"Statistics update failed: {stats_error}")
+                # Continue processing even if stats fail
             
             # Prepare response
             response = {
