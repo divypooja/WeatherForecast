@@ -383,8 +383,11 @@ def api_update_batch_quality(batch_id):
             return jsonify({'success': False, 'error': f'Invalid inspection status: {new_status}. Valid options: passed, failed, pending, quarantine'}), 400
         
         batch.inspection_status = new_status
+        batch.updated_at = datetime.utcnow()
         
+        print(f"About to commit status change to: {new_status}")
         db.session.commit()
+        print(f"Successfully committed status change")
         
         return jsonify({
             'success': True,
@@ -392,6 +395,8 @@ def api_update_batch_quality(batch_id):
         })
         
     except Exception as e:
+        print(f"Exception in api_update_batch_quality: {str(e)}")
+        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @batch_tracking_bp.route('/api/batch/<int:batch_id>/update-location', methods=['POST'])
