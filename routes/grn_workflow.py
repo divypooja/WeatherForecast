@@ -281,10 +281,9 @@ def create_payment_for_invoice(invoice_id):
             )
             db.session.add(allocation)
             
-            # Create payment voucher in accounting
-            voucher = GRNWorkflowService.create_payment_voucher(
-                payment_voucher, [allocation]
-            )
+            # Create payment voucher in accounting using proper 3-step workflow
+            from services.accounting_automation import AccountingAutomation
+            voucher = AccountingAutomation.create_payment_voucher(payment_voucher)
             
             if voucher:
                 flash(f'Payment {voucher_number} recorded successfully!', 'success')

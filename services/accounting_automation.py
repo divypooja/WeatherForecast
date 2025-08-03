@@ -297,7 +297,21 @@ class AccountingAutomation:
     
     @staticmethod
     def create_grn_voucher(grn):
-        """Create journal entries for GRN (Job Work)"""
+        """Create journal entries for GRN using proper 3-step workflow with clearing account"""
+        try:
+            # Import here to avoid circular imports
+            from services.grn_workflow_automation import GRNWorkflowService
+            
+            # Use the proper 3-step workflow service
+            return GRNWorkflowService.create_grn_material_receipt_voucher(grn)
+            
+        except Exception as e:
+            print(f"Error creating GRN voucher: {str(e)}")
+            return False
+    
+    @staticmethod
+    def create_vendor_invoice_voucher(vendor_invoice):
+        """Step 2: Create voucher when vendor invoice is received"""
         try:
             # Get purchase voucher type
             voucher_type = VoucherType.query.filter_by(code='PUR').first()
@@ -306,74 +320,67 @@ class AccountingAutomation:
             
             # Create voucher
             voucher = Voucher(
-                voucher_number=Voucher.generate_voucher_number('GRN'),
+                voucher_number=Voucher.generate_voucher_number('VINV'),
                 voucher_type_id=voucher_type.id,
-                transaction_date=grn.receipt_date or date.today(),
-                reference_number=grn.grn_number,
-                narration=f"GRN from {grn.supplier.name}",
-                party_id=grn.supplier_id,
+                transaction_date=vendor_invoice.invoice_date or date.today(),
+                reference_number=vendor_invoice.invoice_number,
+                narration=f"Vendor invoice from {vendor_invoice.vendor.name}",
+                party_id=vendor_invoice.vendor_id,
                 party_type='supplier',
-                total_amount=grn.total_amount,
-                created_by=grn.created_by
+                total_amount=vendor_invoice.total_amount,
+                tax_amount=vendor_invoice.gst_amount or 0,
+                is_gst_applicable=True,
+                created_by=vendor_invoice.created_by
             )
             
             db.session.add(voucher)
             db.session.flush()
             
             # Get accounts
-            if grn.grn_type == 'job_work':
-                inventory_account = Account.query.filter_by(code='FG_INV').first()  # Finished goods
-                expense_account = Account.query.filter_by(code='JW_CHARGES').first()  # Job work charges
-            else:
-                inventory_account = Account.query.filter_by(code='RM_INV').first()  # Raw materials
-                expense_account = None
+            grn_clearing_account = Account.query.filter_by(code='2150').first()
+            gst_input_account = Account.query.filter_by(code='1180').first()
+            supplier_account = AccountingAutomation.get_or_create_party_account(vendor_invoice.vendor)
             
-            supplier_account = AccountingAutomation.get_or_create_party_account(grn.supplier)
-            
-            if not all([inventory_account, supplier_account]):
+            if not all([grn_clearing_account, supplier_account]):
                 return False
             
-            # Process each GRN line item
-            for line_item in grn.line_items:
-                # Debit inventory for received goods
-                inventory_entry = JournalEntry(
-                    voucher_id=voucher.id,
-                    account_id=inventory_account.id,
-                    entry_type='debit',
-                    amount=line_item.total_amount,
-                    narration=f"Received {line_item.item.name} - {grn.grn_number}",
-                    transaction_date=voucher.transaction_date,
-                    reference_type='grn',
-                    reference_id=grn.id
-                )
-                db.session.add(inventory_entry)
-                
-                # If job work, also debit job work charges
-                if grn.grn_type == 'job_work' and expense_account and line_item.job_work_rate:
-                    jw_amount = line_item.quantity_received * (line_item.job_work_rate or 0)
-                    if jw_amount > 0:
-                        jw_entry = JournalEntry(
-                            voucher_id=voucher.id,
-                            account_id=expense_account.id,
-                            entry_type='debit',
-                            amount=jw_amount,
-                            narration=f"Job work charges for {line_item.item.name}",
-                            transaction_date=voucher.transaction_date,
-                            reference_type='grn',
-                            reference_id=grn.id
-                        )
-                        db.session.add(jw_entry)
+            # Dr. GRN Clearing Account (clear the liability)
+            clearing_entry = JournalEntry(
+                voucher_id=voucher.id,
+                account_id=grn_clearing_account.id,
+                entry_type='debit',
+                amount=vendor_invoice.subtotal,
+                narration=f"Clear GRN liability - {vendor_invoice.invoice_number}",
+                transaction_date=voucher.transaction_date,
+                reference_type='vendor_invoice',
+                reference_id=vendor_invoice.id
+            )
+            db.session.add(clearing_entry)
             
-            # Credit supplier account
+            # Dr. GST Input Tax (if applicable)
+            if vendor_invoice.gst_amount and vendor_invoice.gst_amount > 0 and gst_input_account:
+                gst_entry = JournalEntry(
+                    voucher_id=voucher.id,
+                    account_id=gst_input_account.id,
+                    entry_type='debit',
+                    amount=vendor_invoice.gst_amount,
+                    narration=f"GST Input Tax - {vendor_invoice.invoice_number}",
+                    transaction_date=voucher.transaction_date,
+                    reference_type='vendor_invoice',
+                    reference_id=vendor_invoice.id
+                )
+                db.session.add(gst_entry)
+            
+            # Cr. Supplier Account (create payable)
             supplier_entry = JournalEntry(
                 voucher_id=voucher.id,
                 account_id=supplier_account.id,
                 entry_type='credit',
-                amount=grn.total_amount,
-                narration=f"GRN from {grn.supplier.name}",
+                amount=vendor_invoice.total_amount,
+                narration=f"Vendor invoice - {vendor_invoice.invoice_number}",
                 transaction_date=voucher.transaction_date,
-                reference_type='grn',
-                reference_id=grn.id
+                reference_type='vendor_invoice',
+                reference_id=vendor_invoice.id
             )
             db.session.add(supplier_entry)
             
@@ -382,7 +389,76 @@ class AccountingAutomation:
             
         except Exception as e:
             db.session.rollback()
-            print(f"Error creating GRN voucher: {str(e)}")
+            print(f"Error creating vendor invoice voucher: {str(e)}")
+            return False
+    
+    @staticmethod
+    def create_payment_voucher(payment):
+        """Step 3: Create voucher when payment is made to vendor"""
+        try:
+            # Get payment voucher type
+            voucher_type = VoucherType.query.filter_by(code='PAY').first()
+            if not voucher_type:
+                return False
+            
+            # Create voucher
+            voucher = Voucher(
+                voucher_number=Voucher.generate_voucher_number('PAY'),
+                voucher_type_id=voucher_type.id,
+                transaction_date=payment.payment_date or date.today(),
+                reference_number=payment.payment_reference,
+                narration=f"Payment to {payment.vendor.name}",
+                party_id=payment.vendor_id,
+                party_type='supplier',
+                total_amount=payment.amount,
+                created_by=payment.created_by
+            )
+            
+            db.session.add(voucher)
+            db.session.flush()
+            
+            # Get accounts
+            supplier_account = AccountingAutomation.get_or_create_party_account(payment.vendor)
+            bank_account = Account.query.filter_by(code=payment.payment_account_code).first()
+            
+            if not bank_account:
+                bank_account = Account.query.filter_by(is_cash_account=True).first()
+            
+            if not all([supplier_account, bank_account]):
+                return False
+            
+            # Dr. Supplier Account (clear payable)
+            supplier_entry = JournalEntry(
+                voucher_id=voucher.id,
+                account_id=supplier_account.id,
+                entry_type='debit',
+                amount=payment.amount,
+                narration=f"Payment to vendor - {payment.payment_reference}",
+                transaction_date=voucher.transaction_date,
+                reference_type='payment',
+                reference_id=payment.id
+            )
+            db.session.add(supplier_entry)
+            
+            # Cr. Bank/Cash Account
+            bank_entry = JournalEntry(
+                voucher_id=voucher.id,
+                account_id=bank_account.id,
+                entry_type='credit',
+                amount=payment.amount,
+                narration=f"Payment to vendor - {payment.payment_reference}",
+                transaction_date=voucher.transaction_date,
+                reference_type='payment',
+                reference_id=payment.id
+            )
+            db.session.add(bank_entry)
+            
+            db.session.commit()
+            return voucher
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error creating payment voucher: {str(e)}")
             return False
     
     @staticmethod

@@ -255,9 +255,12 @@ def edit_sales_order(id):
         # Import accounting automation
         from services.accounting_automation import AccountingAutomation
         
-        # If status changed from any status to 'confirmed', deduct inventory
+        # If status changed from any status to 'confirmed', deduct inventory and create COGS
         if old_status != 'confirmed' and so.status == 'confirmed':
             inventory_deduction_result = deduct_inventory_for_sales_order(so)
+            # Create COGS voucher for delivered goods
+            from services.accounting_automation import AccountingAutomation
+            AccountingAutomation.create_sales_delivery_voucher(so)
             if not inventory_deduction_result['success']:
                 flash(f'Cannot confirm sales order: {inventory_deduction_result["message"]}', 'danger')
                 so_items = SalesOrderItem.query.filter_by(sales_order_id=id).all()

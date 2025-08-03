@@ -189,8 +189,12 @@ def process_grn_with_batch_tracking(grn, add_to_inventory=True):
         if grn.purchase_order:
             update_po_status_based_on_grn(grn.purchase_order_id)
         
+        # Create GRN voucher using proper 3-step workflow
+        from services.accounting_automation import AccountingAutomation
+        voucher = AccountingAutomation.create_grn_voucher(grn)
+        
         db.session.commit()
-        return True, "GRN processed successfully with batch tracking"
+        return True, "GRN processed successfully with batch tracking and accounting entries"
         
     except Exception as e:
         db.session.rollback()
