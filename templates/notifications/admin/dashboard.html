@@ -99,12 +99,12 @@
                             <div class="col-6">Email:</div>
                             <div class="col-6">
                                 {% if settings.email_enabled %}
-                                    <span class="badge badge-success">Enabled</span>
+                                    <span class="badge bg-success text-white">Enabled</span>
                                     {% if settings.sender_email %}
                                         <br><small class="text-muted">{{ settings.sender_email }}</small>
                                     {% endif %}
                                 {% else %}
-                                    <span class="badge badge-danger">Disabled</span>
+                                    <span class="badge bg-danger text-white">Disabled</span>
                                 {% endif %}
                             </div>
                         </div>
@@ -112,12 +112,12 @@
                             <div class="col-6">SMS:</div>
                             <div class="col-6">
                                 {% if settings.sms_enabled %}
-                                    <span class="badge badge-success">Enabled</span>
+                                    <span class="badge bg-success text-white">Enabled</span>
                                     {% if settings.twilio_phone_number %}
                                         <br><small class="text-muted">{{ settings.twilio_phone_number }}</small>
                                     {% endif %}
                                 {% else %}
-                                    <span class="badge badge-danger">Disabled</span>
+                                    <span class="badge bg-danger text-white">Disabled</span>
                                 {% endif %}
                             </div>
                         </div>
@@ -125,9 +125,9 @@
                             <div class="col-6">WhatsApp:</div>
                             <div class="col-6">
                                 {% if settings.whatsapp_enabled %}
-                                    <span class="badge badge-success">Enabled</span>
+                                    <span class="badge bg-success text-white">Enabled</span>
                                 {% else %}
-                                    <span class="badge badge-danger">Disabled</span>
+                                    <span class="badge bg-danger text-white">Disabled</span>
                                 {% endif %}
                             </div>
                         </div>
@@ -136,9 +136,9 @@
                             <div class="col-6">PO Notifications:</div>
                             <div class="col-6">
                                 {% if settings.po_notifications %}
-                                    <span class="badge badge-success">On</span>
+                                    <span class="badge bg-success text-white">On</span>
                                 {% else %}
-                                    <span class="badge badge-warning">Off</span>
+                                    <span class="badge bg-warning text-dark">Off</span>
                                 {% endif %}
                             </div>
                         </div>
@@ -146,9 +146,9 @@
                             <div class="col-6">GRN Notifications:</div>
                             <div class="col-6">
                                 {% if settings.grn_notifications %}
-                                    <span class="badge badge-success">On</span>
+                                    <span class="badge bg-success text-white">On</span>
                                 {% else %}
-                                    <span class="badge badge-warning">Off</span>
+                                    <span class="badge bg-warning text-dark">Off</span>
                                 {% endif %}
                             </div>
                         </div>
@@ -156,9 +156,9 @@
                             <div class="col-6">Sales Notifications:</div>
                             <div class="col-6">
                                 {% if settings.sales_notifications %}
-                                    <span class="badge badge-success">On</span>
+                                    <span class="badge bg-success text-white">On</span>
                                 {% else %}
-                                    <span class="badge badge-warning">Off</span>
+                                    <span class="badge bg-warning text-dark">Off</span>
                                 {% endif %}
                             </div>
                         </div>
@@ -166,9 +166,29 @@
                             <div class="col-6">Accounts Events:</div>
                             <div class="col-6">
                                 {% if settings.accounts_notifications %}
-                                    <span class="badge badge-success">On</span>
+                                    <span class="badge bg-success text-white">On</span>
                                 {% else %}
-                                    <span class="badge badge-warning">Off</span>
+                                    <span class="badge bg-warning text-dark">Off</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-6">Production Events:</div>
+                            <div class="col-6">
+                                {% if settings.production_notifications %}
+                                    <span class="badge bg-success text-white">On</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Off</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-6">Inventory Alerts:</div>
+                            <div class="col-6">
+                                {% if settings.inventory_notifications %}
+                                    <span class="badge bg-success text-white">On</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Off</span>
                                 {% endif %}
                             </div>
                         </div>
@@ -195,17 +215,6 @@
                             </a>
                         </div>
                     {% endif %}
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-6">Sales Notifications:</div>
-                        <div class="col-6">
-                            {% if settings.sales_notifications %}
-                                <span class="badge badge-success">On</span>
-                            {% else %}
-                                <span class="badge badge-warning">Off</span>
-                            {% endif %}
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
