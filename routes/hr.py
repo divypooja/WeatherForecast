@@ -264,7 +264,7 @@ def get_employee_hire_date(employee_id):
         employee = Employee.query.get_or_404(employee_id)
         return jsonify({
             'success': True,
-            'hire_date': employee.hire_date.strftime('%Y-%m-%d') if employee.hire_date else None,
+            'hire_date': employee.joining_date.strftime('%Y-%m-%d') if employee.joining_date else None,
             'name': employee.name
         })
     except Exception as e:
