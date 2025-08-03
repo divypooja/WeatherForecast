@@ -12,44 +12,8 @@ quality_bp = Blueprint('quality', __name__)
 @quality_bp.route('/dashboard')
 @login_required
 def dashboard():
-    """Quality control dashboard with statistics and recent activity"""
-    # Quality statistics
-    stats = {
-        'total_issues': QualityIssue.query.count(),
-        'open_issues': QualityIssue.query.filter_by(status='open').count(),
-        'critical_issues': QualityIssue.query.filter_by(severity='critical').count(),
-        'resolved_this_month': QualityIssue.query.filter(
-            QualityIssue.resolved_date >= datetime.now().replace(day=1)
-        ).count()
-    }
-    
-    # Recent quality issues
-    recent_issues = QualityIssue.query.order_by(desc(QualityIssue.created_at)).limit(10).all()
-    
-    # Critical and high priority issues
-    critical_issues = QualityIssue.query.filter(
-        QualityIssue.severity.in_(['critical', 'high']),
-        QualityIssue.status.in_(['open', 'investigating'])
-    ).all()
-    
-    # Quality metrics by item
-    quality_by_item = db.session.query(
-        Item.name,
-        func.count(QualityIssue.id).label('issue_count'),
-        func.sum(QualityIssue.quantity_affected).label('total_affected'),
-        func.sum(QualityIssue.cost_impact).label('total_cost')
-    ).join(QualityIssue).group_by(Item.id).order_by(desc('issue_count')).limit(5).all()
-    
-    # Recent quality control logs
-    recent_inspections = QualityControlLog.query.order_by(desc(QualityControlLog.inspection_date)).limit(5).all()
-    
-    return render_template('quality/dashboard.html',
-                         stats=stats,
-                         recent_issues=recent_issues,
-                         critical_issues=critical_issues,
-                         quality_by_item=quality_by_item,
-                         recent_inspections=recent_inspections,
-                         title='Quality Control Dashboard')
+    """Redirect to batch tracking quality control dashboard"""
+    return redirect(url_for('batch_tracking.quality_dashboard'))
 
 @quality_bp.route('/issues')
 @login_required
