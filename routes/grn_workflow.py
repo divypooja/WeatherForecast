@@ -140,10 +140,7 @@ def list_invoices():
         page = request.args.get('page', 1, type=int)
         status_filter = request.args.get('status', 'all')
         
-        # For now, return empty pagination object
-        from flask_sqlalchemy import Pagination
-        
-        # Create empty pagination object
+        # Create simple pagination-like object
         invoices = type('MockPagination', (), {
             'items': [],
             'total': 0,
