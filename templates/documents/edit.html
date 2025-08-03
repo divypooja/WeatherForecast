@@ -10,16 +10,16 @@
             <p class="text-muted">Update document information for "{{ document.original_filename }}"</p>
         </div>
         <div class="col-auto">
-            {% if document.transaction_type == 'purchase_order' %}
-                <a href="{{ url_for('purchase.po_detail', id=document.transaction_id) }}" class="btn btn-secondary">
+            {% if document.reference_type == 'purchase_order' %}
+                <a href="{{ url_for('purchase.po_detail', id=document.reference_id) }}" class="btn btn-secondary">
                     <i class="fas fa-arrow-left"></i> Back to Purchase Order
                 </a>
-            {% elif document.transaction_type == 'sales_order' %}
-                <a href="{{ url_for('sales.so_detail', id=document.transaction_id) }}" class="btn btn-secondary">
+            {% elif document.reference_type == 'sales_order' %}
+                <a href="{{ url_for('sales.so_detail', id=document.reference_id) }}" class="btn btn-secondary">
                     <i class="fas fa-arrow-left"></i> Back to Sales Order
                 </a>
-            {% elif document.transaction_type == 'job_work' %}
-                <a href="{{ url_for('jobwork.job_detail', id=document.transaction_id) }}" class="btn btn-secondary">
+            {% elif document.reference_type == 'job_work' %}
+                <a href="{{ url_for('jobwork.job_detail', id=document.reference_id) }}" class="btn btn-secondary">
                     <i class="fas fa-arrow-left"></i> Back to Job Work
                 </a>
             {% endif %}
@@ -61,8 +61,8 @@
                         </div>
 
                         <div class="d-flex justify-content-between">
-                            {% if document.transaction_type == 'purchase_order' %}
-                                <a href="{{ url_for('purchase.po_detail', id=document.transaction_id) }}" class="btn btn-secondary">
+                            {% if document.reference_type == 'purchase_order' %}
+                                <a href="{{ url_for('purchase.po_detail', id=document.reference_id) }}" class="btn btn-secondary">
                                     <i class="fas fa-times"></i> Cancel
                                 </a>
                             {% elif document.transaction_type == 'sales_order' %}
