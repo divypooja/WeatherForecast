@@ -319,10 +319,14 @@ def add_salary():
                 form.pay_period_end.data = end_date
                 form.daily_rate.data = daily_rate_float
                 form.overtime_rate.data = 150.0
-                form.expected_working_days.data = attendance_data['expected_working_days']
-                form.actual_days_worked.data = attendance_data['actual_days_worked']
-                form.basic_amount.data = attendance_data['basic_amount']
-                form.overtime_hours.data = attendance_data['overtime_hours']
+                form.expected_working_days.data = int(attendance_data['expected_working_days'])
+                form.actual_days_worked.data = int(attendance_data['actual_days_worked'])
+                form.basic_amount.data = float(attendance_data['basic_amount'])
+                form.overtime_hours.data = float(attendance_data['overtime_hours'])
+                
+                # Also ensure payment method has a default value
+                if not form.payment_method.data:
+                    form.payment_method.data = 'cash'
                 
                 flash(f'✅ Attendance calculated successfully! {attendance_data["actual_days_worked"]} days worked out of {attendance_data["expected_working_days"]} expected days. Basic Amount: ₹{attendance_data["basic_amount"]:.2f}', 'success')
                 
