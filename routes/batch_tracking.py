@@ -375,8 +375,12 @@ def api_update_batch_quality(batch_id):
         if new_status in status_mapping:
             new_status = status_mapping[new_status]
         
-        if new_status not in ['passed', 'failed', 'pending', 'quarantine']:
-            return jsonify({'success': False, 'error': 'Invalid inspection status'}), 400
+        print(f"Final mapped status: {new_status}")
+        
+        # Ensure we have a valid status
+        if not new_status or new_status not in ['passed', 'failed', 'pending', 'quarantine']:
+            print(f"Invalid status: {new_status}")
+            return jsonify({'success': False, 'error': f'Invalid inspection status: {new_status}. Valid options: passed, failed, pending, quarantine'}), 400
         
         batch.inspection_status = new_status
         
