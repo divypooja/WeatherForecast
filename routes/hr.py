@@ -364,6 +364,11 @@ def approve_salary(id):
     salary.approved_at = datetime.utcnow()
     
     db.session.commit()
+    
+    # Send notification
+    from services.comprehensive_notifications import comprehensive_notification_service
+    comprehensive_notification_service.send_salary_approval_notification(salary)
+    
     flash(f'Salary record {salary.salary_number} approved successfully!', 'success')
     return redirect(url_for('hr.salary_detail', id=id))
 
@@ -386,34 +391,70 @@ def mark_salary_paid(id):
         salary.status = 'paid'
         salary.payment_date = date.today()
         
-        # Create corresponding factory expense record
-        expense = FactoryExpense(
-            expense_number=FactoryExpense.generate_expense_number(),
-            expense_date=date.today(),
-            category='salary',  # Salaries & Benefits category
-            subcategory='Employee Salary',
-            description=f'Salary Payment - {salary.employee.name} ({salary.salary_number}) for period {salary.pay_period_start.strftime("%b %d")} - {salary.pay_period_end.strftime("%b %d, %Y")}',
-            amount=float(salary.net_amount),
-            tax_amount=0.0,
-            total_amount=float(salary.net_amount),
+        # Create comprehensive accounting entries using AccountingAutomation
+        from services.accounting_automation import AccountingAutomation
+        
+        voucher = AccountingAutomation.create_salary_payment_voucher(
+            salary_record=salary,
             payment_method=salary.payment_method,
-            paid_by=f'Admin - {current_user.username}',
-            vendor_name=salary.employee.name,
-            vendor_contact=salary.employee.mobile_number or 'N/A',
-            invoice_number=salary.salary_number,
-            invoice_date=salary.pay_period_start,
-            status='paid',  # Mark as paid immediately
-            requested_by_id=current_user.id,
-            approved_by_id=current_user.id,
-            approval_date=datetime.utcnow(),
             payment_date=date.today(),
-            notes=f'Auto-created from Salary Record: {salary.salary_number}\nBasic: ₹{salary.basic_amount}\nOvertime: ₹{salary.overtime_amount}\nBonus: ₹{salary.bonus_amount}\nDeductions: ₹{salary.deduction_amount}\nAdvance Deduction: ₹{salary.advance_deduction}\nNet Amount: ₹{salary.net_amount}'
+            created_by=current_user.id
         )
         
-        db.session.add(expense)
-        db.session.commit()
-        
-        flash(f'Salary {salary.salary_number} marked as paid and expense record {expense.expense_number} created!', 'success')
+        if voucher:
+            # Create corresponding factory expense record for tracking
+            expense = FactoryExpense(
+                expense_number=FactoryExpense.generate_expense_number(),
+                expense_date=date.today(),
+                category='salary',  # Salaries & Benefits category
+                subcategory='Employee Salary',
+                description=f'Salary Payment - {salary.employee.name} ({salary.salary_number}) for period {salary.pay_period_start.strftime("%b %d")} - {salary.pay_period_end.strftime("%b %d, %Y")}',
+                amount=float(salary.net_amount),
+                tax_amount=0.0,
+                total_amount=float(salary.net_amount),
+                payment_method=salary.payment_method,
+                paid_by=f'Admin - {current_user.username}',
+                vendor_name=salary.employee.name,
+                vendor_contact=salary.employee.mobile_number or 'N/A',
+                invoice_number=salary.salary_number,
+                invoice_date=salary.pay_period_start,
+                status='paid',  # Mark as paid immediately
+                requested_by_id=current_user.id,
+                approved_by_id=current_user.id,
+                approval_date=datetime.utcnow(),
+                payment_date=date.today(),
+                voucher_id=voucher.id,  # Link to accounting voucher
+                notes=f'Auto-created from Salary Record: {salary.salary_number}\nAccounting Voucher: {voucher.voucher_number}\nBasic: ₹{salary.basic_amount}\nOvertime: ₹{salary.overtime_amount}\nBonus: ₹{salary.bonus_amount}\nDeductions: ₹{salary.deduction_amount}\nAdvance Deduction: ₹{salary.advance_deduction}\nNet Amount: ₹{salary.net_amount}'
+            )
+            
+            db.session.add(expense)
+            db.session.commit()
+            
+            # Send notification
+            from services.comprehensive_notifications import comprehensive_notification_service
+            comprehensive_notification_service.send_salary_payment_notification(salary)
+            
+            flash(f'Salary {salary.salary_number} marked as paid! Accounting voucher {voucher.voucher_number} and expense record {expense.expense_number} created!', 'success')
+        else:
+            # Fallback: Create expense record without accounting integration
+            expense = FactoryExpense(
+                expense_number=FactoryExpense.generate_expense_number(),
+                expense_date=date.today(),
+                category='salary',
+                subcategory='Employee Salary',
+                description=f'Salary Payment - {salary.employee.name} ({salary.salary_number})',
+                amount=float(salary.net_amount),
+                tax_amount=0.0,
+                total_amount=float(salary.net_amount),
+                payment_method=salary.payment_method,
+                status='paid',
+                requested_by_id=current_user.id,
+                notes=f'Manual expense record - Accounting integration failed'
+            )
+            db.session.add(expense)
+            db.session.commit()
+            
+            flash(f'Salary {salary.salary_number} marked as paid! Note: Manual accounting entry may be required.', 'warning')
         return redirect(url_for('hr.salary_detail', id=id))
         
     except Exception as e:
@@ -518,6 +559,11 @@ def approve_advance(id):
     advance.approved_at = datetime.utcnow()
     
     db.session.commit()
+    
+    # Send notification
+    from services.comprehensive_notifications import comprehensive_notification_service
+    comprehensive_notification_service.send_advance_approval_notification(advance)
+    
     flash(f'Advance {advance.advance_number} approved successfully!', 'success')
     return redirect(url_for('hr.advance_detail', id=id))
 
@@ -539,34 +585,70 @@ def mark_advance_paid(id):
         # Update advance status
         advance.status = 'active'  # Active means money has been paid out
         
-        # Create corresponding factory expense record
-        expense = FactoryExpense(
-            expense_number=FactoryExpense.generate_expense_number(),
-            expense_date=date.today(),
-            category='salary',  # Salaries & Benefits category
-            subcategory='Employee Advance',
-            description=f'Employee Advance Payment - {advance.employee.name} ({advance.advance_number}): {advance.reason}',
-            amount=float(advance.amount),
-            tax_amount=0.0,
-            total_amount=float(advance.amount),
+        # Create comprehensive accounting entries using AccountingAutomation
+        from services.accounting_automation import AccountingAutomation
+        
+        voucher = AccountingAutomation.create_employee_advance_voucher(
+            advance_record=advance,
             payment_method=advance.payment_method,
-            paid_by=f'Admin - {current_user.username}',
-            vendor_name=advance.employee.name,
-            vendor_contact=advance.employee.mobile_number or 'N/A',
-            invoice_number=advance.advance_number,
-            invoice_date=advance.advance_date,
-            status='paid',  # Mark as paid immediately
-            requested_by_id=current_user.id,
-            approved_by_id=current_user.id,
-            approval_date=datetime.utcnow(),
             payment_date=date.today(),
-            notes=f'Auto-created from Employee Advance: {advance.advance_number}\nReason: {advance.reason}\nRepayment Period: {advance.repayment_months} months'
+            created_by=current_user.id
         )
         
-        db.session.add(expense)
-        db.session.commit()
-        
-        flash(f'Advance {advance.advance_number} marked as paid and expense record {expense.expense_number} created!', 'success')
+        if voucher:
+            # Create corresponding factory expense record for tracking
+            expense = FactoryExpense(
+                expense_number=FactoryExpense.generate_expense_number(),
+                expense_date=date.today(),
+                category='salary',  # Salaries & Benefits category
+                subcategory='Employee Advance',
+                description=f'Employee Advance Payment - {advance.employee.name} ({advance.advance_number}): {advance.reason}',
+                amount=float(advance.amount),
+                tax_amount=0.0,
+                total_amount=float(advance.amount),
+                payment_method=advance.payment_method,
+                paid_by=f'Admin - {current_user.username}',
+                vendor_name=advance.employee.name,
+                vendor_contact=advance.employee.mobile_number or 'N/A',
+                invoice_number=advance.advance_number,
+                invoice_date=advance.advance_date,
+                status='paid',  # Mark as paid immediately
+                requested_by_id=current_user.id,
+                approved_by_id=current_user.id,
+                approval_date=datetime.utcnow(),
+                payment_date=date.today(),
+                voucher_id=voucher.id,  # Link to accounting voucher
+                notes=f'Auto-created from Employee Advance: {advance.advance_number}\nAccounting Voucher: {voucher.voucher_number}\nReason: {advance.reason}\nRepayment Period: {advance.repayment_months} months'
+            )
+            
+            db.session.add(expense)
+            db.session.commit()
+            
+            # Send notification
+            from services.comprehensive_notifications import comprehensive_notification_service
+            comprehensive_notification_service.send_advance_payment_notification(advance)
+            
+            flash(f'Advance {advance.advance_number} marked as paid! Accounting voucher {voucher.voucher_number} and expense record {expense.expense_number} created!', 'success')
+        else:
+            # Fallback: Create expense record without accounting integration
+            expense = FactoryExpense(
+                expense_number=FactoryExpense.generate_expense_number(),
+                expense_date=date.today(),
+                category='salary',
+                subcategory='Employee Advance',
+                description=f'Employee Advance Payment - {advance.employee.name} ({advance.advance_number})',
+                amount=float(advance.amount),
+                tax_amount=0.0,
+                total_amount=float(advance.amount),
+                payment_method=advance.payment_method,
+                status='paid',
+                requested_by_id=current_user.id,
+                notes=f'Manual expense record - Accounting integration failed'
+            )
+            db.session.add(expense)
+            db.session.commit()
+            
+            flash(f'Advance {advance.advance_number} marked as paid! Note: Manual accounting entry may be required.', 'warning')
         return redirect(url_for('hr.advance_detail', id=id))
         
     except Exception as e:

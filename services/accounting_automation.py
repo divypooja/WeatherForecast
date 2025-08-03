@@ -542,67 +542,342 @@ class AccountingAutomation:
             return False
     
     @staticmethod
-    def create_salary_voucher(salary_record):
-        """Create journal entries for salary payments"""
+    def create_salary_payment_voucher(salary_record, payment_method='cash', payment_date=None, created_by=1):
+        """Create comprehensive journal entries for salary payments with proper chart of accounts"""
         try:
             # Get payment voucher type
             voucher_type = VoucherType.query.filter_by(code='PAY').first()
             if not voucher_type:
-                return False
+                # Create payment voucher type if not exists
+                voucher_type = VoucherType(
+                    code='PAY',
+                    name='Payment Voucher',
+                    description='Payment vouchers for expenses and salaries'
+                )
+                db.session.add(voucher_type)
+                db.session.flush()
             
             # Create voucher
             voucher = Voucher(
                 voucher_number=Voucher.generate_voucher_number('SAL'),
                 voucher_type_id=voucher_type.id,
-                transaction_date=salary_record.payment_date or date.today(),
+                transaction_date=payment_date or date.today(),
                 reference_number=salary_record.salary_number,
-                narration=f"Salary payment to {salary_record.employee.name}",
-                total_amount=salary_record.net_salary,
-                created_by=1  # System user
+                narration=f"Salary payment to {salary_record.employee.name} for {salary_record.pay_period_start.strftime('%b %Y')}",
+                total_amount=salary_record.net_amount,
+                created_by=created_by
             )
             
             db.session.add(voucher)
             db.session.flush()
             
-            # Get accounts
-            wages_account = Account.query.filter_by(code='WAGES').first()
-            cash_account = Account.query.filter_by(is_cash_account=True).first()
+            # Get or create accounts
+            wages_account = Account.query.filter_by(code='5001').first()  # Salaries & Wages
+            if not wages_account:
+                expense_group = AccountGroup.query.filter_by(name='Direct Expenses').first()
+                if not expense_group:
+                    expense_group = AccountGroup(name='Direct Expenses', group_type='expense')
+                    db.session.add(expense_group)
+                    db.session.flush()
+                
+                wages_account = Account(
+                    code='5001',
+                    name='Salaries & Wages',
+                    account_type='expense',
+                    group_id=expense_group.id,
+                    is_system_account=True
+                )
+                db.session.add(wages_account)
+                db.session.flush()
             
-            if not all([wages_account, cash_account]):
-                return False
+            # Get payment account based on method
+            if payment_method == 'bank_transfer':
+                payment_account = Account.query.filter_by(code='1002').first()  # Bank Account
+                if not payment_account:
+                    bank_group = AccountGroup.query.filter_by(name='Bank Accounts').first()
+                    if not bank_group:
+                        bank_group = AccountGroup(name='Bank Accounts', group_type='asset')
+                        db.session.add(bank_group)
+                        db.session.flush()
+                    
+                    payment_account = Account(
+                        code='1002',
+                        name='Bank Account - Current',
+                        account_type='asset',
+                        group_id=bank_group.id,
+                        is_bank_account=True
+                    )
+                    db.session.add(payment_account)
+                    db.session.flush()
+            else:
+                payment_account = Account.query.filter_by(code='1001').first()  # Cash Account
+                if not payment_account:
+                    cash_group = AccountGroup.query.filter_by(name='Cash-in-Hand').first()
+                    if not cash_group:
+                        cash_group = AccountGroup(name='Cash-in-Hand', group_type='asset')
+                        db.session.add(cash_group)
+                        db.session.flush()
+                    
+                    payment_account = Account(
+                        code='1001',
+                        name='Cash Account',
+                        account_type='asset',
+                        group_id=cash_group.id,
+                        is_cash_account=True
+                    )
+                    db.session.add(payment_account)
+                    db.session.flush()
             
-            # Debit wages account
-            wages_entry = JournalEntry(
+            # Create journal entries for different salary components
+            total_amount = 0
+            
+            # Basic salary entry
+            if salary_record.basic_amount and salary_record.basic_amount > 0:
+                basic_entry = JournalEntry(
+                    voucher_id=voucher.id,
+                    account_id=wages_account.id,
+                    entry_type='debit',
+                    amount=salary_record.basic_amount,
+                    narration=f"Basic salary - {salary_record.employee.name}",
+                    transaction_date=voucher.transaction_date,
+                    reference_type='salary_record',
+                    reference_id=salary_record.id
+                )
+                db.session.add(basic_entry)
+                total_amount += salary_record.basic_amount
+            
+            # Overtime entry
+            if salary_record.overtime_amount and salary_record.overtime_amount > 0:
+                overtime_entry = JournalEntry(
+                    voucher_id=voucher.id,
+                    account_id=wages_account.id,
+                    entry_type='debit',
+                    amount=salary_record.overtime_amount,
+                    narration=f"Overtime pay - {salary_record.employee.name} ({salary_record.overtime_hours} hrs)",
+                    transaction_date=voucher.transaction_date,
+                    reference_type='salary_record',
+                    reference_id=salary_record.id
+                )
+                db.session.add(overtime_entry)
+                total_amount += salary_record.overtime_amount
+            
+            # Bonus entry
+            if salary_record.bonus_amount and salary_record.bonus_amount > 0:
+                bonus_entry = JournalEntry(
+                    voucher_id=voucher.id,
+                    account_id=wages_account.id,
+                    entry_type='debit',
+                    amount=salary_record.bonus_amount,
+                    narration=f"Bonus payment - {salary_record.employee.name}",
+                    transaction_date=voucher.transaction_date,
+                    reference_type='salary_record',
+                    reference_id=salary_record.id
+                )
+                db.session.add(bonus_entry)
+                total_amount += salary_record.bonus_amount
+            
+            # Credit payment account for net amount
+            payment_entry = JournalEntry(
                 voucher_id=voucher.id,
-                account_id=wages_account.id,
-                entry_type='debit',
-                amount=salary_record.net_salary,
-                narration=f"Salary to {salary_record.employee.name} for {salary_record.pay_period_start} to {salary_record.pay_period_end}",
-                transaction_date=voucher.transaction_date,
-                reference_type='salary_record',
-                reference_id=salary_record.id
-            )
-            db.session.add(wages_entry)
-            
-            # Credit cash account
-            cash_entry = JournalEntry(
-                voucher_id=voucher.id,
-                account_id=cash_account.id,
+                account_id=payment_account.id,
                 entry_type='credit',
-                amount=salary_record.net_salary,
-                narration=f"Salary payment to {salary_record.employee.name}",
+                amount=salary_record.net_amount,
+                narration=f"Salary payment to {salary_record.employee.name} via {payment_method.replace('_', ' ').title()}",
                 transaction_date=voucher.transaction_date,
                 reference_type='salary_record',
                 reference_id=salary_record.id
             )
-            db.session.add(cash_entry)
+            db.session.add(payment_entry)
+            
+            # Handle deductions if any
+            if salary_record.deduction_amount and salary_record.deduction_amount > 0:
+                # Create deduction account if needed
+                deduction_account = Account.query.filter_by(code='2005').first()
+                if not deduction_account:
+                    liability_group = AccountGroup.query.filter_by(name='Current Liabilities').first()
+                    if not liability_group:
+                        liability_group = AccountGroup(name='Current Liabilities', group_type='liability')
+                        db.session.add(liability_group)
+                        db.session.flush()
+                    
+                    deduction_account = Account(
+                        code='2005',
+                        name='Employee Deductions Payable',
+                        account_type='liability',
+                        group_id=liability_group.id
+                    )
+                    db.session.add(deduction_account)
+                    db.session.flush()
+                
+                deduction_entry = JournalEntry(
+                    voucher_id=voucher.id,
+                    account_id=deduction_account.id,
+                    entry_type='credit',
+                    amount=salary_record.deduction_amount,
+                    narration=f"Salary deductions - {salary_record.employee.name}",
+                    transaction_date=voucher.transaction_date,
+                    reference_type='salary_record',
+                    reference_id=salary_record.id
+                )
+                db.session.add(deduction_entry)
+            
+            # Handle advance deductions
+            if salary_record.advance_deduction and salary_record.advance_deduction > 0:
+                advance_account = Account.query.filter_by(code='1003').first()  # Employee Advances
+                if not advance_account:
+                    asset_group = AccountGroup.query.filter_by(name='Current Assets').first()
+                    if not asset_group:
+                        asset_group = AccountGroup(name='Current Assets', group_type='asset')
+                        db.session.add(asset_group)
+                        db.session.flush()
+                    
+                    advance_account = Account(
+                        code='1003',
+                        name='Employee Advances',
+                        account_type='asset',
+                        group_id=asset_group.id
+                    )
+                    db.session.add(advance_account)
+                    db.session.flush()
+                
+                advance_recovery_entry = JournalEntry(
+                    voucher_id=voucher.id,
+                    account_id=advance_account.id,
+                    entry_type='credit',
+                    amount=salary_record.advance_deduction,
+                    narration=f"Advance recovery from salary - {salary_record.employee.name}",
+                    transaction_date=voucher.transaction_date,
+                    reference_type='salary_record',
+                    reference_id=salary_record.id
+                )
+                db.session.add(advance_recovery_entry)
             
             db.session.commit()
             return voucher
             
         except Exception as e:
             db.session.rollback()
-            print(f"Error creating salary voucher: {str(e)}")
+            print(f"Error creating salary payment voucher: {str(e)}")
+            return False
+    
+    @staticmethod
+    def create_employee_advance_voucher(advance_record, payment_method='cash', payment_date=None, created_by=1):
+        """Create journal entries for employee advance payments"""
+        try:
+            # Get payment voucher type
+            voucher_type = VoucherType.query.filter_by(code='PAY').first()
+            if not voucher_type:
+                voucher_type = VoucherType(
+                    code='PAY',
+                    name='Payment Voucher',
+                    description='Payment vouchers for expenses and advances'
+                )
+                db.session.add(voucher_type)
+                db.session.flush()
+            
+            # Create voucher
+            voucher = Voucher(
+                voucher_number=Voucher.generate_voucher_number('ADV'),
+                voucher_type_id=voucher_type.id,
+                transaction_date=payment_date or date.today(),
+                reference_number=advance_record.advance_number,
+                narration=f"Employee advance to {advance_record.employee.name} - {advance_record.reason}",
+                total_amount=advance_record.amount,
+                created_by=created_by
+            )
+            
+            db.session.add(voucher)
+            db.session.flush()
+            
+            # Get or create employee advances account
+            advance_account = Account.query.filter_by(code='1003').first()
+            if not advance_account:
+                asset_group = AccountGroup.query.filter_by(name='Current Assets').first()
+                if not asset_group:
+                    asset_group = AccountGroup(name='Current Assets', group_type='asset')
+                    db.session.add(asset_group)
+                    db.session.flush()
+                
+                advance_account = Account(
+                    code='1003',
+                    name='Employee Advances',
+                    account_type='asset',
+                    group_id=asset_group.id,
+                    is_system_account=True
+                )
+                db.session.add(advance_account)
+                db.session.flush()
+            
+            # Get payment account
+            if payment_method == 'bank_transfer':
+                payment_account = Account.query.filter_by(code='1002').first()
+                if not payment_account:
+                    bank_group = AccountGroup.query.filter_by(name='Bank Accounts').first()
+                    if not bank_group:
+                        bank_group = AccountGroup(name='Bank Accounts', group_type='asset')
+                        db.session.add(bank_group)
+                        db.session.flush()
+                    
+                    payment_account = Account(
+                        code='1002',
+                        name='Bank Account - Current',
+                        account_type='asset',
+                        group_id=bank_group.id,
+                        is_bank_account=True
+                    )
+                    db.session.add(payment_account)
+                    db.session.flush()
+            else:
+                payment_account = Account.query.filter_by(code='1001').first()
+                if not payment_account:
+                    cash_group = AccountGroup.query.filter_by(name='Cash-in-Hand').first()
+                    if not cash_group:
+                        cash_group = AccountGroup(name='Cash-in-Hand', group_type='asset')
+                        db.session.add(cash_group)
+                        db.session.flush()
+                    
+                    payment_account = Account(
+                        code='1001',
+                        name='Cash Account',
+                        account_type='asset',
+                        group_id=cash_group.id,
+                        is_cash_account=True
+                    )
+                    db.session.add(payment_account)
+                    db.session.flush()
+            
+            # Debit employee advances account
+            advance_entry = JournalEntry(
+                voucher_id=voucher.id,
+                account_id=advance_account.id,
+                entry_type='debit',
+                amount=advance_record.amount,
+                narration=f"Advance given to {advance_record.employee.name} - {advance_record.reason}",
+                transaction_date=voucher.transaction_date,
+                reference_type='employee_advance',
+                reference_id=advance_record.id
+            )
+            db.session.add(advance_entry)
+            
+            # Credit payment account
+            payment_entry = JournalEntry(
+                voucher_id=voucher.id,
+                account_id=payment_account.id,
+                entry_type='credit',
+                amount=advance_record.amount,
+                narration=f"Advance payment to {advance_record.employee.name} via {payment_method.replace('_', ' ').title()}",
+                transaction_date=voucher.transaction_date,
+                reference_type='employee_advance',
+                reference_id=advance_record.id
+            )
+            db.session.add(payment_entry)
+            
+            db.session.commit()
+            return voucher
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error creating employee advance voucher: {str(e)}")
             return False
     
     @staticmethod

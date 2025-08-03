@@ -505,6 +505,221 @@ class ComprehensiveNotificationService:
             return False
     
     # ===================
+    # HR/PAYROLL NOTIFICATIONS
+    # ===================
+    
+    def send_salary_payment_notification(self, salary_record):
+        """Send notification when salary is paid"""
+        try:
+            # Send to HR team and the employee
+            hr_recipients = self._get_recipients(['accounts_events'])  # HR/Accounts team
+            
+            subject = f"Salary Paid: {salary_record.employee.name} - {salary_record.salary_number}"
+            
+            template_vars = {
+                'employee_name': salary_record.employee.name,
+                'salary_number': salary_record.salary_number,
+                'pay_period': f"{salary_record.pay_period_start.strftime('%b %d')} - {salary_record.pay_period_end.strftime('%b %d, %Y')}",
+                'net_amount': salary_record.net_amount,
+                'basic_amount': salary_record.basic_amount,
+                'overtime_amount': salary_record.overtime_amount,
+                'bonus_amount': salary_record.bonus_amount,
+                'deduction_amount': salary_record.deduction_amount,
+                'advance_deduction': salary_record.advance_deduction,
+                'payment_method': salary_record.payment_method.replace('_', ' ').title(),
+                'payment_date': salary_record.payment_date.strftime('%Y-%m-%d') if salary_record.payment_date else 'Today'
+            }
+            
+            # HR team notification
+            hr_message = f"""
+**Salary Payment Processed**
+
+Employee: {template_vars['employee_name']}
+Salary Number: {template_vars['salary_number']}
+Pay Period: {template_vars['pay_period']}
+
+**Amount Breakdown:**
+• Basic Salary: ₹{template_vars['basic_amount']}
+• Overtime Pay: ₹{template_vars['overtime_amount']}
+• Bonus: ₹{template_vars['bonus_amount']}
+• Gross Amount: ₹{template_vars['basic_amount'] + template_vars['overtime_amount'] + template_vars['bonus_amount']}
+
+**Deductions:**
+• Other Deductions: ₹{template_vars['deduction_amount']}
+• Advance Recovery: ₹{template_vars['advance_deduction']}
+
+**Net Amount Paid: ₹{template_vars['net_amount']}**
+Payment Method: {template_vars['payment_method']}
+Payment Date: {template_vars['payment_date']}
+
+Accounting entries have been automatically created.
+            """
+            
+            self._send_to_recipients(hr_recipients, subject, hr_message.strip(), 'hr', 
+                                   event_type='salary_paid', event_id=salary_record.id)
+            
+            # Employee notification (if email available)
+            if salary_record.employee.email:
+                employee_message = f"""
+Dear {template_vars['employee_name']},
+
+Your salary for the period {template_vars['pay_period']} has been processed.
+
+**Salary Details:**
+• Salary Number: {template_vars['salary_number']}
+• Net Amount: ₹{template_vars['net_amount']}
+• Payment Method: {template_vars['payment_method']}
+• Payment Date: {template_vars['payment_date']}
+
+For detailed breakdown, please contact HR department.
+
+Best regards,
+HR Department
+                """
+                
+                from services.notification_helpers import send_email_notification
+                send_email_notification(
+                    salary_record.employee.email,
+                    f"Salary Processed - {template_vars['salary_number']}",
+                    employee_message.strip()
+                )
+            
+        except Exception as e:
+            print(f"Error sending salary payment notification: {str(e)}")
+    
+    def send_advance_payment_notification(self, advance_record):
+        """Send notification when employee advance is paid"""
+        try:
+            recipients = self._get_recipients(['accounts_events'])  # HR/Accounts team
+            if not recipients:
+                return
+            
+            subject = f"Employee Advance Paid: {advance_record.employee.name} - {advance_record.advance_number}"
+            
+            template_vars = {
+                'employee_name': advance_record.employee.name,
+                'advance_number': advance_record.advance_number,
+                'amount': advance_record.amount,
+                'reason': advance_record.reason,
+                'advance_date': advance_record.advance_date.strftime('%Y-%m-%d'),
+                'repayment_months': advance_record.repayment_months,
+                'monthly_deduction': round(advance_record.amount / advance_record.repayment_months, 2),
+                'payment_method': advance_record.payment_method.replace('_', ' ').title()
+            }
+            
+            message = f"""
+**Employee Advance Payment Processed**
+
+Employee: {template_vars['employee_name']}
+Advance Number: {template_vars['advance_number']}
+Amount: ₹{template_vars['amount']}
+Reason: {template_vars['reason']}
+
+**Repayment Details:**
+• Repayment Period: {template_vars['repayment_months']} months
+• Monthly Deduction: ₹{template_vars['monthly_deduction']}
+• Payment Method: {template_vars['payment_method']}
+
+Advance Date: {template_vars['advance_date']}
+
+Accounting entries have been automatically created. The advance amount will be recovered from future salary payments.
+            """
+            
+            self._send_to_recipients(recipients, subject, message.strip(), 'hr', 
+                                   event_type='advance_paid', event_id=advance_record.id)
+            
+            # Employee notification (if email available)
+            if advance_record.employee.email:
+                employee_message = f"""
+Dear {template_vars['employee_name']},
+
+Your advance request has been approved and processed.
+
+**Advance Details:**
+• Advance Number: {template_vars['advance_number']}
+• Amount: ₹{template_vars['amount']}
+• Reason: {template_vars['reason']}
+• Repayment Period: {template_vars['repayment_months']} months
+• Monthly Deduction: ₹{template_vars['monthly_deduction']}
+
+The advance amount will be deducted from your salary over the next {template_vars['repayment_months']} months.
+
+Best regards,
+HR Department
+                """
+                
+                from services.notification_helpers import send_email_notification
+                send_email_notification(
+                    advance_record.employee.email,
+                    f"Advance Approved - {template_vars['advance_number']}",
+                    employee_message.strip()
+                )
+            
+        except Exception as e:
+            print(f"Error sending advance payment notification: {str(e)}")
+    
+    def send_salary_approval_notification(self, salary_record):
+        """Send notification when salary is approved for payment"""
+        try:
+            recipients = self._get_recipients(['accounts_events'])
+            if not recipients:
+                return
+            
+            subject = f"Salary Approved for Payment: {salary_record.employee.name} - {salary_record.salary_number}"
+            
+            message = f"""
+**Salary Record Approved**
+
+Employee: {salary_record.employee.name}
+Salary Number: {salary_record.salary_number}
+Pay Period: {salary_record.pay_period_start.strftime('%b %d')} - {salary_record.pay_period_end.strftime('%b %d, %Y')}
+Net Amount: ₹{salary_record.net_amount}
+
+Status: Ready for payment processing
+Approved by: {salary_record.approver.username if salary_record.approver else 'System'}
+Approved at: {salary_record.approved_at.strftime('%Y-%m-%d %H:%M') if salary_record.approved_at else 'N/A'}
+
+Please proceed with payment when ready.
+            """
+            
+            self._send_to_recipients(recipients, subject, message.strip(), 'hr', 
+                                   event_type='salary_approved', event_id=salary_record.id)
+            
+        except Exception as e:
+            print(f"Error sending salary approval notification: {str(e)}")
+    
+    def send_advance_approval_notification(self, advance_record):
+        """Send notification when employee advance is approved"""
+        try:
+            recipients = self._get_recipients(['accounts_events'])
+            if not recipients:
+                return
+            
+            subject = f"Employee Advance Approved: {advance_record.employee.name} - {advance_record.advance_number}"
+            
+            message = f"""
+**Employee Advance Approved**
+
+Employee: {advance_record.employee.name}
+Advance Number: {advance_record.advance_number}
+Amount: ₹{advance_record.amount}
+Reason: {advance_record.reason}
+Repayment Period: {advance_record.repayment_months} months
+
+Status: Ready for payment processing
+Approved by: {advance_record.approver.username if advance_record.approver else 'System'}
+Approved at: {advance_record.approved_at.strftime('%Y-%m-%d %H:%M') if advance_record.approved_at else 'N/A'}
+
+Please proceed with payment when ready.
+            """
+            
+            self._send_to_recipients(recipients, subject, message.strip(), 'hr', 
+                                   event_type='advance_approved', event_id=advance_record.id)
+            
+        except Exception as e:
+            print(f"Error sending advance approval notification: {str(e)}")
+    
+    # ===================
     # HELPER METHODS
     # ===================
     
