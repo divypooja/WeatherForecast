@@ -127,9 +127,9 @@ def thank_you(form_type, entity_id):
         entity = FactoryExpense.query.get_or_404(entity_id)
         entity_number = entity.expense_number
         form_type_display = 'Factory Expense'
-        if entity.vendor:
-            entity_email = entity.vendor.email
-            entity_phone = entity.vendor.phone
+        # Factory expenses may have vendor contact info in vendor_contact field
+        entity_email = None
+        entity_phone = getattr(entity, 'vendor_contact', None)
         entity_details = f"""
         <div class="row">
             <div class="col-md-6">
