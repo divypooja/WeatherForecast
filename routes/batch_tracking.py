@@ -346,8 +346,14 @@ def api_update_batch_quality(batch_id):
     try:
         print(f"API called for batch_id: {batch_id}")
         batch = InventoryBatch.query.get_or_404(batch_id)
-        data = request.json
-        print(f"Request data: {data}")
+        
+        # Accept both JSON and FormData
+        if request.is_json:
+            data = request.json
+            print(f"Request JSON data: {data}")
+        else:
+            data = request.form.to_dict()
+            print(f"Request Form data: {data}")
         
         new_status = data.get('inspection_status')
         quality_notes = data.get('quality_notes', '')

@@ -194,16 +194,16 @@
                                                     <i class="fas fa-eye"></i>
                                                 </a>
                                                 {% if batch.inspection_status == 'pending' %}
-                                                <button class="btn btn-outline-success" 
-                                                        onclick="approveDirectly({{ batch.id }})" 
-                                                        title="Approve">
-                                                    <i class="fas fa-check"></i>
-                                                </button>
-                                                <button class="btn btn-outline-danger" 
-                                                        onclick="rejectDirectly({{ batch.id }})" 
-                                                        title="Reject">
-                                                    <i class="fas fa-times"></i>
-                                                </button>
+                                                <form method="POST" action="/batch-tracking/api/batch/{{ batch.id }}/update-quality" style="display: inline;" onsubmit="return handleFormSubmit(event, {{ batch.id }}, 'approved')">
+                                                    <button type="submit" class="btn btn-outline-success" title="Approve">
+                                                        <i class="fas fa-check"></i>
+                                                    </button>
+                                                </form>
+                                                <form method="POST" action="/batch-tracking/api/batch/{{ batch.id }}/update-quality" style="display: inline;" onsubmit="return handleFormSubmit(event, {{ batch.id }}, 'rejected')">
+                                                    <button type="submit" class="btn btn-outline-danger" title="Reject">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </form>
                                                 {% endif %}
                                             </div>
                                         </td>
@@ -232,51 +232,56 @@
     </div>
 </div>
 
-<!-- Simple confirmation alert will be used instead of modal -->
+<!-- Direct action buttons without any modal interference -->
 
 <script>
-function approveDirectly(batchId) {
-    if (confirm('Are you sure you want to approve this batch?')) {
-        updateBatchStatus(batchId, 'approved', 'Batch approved via quality control');
-    }
-}
+// Simple form submission handler - no modals, no complex JavaScript
+console.log('Quality Control Script loaded at:', new Date().toISOString());
 
-function rejectDirectly(batchId) {
-    const reason = prompt('Please provide a reason for rejection (optional):');
-    if (reason !== null) { // User didn't cancel
-        updateBatchStatus(batchId, 'rejected', reason || 'Batch rejected via quality control');
-    }
-}
-
-function updateBatchStatus(batchId, status, notes) {
-    const data = {
-        inspection_status: status,
-        quality_notes: notes
-    };
+function handleFormSubmit(event, batchId, action) {
+    event.preventDefault();
     
-    console.log('Updating batch:', batchId, 'with data:', data);
+    let confirmed = false;
+    let notes = '';
     
-    fetch(`/batch-tracking/api/batch/${batchId}/update-quality`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data),
-        credentials: 'same-origin'
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('Batch status updated successfully!');
-            location.reload();
-        } else {
-            alert('Error updating quality status: ' + (data.error || data.message));
+    if (action === 'approved') {
+        confirmed = confirm('Are you sure you want to approve this batch?');
+        notes = 'Batch approved via quality control';
+    } else if (action === 'rejected') {
+        const reason = prompt('Please provide a reason for rejection (optional):');
+        if (reason !== null) {
+            confirmed = true;
+            notes = reason || 'Batch rejected via quality control';
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error updating quality status. Please try again.');
-    });
+    }
+    
+    if (confirmed) {
+        // Submit via simple form POST
+        const formData = new FormData();
+        formData.append('inspection_status', action);
+        formData.append('quality_notes', notes);
+        
+        fetch(`/batch-tracking/api/batch/${batchId}/update-quality`, {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Batch status updated successfully!');
+                window.location.reload();
+            } else {
+                alert('Error: ' + (data.error || data.message));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating batch status. Please try again.');
+        });
+    }
+    
+    return false;
 }
 </script>
 {% endblock %}
