@@ -30,6 +30,10 @@ dependencies = [
     "opencv-python>=4.12.0.88",
     "python-dateutil>=2.9.0.post0",
     "openai>=1.98.0",
+    "pdf2image>=1.17.0",
+    "numpy>=2.2.6",
+    "spacy>=3.8.7",
+    "scikit-image>=0.25.2",
 ]
 
 [[tool.uv.index]]

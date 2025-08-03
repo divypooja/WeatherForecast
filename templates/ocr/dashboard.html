@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+
+{% block title %}OCR Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-scan text-primary me-2"></i>OCR Dashboard</h2>
+                    <p class="text-muted">Intelligent document processing with open-source OCR</p>
+                </div>
+                <div class="btn-group">
+                    <a href="{{ url_for('ocr.upload_document') }}" class="btn btn-primary">
+                        <i class="fas fa-upload me-2"></i>Upload Document
+                    </a>
+                    <a href="{{ url_for('ocr.history') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-history me-2"></i>View History
+                    </a>
+                    {% if current_user.is_admin %}
+                    <a href="{{ url_for('ocr.settings') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-cog me-2"></i>Settings
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">{{ stats.total_processed }}</h4>
+                                    <p class="card-text">Total Processed</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-file-alt fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">{{ "%.1f"|format(stats.success_rate) }}%</h4>
+                                    <p class="card-text">Success Rate</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-check-circle fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">{{ "%.1f"|format(stats.avg_confidence_score) }}%</h4>
+                                    <p class="card-text">Avg Confidence</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-percentage fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">{{ format_processing_time(stats.avg_processing_time) }}</h4>
+                                    <p class="card-text">Avg Process Time</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-clock fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Module Statistics -->
+            {% if stats.by_module %}
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-chart-bar me-2"></i>Processing by Module
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                {% for module, data in stats.by_module.items() %}
+                                <div class="col-md-3 mb-3">
+                                    <div class="border rounded p-3 text-center">
+                                        <h6 class="text-uppercase">{{ module|title }}</h6>
+                                        <div class="d-flex justify-content-between">
+                                            <small class="text-success">✓ {{ data.successful }}</small>
+                                            <small class="text-danger">✗ {{ data.failed }}</small>
+                                        </div>
+                                        <div class="progress mt-2" style="height: 6px;">
+                                            {% set success_rate = (data.successful / data.total * 100) if data.total > 0 else 0 %}
+                                            <div class="progress-bar bg-success" style="width: {{ success_rate }}%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Quick Upload Section -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-bolt me-2"></i>Quick Upload
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">Upload documents for instant OCR processing</p>
+                            <div class="row">
+                                <div class="col-6 mb-2">
+                                    <a href="{{ url_for('ocr.upload_document', module_type='grn') }}" 
+                                       class="btn btn-outline-primary w-100">
+                                        <i class="fas fa-file-invoice me-2"></i>GRN Document
+                                    </a>
+                                </div>
+                                <div class="col-6 mb-2">
+                                    <a href="{{ url_for('ocr.upload_document', module_type='invoice') }}" 
+                                       class="btn btn-outline-primary w-100">
+                                        <i class="fas fa-receipt me-2"></i>Invoice
+                                    </a>
+                                </div>
+                                <div class="col-6 mb-2">
+                                    <a href="{{ url_for('ocr.upload_document', module_type='po') }}" 
+                                       class="btn btn-outline-primary w-100">
+                                        <i class="fas fa-shopping-cart me-2"></i>Purchase Order
+                                    </a>
+                                </div>
+                                <div class="col-6 mb-2">
+                                    <a href="{{ url_for('ocr.upload_document', module_type='jobwork') }}" 
+                                       class="btn btn-outline-primary w-100">
+                                        <i class="fas fa-tools me-2"></i>Job Work
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-info-circle me-2"></i>System Status
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between">
+                                    <span>OCR Engine:</span>
+                                    <span class="badge bg-success">{{ settings.default_engine|title }}</span>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between">
+                                    <span>Fallback Enabled:</span>
+                                    <span class="badge {{ 'bg-success' if settings.fallback_enabled else 'bg-secondary' }}">
+                                        {{ 'Yes' if settings.fallback_enabled else 'No' }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between">
+                                    <span>Confidence Threshold:</span>
+                                    <span class="badge bg-info">{{ settings.confidence_threshold }}%</span>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between">
+                                    <span>Max File Size:</span>
+                                    <span class="badge bg-warning">{{ settings.max_file_size_mb }}MB</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Results -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clock me-2"></i>Recent OCR Results
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_results %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>File</th>
+                                    <th>Module</th>
+                                    <th>Status</th>
+                                    <th>Confidence</th>
+                                    <th>Processing Time</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for result in recent_results %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-file-{{ result.file_type }} me-2 text-muted"></i>
+                                            <span>{{ result.original_filename[:30] }}{{ '...' if result.original_filename|length > 30 else '' }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ result.module_type|title }}</span>
+                                    </td>
+                                    <td>
+                                        {% if result.status == 'completed' %}
+                                            <span class="badge bg-success">Completed</span>
+                                        {% elif result.status == 'failed' %}
+                                            <span class="badge bg-danger">Failed</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">{{ result.status|title }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if result.confidence_score %}
+                                            <span class="badge {{ confidence_badge_class(result.confidence_score) }}">
+                                                {{ "%.1f"|format(result.confidence_score) }}%
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if result.processing_time %}
+                                            {{ format_processing_time(result.processing_time) }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ result.created_at.strftime('%m/%d %H:%M') }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            {% if result.status == 'completed' %}
+                                                <a href="{{ url_for('ocr.preview_result', ocr_result_id=result.id) }}" 
+                                                   class="btn btn-outline-primary btn-sm" title="Preview">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                            {% endif %}
+                                            {% if result.status == 'failed' %}
+                                                <button class="btn btn-outline-warning btn-sm" 
+                                                        onclick="retryOCR({{ result.id }})" title="Retry">
+                                                    <i class="fas fa-redo"></i>
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No OCR results yet. Upload your first document to get started!</p>
+                        <a href="{{ url_for('ocr.upload_document') }}" class="btn btn-primary">
+                            <i class="fas fa-upload me-2"></i>Upload Document
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function retryOCR(ocrResultId) {
+    if (confirm('Retry OCR processing for this document?')) {
+        fetch(`/ocr/api/retry/${ocrResultId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Retry failed: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Network error occurred');
+        });
+    }
+}
+</script>
+{% endblock %}

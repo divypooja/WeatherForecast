@@ -246,6 +246,12 @@
                     <span class="fw-bold">Notification Center</span>
                     <span class="badge bg-info ms-2">NEW</span>
                 </a>
+                
+                <a class="nav-link {{ 'active' if 'ocr' in request.endpoint }}" href="{{ url_for('ocr.dashboard') }}">
+                    <i class="fas fa-scan text-primary"></i>
+                    <span class="fw-bold">OCR Document Processing</span>
+                    <span class="badge bg-primary ms-2">NEW</span>
+                </a>
                 <a class="nav-link {{ 'active' if 'reports' in request.endpoint }}" href="{{ url_for('reports.dashboard') }}">
                     <i class="fas fa-chart-bar"></i>
                     Reports

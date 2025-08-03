@@ -1,0 +1,460 @@
+{% extends "base.html" %}
+
+{% block title %}OCR Preview - {{ ocr_result.original_filename }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-eye text-primary me-2"></i>OCR Preview</h2>
+                    <p class="text-muted">{{ ocr_result.original_filename }}</p>
+                </div>
+                <div class="btn-group">
+                    <a href="{{ url_for('ocr.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                    {% if ocr_result.status == 'failed' %}
+                    <button class="btn btn-warning" onclick="retryOCR({{ ocr_result.id }})">
+                        <i class="fas fa-redo me-2"></i>Retry OCR
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Processing Status -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-info-circle me-2"></i>Processing Information
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <strong>Status:</strong><br>
+                                    {% if ocr_result.status == 'completed' %}
+                                        <span class="badge bg-success">Completed</span>
+                                    {% elif ocr_result.status == 'failed' %}
+                                        <span class="badge bg-danger">Failed</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">{{ ocr_result.status|title }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-3">
+                                    <strong>Confidence:</strong><br>
+                                    {% if ocr_result.confidence_score %}
+                                        <span class="badge {{ confidence_badge_class(ocr_result.confidence_score) }}">
+                                            {{ "%.1f"|format(ocr_result.confidence_score) }}%
+                                        </span>
+                                        <small class="text-muted d-block">{{ ocr_result.confidence_level|title }}</small>
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-3">
+                                    <strong>Engine Used:</strong><br>
+                                    <span class="badge bg-info">{{ ocr_result.primary_engine|title }}</span>
+                                </div>
+                                <div class="col-md-3">
+                                    <strong>Processing Time:</strong><br>
+                                    {% if ocr_result.processing_time %}
+                                        {{ format_processing_time(ocr_result.processing_time) }}
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% if ocr_result.error_message %}
+                            <div class="alert alert-danger mt-3 mb-0">
+                                <strong>Error:</strong> {{ ocr_result.error_message }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-file me-2"></i>File Information
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Module:</strong> <span class="badge bg-secondary">{{ ocr_result.module_type|title }}</span></p>
+                            <p><strong>File Type:</strong> {{ ocr_result.file_type|upper }}</p>
+                            <p><strong>File Size:</strong> {{ (ocr_result.file_size / 1024 / 1024)|round(2) }} MB</p>
+                            <p><strong>Uploaded:</strong> {{ ocr_result.created_at.strftime('%m/%d/%Y %H:%M') }}</p>
+                            {% if ocr_result.is_user_verified %}
+                            <p><strong>Verified:</strong> <i class="fas fa-check-circle text-success"></i></p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if ocr_result.status == 'completed' %}
+            <!-- Extracted Data -->
+            <div class="row">
+                <!-- Fields and Line Items -->
+                <div class="col-md-8">
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-edit me-2"></i>Extracted Data
+                            </h5>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary" onclick="saveCorrections()">
+                                    <i class="fas fa-save me-1"></i>Save Corrections
+                                </button>
+                                <button class="btn btn-primary" onclick="populateForm()">
+                                    <i class="fas fa-download me-1"></i>Use Data
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <!-- Extracted Fields -->
+                            {% if extracted_fields %}
+                            <h6 class="mb-3">
+                                <i class="fas fa-tags me-2"></i>Document Fields
+                                {% if ocr_result.confidence_score < 70 %}
+                                    <small class="text-warning">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>Low confidence - please verify
+                                    </small>
+                                {% endif %}
+                            </h6>
+                            <div class="row" id="extracted-fields">
+                                {% for field, value in extracted_fields.items() %}
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label text-capitalize">{{ field.replace('_', ' ') }}</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" 
+                                               data-field="{{ field }}" 
+                                               value="{{ value }}"
+                                               onchange="markFieldAsEdited(this)">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-edit text-muted"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+
+                            <!-- Line Items Table -->
+                            {% if line_items %}
+                            <h6 class="mb-3 mt-4">
+                                <i class="fas fa-table me-2"></i>Line Items
+                                <button class="btn btn-outline-success btn-sm ms-2" onclick="addLineItem()">
+                                    <i class="fas fa-plus me-1"></i>Add Row
+                                </button>
+                            </h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm" id="line-items-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Item Name</th>
+                                            <th>Quantity</th>
+                                            <th>Rate</th>
+                                            <th>Amount</th>
+                                            <th width="50">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in line_items %}
+                                        <tr>
+                                            <td>
+                                                <input type="text" class="form-control form-control-sm" 
+                                                       value="{{ item.get('item_name', '') }}"
+                                                       onchange="markRowAsEdited(this)">
+                                            </td>
+                                            <td>
+                                                <input type="number" class="form-control form-control-sm" 
+                                                       value="{{ item.get('quantity', '') }}" step="0.01"
+                                                       onchange="markRowAsEdited(this)">
+                                            </td>
+                                            <td>
+                                                <input type="number" class="form-control form-control-sm" 
+                                                       value="{{ item.get('rate', '') }}" step="0.01"
+                                                       onchange="markRowAsEdited(this)">
+                                            </td>
+                                            <td>
+                                                <input type="number" class="form-control form-control-sm" 
+                                                       value="{{ item.get('amount', '') }}" step="0.01"
+                                                       onchange="markRowAsEdited(this)">
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-outline-danger btn-sm" onclick="removeLineItem(this)">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% endif %}
+
+                            {% if not extracted_fields and not line_items %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-exclamation-triangle fa-2x text-warning mb-3"></i>
+                                <p class="text-muted">No structured data was extracted from this document.</p>
+                                {% if ocr_result.raw_text %}
+                                <p class="small">Raw text was extracted and saved for manual review.</p>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Raw Text and Actions -->
+                <div class="col-md-4">
+                    {% if ocr_result.raw_text %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-align-left me-2"></i>Raw Text
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="bg-light p-3 rounded" style="max-height: 300px; overflow-y: auto;">
+                                <pre class="mb-0 small">{{ ocr_result.raw_text }}</pre>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Form Population Options -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-magic me-2"></i>Form Population
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small">Use extracted data to populate forms in your system.</p>
+                            
+                            {% if ocr_result.module_type == 'grn' %}
+                            <a href="{{ url_for('grn.create_grn') }}" class="btn btn-outline-primary w-100 mb-2"
+                               onclick="return populateGRNForm()">
+                                <i class="fas fa-file-invoice me-2"></i>Create GRN
+                            </a>
+                            {% elif ocr_result.module_type == 'invoice' %}
+                            <a href="{{ url_for('invoice.create_invoice') }}" class="btn btn-outline-primary w-100 mb-2"
+                               onclick="return populateInvoiceForm()">
+                                <i class="fas fa-receipt me-2"></i>Create Invoice
+                            </a>
+                            {% elif ocr_result.module_type == 'po' %}
+                            <a href="{{ url_for('purchase.create_purchase_order') }}" class="btn btn-outline-primary w-100 mb-2"
+                               onclick="return populatePOForm()">
+                                <i class="fas fa-shopping-cart me-2"></i>Create Purchase Order
+                            </a>
+                            {% endif %}
+                            
+                            <button class="btn btn-outline-success w-100" onclick="exportToJSON()">
+                                <i class="fas fa-download me-2"></i>Export as JSON
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+let hasChanges = false;
+
+function markFieldAsEdited(input) {
+    input.classList.add('border-warning');
+    hasChanges = true;
+}
+
+function markRowAsEdited(input) {
+    input.closest('tr').classList.add('table-warning');
+    hasChanges = true;
+}
+
+function addLineItem() {
+    const tbody = document.querySelector('#line-items-table tbody');
+    const newRow = document.createElement('tr');
+    newRow.innerHTML = `
+        <td><input type="text" class="form-control form-control-sm" onchange="markRowAsEdited(this)"></td>
+        <td><input type="number" class="form-control form-control-sm" step="0.01" onchange="markRowAsEdited(this)"></td>
+        <td><input type="number" class="form-control form-control-sm" step="0.01" onchange="markRowAsEdited(this)"></td>
+        <td><input type="number" class="form-control form-control-sm" step="0.01" onchange="markRowAsEdited(this)"></td>
+        <td><button class="btn btn-outline-danger btn-sm" onclick="removeLineItem(this)"><i class="fas fa-trash"></i></button></td>
+    `;
+    tbody.appendChild(newRow);
+    hasChanges = true;
+}
+
+function removeLineItem(button) {
+    if (confirm('Remove this line item?')) {
+        button.closest('tr').remove();
+        hasChanges = true;
+    }
+}
+
+function saveCorrections() {
+    if (!hasChanges) {
+        alert('No changes to save.');
+        return;
+    }
+
+    // Collect field corrections
+    const fieldCorrections = {};
+    document.querySelectorAll('#extracted-fields input').forEach(input => {
+        const field = input.getAttribute('data-field');
+        fieldCorrections[field] = input.value;
+    });
+
+    // Collect line item corrections
+    const lineItemCorrections = [];
+    document.querySelectorAll('#line-items-table tbody tr').forEach(row => {
+        const inputs = row.querySelectorAll('input');
+        if (inputs.length >= 4) {
+            lineItemCorrections.push({
+                item_name: inputs[0].value,
+                quantity: parseFloat(inputs[1].value) || 0,
+                rate: parseFloat(inputs[2].value) || 0,
+                amount: parseFloat(inputs[3].value) || 0
+            });
+        }
+    });
+
+    const corrections = {
+        fields: fieldCorrections,
+        line_items: lineItemCorrections
+    };
+
+    // Send to server
+    fetch('/ocr/api/update_corrections', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('input[name="csrf_token"]')?.value || ''
+        },
+        body: JSON.stringify({
+            ocr_result_id: {{ ocr_result.id }},
+            corrections: corrections
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Corrections saved successfully!');
+            hasChanges = false;
+            // Remove visual indicators
+            document.querySelectorAll('.border-warning').forEach(el => el.classList.remove('border-warning'));
+            document.querySelectorAll('.table-warning').forEach(el => el.classList.remove('table-warning'));
+        } else {
+            alert('Failed to save corrections: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Network error occurred');
+    });
+}
+
+function populateForm() {
+    // Get current data for form population
+    fetch('/ocr/api/populate_form', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('input[name="csrf_token"]')?.value || ''
+        },
+        body: JSON.stringify({
+            ocr_result_id: {{ ocr_result.id }},
+            use_corrections: true
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Store form data in session storage for use in target form
+            sessionStorage.setItem('ocrFormData', JSON.stringify(data.form_data));
+            sessionStorage.setItem('ocrConfidence', data.confidence);
+            
+            alert('Data prepared for form population. Navigate to the appropriate form to use it.');
+        } else {
+            alert('Failed to prepare form data: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Network error occurred');
+    });
+}
+
+function exportToJSON() {
+    const data = {
+        ocr_result_id: {{ ocr_result.id }},
+        filename: '{{ ocr_result.original_filename }}',
+        module_type: '{{ ocr_result.module_type }}',
+        confidence: {{ ocr_result.confidence_score or 0 }},
+        extracted_fields: {{ extracted_fields | tojson }},
+        line_items: {{ line_items | tojson }},
+        processed_at: '{{ ocr_result.created_at.isoformat() }}'
+    };
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ocr_data_${data.ocr_result_id}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function retryOCR(ocrResultId) {
+    if (confirm('Retry OCR processing for this document?')) {
+        const button = event.target.closest('button');
+        button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Retrying...';
+        button.disabled = true;
+
+        fetch(`/ocr/api/retry/${ocrResultId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('input[name="csrf_token"]')?.value || ''
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Retry failed: ' + data.error);
+                button.innerHTML = '<i class="fas fa-redo me-2"></i>Retry OCR';
+                button.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Network error occurred');
+            button.innerHTML = '<i class="fas fa-redo me-2"></i>Retry OCR';
+            button.disabled = false;
+        });
+    }
+}
+
+// Warn before leaving if there are unsaved changes
+window.addEventListener('beforeunload', function(e) {
+    if (hasChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block title %}OCR Test{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-flask text-primary me-2"></i>OCR Engine Test</h2>
+                    <p class="text-muted">Test OCR functionality with sample documents</p>
+                </div>
+                <a href="{{ url_for('ocr.settings') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Settings
+                </a>
+            </div>
+
+            <!-- Test Upload -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-upload me-2"></i>Upload Test Document
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="testForm" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="testFile" class="form-label">Select Test Document</label>
+                            <input type="file" class="form-control" id="testFile" name="file" 
+                                   accept=".pdf,.jpg,.jpeg,.png,.tiff,.bmp" required>
+                            <div class="form-text">Upload a document to test OCR processing capabilities</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="testBtn">
+                            <i class="fas fa-play me-2"></i>Run OCR Test
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Test Results -->
+            <div id="testResults" class="card d-none">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Test Results
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="testStatus" class="mb-3"></div>
+                    <div id="testDetails" class="d-none">
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <strong>Processing Time:</strong>
+                                <div id="processingTime" class="text-muted"></div>
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Confidence Score:</strong>
+                                <div id="confidenceScore" class="text-muted"></div>
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Engine Used:</strong>
+                                <div id="engineUsed" class="text-muted"></div>
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Fields Extracted:</strong>
+                                <div id="fieldsCount" class="text-muted"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Extracted Fields</h6>
+                                <div id="extractedFields" class="bg-light p-3 rounded"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Raw Text (First 500 chars)</h6>
+                                <div id="rawText" class="bg-light p-3 rounded" style="max-height: 200px; overflow-y: auto;"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3" id="lineItemsSection" style="display: none;">
+                            <h6>Line Items</h6>
+                            <div id="lineItems" class="table-responsive"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sample Documents -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-file-alt me-2"></i>OCR Capabilities
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Our OCR system can extract data from:</p>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-check-circle text-success me-2"></i>Document Types</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-file-pdf text-danger me-2"></i>PDF Documents</li>
+                                <li><i class="fas fa-file-image text-success me-2"></i>Scanned Images (JPG, PNG)</li>
+                                <li><i class="fas fa-file-image text-info me-2"></i>TIFF & BMP Files</li>
+                                <li><i class="fas fa-mobile-alt text-primary me-2"></i>Mobile Photos</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-magic text-primary me-2"></i>Processing Features</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-image text-warning me-2"></i>Image Enhancement</li>
+                                <li><i class="fas fa-crop text-info me-2"></i>Skew Correction</li>
+                                <li><i class="fas fa-filter text-success me-2"></i>Noise Reduction</li>
+                                <li><i class="fas fa-table text-primary me-2"></i>Table Data Extraction</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h6><i class="fas fa-bullseye text-primary me-2"></i>Extractable Data</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <strong>Document Headers:</strong>
+                                <ul class="small text-muted">
+                                    <li>Invoice Numbers</li>
+                                    <li>PO Numbers</li>
+                                    <li>Dates</li>
+                                    <li>GSTIN</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Party Information:</strong>
+                                <ul class="small text-muted">
+                                    <li>Vendor/Customer Names</li>
+                                    <li>Addresses</li>
+                                    <li>Contact Details</li>
+                                    <li>Tax Information</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Line Items:</strong>
+                                <ul class="small text-muted">
+                                    <li>Item Names/Descriptions</li>
+                                    <li>Quantities</li>
+                                    <li>Rates & Amounts</li>
+                                    <li>HSN/SAC Codes</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('testForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData();
+    const fileInput = document.getElementById('testFile');
+    const testBtn = document.getElementById('testBtn');
+    const testResults = document.getElementById('testResults');
+    const testStatus = document.getElementById('testStatus');
+    const testDetails = document.getElementById('testDetails');
+    
+    if (!fileInput.files[0]) {
+        alert('Please select a file to test');
+        return;
+    }
+    
+    formData.append('file', fileInput.files[0]);
+    
+    // Show loading state
+    testBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+    testBtn.disabled = true;
+    testResults.classList.remove('d-none');
+    testDetails.classList.add('d-none');
+    testStatus.innerHTML = '<div class="alert alert-info"><i class="fas fa-hourglass-half me-2"></i>Processing document with OCR engine...</div>';
+    
+    fetch('/ocr/api/test_engine', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('input[name="csrf_token"]')?.value || ''
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        testBtn.innerHTML = '<i class="fas fa-play me-2"></i>Run OCR Test';
+        testBtn.disabled = false;
+        
+        if (data.success) {
+            testStatus.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle me-2"></i>OCR processing completed successfully!</div>';
+            
+            // Populate test details
+            document.getElementById('processingTime').textContent = formatProcessingTime(data.processing_time);
+            document.getElementById('confidenceScore').innerHTML = `<span class="badge ${getConfidenceBadgeClass(data.confidence)}">${data.confidence.toFixed(1)}%</span>`;
+            document.getElementById('engineUsed').textContent = 'Tesseract';
+            document.getElementById('fieldsCount').textContent = Object.keys(data.extracted_fields || {}).length;
+            
+            // Show extracted fields
+            const fieldsContainer = document.getElementById('extractedFields');
+            if (data.extracted_fields && Object.keys(data.extracted_fields).length > 0) {
+                let fieldsHtml = '';
+                for (const [key, value] of Object.entries(data.extracted_fields)) {
+                    fieldsHtml += `<div class="mb-1"><strong>${key.replace('_', ' ').toUpperCase()}:</strong> ${value}</div>`;
+                }
+                fieldsContainer.innerHTML = fieldsHtml;
+            } else {
+                fieldsContainer.innerHTML = '<em class="text-muted">No structured fields extracted</em>';
+            }
+            
+            // Show raw text
+            const rawTextContainer = document.getElementById('rawText');
+            if (data.raw_text) {
+                rawTextContainer.textContent = data.raw_text.substring(0, 500) + (data.raw_text.length > 500 ? '...' : '');
+            } else {
+                rawTextContainer.innerHTML = '<em class="text-muted">No text extracted</em>';
+            }
+            
+            // Show line items if available
+            const lineItemsSection = document.getElementById('lineItemsSection');
+            const lineItemsContainer = document.getElementById('lineItems');
+            if (data.line_items && data.line_items.length > 0) {
+                let tableHtml = '<table class="table table-sm"><thead><tr><th>Item</th><th>Quantity</th><th>Rate</th><th>Amount</th></tr></thead><tbody>';
+                data.line_items.forEach(item => {
+                    tableHtml += `<tr>
+                        <td>${item.item_name || '-'}</td>
+                        <td>${item.quantity || '-'}</td>
+                        <td>${item.rate || '-'}</td>
+                        <td>${item.amount || '-'}</td>
+                    </tr>`;
+                });
+                tableHtml += '</tbody></table>';
+                lineItemsContainer.innerHTML = tableHtml;
+                lineItemsSection.style.display = 'block';
+            } else {
+                lineItemsSection.style.display = 'none';
+            }
+            
+            testDetails.classList.remove('d-none');
+        } else {
+            testStatus.innerHTML = `<div class="alert alert-danger"><i class="fas fa-times-circle me-2"></i>OCR processing failed: ${data.error}</div>`;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        testBtn.innerHTML = '<i class="fas fa-play me-2"></i>Run OCR Test';
+        testBtn.disabled = false;
+        testStatus.innerHTML = '<div class="alert alert-danger"><i class="fas fa-times-circle me-2"></i>Network error occurred</div>';
+    });
+});
+
+function formatProcessingTime(seconds) {
+    if (seconds < 1) {
+        return `${(seconds * 1000).toFixed(0)}ms`;
+    } else {
+        return `${seconds.toFixed(2)}s`;
+    }
+}
+
+function getConfidenceBadgeClass(confidence) {
+    if (confidence >= 80) return 'bg-success';
+    if (confidence >= 60) return 'bg-warning';
+    return 'bg-danger';
+}
+</script>
+{% endblock %}

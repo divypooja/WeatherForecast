@@ -160,6 +160,10 @@ def create_app():
     from routes.notifications import notifications_bp
     app.register_blueprint(notifications_bp, url_prefix='/notifications')
     
+    # Register OCR blueprint
+    from routes.ocr import bp as ocr_bp
+    app.register_blueprint(ocr_bp, url_prefix='/ocr')
+    
     # Template context processors
     @app.context_processor
     def utility_processor():
@@ -175,6 +179,7 @@ def create_app():
         import models_intelligence  # Manufacturing intelligence models
         import models_document  # Document upload models
         import models_notifications  # Notification system models
+        import models_ocr  # OCR processing models
         
         db.create_all()
         
