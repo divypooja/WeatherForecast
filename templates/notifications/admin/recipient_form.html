@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Notification Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">{{ title }}</h1>
+                    <p class="text-muted">Configure notification recipients for automated alerts</p>
+                </div>
+                <a href="{{ url_for('notifications.admin_dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-user-plus text-primary"></i>
+                                Recipient Details
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST">
+                                {{ form.hidden_tag() }}
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.name.label(class="form-label") }}
+                                            {{ form.name(class="form-control") }}
+                                            {% if form.name.errors %}
+                                                <div class="text-danger">
+                                                    {% for error in form.name.errors %}
+                                                        <small>{{ error }}</small>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.role.label(class="form-label") }}
+                                            {{ form.role(class="form-control") }}
+                                            {% if form.role.errors %}
+                                                <div class="text-danger">
+                                                    {% for error in form.role.errors %}
+                                                        <small>{{ error }}</small>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.email.label(class="form-label") }}
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i class="fas fa-envelope"></i>
+                                                </span>
+                                                {{ form.email(class="form-control") }}
+                                            </div>
+                                            {% if form.email.errors %}
+                                                <div class="text-danger">
+                                                    {% for error in form.email.errors %}
+                                                        <small>{{ error }}</small>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.phone.label(class="form-label") }}
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i class="fas fa-phone"></i>
+                                                </span>
+                                                {{ form.phone(class="form-control") }}
+                                            </div>
+                                            {% if form.phone.errors %}
+                                                <div class="text-danger">
+                                                    {% for error in form.phone.errors %}
+                                                        <small>{{ error }}</small>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="form-label">Notification Channels</label>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="form-check">
+                                                {{ form.email_enabled() }}
+                                                {{ form.email_enabled.label(class="form-check-label") }}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-check">
+                                                {{ form.sms_enabled() }}
+                                                {{ form.sms_enabled.label(class="form-check-label") }}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-check">
+                                                {{ form.whatsapp_enabled() }}
+                                                {{ form.whatsapp_enabled.label(class="form-check-label") }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="form-label">Event Types</label>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                {{ form.purchase_notifications() }}
+                                                {{ form.purchase_notifications.label(class="form-check-label") }}
+                                            </div>
+                                            <div class="form-check">
+                                                {{ form.sales_notifications() }}
+                                                {{ form.sales_notifications.label(class="form-check-label") }}
+                                            </div>
+                                            <div class="form-check">
+                                                {{ form.production_notifications() }}
+                                                {{ form.production_notifications.label(class="form-check-label") }}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                {{ form.inventory_notifications() }}
+                                                {{ form.inventory_notifications.label(class="form-check-label") }}
+                                            </div>
+                                            <div class="form-check">
+                                                {{ form.jobwork_notifications() }}
+                                                {{ form.jobwork_notifications.label(class="form-check-label") }}
+                                            </div>
+                                            <div class="form-check">
+                                                {{ form.accounting_notifications() }}
+                                                {{ form.accounting_notifications.label(class="form-check-label") }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        {{ form.is_active() }}
+                                        {{ form.is_active.label(class="form-check-label") }}
+                                    </div>
+                                </div>
+
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> Save Recipient
+                                    </button>
+                                    <a href="{{ url_for('notifications.admin_dashboard') }}" class="btn btn-secondary">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-info-circle text-info"></i>
+                                Configuration Help
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-bell"></i> Notification Channels</h6>
+                                <ul class="mb-0 small">
+                                    <li><strong>Email:</strong> Requires valid email address</li>
+                                    <li><strong>SMS:</strong> Requires phone number with country code</li>
+                                    <li><strong>WhatsApp:</strong> Requires phone number with country code</li>
+                                </ul>
+                            </div>
+
+                            <div class="alert alert-warning">
+                                <h6><i class="fas fa-exclamation-triangle"></i> Event Types</h6>
+                                <ul class="mb-0 small">
+                                    <li><strong>Purchase:</strong> PO creation, GRN updates</li>
+                                    <li><strong>Sales:</strong> Order confirmations, shipments</li>
+                                    <li><strong>Production:</strong> Job completions, delays</li>
+                                    <li><strong>Inventory:</strong> Low stock, expiry alerts</li>
+                                    <li><strong>Job Work:</strong> Issuance, returns</li>
+                                    <li><strong>Accounting:</strong> Payment due, invoices</li>
+                                </ul>
+                            </div>
+
+                            <div class="alert alert-success">
+                                <h6><i class="fas fa-check-circle"></i> Best Practices</h6>
+                                <ul class="mb-0 small">
+                                    <li>Use role-based recipients for better organization</li>
+                                    <li>Test notification delivery after setup</li>
+                                    <li>Keep contact information updated</li>
+                                    <li>Enable only relevant event types</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Auto-validate email format
+    $('#email').on('blur', function() {
+        const email = $(this).val();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        
+        if (email && !emailRegex.test(email)) {
+            $(this).addClass('is-invalid');
+            $(this).next('.invalid-feedback').remove();
+            $(this).after('<div class="invalid-feedback">Please enter a valid email address</div>');
+        } else {
+            $(this).removeClass('is-invalid');
+            $(this).next('.invalid-feedback').remove();
+        }
+    });
+
+    // Auto-validate phone format
+    $('#phone').on('blur', function() {
+        const phone = $(this).val();
+        const phoneRegex = /^\+?[\d\s\-\(\)]+$/;
+        
+        if (phone && !phoneRegex.test(phone)) {
+            $(this).addClass('is-invalid');
+            $(this).next('.invalid-feedback').remove();
+            $(this).after('<div class="invalid-feedback">Please enter a valid phone number with country code</div>');
+        } else {
+            $(this).removeClass('is-invalid');
+            $(this).next('.invalid-feedback').remove();
+        }
+    });
+
+    // Show/hide contact fields based on channel selection
+    $('#email_enabled').change(function() {
+        if ($(this).is(':checked')) {
+            $('#email').closest('.mb-3').show();
+            $('#email').prop('required', true);
+        } else {
+            $('#email').closest('.mb-3').hide();
+            $('#email').prop('required', false);
+        }
+    });
+
+    $('#sms_enabled, #whatsapp_enabled').change(function() {
+        if ($('#sms_enabled').is(':checked') || $('#whatsapp_enabled').is(':checked')) {
+            $('#phone').closest('.mb-3').show();
+            $('#phone').prop('required', true);
+        } else {
+            $('#phone').closest('.mb-3').hide();
+            $('#phone').prop('required', false);
+        }
+    });
+
+    // Initialize form state
+    $('#email_enabled').trigger('change');
+    $('#sms_enabled').trigger('change');
+});
+</script>
+{% endblock %}

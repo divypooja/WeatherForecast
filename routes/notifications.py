@@ -10,6 +10,7 @@ from models_notifications import (
     NotificationTemplate, InAppNotification, NotificationSchedule
 )
 from models import User
+from forms_notifications import NotificationRecipientForm, NotificationSettingsForm, NotificationTemplateForm, TestNotificationForm
 from datetime import datetime, timedelta
 from sqlalchemy import func, desc
 
@@ -159,56 +160,52 @@ def add_recipient():
         flash('Access denied. Admin privileges required.', 'danger')
         return redirect(url_for('main.dashboard'))
     
-    if request.method == 'POST':
+    form = NotificationRecipientForm()
+    
+    if form.validate_on_submit():
         try:
-            # Get notification types
+            # Process notification types
             notification_types = []
-            if 'email_notifications' in request.form:
+            if form.email_enabled.data:
                 notification_types.append('email')
-            if 'sms_notifications' in request.form:
+            if form.sms_enabled.data:
                 notification_types.append('sms')
-            if 'whatsapp_notifications' in request.form:
+            if form.whatsapp_enabled.data:
                 notification_types.append('whatsapp')
-            if 'in_app_notifications' in request.form:
-                notification_types.append('in_app')
             
-            # Get event subscriptions
+            # Process event subscriptions
             event_types = []
-            if 'po_events' in request.form:
+            if form.purchase_notifications.data:
                 event_types.append('purchase_team')
-            if 'grn_events' in request.form:
-                event_types.append('store')
-            if 'job_work_events' in request.form:
-                event_types.append('production_head')
-            if 'production_events' in request.form:
-                event_types.append('production_supervisor')
-            if 'sales_events' in request.form:
+            if form.sales_notifications.data:
                 event_types.append('sales_team')
-            if 'accounts_events' in request.form:
-                event_types.append('accounts')
-            if 'inventory_events' in request.form:
+            if form.production_notifications.data:
+                event_types.append('production_team')
+            if form.inventory_notifications.data:
                 event_types.append('store')
+            if form.jobwork_notifications.data:
+                event_types.append('production_team')
+            if form.accounting_notifications.data:
+                event_types.append('accounts')
             
             recipient = NotificationRecipient(
-                name=request.form['name'],
-                email=request.form.get('email') or None,
-                phone=request.form.get('phone') or None,
-                role=request.form['role'],
-                department=request.form.get('department'),
+                name=form.name.data,
+                email=form.email.data or None,
+                phone=form.phone.data or None,
+                role=form.role.data,
+                recipient_name=form.name.data,
+                recipient_role=form.role.data,
                 notification_types=','.join(notification_types),
                 event_types=','.join(event_types),
-                po_events='po_events' in request.form,
-                grn_events='grn_events' in request.form,
-                job_work_events='job_work_events' in request.form,
-                production_events='production_events' in request.form,
-                sales_events='sales_events' in request.form,
-                accounts_events='accounts_events' in request.form,
-                inventory_events='inventory_events' in request.form,
-                immediate_notifications='immediate_notifications' in request.form,
-                daily_summary='daily_summary' in request.form,
-                weekly_summary='weekly_summary' in request.form,
-                is_active='is_active' in request.form,
-                is_external='is_external' in request.form
+                po_events=form.purchase_notifications.data,
+                grn_events=form.purchase_notifications.data,
+                job_work_events=form.jobwork_notifications.data,
+                production_events=form.production_notifications.data,
+                sales_events=form.sales_notifications.data,
+                accounts_events=form.accounting_notifications.data,
+                inventory_events=form.inventory_notifications.data,
+                immediate_notifications=True,  # Default to immediate
+                is_active=form.is_active.data
             )
             
             db.session.add(recipient)
@@ -221,7 +218,7 @@ def add_recipient():
             db.session.rollback()
             flash(f'Error adding recipient: {str(e)}', 'danger')
     
-    return render_template('notifications/admin/recipient_form.html', recipient=None, title='Add Recipient')
+    return render_template('notifications/admin/recipient_form.html', form=form, recipient=None, title='Add Recipient')
 
 @notifications_bp.route('/admin/recipients/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
