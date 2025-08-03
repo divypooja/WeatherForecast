@@ -425,6 +425,71 @@ def api_notification_stats():
         'success': True
     })
 
+@notifications_bp.route('/api/test-scenario', methods=['POST'])
+@login_required
+def api_test_scenario():
+    """API endpoint for testing specific notification scenarios"""
+    if not current_user.is_admin():
+        return jsonify({'success': False, 'message': 'Access denied'}), 403
+    
+    try:
+        data = request.get_json()
+        scenario = data.get('scenario')
+        
+        from services.notification_helpers import send_system_alert
+        
+        # Test different scenarios
+        if scenario == 'po_created':
+            result = send_system_alert(
+                "🛍️ Purchase Order Created Test",
+                "Test PO-001 has been created for ₹50,000 with Supplier ABC Ltd. This is a test notification to verify PO creation alerts.",
+                alert_type="info",
+                recipients_filter="purchase_team"
+            )
+            message = f"PO Creation test notification sent - {result} recipients notified"
+            
+        elif scenario == 'grn_received':
+            result = send_system_alert(
+                "📦 GRN Received Test", 
+                "Test GRN-001 has been received for PO-001. 100 units of Material XYZ received. This is a test notification to verify GRN alerts.",
+                alert_type="success",
+                recipients_filter="store"
+            )
+            message = f"GRN Receipt test notification sent - {result} recipients notified"
+            
+        elif scenario == 'job_work_issued':
+            result = send_system_alert(
+                "🔧 Job Work Issued Test",
+                "Test Job Work JW-001 has been issued to Vendor DEF Ltd for machining operations. This is a test notification to verify job work alerts.",
+                alert_type="info", 
+                recipients_filter="production_head"
+            )
+            message = f"Job Work test notification sent - {result} recipients notified"
+            
+        elif scenario == 'low_stock':
+            result = send_system_alert(
+                "⚠️ Low Stock Alert Test",
+                "Test Material ABC has fallen below minimum stock level. Current stock: 5 units, Minimum: 20 units. This is a test low stock alert.",
+                alert_type="warning",
+                recipients_filter="store"
+            )
+            message = f"Low Stock test notification sent - {result} recipients notified"
+            
+        else:
+            return jsonify({'success': False, 'message': 'Unknown test scenario'}), 400
+        
+        return jsonify({
+            'success': True,
+            'message': message,
+            'recipients_notified': result
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error testing scenario: {str(e)}'
+        }), 500
+
 @notifications_bp.route('/admin/bulk-test')
 @login_required
 def bulk_test_notifications():
