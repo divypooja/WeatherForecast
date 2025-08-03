@@ -202,8 +202,11 @@
 
 {% block extra_js %}
 <script>
-// Quick test function for individual channels
-function quickTest(channel) {
+console.log('Test Notifications JavaScript loaded');
+
+// Quick test function for individual channels - make it global
+window.quickTest = function(channel) {
+    console.log('quickTest called with channel:', channel);
     const adminEmail = 'admin@example.com'; // Replace with actual admin email
     const adminPhone = '+911234567890';     // Replace with actual admin phone
     
@@ -237,8 +240,8 @@ function quickTest(channel) {
     document.querySelector('form').submit();
 }
 
-// Test system configuration
-function testConfiguration() {
+// Test system configuration - make it global
+window.testConfiguration = function() {
     const resultsDiv = document.getElementById('config-test-results');
     resultsDiv.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Testing configuration...</div>';
     
@@ -270,8 +273,9 @@ function testConfiguration() {
         });
 }
 
-// Test specific scenarios
-function testScenario(scenario) {
+// Test specific scenarios - make it global
+window.testScenario = function(scenario) {
+    console.log('testScenario called with scenario:', scenario);
     const resultsDiv = document.getElementById('scenario-test-results');
     resultsDiv.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Testing ' + scenario + '...</div>';
     
@@ -305,7 +309,7 @@ function testScenario(scenario) {
     .catch(error => {
         resultsDiv.innerHTML = '<div class="alert alert-danger">Error testing scenario: ' + error.message + '</div>';
     });
-}
+};
 
 // Update recipient placeholder based on notification type
 document.getElementById('notification_type').addEventListener('change', function() {
