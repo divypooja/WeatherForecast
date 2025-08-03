@@ -643,6 +643,13 @@ class OCREngine:
             
             # Step 4: Extract structured fields
             extracted_fields = self.extractor.extract_fields(text, module_type)
+            
+            # Debug logging
+            logger.info(f"OCR Text Length: {len(text)} chars")
+            logger.info(f"OCR Text Sample: {text[:200]}...")
+            logger.info(f"Extracted {len(extracted_fields)} fields: {list(extracted_fields.keys())}")
+            for field, value in extracted_fields.items():
+                logger.info(f"  {field}: {value}")
             line_items = self.extractor.extract_table_data(text)
             
             return OCRResult(
