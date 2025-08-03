@@ -88,12 +88,14 @@ class OCRService:
             db.session.commit()
             
             # Process with OCR engine
+            logger.info(f"Starting OCR processing for {file.filename} (module: {module_type})")
             processing_result = ocr_engine.process_document(
                 file_path, 
                 module_type, 
                 use_preprocessing=settings.image_preprocessing,
                 fallback_enabled=settings.fallback_enabled
             )
+            logger.info(f"OCR processing completed: success={processing_result.success}, confidence={processing_result.confidence}")
             
             # Update OCR result record
             ocr_result.status = 'completed' if processing_result.success else 'failed'
@@ -142,8 +144,19 @@ class OCRService:
             return response
             
         except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
             logger.error(f"OCR processing failed: {e}")
-            return {'success': False, 'error': f'Processing failed: {str(e)}'}
+            logger.error(f"Full traceback: {error_details}")
+            
+            # Clean up uploaded file if processing failed
+            try:
+                if 'file_path' in locals() and os.path.exists(file_path):
+                    os.remove(file_path)
+            except:
+                pass
+                
+            return {'success': False, 'error': f'Processing failed: {str(e)}', 'traceback': error_details}
     
     def get_ocr_result(self, ocr_result_id: int) -> Optional[OCRResultModel]:
         """Get OCR result by ID"""

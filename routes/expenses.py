@@ -351,6 +351,7 @@ def process_ocr():
             return jsonify({'success': False, 'message': 'No file selected'})
         
         # Process with OCR service
+        print(f"[OCR DEBUG] Processing file: {file.filename}")
         result = ocr_service.process_uploaded_file(
             file=file,
             module_type='expense',
@@ -358,6 +359,7 @@ def process_ocr():
             reference_type='factory_expense',
             user_id=current_user.id
         )
+        print(f"[OCR DEBUG] OCR Result: {result}")
         
         if result['success']:
             extracted_fields = result.get('extracted_fields', {})
@@ -394,9 +396,14 @@ def process_ocr():
             })
             
     except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"[OCR ERROR] Exception: {str(e)}")
+        print(f"[OCR ERROR] Traceback: {error_details}")
         return jsonify({
             'success': False,
-            'message': f'Error processing OCR: {str(e)}'
+            'message': f'Error processing OCR: {str(e)}',
+            'error_details': error_details if current_user.is_admin() else None
         })
 
 @expenses_bp.route('/approve/<int:id>', methods=['POST'])
