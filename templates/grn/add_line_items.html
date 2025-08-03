@@ -82,6 +82,7 @@
                         {{ form.hidden_tag() }}
                         
                         <!-- Item Information (read-only) -->
+                        {% if grn.job_work_id and grn.job_work %}
                         <div class="row mb-3">
                             <div class="col-12">
                                 <div class="alert alert-info">
@@ -91,6 +92,16 @@
                                 </div>
                             </div>
                         </div>
+                        {% elif grn.purchase_order_id and grn.purchase_order %}
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <h6><i class="fas fa-info-circle me-2"></i>Purchase Order Items</h6>
+                                    <p class="mb-0">Select items from the Purchase Order below:</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
 
                         <!-- Quantity Section -->
                         <div class="row mb-3">
@@ -98,7 +109,13 @@
                                 {{ form.quantity_received.label(class="form-label") }}
                                 <div class="input-group">
                                     {{ form.quantity_received(class="form-control") }}
-                                    <span class="input-group-text">{{ grn.job_work.item.unit_of_measure }}</span>
+                                    <span class="input-group-text">
+                                        {% if grn.job_work_id and grn.job_work %}
+                                            {{ grn.job_work.item.unit_of_measure }}
+                                        {% else %}
+                                            Unit
+                                        {% endif %}
+                                    </span>
                                 </div>
                                 {% if form.quantity_received.errors %}
                                     <div class="text-danger">{{ form.quantity_received.errors[0] }}</div>
@@ -108,7 +125,13 @@
                                 {{ form.quantity_passed.label(class="form-label") }}
                                 <div class="input-group">
                                     {{ form.quantity_passed(class="form-control") }}
-                                    <span class="input-group-text">{{ grn.job_work.item.unit_of_measure }}</span>
+                                    <span class="input-group-text">
+                                        {% if grn.job_work_id and grn.job_work %}
+                                            {{ grn.job_work.item.unit_of_measure }}
+                                        {% else %}
+                                            Unit
+                                        {% endif %}
+                                    </span>
                                 </div>
                                 {% if form.quantity_passed.errors %}
                                     <div class="text-danger">{{ form.quantity_passed.errors[0] }}</div>
@@ -118,7 +141,13 @@
                                 {{ form.quantity_rejected.label(class="form-label") }}
                                 <div class="input-group">
                                     {{ form.quantity_rejected(class="form-control") }}
-                                    <span class="input-group-text">{{ grn.job_work.item.unit_of_measure }}</span>
+                                    <span class="input-group-text">
+                                        {% if grn.job_work_id and grn.job_work %}
+                                            {{ grn.job_work.item.unit_of_measure }}
+                                        {% else %}
+                                            Unit
+                                        {% endif %}
+                                    </span>
                                 </div>
                                 {% if form.quantity_rejected.errors %}
                                     <div class="text-danger">{{ form.quantity_rejected.errors[0] }}</div>
@@ -203,6 +232,7 @@
 
         <!-- Information and Summary -->
         <div class="col-md-4">
+            {% if grn.job_work_id and grn.job_work %}
             <!-- Job Work Summary -->
             <div class="card">
                 <div class="card-header">
@@ -229,6 +259,32 @@
                     </div>
                 </div>
             </div>
+            {% elif grn.purchase_order_id and grn.purchase_order %}
+            <!-- Purchase Order Summary -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Purchase Order Summary</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-2">
+                        <div class="col-7">PO Number:</div>
+                        <div class="col-5 text-end"><strong>{{ grn.purchase_order.po_number }}</strong></div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-7">Supplier:</div>
+                        <div class="col-5 text-end">{{ grn.purchase_order.supplier.name }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-7">Status:</div>
+                        <div class="col-5 text-end"><span class="badge bg-primary">{{ grn.purchase_order.status.title() }}</span></div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-7">Items Count:</div>
+                        <div class="col-5 text-end">{{ grn.purchase_order.items|length }} items</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
 
             <!-- Current GRN Summary -->
             {% if grn.line_items %}
