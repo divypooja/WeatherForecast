@@ -56,7 +56,7 @@ class AccountingAutomation:
                             name=sub_group_data['name'],
                             code=sub_group_data['code'],
                             group_type=sub_group_data['group_type'],
-                            parent_group_id=parent.id
+                            parent_account_group_id=parent.id
                         )
                         db.session.add(sub_group)
             
@@ -98,7 +98,7 @@ class AccountingAutomation:
                         account = Account(
                             name=account_data['name'],
                             code=account_data['code'],
-                            account_group_id=group.id,
+                            account_account_group_id=group.id,
                             account_type=account_data['type'],
                             is_cash_account=account_data.get('is_cash', False),
                             is_bank_account=account_data.get('is_bank', False)
@@ -584,7 +584,7 @@ class AccountingAutomation:
                     code='5001',
                     name='Salaries & Wages',
                     account_type='expense',
-                    group_id=expense_group.id,
+                    account_group_id=expense_group.id,
                     is_system_account=True
                 )
                 db.session.add(wages_account)
@@ -604,7 +604,7 @@ class AccountingAutomation:
                         code='1002',
                         name='Bank Account - Current',
                         account_type='asset',
-                        group_id=bank_group.id,
+                        account_group_id=bank_group.id,
                         is_bank_account=True
                     )
                     db.session.add(payment_account)
@@ -622,7 +622,7 @@ class AccountingAutomation:
                         code='1001',
                         name='Cash Account',
                         account_type='asset',
-                        group_id=cash_group.id,
+                        account_group_id=cash_group.id,
                         is_cash_account=True
                     )
                     db.session.add(payment_account)
@@ -704,7 +704,7 @@ class AccountingAutomation:
                         code='2005',
                         name='Employee Deductions Payable',
                         account_type='liability',
-                        group_id=liability_group.id
+                        account_group_id=liability_group.id
                     )
                     db.session.add(deduction_account)
                     db.session.flush()
@@ -735,7 +735,7 @@ class AccountingAutomation:
                         code='1003',
                         name='Employee Advances',
                         account_type='asset',
-                        account_group_id=asset_group.id
+                        account_account_group_id=asset_group.id
                     )
                     db.session.add(advance_account)
                     db.session.flush()
@@ -802,7 +802,7 @@ class AccountingAutomation:
                     code='1003',
                     name='Employee Advances',
                     account_type='asset',
-                    account_group_id=asset_group.id
+                    account_account_group_id=asset_group.id
                 )
                 db.session.add(advance_account)
                 db.session.flush()
@@ -821,7 +821,7 @@ class AccountingAutomation:
                         code='1002',
                         name='Bank Account - Current',
                         account_type='asset',
-                        group_id=bank_group.id,
+                        account_group_id=bank_group.id,
                         is_bank_account=True
                     )
                     db.session.add(payment_account)
@@ -839,7 +839,7 @@ class AccountingAutomation:
                         code='1001',
                         name='Cash Account',
                         account_type='asset',
-                        group_id=cash_group.id,
+                        account_group_id=cash_group.id,
                         is_cash_account=True
                     )
                     db.session.add(payment_account)
@@ -965,7 +965,7 @@ class AccountingAutomation:
                     account = Account(
                         name=party.name,
                         code=f"{code_prefix}_{party.id}",
-                        account_group_id=group.id,
+                        account_account_group_id=group.id,
                         account_type=account_type
                     )
                     db.session.add(account)
@@ -1123,7 +1123,7 @@ class AccountingAutomation:
                     commitment_account = Account(
                         name='Purchase Order Commitments',
                         code='PO_COMMIT',
-                        account_group_id=liability_group.id,
+                        account_account_group_id=liability_group.id,
                         account_type='current_liability'
                     )
                     db.session.add(commitment_account)
@@ -1291,7 +1291,7 @@ class AccountingAutomation:
                     booking_account = Account(
                         name='Sales Order Bookings',
                         code='SO_BOOKING',
-                        account_group_id=asset_group.id,
+                        account_account_group_id=asset_group.id,
                         account_type='current_asset'
                     )
                     db.session.add(booking_account)
@@ -1705,7 +1705,7 @@ class AccountingAutomation:
                     sales_account = Account(
                         name='Sales Account',
                         code='SALES',
-                        account_group_id=income_group.id,
+                        account_account_group_id=income_group.id,
                         account_type='income'
                     )
                     db.session.add(sales_account)
@@ -1718,7 +1718,7 @@ class AccountingAutomation:
                     gst_output_account = Account(
                         name='GST Output',
                         code='GST_OUTPUT',
-                        account_group_id=liability_group.id,
+                        account_account_group_id=liability_group.id,
                         account_type='current_liability'
                     )
                     db.session.add(gst_output_account)
@@ -1821,7 +1821,7 @@ class AccountingAutomation:
                     purchase_account = Account(
                         name='Purchase Account',
                         code='PURCHASES',
-                        account_group_id=expense_group.id,
+                        account_account_group_id=expense_group.id,
                         account_type='expense'
                     )
                     db.session.add(purchase_account)
@@ -1834,7 +1834,7 @@ class AccountingAutomation:
                     gst_input_account = Account(
                         name='GST Input',
                         code='GST_INPUT',
-                        account_group_id=asset_group.id,
+                        account_account_group_id=asset_group.id,
                         account_type='current_asset'
                     )
                     db.session.add(gst_input_account)
