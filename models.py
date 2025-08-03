@@ -2964,16 +2964,9 @@ class SalaryRecord(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     approved_at = db.Column(db.DateTime)
     
-    # Accounting Integration Fields
-    employee_account_id = db.Column(db.Integer, db.ForeignKey('accounts.id'))  # Employee account (if exists)
-    salary_voucher_id = db.Column(db.Integer, db.ForeignKey('vouchers.id'))  # Payment voucher
-    accounting_status = db.Column(db.String(20), default='pending')  # pending, posted, cancelled
-    
     # Relationships
     creator = db.relationship('User', foreign_keys=[created_by], backref='created_salary_records')
     approver = db.relationship('User', foreign_keys=[approved_by], backref='approved_salary_records')
-    employee_account = db.relationship('Account', foreign_keys=[employee_account_id], backref='salary_payments')
-    salary_voucher = db.relationship('Voucher', foreign_keys=[salary_voucher_id], backref='salary_records')
     
     @staticmethod
     def generate_salary_number():
@@ -3072,16 +3065,9 @@ class EmployeeAdvance(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     approved_at = db.Column(db.DateTime)
     
-    # Accounting Integration Fields
-    employee_account_id = db.Column(db.Integer, db.ForeignKey('accounts.id'))  # Employee account (if exists)
-    advance_voucher_id = db.Column(db.Integer, db.ForeignKey('vouchers.id'))  # Payment voucher
-    accounting_status = db.Column(db.String(20), default='pending')  # pending, posted, cancelled
-    
     # Relationships
     requester = db.relationship('User', foreign_keys=[requested_by], backref='requested_advances')
     approver = db.relationship('User', foreign_keys=[approved_by], backref='approved_advances')
-    employee_account = db.relationship('Account', foreign_keys=[employee_account_id], backref='advance_payments')
-    advance_voucher = db.relationship('Voucher', foreign_keys=[advance_voucher_id], backref='employee_advances')
     
     @staticmethod
     def generate_advance_number():

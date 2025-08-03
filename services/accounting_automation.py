@@ -557,7 +557,7 @@ class AccountingAutomation:
                 transaction_date=salary_record.payment_date or date.today(),
                 reference_number=salary_record.salary_number,
                 narration=f"Salary payment to {salary_record.employee.name}",
-                total_amount=salary_record.net_amount,
+                total_amount=salary_record.net_salary,
                 created_by=1  # System user
             )
             
@@ -576,7 +576,7 @@ class AccountingAutomation:
                 voucher_id=voucher.id,
                 account_id=wages_account.id,
                 entry_type='debit',
-                amount=salary_record.net_amount,
+                amount=salary_record.net_salary,
                 narration=f"Salary to {salary_record.employee.name} for {salary_record.pay_period_start} to {salary_record.pay_period_end}",
                 transaction_date=voucher.transaction_date,
                 reference_type='salary_record',
@@ -589,7 +589,7 @@ class AccountingAutomation:
                 voucher_id=voucher.id,
                 account_id=cash_account.id,
                 entry_type='credit',
-                amount=salary_record.net_amount,
+                amount=salary_record.net_salary,
                 narration=f"Salary payment to {salary_record.employee.name}",
                 transaction_date=voucher.transaction_date,
                 reference_type='salary_record',
@@ -597,164 +597,12 @@ class AccountingAutomation:
             )
             db.session.add(cash_entry)
             
-            # Update salary record with voucher reference
-            salary_record.salary_voucher_id = voucher.id
-            salary_record.accounting_status = 'posted'
-            
             db.session.commit()
             return voucher
             
         except Exception as e:
             db.session.rollback()
             print(f"Error creating salary voucher: {str(e)}")
-            return False
-    
-    @staticmethod
-    def create_employee_advance_voucher(employee_advance):
-        """Create journal entries for employee advance payments"""
-        try:
-            # Get payment voucher type
-            voucher_type = VoucherType.query.filter_by(code='PAY').first()
-            if not voucher_type:
-                return False
-            
-            # Create voucher
-            voucher = Voucher(
-                voucher_number=Voucher.generate_voucher_number('ADV'),
-                voucher_type_id=voucher_type.id,
-                transaction_date=employee_advance.advance_date or date.today(),
-                reference_number=employee_advance.advance_number,
-                narration=f"Employee advance to {employee_advance.employee.name} - {employee_advance.reason}",
-                total_amount=employee_advance.amount,
-                created_by=employee_advance.requested_by  # Requested by user
-            )
-            
-            db.session.add(voucher)
-            db.session.flush()
-            
-            # Get accounts
-            advance_account = Account.query.filter_by(code='EMP_ADVANCE').first()
-            cash_account = Account.query.filter_by(is_cash_account=True).first()
-            
-            # Create advance account if it doesn't exist
-            if not advance_account:
-                from models_accounting import AccountGroup
-                current_assets_group = AccountGroup.query.filter_by(name='Current Assets').first()
-                if current_assets_group:
-                    advance_account = Account(
-                        name='Employee Advances',
-                        code='EMP_ADVANCE',
-                        account_group_id=current_assets_group.id,
-                        opening_balance=0.0,
-                        account_type='asset',
-                        is_active=True
-                    )
-                    db.session.add(advance_account)
-                    db.session.flush()
-            
-            if not all([advance_account, cash_account]):
-                return False
-            
-            # Debit employee advance account (Asset)
-            advance_entry = JournalEntry(
-                voucher_id=voucher.id,
-                account_id=advance_account.id,
-                entry_type='debit',
-                amount=employee_advance.amount,
-                narration=f"Advance to {employee_advance.employee.name} - {employee_advance.reason}",
-                transaction_date=voucher.transaction_date,
-                reference_type='employee_advance',
-                reference_id=employee_advance.id
-            )
-            db.session.add(advance_entry)
-            
-            # Credit cash account
-            cash_entry = JournalEntry(
-                voucher_id=voucher.id,
-                account_id=cash_account.id,
-                entry_type='credit',
-                amount=employee_advance.amount,
-                narration=f"Advance payment to {employee_advance.employee.name}",
-                transaction_date=voucher.transaction_date,
-                reference_type='employee_advance',
-                reference_id=employee_advance.id
-            )
-            db.session.add(cash_entry)
-            
-            # Update employee advance with voucher reference
-            employee_advance.advance_voucher_id = voucher.id
-            employee_advance.accounting_status = 'posted'
-            
-            db.session.commit()
-            return voucher
-            
-        except Exception as e:
-            db.session.rollback()
-            print(f"Error creating employee advance voucher: {str(e)}")
-            return False
-    
-    @staticmethod
-    def create_advance_recovery_voucher(salary_record, recovered_amount):
-        """Create journal entries for advance recovery from salary"""
-        try:
-            # Get journal voucher type
-            voucher_type = VoucherType.query.filter_by(code='JNL').first()
-            if not voucher_type:
-                return False
-            
-            # Create voucher
-            voucher = Voucher(
-                voucher_number=Voucher.generate_voucher_number('ARR'),
-                voucher_type_id=voucher_type.id,
-                transaction_date=salary_record.payment_date or date.today(),
-                reference_number=f"{salary_record.salary_number}-ADV",
-                narration=f"Advance recovery from {salary_record.employee.name} salary",
-                total_amount=recovered_amount,
-                created_by=1  # System user
-            )
-            
-            db.session.add(voucher)
-            db.session.flush()
-            
-            # Get accounts
-            advance_account = Account.query.filter_by(code='EMP_ADVANCE').first()
-            wages_account = Account.query.filter_by(code='WAGES').first()
-            
-            if not all([advance_account, wages_account]):
-                return False
-            
-            # Credit employee advance account (reduce advance)
-            advance_entry = JournalEntry(
-                voucher_id=voucher.id,
-                account_id=advance_account.id,
-                entry_type='credit',
-                amount=recovered_amount,
-                narration=f"Advance recovery from {salary_record.employee.name}",
-                transaction_date=voucher.transaction_date,
-                reference_type='salary_record',
-                reference_id=salary_record.id
-            )
-            db.session.add(advance_entry)
-            
-            # Debit wages account (reduce salary expense)
-            wages_entry = JournalEntry(
-                voucher_id=voucher.id,
-                account_id=wages_account.id,
-                entry_type='debit',
-                amount=recovered_amount,
-                narration=f"Advance adjustment for {salary_record.employee.name}",
-                transaction_date=voucher.transaction_date,
-                reference_type='salary_record',
-                reference_id=salary_record.id
-            )
-            db.session.add(wages_entry)
-            
-            db.session.commit()
-            return voucher
-            
-        except Exception as e:
-            db.session.rollback()
-            print(f"Error creating advance recovery voucher: {str(e)}")
             return False
     
     @staticmethod

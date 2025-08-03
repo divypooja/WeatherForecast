@@ -41,8 +41,6 @@
         </div>
     </div>
 
-
-
     <!-- Individual Notification Test -->
     <div class="test-section">
         <h4><i class="fas fa-paper-plane"></i> Send Test Notification</h4>
@@ -202,12 +200,8 @@
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Test Notifications JavaScript loaded');
-
-    // Quick test function for individual channels - make it global
-    window.quickTest = function(channel) {
-    console.log('quickTest called with channel:', channel);
+// Quick test function for individual channels
+function quickTest(channel) {
     const adminEmail = 'admin@example.com'; // Replace with actual admin email
     const adminPhone = '+911234567890';     // Replace with actual admin phone
     
@@ -241,8 +235,8 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelector('form').submit();
 }
 
-// Test system configuration - make it global
-window.testConfiguration = function() {
+// Test system configuration
+function testConfiguration() {
     const resultsDiv = document.getElementById('config-test-results');
     resultsDiv.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Testing configuration...</div>';
     
@@ -274,25 +268,16 @@ window.testConfiguration = function() {
         });
 }
 
-// Test specific scenarios - make it global
-window.testScenario = function(scenario) {
-    console.log('testScenario called with scenario:', scenario);
+// Test specific scenarios
+function testScenario(scenario) {
     const resultsDiv = document.getElementById('scenario-test-results');
     resultsDiv.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Testing ' + scenario + '...</div>';
     
-    // Get CSRF token from form if available
-    const csrfToken = document.querySelector('input[name="csrf_token"]');
-    const headers = {
-        'Content-Type': 'application/json',
-    };
-    
-    if (csrfToken) {
-        headers['X-CSRFToken'] = csrfToken.value;
-    }
-    
     fetch('/notifications/api/test-scenario', {
         method: 'POST',
-        headers: headers,
+        headers: {
+            'Content-Type': 'application/json',
+        },
         body: JSON.stringify({scenario: scenario})
     })
     .then(response => response.json())
@@ -310,25 +295,20 @@ window.testScenario = function(scenario) {
     .catch(error => {
         resultsDiv.innerHTML = '<div class="alert alert-danger">Error testing scenario: ' + error.message + '</div>';
     });
-};
-
-// Update recipient placeholder based on notification type
-const notificationTypeElement = document.getElementById('notification_type');
-if (notificationTypeElement) {
-    notificationTypeElement.addEventListener('change', function() {
-        const recipientField = document.getElementById('recipient');
-        const type = this.value;
-        
-        if (type === 'email') {
-            recipientField.placeholder = 'user@example.com';
-        } else if (type === 'sms' || type === 'whatsapp') {
-            recipientField.placeholder = '+91 9876543210';
-        } else {
-            recipientField.placeholder = 'Email or Phone Number';
-        }
-    });
 }
 
-}); // End DOMContentLoaded
+// Update recipient placeholder based on notification type
+document.getElementById('notification_type').addEventListener('change', function() {
+    const recipientField = document.getElementById('recipient');
+    const type = this.value;
+    
+    if (type === 'email') {
+        recipientField.placeholder = 'user@example.com';
+    } else if (type === 'sms' || type === 'whatsapp') {
+        recipientField.placeholder = '+91 9876543210';
+    } else {
+        recipientField.placeholder = 'Email or Phone Number';
+    }
+});
 </script>
 {% endblock %}

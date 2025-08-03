@@ -51,26 +51,8 @@ def admin_dashboard():
         NotificationLog.sent_at >= seven_days_ago
     ).group_by(func.date(NotificationLog.sent_at)).all()
     
-    # Get current settings - force creation if missing
-    try:
-        settings = NotificationSettings.get_settings()
-        if not settings:
-            # Force create settings if get_settings failed
-            settings = NotificationSettings(
-                email_enabled=True,
-                sms_enabled=True,
-                whatsapp_enabled=True,
-                po_notifications=True,
-                grn_notifications=True,
-                sales_notifications=True
-            )
-            db.session.add(settings)
-            db.session.commit()
-        
-        
-    except Exception as e:
-        print(f"Error getting notification settings: {e}")
-        settings = None
+    # Get current settings
+    settings = NotificationSettings.get_settings()
     
     return render_template('notifications/admin/dashboard.html',
                          stats=stats,
@@ -424,78 +406,6 @@ def api_notification_stats():
         'hourly_stats': chart_data,
         'success': True
     })
-
-from flask import session
-from functools import wraps
-
-def admin_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated or not current_user.is_admin():
-            return jsonify({'success': False, 'message': 'Admin access required'}), 403
-        return f(*args, **kwargs)
-    return decorated_function
-
-@notifications_bp.route('/api/test-scenario', methods=['POST'])
-@admin_required
-def api_test_scenario():
-    """API endpoint for testing specific notification scenarios"""
-    if not current_user.is_admin():
-        return jsonify({'success': False, 'message': 'Access denied'}), 403
-    
-    try:
-        data = request.get_json()
-        scenario = data.get('scenario')
-        
-        from services.notification_helpers import send_system_alert
-        
-        # Test different scenarios
-        if scenario == 'po_created':
-            result = send_system_alert(
-                "🛍️ Purchase Order Created Test",
-                "Test PO-001 has been created for ₹50,000 with Supplier ABC Ltd. This is a test notification to verify PO creation alerts.",
-                alert_type="purchase_order"
-            )
-            message = f"PO Creation test notification sent - {'Success' if result else 'Failed'}"
-            
-        elif scenario == 'grn_received':
-            result = send_system_alert(
-                "📦 GRN Received Test", 
-                "Test GRN-001 has been received for PO-001. 100 units of Material XYZ received. This is a test notification to verify GRN alerts.",
-                alert_type="grn"
-            )
-            message = f"GRN Receipt test notification sent - {'Success' if result else 'Failed'}"
-            
-        elif scenario == 'job_work_issued':
-            result = send_system_alert(
-                "🔧 Job Work Issued Test",
-                "Test Job Work JW-001 has been issued to Vendor DEF Ltd for machining operations. This is a test notification to verify job work alerts.",
-                alert_type="job_work"
-            )
-            message = f"Job Work test notification sent - {'Success' if result else 'Failed'}"
-            
-        elif scenario == 'low_stock':
-            result = send_system_alert(
-                "⚠️ Low Stock Alert Test",
-                "Test Material ABC has fallen below minimum stock level. Current stock: 5 units, Minimum: 20 units. This is a test low stock alert.",
-                alert_type="low_stock"
-            )
-            message = f"Low Stock test notification sent - {'Success' if result else 'Failed'}"
-            
-        else:
-            return jsonify({'success': False, 'message': 'Unknown test scenario'}), 400
-        
-        return jsonify({
-            'success': True,
-            'message': message,
-            'recipients_notified': result
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': f'Error testing scenario: {str(e)}'
-        }), 500
 
 @notifications_bp.route('/admin/bulk-test')
 @login_required
