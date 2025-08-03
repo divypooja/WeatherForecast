@@ -7,12 +7,36 @@ import os
 from app import create_app, db
 
 def check_and_fix_notification_logs():
-    """Check if notification_logs table has the status column and add it if missing"""
+    """Check if notification_logs table has all required columns and add missing ones"""
     db_path = 'instance/factory.db'
     
     if not os.path.exists(db_path):
         print(f"Database file not found: {db_path}")
         return False
+    
+    # Expected columns based on the model definition
+    expected_columns = {
+        'id': 'INTEGER PRIMARY KEY',
+        'type': 'VARCHAR(20) NOT NULL',
+        'recipient': 'VARCHAR(255) NOT NULL', 
+        'subject': 'VARCHAR(255)',
+        'message': 'TEXT',
+        'status': 'VARCHAR(20) DEFAULT "pending"',
+        'success': 'BOOLEAN NOT NULL',
+        'response': 'TEXT',
+        'error_message': 'TEXT',
+        'event_type': 'VARCHAR(50)',
+        'event_id': 'INTEGER',
+        'module': 'VARCHAR(30)',
+        'sent_at': 'DATETIME',
+        'delivered_at': 'DATETIME',
+        'read_at': 'DATETIME',
+        'service_provider': 'VARCHAR(50)',
+        'provider_message_id': 'VARCHAR(100)',
+        'recipient_name': 'VARCHAR(100)',
+        'recipient_role': 'VARCHAR(50)',
+        'created_at': 'DATETIME'
+    }
     
     try:
         # Connect to SQLite database
@@ -34,15 +58,27 @@ def check_and_fix_notification_logs():
         column_names = [col[1] for col in columns]
         
         print(f"Current columns in notification_logs: {column_names}")
+        print(f"Expected columns: {list(expected_columns.keys())}")
         
-        # Check if status column exists
-        if 'status' not in column_names:
-            print("Adding missing 'status' column...")
-            cursor.execute("ALTER TABLE notification_logs ADD COLUMN status VARCHAR(20) DEFAULT 'pending';")
+        # Find missing columns
+        missing_columns = [col for col in expected_columns.keys() if col not in column_names]
+        
+        if missing_columns:
+            print(f"Missing columns: {missing_columns}")
+            
+            # Add missing columns one by one
+            for col_name in missing_columns:
+                col_definition = expected_columns[col_name]
+                try:
+                    cursor.execute(f"ALTER TABLE notification_logs ADD COLUMN {col_name} {col_definition};")
+                    print(f"Added column: {col_name}")
+                except Exception as e:
+                    print(f"Error adding column {col_name}: {e}")
+            
             conn.commit()
-            print("Successfully added 'status' column")
+            print("Successfully added all missing columns")
         else:
-            print("'status' column already exists")
+            print("All required columns are present")
         
         conn.close()
         return True
