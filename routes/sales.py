@@ -1,7 +1,7 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, make_response
 from flask_login import login_required, current_user
 from forms import SalesOrderForm, SupplierForm
-from models import SalesOrder, SalesOrderItem, Supplier, Item, BOMItem
+from models import SalesOrder, SalesOrderItem, Supplier, Item, BOMItem, CompanySettings
 from app import db
 from sqlalchemy import func
 from datetime import datetime
@@ -187,7 +187,7 @@ def add_sales_order():
         else:
             flash('Sales Order created successfully but accounting integration failed', 'warning')
         
-        return redirect(url_for('sales.edit_sales_order', id=so.id))
+        return redirect(url_for('sales.submission_success', so_id=so.id))
     
     # Get items with BOM rates for the items section
     items = db.session.query(Item).outerjoin(
@@ -463,3 +463,190 @@ def remove_sales_order_item(item_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)})
+
+def number_to_words(num):
+    """Convert number to words for amounts"""
+    ones = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+            "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", 
+            "eighteen", "nineteen"]
+    tens = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"]
+    
+    if num == 0:
+        return "zero"
+    
+    if num < 20:
+        return ones[num]
+    elif num < 100:
+        return tens[num // 10] + (" " + ones[num % 10] if num % 10 != 0 else "")
+    elif num < 1000:
+        return ones[num // 100] + " hundred" + (" " + number_to_words(num % 100) if num % 100 != 0 else "")
+    elif num < 100000:
+        return number_to_words(num // 1000) + " thousand" + (" " + number_to_words(num % 1000) if num % 1000 != 0 else "")
+    elif num < 10000000:
+        return number_to_words(num // 100000) + " lakh" + (" " + number_to_words(num % 100000) if num % 100000 != 0 else "")
+    else:
+        return number_to_words(num // 10000000) + " crore" + (" " + number_to_words(num % 10000000) if num % 10000000 != 0 else "")
+
+@sales_bp.route('/view/<int:id>')
+@login_required
+def view_sales_order(id):
+    """View sales order details"""
+    so = SalesOrder.query.get_or_404(id)
+    return render_template('sales/view.html', so=so, title=f'Sales Order {so.so_number}')
+
+@sales_bp.route('/submission-success/<int:so_id>')
+@login_required
+def submission_success(so_id):
+    """SO submission success page with invoice generation and communication options"""
+    so = SalesOrder.query.get_or_404(so_id)
+    return render_template('sales/submission_success.html', so=so, title='Sales Order Submitted Successfully')
+
+@sales_bp.route('/generate-invoice/<int:id>')
+@sales_bp.route('/generate-invoice/<int:id>/<format>')
+@login_required  
+def generate_invoice(id, format='html'):
+    """Generate GST compliant invoice for sales order"""
+    so = SalesOrder.query.get_or_404(id)
+    
+    # Calculate GST amounts (assuming 18% GST)
+    gst_rate = 18
+    subtotal = so.total_amount or 0
+    gst_amount = (subtotal * gst_rate) / 100
+    total_with_gst = subtotal + gst_amount
+    
+    # Update SO with GST calculations
+    so.subtotal = subtotal
+    so.gst_amount = gst_amount
+    so.total_amount = total_with_gst
+    db.session.commit()
+    
+    amount_words = number_to_words(int(total_with_gst))
+    company = CompanySettings.get_settings()
+    
+    if format == 'pdf':
+        # Generate PDF
+        from weasyprint import HTML
+        invoice_html = render_template('sales/invoice_gst.html', so=so, 
+                                     amount_words=amount_words, company=company,
+                                     gst_rate=gst_rate, subtotal=subtotal, 
+                                     gst_amount=gst_amount, total_with_gst=total_with_gst)
+        pdf_data = HTML(string=invoice_html).write_pdf()
+        
+        response = make_response(pdf_data)
+        response.headers['Content-Type'] = 'application/pdf'
+        response.headers['Content-Disposition'] = f'attachment; filename=Invoice_{so.so_number}.pdf'
+        return response
+    
+    return render_template('sales/invoice_gst.html', so=so, amount_words=amount_words, 
+                         company=company, gst_rate=gst_rate, subtotal=subtotal, 
+                         gst_amount=gst_amount, total_with_gst=total_with_gst)
+
+@sales_bp.route('/send-invoice-email/<int:id>', methods=['POST'])
+@login_required  
+def send_invoice_email(id):
+    """Send invoice via email"""
+    so = SalesOrder.query.get_or_404(id)
+    
+    try:
+        data = request.get_json()
+        email_to = data.get('email_to')
+        email_subject = data.get('email_subject')
+        email_message = data.get('email_message')
+        
+        if not all([email_to, email_subject, email_message]):
+            return jsonify({'success': False, 'message': 'Missing required fields'})
+        
+        # Check if SendGrid API key exists
+        import os
+        if not os.environ.get('SENDGRID_API_KEY'):
+            return jsonify({'success': False, 'message': 'Email service not configured. Please contact administrator.'})
+        
+        # Generate invoice PDF
+        from weasyprint import HTML
+        
+        # Calculate GST amounts
+        gst_rate = 18
+        subtotal = so.total_amount or 0
+        gst_amount = (subtotal * gst_rate) / 100
+        total_with_gst = subtotal + gst_amount
+        
+        company = CompanySettings.get_settings()
+        amount_words = number_to_words(int(total_with_gst))
+        
+        invoice_html = render_template('sales/invoice_gst.html', so=so, 
+                                     company=company, amount_words=amount_words,
+                                     gst_rate=gst_rate, subtotal=subtotal, 
+                                     gst_amount=gst_amount, total_with_gst=total_with_gst)
+        
+        pdf_data = HTML(string=invoice_html).write_pdf()
+        
+        # Send email using SendGrid
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
+        import base64
+        
+        sg = SendGridAPIClient(api_key=os.environ.get('SENDGRID_API_KEY'))
+        
+        message = Mail(
+            from_email='noreply@akinnovations.com',
+            to_emails=email_to,
+            subject=email_subject,
+            html_content=email_message.replace('\n', '<br>')
+        )
+        
+        # Add PDF attachment
+        encoded_file = base64.b64encode(pdf_data).decode()
+        attachment = Attachment(
+            FileContent(encoded_file),
+            FileName(f'Invoice_{so.so_number}.pdf'),
+            FileType('application/pdf'),
+            Disposition('attachment')
+        )
+        message.attachment = attachment
+        
+        response = sg.send(message)
+        
+        return jsonify({'success': True, 'message': 'Invoice email sent successfully'})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error sending email: {str(e)}'})
+
+@sales_bp.route('/send-invoice-whatsapp/<int:id>', methods=['POST'])
+@login_required
+def send_invoice_whatsapp(id):
+    """Send invoice via WhatsApp"""
+    so = SalesOrder.query.get_or_404(id)
+    
+    try:
+        data = request.get_json()
+        whatsapp_number = data.get('whatsapp_number')
+        whatsapp_message = data.get('whatsapp_message')
+        
+        if not all([whatsapp_number, whatsapp_message]):
+            return jsonify({'success': False, 'message': 'Missing required fields'})
+        
+        # Check if Twilio credentials exist
+        import os
+        if not all([os.environ.get('TWILIO_ACCOUNT_SID'), os.environ.get('TWILIO_AUTH_TOKEN')]):
+            return jsonify({'success': False, 'message': 'WhatsApp service not configured. Please contact administrator.'})
+        
+        # Send WhatsApp message using Twilio
+        from twilio.rest import Client
+        
+        client = Client(os.environ.get('TWILIO_ACCOUNT_SID'), os.environ.get('TWILIO_AUTH_TOKEN'))
+        
+        # Clean phone number format
+        clean_number = whatsapp_number.replace(' ', '').replace('-', '')
+        if not clean_number.startswith('+'):
+            clean_number = '+' + clean_number
+        
+        message = client.messages.create(
+            body=whatsapp_message,
+            from_=f'whatsapp:{os.environ.get("TWILIO_PHONE_NUMBER")}',
+            to=f'whatsapp:{clean_number}'
+        )
+        
+        return jsonify({'success': True, 'message': 'Invoice WhatsApp sent successfully'})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error sending WhatsApp: {str(e)}'})
