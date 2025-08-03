@@ -216,60 +216,66 @@
         <!-- Items Table -->
         <table class="items-table">
             <thead>
-                <tr>
-                    <th>S.No.</th>
-                    <th>Description of Goods/Services</th>
-                    <th>HSN/SAC</th>
-                    <th>Quantity</th>
-                    <th>Unit</th>
-                    <th>Rate (₹)</th>
-                    <th>Amount (₹)</th>
+                <tr style="background-color: #4285f4; color: white;">
+                    <th style="text-align: center; padding: 8px; font-size: 12px;">S.No.</th>
+                    <th style="text-align: center; padding: 8px; font-size: 12px;">Description of Goods/Services</th>
+                    <th style="text-align: center; padding: 8px; font-size: 12px;">HSN/SAC</th>
+                    <th style="text-align: center; padding: 8px; font-size: 12px;">Quantity</th>
+                    <th style="text-align: center; padding: 8px; font-size: 12px;">Unit</th>
+                    <th style="text-align: center; padding: 8px; font-size: 12px;">Rate (₹)</th>
+                    <th style="text-align: center; padding: 8px; font-size: 12px;">Amount (₹)</th>
                 </tr>
             </thead>
             <tbody>
-                {% for item in so.items %}
-                <tr>
-                    <td class="text-center">{{ loop.index }}</td>
-                    <td>
-                        <strong>{{ item.item.name if item.item else 'N/A' }}</strong>
-                        {% if item.item and item.item.description %}
-                            <br><small>{{ item.item.description }}</small>
-                        {% endif %}
-                    </td>
-                    <td class="text-center">{{ item.item.hsn_code if item.item and item.item.hsn_code else '9999' }}</td>
-                    <td class="text-right">{{ item.quantity_ordered }}</td>
-                    <td class="text-center">{{ item.item.unit_of_measure if item.item else 'Nos' }}</td>
-                    <td class="text-right">{{ "%.2f"|format(item.unit_price or 0) }}</td>
-                    <td class="text-right">{{ "%.2f"|format((item.quantity_ordered or 0) * (item.unit_price or 0)) }}</td>
-                </tr>
-                {% endfor %}
+                {% if so.items %}
+                    {% for item in so.items %}
+                    <tr>
+                        <td style="text-align: center; padding: 8px; font-size: 11px;">{{ loop.index }}</td>
+                        <td style="padding: 8px; font-size: 11px;">
+                            {{ item.item.name if item.item else 'N/A' }}
+                            {% if item.item and item.item.description %}
+                                <br><span style="font-size: 10px; color: #666;">{{ item.item.description }}</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align: center; padding: 8px; font-size: 11px;">{{ item.item.hsn_code if item.item and item.item.hsn_code else '9999' }}</td>
+                        <td style="text-align: right; padding: 8px; font-size: 11px;">{{ "%.2f"|format(item.quantity_ordered or 0) }}</td>
+                        <td style="text-align: center; padding: 8px; font-size: 11px;">{{ item.item.unit_of_measure if item.item else 'Nos' }}</td>
+                        <td style="text-align: right; padding: 8px; font-size: 11px;">{{ "%.2f"|format(item.unit_price or 0) }}</td>
+                        <td style="text-align: right; padding: 8px; font-size: 11px;">{{ "%.2f"|format((item.quantity_ordered or 0) * (item.unit_price or 0)) }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 20px; font-size: 11px; color: #666;">No items found in this sales order</td>
+                    </tr>
+                {% endif %}
             </tbody>
         </table>
 
-        <!-- Totals Section -->
+        <!-- Totals Section - Tally Style -->
         <div class="totals-section">
-            <table class="totals-table">
+            <table class="totals-table" style="border-collapse: collapse; min-width: 300px;">
                 <tr>
-                    <td class="label">Subtotal:</td>
-                    <td class="text-right">₹{{ "%.2f"|format(subtotal) }}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; background-color: #f8f9fa; font-weight: bold; font-size: 11px;">Subtotal:</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: right; font-size: 11px;">₹{{ "%.2f"|format(subtotal) }}</td>
                 </tr>
                 <tr>
-                    <td class="label">CGST ({{ (gst_rate/2) }}%):</td>
-                    <td class="text-right">₹{{ "%.2f"|format(gst_amount/2) }}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; background-color: #f8f9fa; font-weight: bold; font-size: 11px;">CGST ({{ "%.1f"|format(gst_rate/2) }}%):</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: right; font-size: 11px;">₹{{ "%.2f"|format(gst_amount/2) }}</td>
                 </tr>
                 <tr>
-                    <td class="label">SGST ({{ (gst_rate/2) }}%):</td>
-                    <td class="text-right">₹{{ "%.2f"|format(gst_amount/2) }}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; background-color: #f8f9fa; font-weight: bold; font-size: 11px;">SGST ({{ "%.1f"|format(gst_rate/2) }}%):</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: right; font-size: 11px;">₹{{ "%.2f"|format(gst_amount/2) }}</td>
                 </tr>
-                <tr class="total-row">
-                    <td>Total Amount:</td>
-                    <td class="text-right">₹{{ "%.2f"|format(total_with_gst) }}</td>
+                <tr style="background-color: #4285f4; color: white;">
+                    <td style="border: 1px solid #ddd; padding: 8px; font-weight: bold; font-size: 11px;">Total Amount:</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: right; font-weight: bold; font-size: 11px;">₹{{ "%.2f"|format(total_with_gst) }}</td>
                 </tr>
             </table>
         </div>
 
-        <!-- Amount in Words -->
-        <div class="amount-words">
+        <!-- Amount in Words - Tally Style -->
+        <div style="background-color: #e9ecef; padding: 10px; border: 1px solid #ddd; margin-bottom: 20px; font-size: 11px;">
             <strong>Amount in Words:</strong> {{ amount_words.title() }} Rupees Only
         </div>
 

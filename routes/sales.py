@@ -176,6 +176,9 @@ def add_sales_order():
         db.session.add(so)
         db.session.flush()  # Get the SO ID
         
+        # Process enhanced SO items from form
+        process_so_items(so, request.form)
+        
         # Create accounting entries for SO booking
         from services.accounting_automation import AccountingAutomation
         accounting_result = AccountingAutomation.create_sales_order_voucher(so)
@@ -650,3 +653,54 @@ def send_invoice_whatsapp(id):
         
     except Exception as e:
         return jsonify({'success': False, 'message': f'Error sending WhatsApp: {str(e)}'})
+
+def process_so_items(so, form_data):
+    """Process enhanced SO items with industrial-standard fields"""
+    # Clear existing items
+    SalesOrderItem.query.filter_by(sales_order_id=so.id).delete()
+    
+    total_amount = 0
+    item_counter = 1
+    
+    # Process items from form
+    for key, value in form_data.items():
+        if key.startswith('item_id_') and value and value != '':
+            try:
+                item_id = int(value)
+                
+                # Extract item suffix to get related fields
+                if '_new_' in key:
+                    item_suffix = key.split('_new_')[1]
+                    prefix = f'new_{item_suffix}'
+                else:
+                    item_suffix = key.split('_')[2] if len(key.split('_')) > 2 else key.split('_')[1]
+                    prefix = item_suffix
+                
+                # Get other fields for this item
+                rm_code = form_data.get(f'rm_code_{prefix}', '')
+                description = form_data.get(f'description_{prefix}', '')
+                drawing_spec = form_data.get(f'drawing_spec_{prefix}', '')
+                hsn_code = form_data.get(f'hsn_code_{prefix}', '')
+                gst_rate = float(form_data.get(f'gst_rate_{prefix}', 18.0) or 18.0)
+                uom = form_data.get(f'uom_{prefix}', '')
+                qty = float(form_data.get(f'qty_{prefix}', 0) or 0)
+                rate = float(form_data.get(f'rate_{prefix}', 0) or 0)
+                amount = float(form_data.get(f'amount_{prefix}', 0) or 0)
+                
+                if qty > 0 and rate > 0:
+                    so_item = SalesOrderItem(
+                        sales_order_id=so.id,
+                        item_id=item_id,
+                        # Legacy fields for compatibility
+                        quantity_ordered=qty,
+                        unit_price=rate,
+                        total_price=amount
+                    )
+                    db.session.add(so_item)
+                    total_amount += amount
+                    item_counter += 1
+            except (ValueError, TypeError):
+                continue  # Skip invalid entries
+    
+    # Update SO total amount
+    so.total_amount = total_amount
