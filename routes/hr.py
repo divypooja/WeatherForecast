@@ -277,6 +277,11 @@ def add_salary():
     form = SalaryRecordForm()
     form.salary_number.data = SalaryRecord.generate_salary_number()
     
+    # Ensure employee dropdown has choices populated
+    if not form.employee_id.choices or len(form.employee_id.choices) <= 1:
+        employees = Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
+        form.employee_id.choices = [(0, 'Select Employee')] + [(emp.id, f'{emp.name} ({emp.employee_code})') for emp in employees]
+    
     # Handle attendance calculation button
     if form.calculate_attendance.data and form.employee_id.data and form.pay_period_start.data and form.pay_period_end.data and form.daily_rate.data:
         # Create temporary salary record to calculate attendance
