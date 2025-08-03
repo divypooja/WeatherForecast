@@ -511,8 +511,11 @@ class ComprehensiveNotificationService:
     def send_salary_payment_notification(self, salary_record):
         """Send notification when salary is paid"""
         try:
-            # Send to HR team and the employee
-            hr_recipients = self._get_recipients(['accounts_events'])  # HR/Accounts team
+            # Send to HR team using the role-based method
+            template = {
+                'subject': f"Salary Paid: {salary_record.employee.name} - {salary_record.salary_number}",
+                'message': f"Salary payment processed for {salary_record.employee.name}. Net amount: ₹{salary_record.net_amount}"
+            }
             
             subject = f"Salary Paid: {salary_record.employee.name} - {salary_record.salary_number}"
             
@@ -555,8 +558,9 @@ Payment Date: {template_vars['payment_date']}
 Accounting entries have been automatically created.
             """
             
-            self._send_to_recipients(hr_recipients, subject, hr_message.strip(), 'hr', 
-                                   event_type='salary_paid', event_id=salary_record.id)
+            # Send notification to HR team
+            template['message'] = hr_message.strip()
+            self._send_to_role_recipients('hr_team', template)
             
             # Employee notification (if email available)
             if salary_record.employee.email:

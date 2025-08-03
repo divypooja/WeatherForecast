@@ -735,7 +735,7 @@ class AccountingAutomation:
                         code='1003',
                         name='Employee Advances',
                         account_type='asset',
-                        group_id=asset_group.id
+                        account_group_id=asset_group.id
                     )
                     db.session.add(advance_account)
                     db.session.flush()
@@ -802,8 +802,7 @@ class AccountingAutomation:
                     code='1003',
                     name='Employee Advances',
                     account_type='asset',
-                    group_id=asset_group.id,
-                    is_system_account=True
+                    account_group_id=asset_group.id
                 )
                 db.session.add(advance_account)
                 db.session.flush()
