@@ -1,0 +1,119 @@
+Great — let’s now design your **enhanced BOM (Bill of Materials)** module with **all real-world features**, including:
+
+---
+
+## ✅ **Core BOM Objectives**
+
+Your BOM should now handle:
+
+* Multi-level component relationships (nested BOM)
+* Unit cost calculations (RM + Labor + Machine)
+* Batch tracking
+* Inventory linking
+* Accounting impact
+* Process stages for job work or in-house steps
+
+---
+
+## 🧩 **1. BOM Structure Design**
+
+### 🎯 **BOM Header**
+
+| Field           | Purpose                             |
+| --------------- | ----------------------------------- |
+| BOM Code        | Unique ID like `BOM-001`            |
+| Product Name    | Final product (e.g. "Castor Wheel") |
+| Version         | BOM versioning                      |
+| Effective Date  | Start date of BOM validity          |
+| Output Quantity | Final quantity (e.g. 1 wheel)       |
+
+---
+
+### 🧱 **2. BOM Components Table**
+
+| Item Type | Item Name      | Quantity | UOM | Source     | Cost/Unit | Total Cost |
+| --------- | -------------- | -------- | --- | ---------- | --------- | ---------- |
+| RM        | MS Sheet       | 1.5      | kg  | Inventory  | ₹50       | ₹75        |
+| RM        | Nut & Bolt     | 1        | pcs | Inventory  | ₹10       | ₹10        |
+| Process   | Cutting        | -        | -   | Job Work   | ₹5        | ₹5         |
+| Process   | Zincing        | -        | -   | Vendor B   | ₹4        | ₹4         |
+| Machine   | Press Machine  | 1        | Hr  | In-house   | ₹10/hr    | ₹10        |
+| Labour    | Assembler Wage | 0.5      | Hr  | Department | ₹30/hr    | ₹15        |
+
+**→ Auto-calculated Total Cost: ₹119 per unit**
+
+✅ You can also support **Phantom BOMs**: group components used in multiple final products.
+
+---
+
+### 🔁 **3. Process Routing Section (If Needed)**
+
+| Step No. | Stage    | Performed By | Inputs     | Output     | Machine     | Time Est. |
+| -------- | -------- | ------------ | ---------- | ---------- | ----------- | --------- |
+| 1        | Cutting  | Vendor A     | MS Sheet   | Cut Plate  | -           | 30 mins   |
+| 2        | Zincing  | Vendor B     | Cut Plate  | Zinc Plate | -           | 1 hour    |
+| 3        | Assembly | In-house     | Zinc Plate | Castor     | Press Mach. | 45 mins   |
+
+✅ Supports job work cost integration.
+
+---
+
+### ⚙️ **4. Machine and Labor Settings (Optional Controls)**
+
+* \[✔] Use Machine Rate for Costing
+* \[✔] Use Labor Rate
+* Rate Master Configuration Section:
+
+| Entity     | Rate Type | UOM  | Rate    |
+| ---------- | --------- | ---- | ------- |
+| Press Mach | Hourly    | Hr   | ₹10/hr  |
+| Operator A | Piece     | Unit | ₹3/unit |
+
+---
+
+## 🔄 **5. Inventory & Accounting Integration**
+
+* 💡 RM auto-reserved from Inventory
+* 📥 BOM cost used in GRN / Finished Good valuation
+* 💰 Labor/Machine → WIP ledger (Cost of Production)
+* 🔁 Changes in BOM reflect in per-unit **Cost Sheet**
+* 📊 Sync with Accounting for COGS and job costing
+
+---
+
+## 🧠 AI-Driven Suggestions (Optional)
+
+* Auto-calculate **optimum cut plans**
+* Alert if BOM cost > last sale price (profit risk)
+* Suggest **alternate RM** based on availability
+
+---
+
+## 📋 BOM Form Layout – Tabs
+
+```
+[BOM Info] [Components] [Process Routing] [Machine & Labor] [Cost Sheet Preview] [Accounting Linkage]
+```
+
+---
+
+## 📷 Want to See the Visual Form?
+
+I've already generated a UI mockup earlier with:
+
+* Input table
+* Job stages
+* Machine & Labor toggle
+* Cost calculation
+
+Let me know if you'd like to **turn that into an HTML or Flask Jinja2 form**.
+
+---
+
+Would you also like:
+
+* ✅ A sample nested BOM example (parent-child)?
+* ✅ Python/Flask model + form design?
+* ✅ AI-powered BOM optimization logic?
+
+Let me know and I’ll generate it for you.
