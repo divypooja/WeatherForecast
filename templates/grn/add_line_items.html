@@ -24,6 +24,7 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
+                        {% if grn.job_work_id and grn.job_work %}
                         <div class="col-md-3">
                             <strong>Job Work:</strong><br>
                             <a href="{{ url_for('jobwork.detail', id=grn.job_work.id) }}" class="text-decoration-none">
@@ -34,6 +35,27 @@
                             <strong>Customer:</strong><br>
                             {{ grn.job_work.customer_name }}
                         </div>
+                        {% elif grn.purchase_order_id and grn.purchase_order %}
+                        <div class="col-md-3">
+                            <strong>Purchase Order:</strong><br>
+                            <a href="{{ url_for('purchase.detail', id=grn.purchase_order.id) }}" class="text-decoration-none">
+                                {{ grn.purchase_order.po_number }}
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Supplier:</strong><br>
+                            {{ grn.purchase_order.supplier.name }}
+                        </div>
+                        {% else %}
+                        <div class="col-md-3">
+                            <strong>Type:</strong><br>
+                            <span class="text-muted">Direct GRN</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Reference:</strong><br>
+                            <span class="text-muted">-</span>
+                        </div>
+                        {% endif %}
                         <div class="col-md-3">
                             <strong>Received Date:</strong><br>
                             {{ grn.received_date.strftime('%d/%m/%Y') }}
