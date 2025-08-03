@@ -33,7 +33,7 @@ class OCRService:
                filename.rsplit('.', 1)[1].lower() in self.allowed_extensions
     
     def process_uploaded_file(self, file, module_type: str, reference_id: Optional[int] = None, 
-                            reference_type: Optional[str] = None, user_id: int = None) -> Dict:
+                            reference_type: Optional[str] = None, user_id: Optional[int] = None) -> Dict:
         """
         Process uploaded file and return OCR results
         
@@ -74,17 +74,16 @@ class OCRService:
                 return {'success': False, 'error': f'File too large. Maximum size: {settings.max_file_size_mb}MB'}
             
             # Create OCR result record
-            ocr_result = OCRResultModel(
-                file_path=file_path,
-                original_filename=file.filename,
-                file_type=file_type,
-                file_size=file_size,
-                module_type=module_type,
-                reference_id=reference_id,
-                reference_type=reference_type,
-                status='processing',
-                created_by=user_id
-            )
+            ocr_result = OCRResultModel()
+            ocr_result.file_path = file_path
+            ocr_result.original_filename = file.filename
+            ocr_result.file_type = file_type
+            ocr_result.file_size = file_size
+            ocr_result.module_type = module_type
+            ocr_result.reference_id = reference_id
+            ocr_result.reference_type = reference_type
+            ocr_result.status = 'processing'
+            ocr_result.created_by = user_id or 1  # Default user ID if not provided
             db.session.add(ocr_result)
             db.session.commit()
             

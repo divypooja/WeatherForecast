@@ -12,6 +12,7 @@ import json
 import os
 import time
 import logging
+import subprocess
 from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass
 from skimage import restoration, filters, morphology, segmentation
@@ -28,8 +29,8 @@ class OCRResult:
     processing_time: float
     engine_used: str
     error_message: str = ""
-    extracted_fields: Dict = None
-    line_items: List[Dict] = None
+    extracted_fields: Optional[Dict] = None
+    line_items: Optional[List[Dict]] = None
 
 class ImagePreprocessor:
     """Advanced image preprocessing using OpenCV and scikit-image"""
@@ -143,7 +144,7 @@ class ImagePreprocessor:
                     if abs(avg_angle) > 0.5:  # Only rotate if skew is significant
                         (h, w) = image.shape[:2]
                         center = (w // 2, h // 2)
-                        rotation_matrix = cv2.getRotationMatrix2D(center, avg_angle, 1.0)
+                        rotation_matrix = cv2.getRotationMatrix2D(center, float(avg_angle), 1.0)
                         image = cv2.warpAffine(image, rotation_matrix, (w, h), 
                                              flags=cv2.INTER_CUBIC, 
                                              borderMode=cv2.BORDER_REPLICATE)
@@ -492,7 +493,8 @@ class OCREngine:
         if file_ext == '.pdf':
             # Convert PDF to image
             try:
-                images = convert_from_path(file_path, first_page=1, last_page=1, dpi=300)
+                # Try with poppler_path set to None first, then fallback
+                images = convert_from_path(file_path, first_page=1, last_page=1, dpi=300, poppler_path=None)
                 if images:
                     # Save first page as image
                     img_path = os.path.join(self.temp_dir, f"converted_{int(time.time())}.png")
@@ -501,8 +503,25 @@ class OCREngine:
                 else:
                     raise ValueError("Could not convert PDF to image")
             except Exception as e:
+                logger.warning(f"PDF conversion failed with standard path: {e}")
+                # Try to find poppler in Nix store
+                try:
+                    result = subprocess.run(['find', '/nix/store', '-name', 'pdftoppm', '-type', 'f'], 
+                                          capture_output=True, text=True, timeout=5)
+                    if result.returncode == 0 and result.stdout.strip():
+                        poppler_bin = os.path.dirname(result.stdout.strip().split('\n')[0])
+                        logger.info(f"Found poppler at: {poppler_bin}")
+                        images = convert_from_path(file_path, first_page=1, last_page=1, dpi=300, poppler_path=poppler_bin)
+                        if images:
+                            img_path = os.path.join(self.temp_dir, f"converted_{int(time.time())}.png")
+                            images[0].save(img_path, 'PNG')
+                            return img_path
+                except Exception as nix_error:
+                    logger.warning(f"Nix poppler search failed: {nix_error}")
+                
+                # Final fallback - skip PDF processing for now
                 logger.error(f"PDF conversion failed: {e}")
-                raise e
+                raise ValueError(f"PDF processing not available. Please upload image files (PNG, JPG) instead. Error: {e}")
         
         elif file_ext in ['.jpg', '.jpeg', '.png', '.tiff', '.bmp']:
             return file_path
