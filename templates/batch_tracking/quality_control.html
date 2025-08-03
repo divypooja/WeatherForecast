@@ -172,14 +172,14 @@
                                     <tr>
                                         <td>
                                             <a href="{{ url_for('batch_tracking.batch_detail', batch_id=batch.id) }}">
-                                                <strong>{{ batch.batch_number }}</strong>
+                                                <strong>{{ batch.batch_code }}</strong>
                                             </a>
                                         </td>
                                         <td>{{ batch.item.name }}</td>
                                         <td>{{ batch.total_quantity }} {{ batch.item.unit_of_measure }}</td>
                                         <td>
-                                            <span class="status-badge status-{{ batch.quality_status or 'pending' }}">
-                                                {{ (batch.quality_status or 'pending').replace('_', ' ').title() }}
+                                            <span class="status-badge status-{{ batch.inspection_status or 'pending' }}">
+                                                {{ (batch.inspection_status or 'pending').replace('_', ' ').title() }}
                                             </span>
                                         </td>
                                         <td>
@@ -193,7 +193,7 @@
                                                    class="btn btn-outline-primary" title="View Details">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
-                                                {% if batch.quality_status == 'pending' %}
+                                                {% if batch.inspection_status == 'pending' %}
                                                 <button class="btn btn-outline-success" 
                                                         onclick="updateQualityStatus({{ batch.id }}, 'approved')" 
                                                         title="Approve">
