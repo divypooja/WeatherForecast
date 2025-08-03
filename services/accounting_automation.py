@@ -565,7 +565,6 @@ class AccountingAutomation:
                 reference_number=salary_record.salary_number,
                 narration=f"Salary payment to {salary_record.employee.name} for {salary_record.pay_period_start.strftime('%b %Y')}",
                 total_amount=salary_record.net_amount,
-                status='posted',  # Auto-post salary vouchers for immediate visibility
                 created_by=created_by
             )
             
