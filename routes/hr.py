@@ -283,26 +283,38 @@ def add_salary():
         form.employee_id.choices = [(0, 'Select Employee')] + [(emp.id, f'{emp.name} ({emp.employee_code})') for emp in employees]
     
     # Handle attendance calculation button
-    if form.calculate_attendance.data and form.employee_id.data and form.pay_period_start.data and form.pay_period_end.data and form.daily_rate.data:
-        # Create temporary salary record to calculate attendance
-        temp_salary = SalaryRecord(
-            employee_id=form.employee_id.data,
-            pay_period_start=form.pay_period_start.data,
-            pay_period_end=form.pay_period_end.data,
-            daily_rate=form.daily_rate.data,
-            overtime_rate=form.overtime_rate.data or 0
-        )
-        
-        # Calculate attendance-based values
-        attendance_data = temp_salary.calculate_attendance_based_salary()
-        
-        # Update form fields with calculated values
-        form.expected_working_days.data = attendance_data['expected_working_days']
-        form.actual_days_worked.data = attendance_data['actual_days_worked']
-        form.basic_amount.data = attendance_data['basic_amount']
-        form.overtime_hours.data = attendance_data['overtime_hours']
-        
-        flash(f'Attendance calculated: {attendance_data["actual_days_worked"]} days worked out of {attendance_data["expected_working_days"]} expected days', 'info')
+    if form.calculate_attendance.data and form.validate():
+        if form.employee_id.data and form.pay_period_start.data and form.pay_period_end.data and form.daily_rate.data:
+            try:
+                # Create temporary salary record to calculate attendance
+                temp_salary = SalaryRecord(
+                    employee_id=form.employee_id.data,
+                    pay_period_start=form.pay_period_start.data,
+                    pay_period_end=form.pay_period_end.data,
+                    daily_rate=form.daily_rate.data,
+                    overtime_rate=form.overtime_rate.data or 150.0  # Default overtime rate
+                )
+                
+                # Calculate attendance-based values
+                attendance_data = temp_salary.calculate_attendance_based_salary()
+                
+                # Update form fields with calculated values
+                form.expected_working_days.data = attendance_data['expected_working_days']
+                form.actual_days_worked.data = attendance_data['actual_days_worked']
+                form.basic_amount.data = attendance_data['basic_amount']
+                form.overtime_hours.data = attendance_data['overtime_hours']
+                
+                # Calculate overtime amount for display
+                overtime_amount = attendance_data['overtime_hours'] * (form.overtime_rate.data or 150.0)
+                
+                flash(f'✅ Attendance calculated successfully! {attendance_data["actual_days_worked"]} days worked out of {attendance_data["expected_working_days"]} expected days. Basic Amount: ₹{attendance_data["basic_amount"]:.2f}', 'success')
+                
+                return render_template('hr/salary_form.html', form=form, title='Add Salary Record')
+                
+            except Exception as e:
+                flash(f'❌ Error calculating attendance: {str(e)}', 'error')
+        else:
+            flash('❌ Please fill in Employee, Pay Period dates, and Daily Rate before calculating attendance.', 'warning')
     
     if form.validate_on_submit() and not form.calculate_attendance.data:
         try:
