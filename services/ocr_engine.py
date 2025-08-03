@@ -491,37 +491,21 @@ class OCREngine:
         file_ext = os.path.splitext(file_path)[1].lower()
         
         if file_ext == '.pdf':
-            # Convert PDF to image
+            # Convert PDF to image using poppler-utils
             try:
-                # Try with poppler_path set to None first, then fallback
-                images = convert_from_path(file_path, first_page=1, last_page=1, dpi=300, poppler_path=None)
+                # First try with system PATH (should work with poppler-utils installed)
+                images = convert_from_path(file_path, first_page=1, last_page=1, dpi=300)
                 if images:
                     # Save first page as image
                     img_path = os.path.join(self.temp_dir, f"converted_{int(time.time())}.png")
                     images[0].save(img_path, 'PNG')
+                    logger.info(f"Successfully converted PDF to image: {img_path}")
                     return img_path
                 else:
-                    raise ValueError("Could not convert PDF to image")
+                    raise ValueError("No pages found in PDF")
             except Exception as e:
-                logger.warning(f"PDF conversion failed with standard path: {e}")
-                # Try to find poppler in Nix store
-                try:
-                    result = subprocess.run(['find', '/nix/store', '-name', 'pdftoppm', '-type', 'f'], 
-                                          capture_output=True, text=True, timeout=5)
-                    if result.returncode == 0 and result.stdout.strip():
-                        poppler_bin = os.path.dirname(result.stdout.strip().split('\n')[0])
-                        logger.info(f"Found poppler at: {poppler_bin}")
-                        images = convert_from_path(file_path, first_page=1, last_page=1, dpi=300, poppler_path=poppler_bin)
-                        if images:
-                            img_path = os.path.join(self.temp_dir, f"converted_{int(time.time())}.png")
-                            images[0].save(img_path, 'PNG')
-                            return img_path
-                except Exception as nix_error:
-                    logger.warning(f"Nix poppler search failed: {nix_error}")
-                
-                # Final fallback - skip PDF processing for now
                 logger.error(f"PDF conversion failed: {e}")
-                raise ValueError(f"PDF processing not available. Please upload image files (PNG, JPG) instead. Error: {e}")
+                raise ValueError(f"Unable to process PDF file. Please try uploading the document as an image (PNG, JPG) instead. Error: {str(e)}")
         
         elif file_ext in ['.jpg', '.jpeg', '.png', '.tiff', '.bmp']:
             return file_path
