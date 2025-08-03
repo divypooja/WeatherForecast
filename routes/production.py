@@ -304,16 +304,22 @@ def view(production_id):
     """View production details"""
     production = Production.query.get_or_404(production_id)
     
+    # Get the item being produced
+    item = Item.query.get(production.item_id) if production.item_id else None
+    
     # Get production batches and related data
     batches = ProductionBatch.query.filter_by(production_id=production_id).all()
     
     # Get BOM items if available
     bom_items = []
-    if production.bom:
-        bom_items = production.bom.items
+    if production.bom_id:
+        bom = BOM.query.get(production.bom_id)
+        if bom:
+            bom_items = bom.items
     
     return render_template('production/view.html', 
                          production=production,
+                         item=item,
                          batches=batches,
                          bom_items=bom_items,
                          title=f'Production {production.production_number}')

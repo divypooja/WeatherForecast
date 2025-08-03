@@ -34,15 +34,15 @@
                                 </tr>
                                 <tr>
                                     <td><strong>Item:</strong></td>
-                                    <td>{{ production.item.name }} ({{ production.item.code }})</td>
+                                    <td>{{ item.name if item else 'N/A' }} ({{ item.code if item else 'N/A' }})</td>
                                 </tr>
                                 <tr>
                                     <td><strong>Quantity Planned:</strong></td>
-                                    <td>{{ production.quantity_planned }} {{ production.item.unit_of_measure }}</td>
+                                    <td>{{ production.quantity_planned }} {{ item.unit_of_measure if item else 'units' }}</td>
                                 </tr>
                                 <tr>
                                     <td><strong>Quantity Produced:</strong></td>
-                                    <td>{{ production.quantity_produced or 0 }} {{ production.item.unit_of_measure }}</td>
+                                    <td>{{ production.quantity_produced or 0 }} {{ item.unit_of_measure if item else 'units' }}</td>
                                 </tr>
                                 <tr>
                                     <td><strong>Status:</strong></td>
@@ -63,30 +63,16 @@
                         <div class="col-md-6">
                             <table class="table table-borderless">
                                 <tr>
-                                    <td><strong>Due Date:</strong></td>
-                                    <td>{{ production.due_date.strftime('%d/%m/%Y') if production.due_date else 'Not set' }}</td>
+                                    <td><strong>Production Date:</strong></td>
+                                    <td>{{ production.production_date.strftime('%d/%m/%Y') if production.production_date else 'Not set' }}</td>
                                 </tr>
                                 <tr>
-                                    <td><strong>Start Date:</strong></td>
-                                    <td>{{ production.start_date.strftime('%d/%m/%Y') if production.start_date else 'Not started' }}</td>
+                                    <td><strong>Created By:</strong></td>
+                                    <td>{{ production.creator.username if production.creator else 'N/A' }}</td>
                                 </tr>
                                 <tr>
-                                    <td><strong>End Date:</strong></td>
-                                    <td>{{ production.end_date.strftime('%d/%m/%Y') if production.end_date else 'Not completed' }}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Priority:</strong></td>
-                                    <td>
-                                        {% if production.priority == 'high' %}
-                                            <span class="badge bg-danger">High</span>
-                                        {% elif production.priority == 'medium' %}
-                                            <span class="badge bg-warning">Medium</span>
-                                        {% elif production.priority == 'low' %}
-                                            <span class="badge bg-info">Low</span>
-                                        {% else %}
-                                            <span class="badge bg-secondary">Normal</span>
-                                        {% endif %}
-                                    </td>
+                                    <td><strong>Created At:</strong></td>
+                                    <td>{{ production.created_at.strftime('%d/%m/%Y %H:%M') if production.created_at else 'N/A' }}</td>
                                 </tr>
                                 <tr>
                                     <td><strong>Batch Tracking:</strong></td>
@@ -95,6 +81,16 @@
                                             <span class="badge bg-success">Enabled</span>
                                         {% else %}
                                             <span class="badge bg-secondary">Disabled</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Quality Control:</strong></td>
+                                    <td>
+                                        {% if production.quality_control_passed %}
+                                            <span class="badge bg-success">Passed</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Pending</span>
                                         {% endif %}
                                     </td>
                                 </tr>
@@ -128,22 +124,21 @@
                         </div>
                     </div>
                     <p class="mb-1"><strong>{{ production.quantity_produced or 0 }}</strong> of <strong>{{ production.quantity_planned }}</strong> produced</p>
-                    <small class="text-muted">{{ production.item.unit_of_measure }}</small>
+                    <small class="text-muted">{{ item.unit_of_measure if item else 'units' }}</small>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- BOM Information -->
-    {% if production.bom %}
+    {% if bom_items %}
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h5><i class="fas fa-list-alt me-2"></i>Bill of Materials - {{ production.bom.bom_number }}</h5>
+                    <h5><i class="fas fa-list-alt me-2"></i>Bill of Materials</h5>
                 </div>
                 <div class="card-body">
-                    {% if bom_items %}
                     <div class="table-responsive">
                         <table class="table table-striped">
                             <thead class="table-dark">
@@ -156,24 +151,21 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for item in bom_items %}
+                                {% for bom_item in bom_items %}
                                 <tr>
                                     <td>
-                                        <strong>{{ item.material.name }}</strong>
-                                        <br><small class="text-muted">{{ item.material.code }}</small>
+                                        <strong>{{ bom_item.material.name if bom_item.material else 'N/A' }}</strong>
+                                        <br><small class="text-muted">{{ bom_item.material.code if bom_item.material else 'N/A' }}</small>
                                     </td>
-                                    <td>{{ item.quantity_required }} {{ item.material.unit_of_measure }}</td>
-                                    <td>{{ item.quantity_required * production.quantity_planned }} {{ item.material.unit_of_measure }}</td>
-                                    <td>₹{{ "%.2f"|format(item.material.purchase_price or 0) }}</td>
-                                    <td>₹{{ "%.2f"|format((item.material.purchase_price or 0) * item.quantity_required * production.quantity_planned) }}</td>
+                                    <td>{{ bom_item.quantity_required }} {{ bom_item.material.unit_of_measure if bom_item.material else 'units' }}</td>
+                                    <td>{{ bom_item.quantity_required * production.quantity_planned }} {{ bom_item.material.unit_of_measure if bom_item.material else 'units' }}</td>
+                                    <td>₹{{ "%.2f"|format(bom_item.material.purchase_price or 0) if bom_item.material else '0.00' }}</td>
+                                    <td>₹{{ "%.2f"|format((bom_item.material.purchase_price or 0) * bom_item.quantity_required * production.quantity_planned) if bom_item.material else '0.00' }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
-                    {% else %}
-                    <p class="text-muted">No BOM items defined for this production.</p>
-                    {% endif %}
                 </div>
             </div>
         </div>
@@ -255,20 +247,17 @@
 <script>
 function startProduction(productionId) {
     if (confirm('Are you sure you want to start this production?')) {
-        // Implementation for starting production
         console.log('Starting production:', productionId);
     }
 }
 
 function completeProduction(productionId) {
     if (confirm('Are you sure you want to mark this production as completed?')) {
-        // Implementation for completing production
         console.log('Completing production:', productionId);
     }
 }
 
 function viewBatchConsumption(productionId) {
-    // Implementation for viewing batch consumption
     console.log('Viewing batch consumption for production:', productionId);
 }
 </script>
