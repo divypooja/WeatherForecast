@@ -46,6 +46,8 @@ def create_app():
     from models_batch import InventoryBatch, BatchMovement
     from models_batch_movement import BatchMovementLedger, BatchConsumptionReport
     from models_settings import Company, UserCompanyAccess, SystemSettings, InventorySettings, AccountingSettings, ProductionSettings, JobWorkSettings
+    from models_accounting import Account, AccountGroup, Voucher, VoucherType, JournalEntry, Invoice, InvoiceItem
+    from models_accounting_settings import AdvancedAccountingSettings, CostCenter, LedgerMapping, PaymentMethod, InventoryValuation
 
     
     @login_manager.user_loader
