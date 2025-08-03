@@ -133,10 +133,9 @@
                                             <i class="fas fa-money-bill"></i>
                                         </a>
                                     {% endif %}
-                                    <a href="#" 
+                                    <a href="{{ url_for('grn_workflow.view_invoice', invoice_id=item.invoice_id) }}" 
                                        class="btn btn-sm btn-outline-info" 
-                                       title="View Invoice"
-                                       onclick="alert('Invoice view feature coming soon!')">
+                                       title="View Invoice">
                                         <i class="fas fa-eye"></i>
                                     </a>
                                 </td>
