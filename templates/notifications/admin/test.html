@@ -148,7 +148,7 @@
         
         <div class="row">
             <div class="col-md-6">
-                <button class="btn btn-warning btn-block mb-2" onclick="testConfiguration()">
+                <button class="btn btn-warning btn-block mb-2" onclick="testConfiguration()" id="test-config-btn">
                     <i class="fas fa-cog"></i> Test System Configuration
                 </button>
             </div>
@@ -333,18 +333,41 @@ function testConfiguration() {
     });
 }
 
-// Update recipient placeholder based on notification type
-document.getElementById('notification_type').addEventListener('change', function() {
-    const recipientField = document.getElementById('recipient');
-    const type = this.value;
-    
-    if (type === 'email') {
-        recipientField.placeholder = 'user@example.com';
-    } else if (type === 'sms' || type === 'whatsapp') {
-        recipientField.placeholder = '+91 9876543210';
-    } else {
-        recipientField.placeholder = 'Email or Phone Number';
+// Update recipient placeholder based on notification type (only if element exists)
+document.addEventListener('DOMContentLoaded', function() {
+    const notificationTypeElement = document.getElementById('notification_type');
+    if (notificationTypeElement) {
+        notificationTypeElement.addEventListener('change', function() {
+            const recipientField = document.getElementById('recipient');
+            if (recipientField) {
+                const type = this.value;
+                
+                if (type === 'email') {
+                    recipientField.placeholder = 'user@example.com';
+                } else if (type === 'sms' || type === 'whatsapp') {
+                    recipientField.placeholder = '+91 9876543210';
+                } else {
+                    recipientField.placeholder = 'Email or Phone Number';
+                }
+            }
+        });
     }
 });
+
+// Make testConfiguration available globally
+window.testConfiguration = testConfiguration;
+
+// Also bind directly to button as backup
+document.addEventListener('DOMContentLoaded', function() {
+    const testConfigBtn = document.getElementById('test-config-btn');
+    if (testConfigBtn) {
+        testConfigBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            testConfiguration();
+        });
+    }
+});
+
+console.log('Test configuration function loaded:', typeof testConfiguration);
 </script>
 {% endblock %}
