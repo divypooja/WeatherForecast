@@ -1,0 +1,378 @@
+{% extends "base.html" %}
+
+{% block title %}Notification Logs{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-history"></i> Notification Logs</h2>
+                <div class="btn-group">
+                    <a href="{{ url_for('notifications.admin_dashboard') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                    <button class="btn btn-outline-danger" onclick="confirmClearLogs()">
+                        <i class="fas fa-trash"></i> Clear All Logs
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Stats -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <form method="GET" class="row g-3">
+                                <div class="col-md-3">
+                                    <label for="type_filter" class="form-label">Type</label>
+                                    <select name="type" id="type_filter" class="form-select">
+                                        <option value="">All Types</option>
+                                        <option value="email" {{ 'selected' if request.args.get('type') == 'email' else '' }}>Email</option>
+                                        <option value="sms" {{ 'selected' if request.args.get('type') == 'sms' else '' }}>SMS</option>
+                                        <option value="whatsapp" {{ 'selected' if request.args.get('type') == 'whatsapp' else '' }}>WhatsApp</option>
+                                        <option value="in_app" {{ 'selected' if request.args.get('type') == 'in_app' else '' }}>In-App</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="status_filter" class="form-label">Status</label>
+                                    <select name="status" id="status_filter" class="form-select">
+                                        <option value="">All Statuses</option>
+                                        <option value="success" {{ 'selected' if request.args.get('status') == 'success' else '' }}>Success</option>
+                                        <option value="failed" {{ 'selected' if request.args.get('status') == 'failed' else '' }}>Failed</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="date_from" class="form-label">From Date</label>
+                                    <input type="date" name="date_from" id="date_from" class="form-control" 
+                                           value="{{ request.args.get('date_from', '') }}">
+                                </div>
+                                <div class="col-md-3 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-primary me-2">
+                                        <i class="fas fa-filter"></i> Filter
+                                    </button>
+                                    <a href="{{ url_for('notifications.admin_logs') }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-times"></i> Clear
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <h4 class="mb-0 text-success">{{ success_count }}</h4>
+                                    <small class="text-muted">Successful</small>
+                                </div>
+                                <div class="col-6">
+                                    <h4 class="mb-0 text-danger">{{ failed_count }}</h4>
+                                    <small class="text-muted">Failed</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logs Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-list"></i> Notification Logs ({{ logs.total }} total)</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if logs.items %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Type</th>
+                                    <th>Recipient</th>
+                                    <th>Subject</th>
+                                    <th>Status</th>
+                                    <th>Error</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in logs.items %}
+                                <tr class="{{ 'table-success' if log.success else 'table-danger' }}">
+                                    <td>
+                                        <strong>{{ log.sent_at.strftime('%d/%m/%Y %H:%M') if log.sent_at else '-' }}</strong>
+                                        <br><small class="text-muted">{{ log.sent_at.strftime('%A') if log.sent_at else '-' }}</small>
+                                    </td>
+                                    <td>
+                                        {% if log.type == 'email' %}
+                                        <span class="badge bg-primary">
+                                            <i class="fas fa-envelope"></i> Email
+                                        </span>
+                                        {% elif log.type == 'sms' %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-sms"></i> SMS
+                                        </span>
+                                        {% elif log.type == 'whatsapp' %}
+                                        <span class="badge bg-info">
+                                            <i class="fab fa-whatsapp"></i> WhatsApp
+                                        </span>
+                                        {% elif log.type == 'in_app' %}
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-bell"></i> In-App
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-light text-dark">{{ log.type or 'Unknown' }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <strong>{{ log.recipient[:30] if log.recipient else 'No recipient' }}{% if log.recipient and log.recipient|length > 30 %}...{% endif %}</strong>
+                                        {% if log.recipient_type %}
+                                        <br><small class="text-muted">{{ log.recipient_type.title() }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span title="{{ log.subject if log.subject else 'No subject' }}">
+                                            {{ log.subject[:40] if log.subject else 'No subject' }}{% if log.subject and log.subject|length > 40 %}...{% endif %}
+                                        </span>
+                                        {% if log.message %}
+                                        <br><small class="text-muted" title="{{ log.message }}">
+                                            {{ log.message[:30] }}{% if log.message|length > 30 %}...{% endif %}
+                                        </small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if log.success %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check"></i> Success
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-times"></i> Failed
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if log.error_message %}
+                                        <span class="text-danger small" title="{{ log.error_message }}">
+                                            {{ log.error_message[:30] }}{% if log.error_message|length > 30 %}...{% endif %}
+                                        </span>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-info" title="View Details" 
+                                                    onclick="viewLogDetails({{ log.id }})">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            {% if not log.success %}
+                                            <button class="btn btn-outline-warning" title="Retry" 
+                                                    onclick="retryNotification({{ log.id }})">
+                                                <i class="fas fa-redo"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if logs.pages > 1 %}
+                    <div class="card-footer">
+                        <nav aria-label="Logs pagination">
+                            <ul class="pagination justify-content-center mb-0">
+                                {% if logs.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('notifications.admin_logs', page=logs.prev_num, 
+                                        type=request.args.get('type', ''), 
+                                        status=request.args.get('status', ''), 
+                                        date_from=request.args.get('date_from', '')) }}">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </a>
+                                </li>
+                                {% endif %}
+                                
+                                {% for page_num in logs.iter_pages() %}
+                                    {% if page_num %}
+                                        {% if page_num != logs.page %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('notifications.admin_logs', page=page_num, 
+                                                type=request.args.get('type', ''), 
+                                                status=request.args.get('status', ''), 
+                                                date_from=request.args.get('date_from', '')) }}">
+                                                {{ page_num }}
+                                            </a>
+                                        </li>
+                                        {% else %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ page_num }}</span>
+                                        </li>
+                                        {% endif %}
+                                    {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if logs.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('notifications.admin_logs', page=logs.next_num, 
+                                        type=request.args.get('type', ''), 
+                                        status=request.args.get('status', ''), 
+                                        date_from=request.args.get('date_from', '')) }}">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
+
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No Notification Logs</h5>
+                        <p class="text-muted">No notifications have been sent yet or all logs have been cleared.</p>
+                        <a href="{{ url_for('notifications.test_notifications') }}" class="btn btn-primary">
+                            <i class="fas fa-flask"></i> Send Test Notification
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Log Details Modal -->
+<div class="modal fade" id="logDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Notification Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="logDetailsContent">
+                <div class="text-center py-3">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Clear Logs Confirmation Modal -->
+<div class="modal fade" id="clearLogsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Clear All Logs</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to clear all notification logs?</p>
+                <p class="text-danger"><strong>Warning:</strong> This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="clearAllLogs()">Clear All Logs</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function viewLogDetails(logId) {
+    const modal = new bootstrap.Modal(document.getElementById('logDetailsModal'));
+    modal.show();
+    
+    fetch(`/notifications/api/log-details/${logId}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('logDetailsContent').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Basic Information</h6>
+                        <table class="table table-sm">
+                            <tr><th>Type:</th><td>${data.type}</td></tr>
+                            <tr><th>Recipient:</th><td>${data.recipient}</td></tr>
+                            <tr><th>Sent At:</th><td>${data.sent_at}</td></tr>
+                            <tr><th>Status:</th><td><span class="badge ${data.success ? 'bg-success' : 'bg-danger'}">${data.success ? 'Success' : 'Failed'}</span></td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Message Details</h6>
+                        <table class="table table-sm">
+                            <tr><th>Subject:</th><td>${data.subject || 'No subject'}</td></tr>
+                            <tr><th>Message:</th><td>${data.message || 'No message'}</td></tr>
+                            ${data.error_message ? `<tr><th>Error:</th><td class="text-danger">${data.error_message}</td></tr>` : ''}
+                        </table>
+                    </div>
+                </div>
+            `;
+        })
+        .catch(error => {
+            document.getElementById('logDetailsContent').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Error loading log details: ${error.message}
+                </div>
+            `;
+        });
+}
+
+function retryNotification(logId) {
+    if (confirm('Retry sending this notification?')) {
+        fetch(`/notifications/api/retry/${logId}`, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error retrying notification: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Error retrying notification: ' + error.message);
+            });
+    }
+}
+
+function confirmClearLogs() {
+    new bootstrap.Modal(document.getElementById('clearLogsModal')).show();
+}
+
+function clearAllLogs() {
+    fetch('/notifications/api/clear-logs', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error clearing logs: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error clearing logs: ' + error.message);
+        });
+}
+</script>
+{% endblock %}
