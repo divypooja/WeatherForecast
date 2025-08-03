@@ -101,7 +101,7 @@
                                 {{ form.daily_rate.label(class="form-label") }}
                                 <div class="input-group">
                                     <span class="input-group-text">₹</span>
-                                    {{ form.daily_rate(class="form-control", id="daily_rate") }}
+                                    {{ form.daily_rate(class="form-control", id="daily_rate", onchange="calculateBasicAmount()") }}
                                 </div>
                                 {% if form.daily_rate.errors %}
                                     <div class="text-danger">
@@ -126,7 +126,7 @@
                             </div>
                             <div class="col-md-3 mb-3">
                                 {{ form.actual_days_worked.label(class="form-label") }}
-                                {{ form.actual_days_worked(class="form-control bg-light", readonly=True) }}
+                                {{ form.actual_days_worked(class="form-control bg-light", id="actual_days_worked", readonly=True) }}
                                 <small class="text-muted">Days from attendance records</small>
                             </div>
                             <div class="col-md-6 mb-3">
@@ -310,6 +310,18 @@
 </div>
 
 <script>
+// Auto-calculate basic amount when daily rate or attendance days change
+function calculateBasicAmount() {
+    const dailyRate = parseFloat(document.getElementById('daily_rate').value) || 0;
+    const actualDays = parseFloat(document.getElementById('actual_days_worked').value) || 0;
+    
+    if (dailyRate > 0 && actualDays > 0) {
+        const basicAmount = dailyRate * actualDays;
+        document.getElementById('basic_amount').value = basicAmount.toFixed(2);
+        calculateTotals(); // Trigger overall calculation
+    }
+}
+
 function calculateTotals() {
     const basic = parseFloat(document.getElementById('basic_amount').value) || 0;
     const overtimeHours = parseFloat(document.getElementById('overtime_hours').value) || 0;
@@ -331,6 +343,19 @@ function calculateTotals() {
     document.getElementById('display_advance').textContent = '₹' + advance.toFixed(2);
     document.getElementById('display_net').textContent = '₹' + netAmount.toFixed(2);
 }
+
+// Initialize calculations on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Trigger basic amount calculation if values are present
+    calculateBasicAmount();
+    calculateTotals();
+    
+    // Add event listeners for real-time calculation
+    const dailyRateInput = document.getElementById('daily_rate');
+    if (dailyRateInput) {
+        dailyRateInput.addEventListener('input', calculateBasicAmount);
+    }
+});
 
 // Load employee hire date and set as pay period start
 function loadEmployeeHireDate() {
