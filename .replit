@@ -2,7 +2,7 @@ modules = ["web", "python-3.11", "nodejs-20", "bash", "postgresql-16"]
 
 [nix]
 channel = "stable-25_05"
-packages = ["fontconfig", "freetype", "ghostscript", "glib", "glibcLocales", "harfbuzz", "hdf5", "lcms2", "libGL", "libGLU", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "openssl", "pango", "poppler_utils", "postgresql", "tcl", "tesseract", "tk", "zlib", "poppler", "imagemagick", "poppler-utils"]
+packages = ["fontconfig", "freetype", "ghostscript", "glib", "glibcLocales", "harfbuzz", "lcms2", "libGL", "libGLU", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "openssl", "pango", "postgresql", "tcl", "tesseract", "tk", "zlib"]
 
 [deployment]
 deploymentTarget = "autoscale"
@@ -34,4 +34,4 @@ localPort = 5000
 externalPort = 80
 
 [agent]
-integrations = ["python_openai==1.0.0", "python_log_in_with_replit==1.0.0", "twilio_send_message==1.0.0", "python_database==1.0.0", "python_sendgrid==1.0.0"]
+integrations = ["python_log_in_with_replit==1.0.0", "python_sendgrid==1.0.0", "python_database==1.0.0", "twilio_send_message==1.0.0"]

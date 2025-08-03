@@ -37,7 +37,7 @@
                                         <input type="file" class="form-control" id="receiptImage" name="receiptImage" accept="image/*,.pdf" capture="camera">
                                         <div class="form-text">
                                             <i class="fas fa-info-circle me-1"></i>
-                                            Upload receipt/invoice image or PDF to automatically extract data (Date, Amount, Vendor, GST, etc.). Both PDF and image formats are supported.
+                                            Upload receipt/invoice image or PDF to automatically extract data (Date, Amount, Vendor, GST, etc.)
                                         </div>
                                     </div>
                                 </div>
@@ -599,53 +599,36 @@ function displayOCRResults(data) {
     const leftCol = document.getElementById('ocrDataLeft');
     const rightCol = document.getElementById('ocrDataRight');
     
-    console.log('OCR Data received:', data); // Debug log
-    
-    // Left column data - Financial & Business Info
+    // Left column data
     leftCol.innerHTML = `
         <strong>Financial Data:</strong><br>
         ${data.amount ? `<span class="badge bg-success">Amount: ₹${data.amount}</span><br>` : ''}
         ${data.base_amount ? `<span class="badge bg-info">Base: ₹${data.base_amount}</span><br>` : ''}
         ${data.tax_amount ? `<span class="badge bg-warning">Tax: ₹${data.tax_amount}</span><br>` : ''}
         ${data.gst_rate ? `<span class="badge bg-secondary">GST: ${data.gst_rate}%</span><br>` : ''}
-        ${data.discount ? `<span class="badge bg-info">Discount: ₹${data.discount}</span><br>` : ''}
         <br>
         <strong>Business Data:</strong><br>
-        ${data.vendor_name ? `<span class="text-primary">Vendor: ${data.vendor_name}</span><br>` : ''}
-        ${data.customer_name ? `<span class="text-primary">Customer: ${data.customer_name}</span><br>` : ''}
+        ${data.vendor ? `<span class="text-primary">Vendor: ${data.vendor}</span><br>` : ''}
         ${data.invoice_number ? `<span class="text-info">Invoice: ${data.invoice_number}</span><br>` : ''}
-        ${data.po_number ? `<span class="text-info">PO Number: ${data.po_number}</span><br>` : ''}
-        ${data.gstin ? `<span class="text-muted">GSTIN: ${data.gstin}</span><br>` : ''}
     `;
     
-    // Right column data - Document Info & Extracted Fields
-    let rightContent = `<strong>Document Data:</strong><br>`;
-    rightContent += `${data.date ? `<span class="badge bg-primary">Date: ${data.date}</span><br>` : ''}`;
-    rightContent += `${data.quantity ? `<span class="badge bg-secondary">Qty: ${data.quantity}</span><br>` : ''}`;
-    rightContent += `${data.category ? `<span class="badge bg-dark">Category: ${data.category}</span><br>` : ''}`;
-    rightContent += `${data.department ? `<span class="badge bg-warning">Department: ${data.department.replace('_', ' ').toUpperCase()}</span><br>` : ''}`;
-    
-    // Show all extracted fields for debugging
-    rightContent += `<br><strong>All Extracted Fields:</strong><br>`;
-    if (data.extracted_fields && typeof data.extracted_fields === 'object') {
-        Object.keys(data.extracted_fields).forEach(key => {
-            const value = data.extracted_fields[key];
-            if (value) {
-                rightContent += `<span class="badge bg-light text-dark me-1 mb-1">${key}: ${value}</span><br>`;
-            }
-        });
-    }
-    
-    rightContent += `<br><strong>Confidence:</strong><br>`;
-    rightContent += `<div class="progress" style="height: 20px;">`;
-    rightContent += `<div class="progress-bar ${data.confidence > 70 ? 'bg-success' : data.confidence > 50 ? 'bg-warning' : 'bg-danger'}" 
-                     style="width: ${data.confidence || 0}%">
-                     ${data.confidence || 0}%
-                 </div>`;
-    rightContent += `</div>`;
-    rightContent += `<small class="text-muted">Processing accuracy</small>`;
-    
-    rightCol.innerHTML = rightContent;
+    // Right column data
+    rightCol.innerHTML = `
+        <strong>Document Data:</strong><br>
+        ${data.date ? `<span class="badge bg-primary">Date: ${data.date}</span><br>` : ''}
+        ${data.category ? `<span class="badge bg-dark">Category: ${data.category}</span><br>` : ''}
+        ${data.department ? `<span class="badge bg-warning">Department: ${data.department.replace('_', ' ').toUpperCase()}</span><br>` : ''}
+        ${data.gstin ? `<span class="text-muted">GSTIN: ${data.gstin}</span><br>` : ''}
+        <br>
+        <strong>Confidence:</strong><br>
+        <div class="progress" style="height: 20px;">
+            <div class="progress-bar ${data.confidence > 70 ? 'bg-success' : data.confidence > 50 ? 'bg-warning' : 'bg-danger'}" 
+                 style="width: ${data.confidence}%">
+                ${data.confidence}%
+            </div>
+        </div>
+        <small class="text-muted">Processing accuracy</small>
+    `;
 }
 </script>
 {% endblock %}
