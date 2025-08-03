@@ -403,9 +403,87 @@ function loadEmployeeHireDate() {
         });
 }
 
+// AJAX-based attendance calculation
+function calculateAttendanceAjax() {
+    const employeeId = document.getElementById('employee_id').value;
+    const payPeriodStart = document.getElementById('pay_period_start').value;
+    const payPeriodEnd = document.getElementById('pay_period_end').value;
+    const dailyRate = document.getElementById('daily_rate').value;
+    const overtimeRate = document.getElementById('overtime_rate').value || 150;
+    
+    // Validate required fields
+    if (!employeeId || employeeId === '0') {
+        alert('Please select an employee first');
+        return;
+    }
+    if (!payPeriodStart || !payPeriodEnd) {
+        alert('Please enter pay period dates');
+        return;
+    }
+    if (!dailyRate || dailyRate <= 0) {
+        alert('Please enter a valid daily rate');
+        return;
+    }
+    
+    // Show loading indicator
+    const calculateBtn = document.querySelector('input[name="calculate_attendance"]');
+    const originalText = calculateBtn.value;
+    calculateBtn.value = 'Calculating...';
+    calculateBtn.disabled = true;
+    
+    // Make AJAX request
+    fetch('{{ url_for("hr.calculate_attendance_api") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+        },
+        body: JSON.stringify({
+            employee_id: employeeId,
+            pay_period_start: payPeriodStart,
+            pay_period_end: payPeriodEnd,
+            daily_rate: dailyRate,
+            overtime_rate: overtimeRate
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        calculateBtn.value = originalText;
+        calculateBtn.disabled = false;
+        
+        if (data.success) {
+            // Update form fields with calculated values
+            document.getElementById('expected_working_days').value = data.data.expected_working_days;
+            document.getElementById('actual_days_worked').value = data.data.actual_days_worked;
+            document.getElementById('basic_amount').value = data.data.basic_amount.toFixed(2);
+            document.getElementById('overtime_hours').value = data.data.overtime_hours.toFixed(1);
+            
+            // Trigger calculation of totals
+            calculateTotals();
+            
+            // Show success message
+            alert('✅ ' + data.message + '\\nBasic Amount: ₹' + data.data.basic_amount.toFixed(2));
+        } else {
+            alert('❌ Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        calculateBtn.value = originalText;
+        calculateBtn.disabled = false;
+        alert('❌ Network error: ' + error.message);
+    });
+}
+
 // Initialize calculation on page load
 document.addEventListener('DOMContentLoaded', function() {
     calculateTotals();
+    
+    // Replace form submission with AJAX call for calculate button
+    const calculateBtn = document.querySelector('input[name="calculate_attendance"]');
+    if (calculateBtn) {
+        calculateBtn.type = 'button'; // Change from submit to button
+        calculateBtn.onclick = calculateAttendanceAjax;
+    }
 });
 </script>
 {% endblock %}

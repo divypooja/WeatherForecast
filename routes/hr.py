@@ -270,6 +270,78 @@ def get_employee_hire_date(employee_id):
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 400
 
+@hr_bp.route('/api/calculate-attendance', methods=['POST'])
+@login_required
+def calculate_attendance_api():
+    """AJAX endpoint to calculate attendance-based salary"""
+    try:
+        # Get data from request
+        data = request.get_json()
+        employee_id = data.get('employee_id')
+        pay_period_start = data.get('pay_period_start')
+        pay_period_end = data.get('pay_period_end')
+        daily_rate = data.get('daily_rate')
+        overtime_rate = data.get('overtime_rate', 150.0)
+        
+        # Validate required fields
+        if not all([employee_id, pay_period_start, pay_period_end, daily_rate]):
+            return jsonify({
+                'success': False,
+                'error': 'Missing required fields: employee_id, pay_period_start, pay_period_end, daily_rate'
+            }), 400
+        
+        # Parse and validate data
+        try:
+            employee_id = int(employee_id)
+            daily_rate = float(daily_rate)
+            overtime_rate = float(overtime_rate)
+            start_date = datetime.strptime(pay_period_start, '%Y-%m-%d').date()
+            end_date = datetime.strptime(pay_period_end, '%Y-%m-%d').date()
+        except (ValueError, TypeError) as e:
+            return jsonify({
+                'success': False,
+                'error': f'Invalid data format: {str(e)}'
+            }), 400
+        
+        # Verify employee exists
+        employee = Employee.query.get(employee_id)
+        if not employee:
+            return jsonify({
+                'success': False,
+                'error': 'Employee not found'
+            }), 404
+        
+        # Create temporary salary record for calculation
+        temp_salary = SalaryRecord(
+            employee_id=employee_id,
+            pay_period_start=start_date,
+            pay_period_end=end_date,
+            daily_rate=daily_rate,
+            overtime_rate=overtime_rate
+        )
+        
+        # Calculate attendance-based values
+        attendance_data = temp_salary.calculate_attendance_based_salary()
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'expected_working_days': int(attendance_data['expected_working_days']),
+                'actual_days_worked': int(attendance_data['actual_days_worked']),
+                'basic_amount': float(attendance_data['basic_amount']),
+                'overtime_hours': float(attendance_data['overtime_hours']),
+                'overtime_amount': float(attendance_data.get('overtime_amount', 0)),
+                'daily_rate': float(attendance_data['daily_rate'])
+            },
+            'message': f'Attendance calculated: {attendance_data["actual_days_worked"]} days worked out of {attendance_data["expected_working_days"]} expected days'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Calculation error: {str(e)}'
+        }), 500
+
 @hr_bp.route('/salaries/add', methods=['GET', 'POST'])
 @login_required
 def add_salary():
