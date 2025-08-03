@@ -41,6 +41,8 @@
         </div>
     </div>
 
+
+
     <!-- Individual Notification Test -->
     <div class="test-section">
         <h4><i class="fas fa-paper-plane"></i> Send Test Notification</h4>
@@ -273,11 +275,19 @@ function testScenario(scenario) {
     const resultsDiv = document.getElementById('scenario-test-results');
     resultsDiv.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Testing ' + scenario + '...</div>';
     
+    // Get CSRF token from form if available
+    const csrfToken = document.querySelector('input[name="csrf_token"]');
+    const headers = {
+        'Content-Type': 'application/json',
+    };
+    
+    if (csrfToken) {
+        headers['X-CSRFToken'] = csrfToken.value;
+    }
+    
     fetch('/notifications/api/test-scenario', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: headers,
         body: JSON.stringify({scenario: scenario})
     })
     .then(response => response.json())

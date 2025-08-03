@@ -425,8 +425,19 @@ def api_notification_stats():
         'success': True
     })
 
+from flask import session
+from functools import wraps
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or not current_user.is_admin():
+            return jsonify({'success': False, 'message': 'Admin access required'}), 403
+        return f(*args, **kwargs)
+    return decorated_function
+
 @notifications_bp.route('/api/test-scenario', methods=['POST'])
-@login_required
+@admin_required
 def api_test_scenario():
     """API endpoint for testing specific notification scenarios"""
     if not current_user.is_admin():
@@ -443,37 +454,33 @@ def api_test_scenario():
             result = send_system_alert(
                 "🛍️ Purchase Order Created Test",
                 "Test PO-001 has been created for ₹50,000 with Supplier ABC Ltd. This is a test notification to verify PO creation alerts.",
-                alert_type="info",
-                recipients_filter="purchase_team"
+                alert_type="purchase_order"
             )
-            message = f"PO Creation test notification sent - {result} recipients notified"
+            message = f"PO Creation test notification sent - {'Success' if result else 'Failed'}"
             
         elif scenario == 'grn_received':
             result = send_system_alert(
                 "📦 GRN Received Test", 
                 "Test GRN-001 has been received for PO-001. 100 units of Material XYZ received. This is a test notification to verify GRN alerts.",
-                alert_type="success",
-                recipients_filter="store"
+                alert_type="grn"
             )
-            message = f"GRN Receipt test notification sent - {result} recipients notified"
+            message = f"GRN Receipt test notification sent - {'Success' if result else 'Failed'}"
             
         elif scenario == 'job_work_issued':
             result = send_system_alert(
                 "🔧 Job Work Issued Test",
                 "Test Job Work JW-001 has been issued to Vendor DEF Ltd for machining operations. This is a test notification to verify job work alerts.",
-                alert_type="info", 
-                recipients_filter="production_head"
+                alert_type="job_work"
             )
-            message = f"Job Work test notification sent - {result} recipients notified"
+            message = f"Job Work test notification sent - {'Success' if result else 'Failed'}"
             
         elif scenario == 'low_stock':
             result = send_system_alert(
                 "⚠️ Low Stock Alert Test",
                 "Test Material ABC has fallen below minimum stock level. Current stock: 5 units, Minimum: 20 units. This is a test low stock alert.",
-                alert_type="warning",
-                recipients_filter="store"
+                alert_type="low_stock"
             )
-            message = f"Low Stock test notification sent - {result} recipients notified"
+            message = f"Low Stock test notification sent - {'Success' if result else 'Failed'}"
             
         else:
             return jsonify({'success': False, 'message': 'Unknown test scenario'}), 400
