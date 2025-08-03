@@ -1,0 +1,881 @@
+{% extends "base.html" %}
+
+{% block title %}Enhanced BOM Management{% endblock %}
+
+{% block extra_css %}
+<style>
+.bom-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.bom-header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" patternUnits="userSpaceOnUse" width="100" height="100"><circle cx="50" cy="50" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+    animation: float 20s infinite linear;
+    pointer-events: none;
+}
+
+@keyframes float {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.bom-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    border: none;
+    transition: all 0.3s ease;
+    margin-bottom: 2rem;
+}
+
+.bom-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+}
+
+.tab-container {
+    background: white;
+    border-radius: 15px 15px 0 0;
+    box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
+}
+
+.nav-pills .nav-link {
+    border-radius: 25px;
+    margin: 0 5px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.nav-pills .nav-link::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.5s;
+}
+
+.nav-pills .nav-link:hover::before {
+    left: 100%;
+}
+
+.nav-pills .nav-link.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.component-row {
+    background: #f8f9ff;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid #667eea;
+    transition: all 0.3s ease;
+}
+
+.component-row:hover {
+    background: #f0f2ff;
+    transform: translateX(5px);
+}
+
+.process-step {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.process-step::before {
+    content: attr(data-step);
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 3rem;
+    font-weight: bold;
+    opacity: 0.2;
+}
+
+.cost-badge {
+    background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+    color: #2d3436;
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    font-weight: bold;
+    display: inline-block;
+    margin: 0.25rem;
+}
+
+.metric-card {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.metric-value {
+    font-size: 2rem;
+    font-weight: bold;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.floating-action {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 1000;
+}
+
+.fab {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+    transition: all 0.3s ease;
+}
+
+.fab:hover {
+    transform: scale(1.1);
+    box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+}
+
+.tree-view {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+}
+
+.tree-node {
+    padding: 0.75rem;
+    margin: 0.5rem 0;
+    border-radius: 10px;
+    border-left: 3px solid #667eea;
+    background: #f8f9ff;
+    transition: all 0.3s ease;
+}
+
+.tree-node:hover {
+    background: #e8ebff;
+    transform: translateX(5px);
+}
+
+.tree-node.level-1 { margin-left: 2rem; border-left-color: #4facfe; }
+.tree-node.level-2 { margin-left: 4rem; border-left-color: #00cec9; }
+.tree-node.level-3 { margin-left: 6rem; border-left-color: #fd79a8; }
+
+.input-group-enhanced {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.input-group-enhanced input,
+.input-group-enhanced select,
+.input-group-enhanced textarea {
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.input-group-enhanced input:focus,
+.input-group-enhanced select:focus,
+.input-group-enhanced textarea:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    outline: none;
+}
+
+.input-group-enhanced label {
+    position: absolute;
+    top: -10px;
+    left: 15px;
+    background: white;
+    padding: 0 5px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #667eea;
+}
+
+.data-table {
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.data-table thead th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 1rem;
+    font-weight: 600;
+}
+
+.data-table tbody tr {
+    transition: all 0.3s ease;
+}
+
+.data-table tbody tr:hover {
+    background: #f8f9ff;
+    transform: scale(1.01);
+}
+
+.data-table tbody td {
+    padding: 1rem;
+    border-color: #e9ecef;
+}
+
+@media (max-width: 768px) {
+    .bom-header {
+        padding: 1rem;
+        text-align: center;
+    }
+    
+    .metric-card {
+        margin-bottom: 1rem;
+    }
+    
+    .fab {
+        width: 50px;
+        height: 50px;
+        font-size: 1.25rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Enhanced BOM Header -->
+    <div class="bom-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="display-4 mb-2">
+                    <i class="fas fa-cogs me-3"></i>
+                    Enhanced BOM Management
+                </h1>
+                <p class="lead mb-0">Advanced Bill of Materials with AI-powered insights and real-time cost analysis</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="d-flex flex-column">
+                    <div class="cost-badge mb-2">
+                        <i class="fas fa-calculator me-2"></i>
+                        Total BOMs: {{ boms|length if boms else 0 }}
+                    </div>
+                    <div class="cost-badge">
+                        <i class="fas fa-chart-line me-2"></i>
+                        Active: {{ active_boms_count if active_boms_count else 0 }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Metrics Dashboard -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="metric-card">
+                <i class="fas fa-boxes text-primary mb-2" style="font-size: 2rem;"></i>
+                <div class="metric-value">{{ total_components if total_components else 0 }}</div>
+                <div class="text-muted">Total Components</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="metric-card">
+                <i class="fas fa-industry text-success mb-2" style="font-size: 2rem;"></i>
+                <div class="metric-value">{{ total_processes if total_processes else 0 }}</div>
+                <div class="text-muted">Manufacturing Processes</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="metric-card">
+                <i class="fas fa-rupee-sign text-warning mb-2" style="font-size: 2rem;"></i>
+                <div class="metric-value">₹{{ "%.2f"|format(avg_bom_cost if avg_bom_cost else 0) }}</div>
+                <div class="text-muted">Avg BOM Cost</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="metric-card">
+                <i class="fas fa-recycle text-info mb-2" style="font-size: 2rem;"></i>
+                <div class="metric-value">{{ "%.1f"|format(avg_scrap_percent if avg_scrap_percent else 0) }}%</div>
+                <div class="text-muted">Avg Scrap Rate</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Tab Navigation -->
+    <div class="tab-container">
+        <ul class="nav nav-pills nav-fill p-3" id="bomTabs" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" id="overview-tab" data-bs-toggle="pill" href="#overview" role="tab">
+                    <i class="fas fa-chart-pie me-2"></i>Overview
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="bom-list-tab" data-bs-toggle="pill" href="#bom-list" role="tab">
+                    <i class="fas fa-list me-2"></i>BOM List
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="tree-view-tab" data-bs-toggle="pill" href="#tree-view" role="tab">
+                    <i class="fas fa-sitemap me-2"></i>Tree View
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="cost-analysis-tab" data-bs-toggle="pill" href="#cost-analysis" role="tab">
+                    <i class="fas fa-analytics me-2"></i>Cost Analysis
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="create-bom-tab" data-bs-toggle="pill" href="#create-bom" role="tab">
+                    <i class="fas fa-plus-circle me-2"></i>Create BOM
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="bomTabContent">
+        <!-- Overview Tab -->
+        <div class="tab-pane fade show active" id="overview" role="tabpanel">
+            <div class="bom-card">
+                <div class="card-body p-4">
+                    <h3 class="mb-4">
+                        <i class="fas fa-chart-pie text-primary me-2"></i>
+                        BOM Overview & Analytics
+                    </h3>
+                    
+                    <div class="row">
+                        <div class="col-md-8">
+                            <!-- Recent BOMs -->
+                            <h5 class="mb-3">Recent BOMs</h5>
+                            {% if boms %}
+                                {% for bom in boms[:5] %}
+                                <div class="component-row">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-4">
+                                            <h6 class="mb-1">{{ bom.bom_code }}</h6>
+                                            <small class="text-muted">{{ bom.product.name if bom.product else 'Unknown Product' }}</small>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <span class="badge bg-{{ 'success' if bom.status == 'active' else 'secondary' }}">
+                                                {{ bom.status.title() }}
+                                            </span>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="cost-badge">
+                                                ₹{{ "%.2f"|format(bom.total_material_cost if bom.total_material_cost else 0) }}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <a href="{{ url_for('production.view_bom', id=bom.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-cogs text-muted" style="font-size: 4rem;"></i>
+                                    <h4 class="text-muted mt-3">No BOMs Created Yet</h4>
+                                    <p class="text-muted">Create your first BOM to get started with production planning</p>
+                                    <a href="{{ url_for('production.add_bom') }}" class="btn btn-primary">
+                                        <i class="fas fa-plus me-2"></i>Create First BOM
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <!-- Quick Actions -->
+                            <h5 class="mb-3">Quick Actions</h5>
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('production.add_bom') }}" class="btn btn-primary">
+                                    <i class="fas fa-plus me-2"></i>Create New BOM
+                                </a>
+                                <a href="{{ url_for('production.list_bom') }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-list me-2"></i>View All BOMs
+                                </a>
+                                <button class="btn btn-outline-success" onclick="exportBOMs()">
+                                    <i class="fas fa-download me-2"></i>Export BOMs
+                                </button>
+                                <button class="btn btn-outline-info" onclick="analyzeCosts()">
+                                    <i class="fas fa-chart-line me-2"></i>Cost Analysis
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOM List Tab -->
+        <div class="tab-pane fade" id="bom-list" role="tabpanel">
+            <div class="bom-card">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3>
+                            <i class="fas fa-list text-primary me-2"></i>
+                            BOM Listing
+                        </h3>
+                        <div class="d-flex gap-2">
+                            <input type="text" class="form-control" placeholder="Search BOMs..." id="bomSearchInput" style="width: 300px;">
+                            <button class="btn btn-outline-secondary" onclick="filterBOMs()">
+                                <i class="fas fa-filter"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    {% if boms %}
+                    <div class="table-responsive">
+                        <table class="table table-hover data-table" id="bomTable">
+                            <thead>
+                                <tr>
+                                    <th>BOM Code</th>
+                                    <th>Product</th>
+                                    <th>Version</th>
+                                    <th>Status</th>
+                                    <th>Components</th>
+                                    <th>Total Cost</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for bom in boms %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ bom.bom_code }}</strong>
+                                        <br><small class="text-muted">{{ bom.created_at.strftime('%d %b %Y') if bom.created_at else '' }}</small>
+                                    </td>
+                                    <td>
+                                        {{ bom.product.name if bom.product else 'Unknown' }}
+                                        <br><small class="text-muted">{{ bom.product.code if bom.product else '' }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ bom.version }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if bom.status == 'active' else 'secondary' }}">
+                                            {{ bom.status.title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ bom.items|length }} items</span>
+                                        {% if bom.processes %}
+                                        <br><span class="badge bg-success">{{ bom.processes|length }} processes</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="cost-badge">
+                                            ₹{{ "%.2f"|format(bom.total_material_cost if bom.total_material_cost else 0) }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('production.view_bom', id=bom.id) }}" class="btn btn-outline-primary" title="View">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('production.edit_bom', id=bom.id) }}" class="btn btn-outline-warning" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button class="btn btn-outline-info" onclick="duplicateBOM({{ bom.id }})" title="Duplicate">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-box-open text-muted" style="font-size: 4rem;"></i>
+                        <h4 class="text-muted mt-3">No BOMs Found</h4>
+                        <p class="text-muted">Start by creating your first BOM</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Tree View Tab -->
+        <div class="tab-pane fade" id="tree-view" role="tabpanel">
+            <div class="bom-card">
+                <div class="card-body p-4">
+                    <h3 class="mb-4">
+                        <i class="fas fa-sitemap text-primary me-2"></i>
+                        BOM Tree Structure
+                    </h3>
+                    
+                    <div class="tree-view">
+                        {% if boms %}
+                            {% for bom in boms %}
+                                {% if not bom.parent_bom_id %}
+                                <div class="tree-node level-0" data-bom-id="{{ bom.id }}">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>{{ bom.bom_code }}</strong> - {{ bom.product.name if bom.product else 'Unknown' }}
+                                            <br><small class="text-muted">{{ bom.items|length }} components, {{ bom.processes|length if bom.processes else 0 }} processes</small>
+                                        </div>
+                                        <div>
+                                            <span class="cost-badge">₹{{ "%.2f"|format(bom.total_material_cost if bom.total_material_cost else 0) }}</span>
+                                            <a href="{{ url_for('production.view_bom', id=bom.id) }}" class="btn btn-sm btn-outline-primary ms-2">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Sub BOMs -->
+                                    {% for sub_bom in bom.sub_boms %}
+                                    <div class="tree-node level-1">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>{{ sub_bom.bom_code }}</strong> - {{ sub_bom.product.name if sub_bom.product else 'Unknown' }}
+                                                <br><small class="text-muted">Sub-BOM Level {{ sub_bom.bom_level }}</small>
+                                            </div>
+                                            <div>
+                                                <span class="cost-badge">₹{{ "%.2f"|format(sub_bom.total_material_cost if sub_bom.total_material_cost else 0) }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-project-diagram text-muted" style="font-size: 4rem;"></i>
+                            <h4 class="text-muted mt-3">No BOM Structure</h4>
+                            <p class="text-muted">Create BOMs to see the hierarchical structure</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cost Analysis Tab -->
+        <div class="tab-pane fade" id="cost-analysis" role="tabpanel">
+            <div class="bom-card">
+                <div class="card-body p-4">
+                    <h3 class="mb-4">
+                        <i class="fas fa-analytics text-primary me-2"></i>
+                        Cost Analysis & Insights
+                    </h3>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Cost Breakdown by BOM</h5>
+                            <canvas id="costChart" width="400" height="200"></canvas>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Material vs Labor Costs</h5>
+                            <canvas id="materialLaborChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h5>Cost Optimization Recommendations</h5>
+                            <div class="alert alert-info">
+                                <i class="fas fa-lightbulb me-2"></i>
+                                <strong>AI Insights:</strong> Based on your BOM data, here are optimization opportunities:
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="metric-card">
+                                        <i class="fas fa-exclamation-triangle text-warning mb-2" style="font-size: 2rem;"></i>
+                                        <div class="metric-value">{{ high_cost_boms_count if high_cost_boms_count else 0 }}</div>
+                                        <div class="text-muted">High Cost BOMs</div>
+                                        <small class="text-muted">Above average cost threshold</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="metric-card">
+                                        <i class="fas fa-recycle text-success mb-2" style="font-size: 2rem;"></i>
+                                        <div class="metric-value">{{ "%.1f"|format(potential_savings if potential_savings else 0) }}%</div>
+                                        <div class="text-muted">Potential Savings</div>
+                                        <small class="text-muted">Through optimization</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="metric-card">
+                                        <i class="fas fa-clock text-info mb-2" style="font-size: 2rem;"></i>
+                                        <div class="metric-value">{{ outdated_boms_count if outdated_boms_count else 0 }}</div>
+                                        <div class="text-muted">Outdated BOMs</div>
+                                        <small class="text-muted">Need review</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create BOM Tab -->
+        <div class="tab-pane fade" id="create-bom" role="tabpanel">
+            <div class="bom-card">
+                <div class="card-body p-4">
+                    <h3 class="mb-4">
+                        <i class="fas fa-plus-circle text-primary me-2"></i>
+                        Create New BOM
+                    </h3>
+                    
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Quick Start:</strong> Choose a template or create from scratch
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>BOM Templates</h5>
+                            <div class="component-row">
+                                <h6>Standard Manufacturing BOM</h6>
+                                <p class="text-muted mb-2">Includes material components, labor, and overhead costs</p>
+                                <button class="btn btn-primary btn-sm" onclick="useTemplate('standard')">
+                                    <i class="fas fa-rocket me-1"></i>Use Template
+                                </button>
+                            </div>
+                            
+                            <div class="component-row">
+                                <h6>Assembly BOM</h6>
+                                <p class="text-muted mb-2">For products requiring multiple sub-assemblies</p>
+                                <button class="btn btn-primary btn-sm" onclick="useTemplate('assembly')">
+                                    <i class="fas fa-puzzle-piece me-1"></i>Use Template
+                                </button>
+                            </div>
+                            
+                            <div class="component-row">
+                                <h6>Job Work BOM</h6>
+                                <p class="text-muted mb-2">For outsourced manufacturing processes</p>
+                                <button class="btn btn-primary btn-sm" onclick="useTemplate('jobwork')">
+                                    <i class="fas fa-tools me-1"></i>Use Template
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h5>Quick Create</h5>
+                            <div class="d-grid gap-3">
+                                <a href="{{ url_for('production.add_bom') }}" class="btn btn-lg btn-primary">
+                                    <i class="fas fa-plus me-2"></i>Create from Scratch
+                                </a>
+                                <button class="btn btn-lg btn-outline-secondary" onclick="importBOM()">
+                                    <i class="fas fa-upload me-2"></i>Import from Excel
+                                </button>
+                                <button class="btn btn-lg btn-outline-info" onclick="duplicateExisting()">
+                                    <i class="fas fa-copy me-2"></i>Duplicate Existing
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <div class="floating-action">
+        <button class="fab" data-bs-toggle="modal" data-bs-target="#quickActionsModal" title="Quick Actions">
+            <i class="fas fa-plus"></i>
+        </button>
+    </div>
+</div>
+
+<!-- Quick Actions Modal -->
+<div class="modal fade" id="quickActionsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Quick Actions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('production.add_bom') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Create New BOM
+                    </a>
+                    <button class="btn btn-outline-success" onclick="exportAllBOMs()">
+                        <i class="fas fa-download me-2"></i>Export All BOMs
+                    </button>
+                    <button class="btn btn-outline-info" onclick="generateReport()">
+                        <i class="fas fa-chart-bar me-2"></i>Generate Report
+                    </button>
+                    <button class="btn btn-outline-warning" onclick="bulkUpdate()">
+                        <i class="fas fa-edit me-2"></i>Bulk Update
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Initialize charts
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCostChart();
+    initializeMaterialLaborChart();
+    setupSearch();
+});
+
+function initializeCostChart() {
+    const ctx = document.getElementById('costChart');
+    if (!ctx) return;
+    
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Material Cost', 'Labor Cost', 'Overhead Cost'],
+            datasets: [{
+                data: [
+                    {{ total_material_cost if total_material_cost else 0 }},
+                    {{ total_labor_cost if total_labor_cost else 0 }},
+                    {{ total_overhead_cost if total_overhead_cost else 0 }}
+                ],
+                backgroundColor: ['#667eea', '#764ba2', '#4facfe']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+function initializeMaterialLaborChart() {
+    const ctx = document.getElementById('materialLaborChart');
+    if (!ctx) return;
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: [{% for bom in boms[:5] %}'{{ bom.bom_code }}'{% if not loop.last %},{% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Material Cost',
+                data: [{% for bom in boms[:5] %}{{ bom.total_material_cost if bom.total_material_cost else 0 }}{% if not loop.last %},{% endif %}{% endfor %}],
+                backgroundColor: '#667eea'
+            }, {
+                label: 'Labor Cost',
+                data: [{% for bom in boms[:5] %}{{ bom.labor_cost_per_unit if bom.labor_cost_per_unit else 0 }}{% if not loop.last %},{% endif %}{% endfor %}],
+                backgroundColor: '#764ba2'
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function setupSearch() {
+    const searchInput = document.getElementById('bomSearchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const tableRows = document.querySelectorAll('#bomTable tbody tr');
+            
+            tableRows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        });
+    }
+}
+
+function filterBOMs() {
+    // Implement advanced filtering
+    alert('Advanced filtering will be implemented here');
+}
+
+function exportBOMs() {
+    // Implement BOM export
+    alert('BOM export functionality will be implemented');
+}
+
+function analyzeCosts() {
+    // Switch to cost analysis tab
+    document.getElementById('cost-analysis-tab').click();
+}
+
+function duplicateBOM(bomId) {
+    if (confirm('Create a duplicate of this BOM?')) {
+        // Implement BOM duplication
+        alert('BOM duplication will be implemented');
+    }
+}
+
+function useTemplate(templateType) {
+    // Redirect to BOM creation with template
+    window.location.href = "{{ url_for('production.add_bom') }}?template=" + templateType;
+}
+
+function importBOM() {
+    alert('Excel import functionality will be implemented');
+}
+
+function duplicateExisting() {
+    alert('Duplicate existing BOM functionality will be implemented');
+}
+
+function exportAllBOMs() {
+    alert('Export all BOMs functionality will be implemented');
+}
+
+function generateReport() {
+    alert('Report generation will be implemented');
+}
+
+function bulkUpdate() {
+    alert('Bulk update functionality will be implemented');
+}
+</script>
+{% endblock %}
