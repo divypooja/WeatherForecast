@@ -19,9 +19,9 @@ class GRNWorkflowService:
                 if current_liabilities_group:
                     grn_clearing = Account(
                         name='GRN Clearing Account',
-                        account_code='2150',
+                        code='2150',
                         account_group_id=current_liabilities_group.id,
-                        description='Temporary account for goods received but not yet invoiced',
+                        account_type='current_liability',
                         is_active=True
                     )
                     db.session.add(grn_clearing)
@@ -33,9 +33,9 @@ class GRNWorkflowService:
                 if current_assets_group:
                     gst_input = Account(
                         name='GST Input Tax',
-                        account_code='1180',
+                        code='1180',
                         account_group_id=current_assets_group.id,
-                        description='GST paid on purchases',
+                        account_type='current_asset',
                         is_active=True
                     )
                     db.session.add(gst_input)
@@ -183,9 +183,9 @@ class GRNWorkflowService:
                 if payables_group:
                     vendor_account = Account(
                         name=f"{vendor_invoice.vendor.name} - Payable",
-                        account_code=f"2200{vendor_invoice.vendor.id:04d}",
+                        code=f"2200{vendor_invoice.vendor.id:04d}",
                         account_group_id=payables_group.id,
-                        description=f"Payable account for {vendor_invoice.vendor.name}",
+                        account_type='current_liability',
                         is_active=True
                     )
                     db.session.add(vendor_account)
@@ -229,9 +229,9 @@ class GRNWorkflowService:
                     if expenses_group:
                         freight_account = Account(
                             name='Freight & Transportation',
-                            account_code='5120',
+                            code='5120',
                             account_group_id=expenses_group.id,
-                            description='Freight and transportation charges',
+                            account_type='direct_expense',
                             is_active=True
                         )
                         db.session.add(freight_account)
