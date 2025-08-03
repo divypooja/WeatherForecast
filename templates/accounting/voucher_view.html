@@ -112,17 +112,17 @@
                                 <tr>
                                     <td>{{ entry.account.name if entry.account else 'N/A' }}</td>
                                     <td class="text-end">
-                                        {% if entry.debit_amount > 0 %}
-                                            ₹{{ "%.2f"|format(entry.debit_amount) }}
-                                            {% set total_debit = total_debit + entry.debit_amount %}
+                                        {% if entry.entry_type == 'debit' %}
+                                            ₹{{ "%.2f"|format(entry.amount) }}
+                                            {% set total_debit = total_debit + entry.amount %}
                                         {% else %}
                                             -
                                         {% endif %}
                                     </td>
                                     <td class="text-end">
-                                        {% if entry.credit_amount > 0 %}
-                                            ₹{{ "%.2f"|format(entry.credit_amount) }}
-                                            {% set total_credit = total_credit + entry.credit_amount %}
+                                        {% if entry.entry_type == 'credit' %}
+                                            ₹{{ "%.2f"|format(entry.amount) }}
+                                            {% set total_credit = total_credit + entry.amount %}
                                         {% else %}
                                             -
                                         {% endif %}
