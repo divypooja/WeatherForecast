@@ -196,9 +196,9 @@
                                 {% for item in grn.line_items %}
                                 <tr>
                                     <td>{{ item.item.name if item.item else 'N/A' }}</td>
-                                    <td>{{ item.received_quantity }}</td>
+                                    <td>{{ item.quantity_received }}</td>
                                     <td>₹{{ "%.2f"|format(item.unit_price) }}</td>
-                                    <td>₹{{ "%.2f"|format(item.received_quantity * item.unit_price) }}</td>
+                                    <td>₹{{ "%.2f"|format(item.quantity_received * item.rate_per_unit) }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>

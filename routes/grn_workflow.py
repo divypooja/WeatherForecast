@@ -72,7 +72,7 @@ def create_invoice_for_grn(grn_id):
     form.vendor_id.default = grn.purchase_order.supplier.id
     
     # Calculate GRN total
-    grn_total = sum(item.received_quantity * item.unit_price for item in grn.line_items)
+    grn_total = sum(item.quantity_received * getattr(item, 'rate_per_unit', 0) for item in grn.line_items)
     
     if request.method == 'GET':
         # Pre-populate amounts
