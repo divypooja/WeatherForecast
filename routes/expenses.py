@@ -8,7 +8,7 @@ from datetime import datetime, date
 from sqlalchemy import func, desc, extract
 from utils_documents import save_uploaded_file_expense
 from utils_export import export_factory_expenses
-from services.ocr_service import ocr_service
+from services.lightweight_ocr import lightweight_ocr
 import calendar
 import os
 import tempfile
@@ -350,49 +350,46 @@ def process_ocr():
         if file.filename == '':
             return jsonify({'success': False, 'message': 'No file selected'})
         
-        # Process with OCR service
-        print(f"[OCR DEBUG] Processing file: {file.filename}")
-        result = ocr_service.process_uploaded_file(
-            file=file,
-            module_type='expense',
-            reference_id=None,
-            reference_type='factory_expense',
-            user_id=current_user.id
-        )
-        print(f"[OCR DEBUG] OCR Result: {result}")
+        # Save file temporarily for processing
+        temp_path = os.path.join(tempfile.gettempdir(), secure_filename(file.filename))
+        file.save(temp_path)
         
-        if result['success']:
-            extracted_fields = result.get('extracted_fields', {})
+        # Process with lightweight OCR
+        print(f"[OCR DEBUG] Processing file: {file.filename}")
+        ocr_result = lightweight_ocr.process_file(temp_path)
+        print(f"[OCR DEBUG] OCR Result: success={ocr_result.success}, confidence={ocr_result.confidence}")
+        
+        # Clean up temp file
+        try:
+            os.remove(temp_path)
+        except:
+            pass
+        
+        if ocr_result.success:
+            extracted_fields = ocr_result.extracted_fields
             
             # Format data for expense form
             formatted_data = {
-                'amount': extracted_fields.get('total_amount') or extracted_fields.get('amount'),
-                'base_amount': extracted_fields.get('base_amount'),
-                'tax_amount': extracted_fields.get('tax_amount') or extracted_fields.get('gst_amount'),
-                'vendor': extracted_fields.get('vendor_name') or extracted_fields.get('supplier_name'),
+                'amount': extracted_fields.get('amount'),
+                'vendor': extracted_fields.get('vendor_name'),
                 'vendor_name': extracted_fields.get('vendor_name'),
                 'customer_name': extracted_fields.get('customer_name'),
-                'invoice_number': extracted_fields.get('invoice_number') or extracted_fields.get('bill_number'),
-                'po_number': extracted_fields.get('po_number'),
-                'date': extracted_fields.get('invoice_date') or extracted_fields.get('date'),
-                'category': extracted_fields.get('category'),
-                'department': extracted_fields.get('department'),
+                'invoice_number': extracted_fields.get('invoice_number'),
+                'date': extracted_fields.get('date'),
                 'gstin': extracted_fields.get('gstin'),
-                'quantity': extracted_fields.get('quantity'),
-                'discount': extracted_fields.get('discount'),
-                'confidence': result.get('confidence', 0),
+                'confidence': ocr_result.confidence,
                 'extracted_fields': extracted_fields  # Include raw extracted fields for debugging
             }
             
             return jsonify({
                 'success': True,
                 'data': formatted_data,
-                'message': f'OCR processed successfully with {result.get("confidence", 0):.1f}% confidence'
+                'message': f'OCR processed successfully with {ocr_result.confidence:.1f}% confidence'
             })
         else:
             return jsonify({
                 'success': False,
-                'message': result.get('error', 'OCR processing failed')
+                'message': ocr_result.error_message or 'OCR processing failed'
             })
             
     except Exception as e:
