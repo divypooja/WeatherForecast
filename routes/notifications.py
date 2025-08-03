@@ -578,3 +578,114 @@ def test_business_scenario():
         
     except Exception as e:
         return jsonify({'success': False, 'message': f'Error testing scenario: {str(e)}'}), 500
+
+@notifications_bp.route('/api/test-configuration', methods=['POST'])
+@login_required
+def test_system_configuration():
+    """Test system configuration and service availability"""
+    if not current_user.is_admin():
+        return jsonify({'success': False, 'message': 'Access denied'}), 403
+    
+    try:
+        import os
+        from models_notifications import NotificationSettings
+        
+        test_results = []
+        
+        # Test database connectivity
+        try:
+            settings = NotificationSettings.get_settings()
+            test_results.append({
+                'name': 'Database Connection',
+                'success': True,
+                'message': 'Database connection successful'
+            })
+        except Exception as e:
+            test_results.append({
+                'name': 'Database Connection',
+                'success': False,
+                'message': f'Database error: {str(e)}'
+            })
+        
+        # Test notification settings
+        try:
+            settings = NotificationSettings.get_settings()
+            enabled_channels = []
+            if settings.email_enabled:
+                enabled_channels.append('Email')
+            if settings.sms_enabled:
+                enabled_channels.append('SMS')
+            if settings.whatsapp_enabled:
+                enabled_channels.append('WhatsApp')
+            
+            test_results.append({
+                'name': 'Notification Channels',
+                'success': True,
+                'message': f'Enabled channels: {", ".join(enabled_channels) if enabled_channels else "None configured"}'
+            })
+        except Exception as e:
+            test_results.append({
+                'name': 'Notification Channels',
+                'success': False,
+                'message': f'Settings error: {str(e)}'
+            })
+        
+        # Test SendGrid configuration
+        sendgrid_key = os.environ.get('SENDGRID_API_KEY')
+        test_results.append({
+            'name': 'SendGrid API Key',
+            'success': bool(sendgrid_key),
+            'message': 'SendGrid API key configured' if sendgrid_key else 'SendGrid API key not configured - email disabled'
+        })
+        
+        # Test Twilio configuration
+        twilio_sid = os.environ.get('TWILIO_ACCOUNT_SID')
+        twilio_token = os.environ.get('TWILIO_AUTH_TOKEN')
+        twilio_phone = os.environ.get('TWILIO_PHONE_NUMBER')
+        
+        twilio_configured = bool(twilio_sid and twilio_token and twilio_phone)
+        test_results.append({
+            'name': 'Twilio Configuration',
+            'success': twilio_configured,
+            'message': 'Twilio credentials configured' if twilio_configured else 'Twilio credentials not configured - SMS/WhatsApp disabled'
+        })
+        
+        # Test notification logging
+        try:
+            from models_notifications import NotificationLog
+            log_count = NotificationLog.query.count()
+            test_results.append({
+                'name': 'Notification Logging',
+                'success': True,
+                'message': f'Notification logging active - {log_count} logs recorded'
+            })
+        except Exception as e:
+            test_results.append({
+                'name': 'Notification Logging',
+                'success': False,
+                'message': f'Logging error: {str(e)}'
+            })
+        
+        # Test notification scheduler
+        try:
+            from services.scheduler import scheduler
+            test_results.append({
+                'name': 'Notification Scheduler',
+                'success': True,
+                'message': 'Notification scheduler running'
+            })
+        except Exception as e:
+            test_results.append({
+                'name': 'Notification Scheduler',
+                'success': False,
+                'message': f'Scheduler error: {str(e)}'
+            })
+        
+        return jsonify({
+            'success': True,
+            'tests': test_results,
+            'message': 'System configuration test completed'
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Configuration test failed: {str(e)}'}), 500

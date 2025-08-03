@@ -297,6 +297,42 @@ function testScenario(scenario) {
     });
 }
 
+// Test system configuration
+function testConfiguration() {
+    const resultsDiv = document.getElementById('config-test-results');
+    resultsDiv.innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin"></i> Testing system configuration...</div>';
+    
+    fetch('/notifications/api/test-configuration', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        let html = '<div class="card"><div class="card-header"><h5>System Configuration Test Results</h5></div><div class="card-body">';
+        
+        data.tests.forEach(test => {
+            const statusClass = test.success ? 'success' : 'danger';
+            const statusIcon = test.success ? 'check' : 'times';
+            html += `
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span><strong>${test.name}:</strong> ${test.message}</span>
+                    <span class="badge bg-${statusClass}">
+                        <i class="fas fa-${statusIcon}"></i> ${test.success ? 'OK' : 'Failed'}
+                    </span>
+                </div>
+            `;
+        });
+        
+        html += '</div></div>';
+        resultsDiv.innerHTML = html;
+    })
+    .catch(error => {
+        resultsDiv.innerHTML = '<div class="alert alert-danger">Error testing configuration: ' + error.message + '</div>';
+    });
+}
+
 // Update recipient placeholder based on notification type
 document.getElementById('notification_type').addEventListener('change', function() {
     const recipientField = document.getElementById('recipient');
