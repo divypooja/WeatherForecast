@@ -69,6 +69,7 @@ def create_app():
     from routes.material_inspection import material_inspection
     from routes.expenses import expenses_bp
     from routes.documents import documents_bp
+    from routes.forms import forms_bp
     
     # Import GRN blueprint if available
     try:
@@ -112,6 +113,7 @@ def create_app():
     app.register_blueprint(material_inspection, url_prefix='/inspection')
     app.register_blueprint(expenses_bp, url_prefix='/expenses')
     app.register_blueprint(documents_bp, url_prefix='/documents')
+    app.register_blueprint(forms_bp, url_prefix='/forms')
     app.register_blueprint(uom_bp, url_prefix='/uom')
     app.register_blueprint(batch_tracking_bp, url_prefix='/batch-tracking')
     app.register_blueprint(tally_bp, url_prefix='/tally')

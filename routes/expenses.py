@@ -244,7 +244,8 @@ def add_expense():
                 flash(f'Expense {expense.expense_number} created successfully with accounting entries!', 'success')
             else:
                 flash(f'Expense {expense.expense_number} created successfully but accounting integration failed!', 'warning')
-            return redirect(url_for('expenses.expense_detail', id=expense.id))
+            # Redirect to thank you page with form submission success
+            return redirect(url_for('forms.thank_you', form_type='expense', entity_id=expense.id))
             
         except Exception as e:
             db.session.rollback()
