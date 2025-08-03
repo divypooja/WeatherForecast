@@ -81,7 +81,7 @@
                     <h5>Sales Order Details</h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST" id="sales-order-form">
+                    <form method="POST" enctype="multipart/form-data" id="sales-order-form">
                         {{ form.hidden_tag() }}
                         
                         <div class="row">
@@ -217,6 +217,25 @@
                                 </div>
                             {% endif %}
                         </div>
+                        
+                        <!-- Document Upload Section - Show during creation -->
+                        {% if not so %}
+                        <div class="mb-3">
+                            {{ form.documents.label(class="form-label") }}
+                            {{ form.documents(class="form-control") }}
+                            {% if form.documents.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.documents.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text text-muted">
+                                <i class="fas fa-info-circle"></i> 
+                                Upload contracts, quotations, specifications, or other supporting documents. Multiple files can be selected.
+                            </div>
+                        </div>
+                        {% endif %}
                         
                     </form>
                 </div>

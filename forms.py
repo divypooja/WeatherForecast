@@ -185,6 +185,12 @@ class SalesOrderForm(FlaskForm):
     status = SelectField('Status', choices=[('draft', 'Draft'), ('confirmed', 'Confirmed'), ('delivered', 'Delivered'), ('cancelled', 'Cancelled')], default='draft')
     notes = TextAreaField('Notes')
     
+    # Document Upload Fields
+    documents = FileField('Supporting Documents', 
+                         validators=[FileAllowed(['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx'], 
+                                               'Only PDF, Images, Word and Excel documents are allowed!')],
+                         render_kw={'multiple': True, 'accept': '.pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx'})
+    
     def __init__(self, *args, **kwargs):
         super(SalesOrderForm, self).__init__(*args, **kwargs)
         # Get suppliers who are customers (partner_type is 'customer' or 'both')

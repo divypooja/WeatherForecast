@@ -176,6 +176,22 @@ def add_sales_order():
         db.session.add(so)
         db.session.flush()  # Get the SO ID
         
+        # Handle document uploads if present
+        uploaded_documents = []
+        if form.documents.data:
+            from utils_documents import save_uploaded_documents
+            try:
+                uploaded_documents = save_uploaded_documents(
+                    files=request.files.getlist('documents'),
+                    reference_type='sales_order',
+                    reference_id=so.id,
+                    module_name='sales',
+                    user_id=current_user.id
+                )
+            except Exception as e:
+                print(f"Error uploading documents: {str(e)}")
+                flash(f'Sales Order created but document upload failed: {str(e)}', 'warning')
+        
         # Create accounting entries for SO booking
         from services.accounting_automation import AccountingAutomation
         accounting_result = AccountingAutomation.create_sales_order_voucher(so)
@@ -189,8 +205,19 @@ def add_sales_order():
         except Exception as e:
             print(f"SO notification error: {e}")
         
+        # Prepare success message
+        success_parts = ['Sales Order created successfully']
         if accounting_result:
+            success_parts.append('with accounting entries')
+        if uploaded_documents:
+            success_parts.append(f'and {len(uploaded_documents)} document(s) uploaded')
+        
+        if accounting_result and uploaded_documents:
+            flash(' '.join(success_parts), 'success')
+        elif accounting_result:
             flash('Sales Order created successfully with accounting entries', 'success')
+        elif uploaded_documents:
+            flash(f'Sales Order created successfully and {len(uploaded_documents)} document(s) uploaded', 'success')
         else:
             flash('Sales Order created successfully but accounting integration failed', 'warning')
         
