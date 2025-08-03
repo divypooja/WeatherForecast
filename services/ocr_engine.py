@@ -50,23 +50,34 @@ class ImagePreprocessor:
             # Convert to RGB for PIL processing
             image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             pil_image = Image.fromarray(image_rgb)
+            opencv_image = image.copy()  # Initialize opencv_image
             
-            # Step 1: Enhance contrast and brightness
+            # Step 1: Resize for optimal OCR (if too small)
+            height, width = opencv_image.shape[:2]
+            if height < 600 or width < 600:
+                scale_factor = max(600/height, 600/width, 1.5)
+                new_width = int(width * scale_factor)
+                new_height = int(height * scale_factor)
+                opencv_image = cv2.resize(opencv_image, (new_width, new_height), interpolation=cv2.INTER_CUBIC)
+                logger.info(f"Resized image from {width}x{height} to {new_width}x{new_height}")
+            
+            # Step 2: Enhance contrast and brightness
+            pil_image = Image.fromarray(cv2.cvtColor(opencv_image, cv2.COLOR_BGR2RGB))
             pil_image = ImagePreprocessor._enhance_contrast(pil_image)
             
             # Convert back to OpenCV format
             opencv_image = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
             
-            # Step 2: Noise reduction
+            # Step 3: Advanced noise reduction
             opencv_image = ImagePreprocessor._reduce_noise(opencv_image)
             
-            # Step 3: Deskew correction
+            # Step 4: Deskew correction
             opencv_image = ImagePreprocessor._correct_skew(opencv_image)
             
-            # Step 4: Binarization
-            opencv_image = ImagePreprocessor._binarize(opencv_image)
+            # Step 5: Advanced binarization with multiple methods
+            opencv_image = ImagePreprocessor._advanced_binarize(opencv_image)
             
-            # Step 5: Morphological operations
+            # Step 6: Morphological operations
             opencv_image = ImagePreprocessor._morphological_cleanup(opencv_image)
             
             # Save processed image
@@ -83,18 +94,47 @@ class ImagePreprocessor:
     
     @staticmethod
     def _enhance_contrast(image: Image.Image) -> Image.Image:
-        """Enhance contrast and brightness"""
-        # Adjust contrast
+        """Enhanced contrast and brightness adjustment"""
+        # Convert to numpy for histogram analysis
+        img_array = np.array(image)
+        
+        # Calculate optimal enhancement factors based on histogram
+        hist = np.histogram(img_array.flatten(), bins=256, range=(0, 256))[0]
+        total_pixels = img_array.size
+        
+        # Calculate cumulative distribution
+        cumsum = np.cumsum(hist)
+        normalized_cumsum = cumsum / total_pixels
+        
+        # Find 5th and 95th percentiles for contrast stretching
+        p5 = np.where(normalized_cumsum >= 0.05)[0]
+        p95 = np.where(normalized_cumsum >= 0.95)[0]
+        
+        if len(p5) > 0 and len(p95) > 0:
+            low_val = p5[0]
+            high_val = p95[0]
+            
+            # Determine enhancement factors based on dynamic range
+            if high_val - low_val < 100:  # Low contrast
+                contrast_factor = 1.5
+                brightness_factor = 1.2
+            else:  # Good contrast
+                contrast_factor = 1.2
+                brightness_factor = 1.1
+        else:
+            contrast_factor = 1.3
+            brightness_factor = 1.1
+        
+        # Apply enhancements
         enhancer = ImageEnhance.Contrast(image)
-        image = enhancer.enhance(1.2)
+        image = enhancer.enhance(contrast_factor)
         
-        # Adjust brightness
         enhancer = ImageEnhance.Brightness(image)
-        image = enhancer.enhance(1.1)
+        image = enhancer.enhance(brightness_factor)
         
-        # Adjust sharpness
+        # Always apply sharpening for text
         enhancer = ImageEnhance.Sharpness(image)
-        image = enhancer.enhance(1.3)
+        image = enhancer.enhance(1.4)
         
         return image
     
@@ -200,41 +240,148 @@ class ImagePreprocessor:
         cleaned = cv2.morphologyEx(cleaned, cv2.MORPH_OPEN, kernel)
         
         return cleaned
+    
+    @staticmethod
+    def _advanced_binarize(image: np.ndarray) -> np.ndarray:
+        """Advanced binarization with multiple techniques"""
+        # Convert to grayscale if needed
+        if len(image.shape) == 3:
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        else:
+            gray = image.copy()
+        
+        # Method 1: Adaptive threshold (Gaussian)
+        binary1 = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+                                       cv2.THRESH_BINARY, 11, 2)
+        
+        # Method 2: Adaptive threshold (Mean)
+        binary2 = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, 
+                                       cv2.THRESH_BINARY, 15, 3)
+        
+        # Method 3: Otsu's thresholding
+        _, binary3 = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        
+        # Method 4: Triangle thresholding
+        _, binary4 = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_TRIANGLE)
+        
+        # Method 5: Combined approach with blur
+        blur = cv2.GaussianBlur(gray, (3, 3), 0)
+        _, binary5 = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        
+        # Evaluate each method and choose the best
+        methods = [binary1, binary2, binary3, binary4, binary5]
+        scores = []
+        
+        for binary in methods:
+            # Calculate text-to-background ratio
+            white_pixels = np.sum(binary == 255)
+            total_pixels = binary.size
+            ratio = white_pixels / total_pixels
+            
+            # Calculate edge density (more edges typically means better text separation)
+            edges = cv2.Canny(binary, 50, 150)
+            edge_density = np.sum(edges > 0) / total_pixels
+            
+            # Score combines good background ratio (70-90%) and high edge density
+            ratio_score = 1 - abs(ratio - 0.8)  # Prefer ~80% background
+            edge_score = min(edge_density * 10, 1.0)  # Normalize edge density
+            combined_score = (ratio_score * 0.6) + (edge_score * 0.4)
+            scores.append(combined_score)
+        
+        # Select the best method
+        best_idx = scores.index(max(scores))
+        best_binary = methods[best_idx]
+        
+        logger.info(f"Selected binarization method {best_idx + 1} with score {max(scores):.3f}")
+        return best_binary
 
 class TesseractEngine:
     """Tesseract OCR engine wrapper"""
     
     def __init__(self):
         self.config_options = {
-            'high_accuracy': '--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.,/:-@# ',
-            'table_detection': '--oem 3 --psm 6',
+            'ultra_high_accuracy': '--oem 1 --psm 6 -c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.,/:-@#%()[]{}+=₹ ',
+            'high_accuracy': '--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.,/:-@#%()[]{}+=₹ ',
+            'document_layout': '--oem 3 --psm 4',
+            'sparse_text': '--oem 3 --psm 6',
+            'single_block': '--oem 3 --psm 7',
             'single_line': '--oem 3 --psm 8',
             'single_word': '--oem 3 --psm 8',
-            'numbers_only': '--oem 3 --psm 8 -c tessedit_char_whitelist=0123456789.,',
+            'numbers_only': '--oem 3 --psm 8 -c tessedit_char_whitelist=0123456789.,₹',
             'digits_and_text': '--oem 3 --psm 6'
         }
     
     def extract_text(self, image_path: str, config: str = 'high_accuracy') -> Tuple[str, float]:
         """
-        Extract text using Tesseract
+        Extract text using Tesseract with multiple attempts for best accuracy
         Returns (text, confidence)
         """
         try:
-            # Get configuration
-            tesseract_config = self.config_options.get(config, self.config_options['high_accuracy'])
+            # Try multiple configurations and select the best result
+            configs_to_try = [
+                ('ultra_high_accuracy', config),
+                ('high_accuracy', config),
+                ('document_layout', 'document_layout'),
+                ('sparse_text', 'sparse_text')
+            ]
             
-            # Extract text
-            text = pytesseract.image_to_string(image_path, config=tesseract_config)
+            best_text = ""
+            best_confidence = 0.0
+            best_config = config
             
-            # Get confidence data
-            try:
+            for config_name, fallback_config in configs_to_try:
+                try:
+                    tesseract_config = self.config_options.get(config_name, self.config_options[fallback_config])
+                    
+                    # Extract text
+                    text = pytesseract.image_to_string(image_path, config=tesseract_config)
+                    
+                    # Get confidence data with weighted calculation
+                    try:
+                        data = pytesseract.image_to_data(image_path, config=tesseract_config, output_type=pytesseract.Output.DICT)
+                        
+                        # Calculate weighted confidence (longer words get more weight)
+                        total_weight = 0
+                        weighted_conf = 0
+                        
+                        for i, conf in enumerate(data['conf']):
+                            word = data['text'][i].strip()
+                            if word and int(conf) > 0:
+                                word_weight = len(word)
+                                weighted_conf += int(conf) * word_weight
+                                total_weight += word_weight
+                        
+                        avg_confidence = weighted_conf / total_weight if total_weight > 0 else 0
+                        
+                    except:
+                        # Fallback confidence calculation
+                        confidences = [int(conf) for conf in data['conf'] if int(conf) > 0]
+                        avg_confidence = sum(confidences) / len(confidences) if confidences else 0
+                    
+                    # Select result with best combination of confidence and text length
+                    score = avg_confidence * (1 + len(text.strip()) / 1000)  # Slight bias for longer text
+                    best_score = best_confidence * (1 + len(best_text.strip()) / 1000)
+                    
+                    if score > best_score and len(text.strip()) > 5:
+                        best_text = text.strip()
+                        best_confidence = avg_confidence
+                        best_config = config_name
+                        logger.info(f"Better result with {config_name}: {avg_confidence:.1f}% confidence")
+                
+                except Exception as config_error:
+                    logger.warning(f"Config {config_name} failed: {config_error}")
+                    continue
+            
+            # If no good result found, try the original config
+            if not best_text:
+                tesseract_config = self.config_options.get(config, self.config_options['high_accuracy'])
+                best_text = pytesseract.image_to_string(image_path, config=tesseract_config)
                 data = pytesseract.image_to_data(image_path, config=tesseract_config, output_type=pytesseract.Output.DICT)
                 confidences = [int(conf) for conf in data['conf'] if int(conf) > 0]
-                avg_confidence = sum(confidences) / len(confidences) if confidences else 0
-            except:
-                avg_confidence = 50.0  # Default confidence if calculation fails
+                best_confidence = sum(confidences) / len(confidences) if confidences else 50.0
             
-            return text.strip(), avg_confidence
+            logger.info(f"Final OCR result using {best_config}: {best_confidence:.1f}% confidence, {len(best_text)} chars")
+            return best_text, best_confidence
             
         except Exception as e:
             logger.error(f"Tesseract extraction failed: {e}")
