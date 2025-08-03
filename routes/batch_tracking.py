@@ -355,15 +355,21 @@ def api_update_batch_quality(batch_id):
             data = request.form.to_dict()
             print(f"Request Form data: {data}")
         
-        new_status = data.get('inspection_status')
+        # Accept both quality_status and inspection_status keys
+        new_status = data.get('quality_status') or data.get('inspection_status')
         quality_notes = data.get('quality_notes', '')
+        
+        print(f"Received status: {new_status}")
         
         # Map quality status values
         status_mapping = {
             'approved': 'passed',
             'rejected': 'failed', 
             'pending': 'pending',
-            'on_hold': 'quarantine'
+            'on_hold': 'quarantine',
+            'defective': 'failed',  # Add defective mapping
+            'passed': 'passed',
+            'failed': 'failed'
         }
         
         if new_status in status_mapping:
