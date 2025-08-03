@@ -127,7 +127,7 @@ def view_document(document_id):
         flash('Document not found', 'error')
         return redirect(url_for('main.dashboard'))
     
-    file_path = os.path.join('uploads', document.upload_path)
+    file_path = document.file_path
     
     if not os.path.exists(file_path):
         flash('File not found on disk', 'error')
@@ -145,7 +145,7 @@ def download_document(document_id):
         flash('Document not found', 'error')
         return redirect(url_for('main.dashboard'))
     
-    file_path = os.path.join('uploads', document.upload_path)
+    file_path = document.file_path
     
     if not os.path.exists(file_path):
         flash('File not found on disk', 'error')
