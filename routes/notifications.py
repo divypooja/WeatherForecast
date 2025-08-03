@@ -515,3 +515,66 @@ def bulk_test_notifications():
     except Exception as e:
         flash(f'Error running system test: {str(e)}', 'danger')
         return redirect(url_for('notifications.admin_dashboard'))
+
+@notifications_bp.route('/api/test-scenario', methods=['POST'])
+@login_required
+def test_business_scenario():
+    """Test common business notification scenarios"""
+    if not current_user.is_admin():
+        return jsonify({'success': False, 'message': 'Access denied'}), 403
+    
+    try:
+        data = request.get_json()
+        scenario = data.get('scenario', '')
+        
+        from models_notifications import NotificationLog
+        
+        # Create test notification based on scenario
+        scenario_data = {
+            'po_created': {
+                'subject': '📋 Purchase Order Created - PO-2025-001',
+                'message': 'New purchase order PO-2025-001 created for supplier ABC Ltd. Total amount: ₹25,000',
+                'type': 'purchase_order'
+            },
+            'grn_received': {
+                'subject': '📦 Goods Receipt Note - GRN-2025-001',
+                'message': 'Materials received against PO-2025-001. GRN-2025-001 generated for quality inspection.',
+                'type': 'grn'
+            },
+            'job_work_issued': {
+                'subject': '🔧 Job Work Issued - JW-2025-001',
+                'message': 'Job work JW-2025-001 issued to vendor XYZ Works. Expected completion: 7 days.',
+                'type': 'job_work'
+            },
+            'low_stock_alert': {
+                'subject': '⚠️ Low Stock Alert - Raw Material Steel',
+                'message': 'Raw Material Steel is running low. Current stock: 50 kg, Minimum required: 100 kg.',
+                'type': 'inventory_alert'
+            }
+        }
+        
+        if scenario not in scenario_data:
+            return jsonify({'success': False, 'message': 'Unknown scenario'}), 400
+        
+        scenario_info = scenario_data[scenario]
+        
+        # Create test log entry
+        test_log = NotificationLog(
+            type=scenario_info['type'],
+            recipient='test_recipient',
+            subject=scenario_info['subject'],
+            message=scenario_info['message'],
+            success=True,
+            response='Test scenario notification logged successfully'
+        )
+        
+        db.session.add(test_log)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Test notification created and logged successfully! Check notification logs to see the {scenario.replace("_", " ")} notification.'
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error testing scenario: {str(e)}'}), 500
