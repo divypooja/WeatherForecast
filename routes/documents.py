@@ -13,7 +13,7 @@ documents_bp = Blueprint('documents', __name__)
 @documents_bp.route('/list')
 @login_required
 def document_list():
-    """List all documents with filtering and organized folder structure"""
+    """List all documents with filtering"""
     page = request.args.get('page', 1, type=int)
     per_page = 20
     
@@ -49,30 +49,6 @@ def document_list():
     document_types_count = db.session.query(func.count(func.distinct(Document.document_type))).filter_by(is_active=True).scalar()
     transactions_with_docs = db.session.query(func.count(func.distinct(Document.reference_id))).filter_by(is_active=True).scalar()
     
-    # Get organized folder structure information
-    from utils_documents import DOCUMENT_FOLDERS
-    folder_structure = {}
-    uploads_path = os.path.join(os.getcwd(), 'uploads')
-    
-    for doc_type, folder_path in DOCUMENT_FOLDERS.items():
-        full_path = os.path.join(uploads_path, folder_path)
-        if os.path.exists(full_path):
-            files = []
-            for filename in os.listdir(full_path):
-                file_path = os.path.join(full_path, filename)
-                if os.path.isfile(file_path):
-                    file_size = os.path.getsize(file_path)
-                    files.append({
-                        'name': filename,
-                        'size': file_size,
-                        'path': os.path.join(folder_path, filename)
-                    })
-            
-            folder_structure[folder_path] = {
-                'files': files,
-                'count': len(files)
-            }
-    
     return render_template('documents/list.html',
                          documents=documents,
                          transaction_type=transaction_type,
@@ -82,54 +58,7 @@ def document_list():
                          total_documents=total_documents,
                          total_size_mb=total_size_mb,
                          document_types_count=document_types_count,
-                         transactions_with_docs=transactions_with_docs,
-                         folder_structure=folder_structure)
-
-@documents_bp.route('/folder/<path:folder_path>/<filename>')
-@login_required
-def view_folder_file(folder_path, filename):
-    """View a file from the organized folder structure"""
-    try:
-        # Security check - ensure path is within uploads directory
-        safe_folder = folder_path.replace('..', '').strip('/')
-        safe_filename = filename.replace('..', '').strip('/')
-        
-        file_path = os.path.join(os.getcwd(), 'uploads', safe_folder, safe_filename)
-        
-        # Ensure file exists and is within uploads directory
-        uploads_dir = os.path.join(os.getcwd(), 'uploads')
-        if not file_path.startswith(uploads_dir) or not os.path.exists(file_path):
-            flash('File not found', 'error')
-            return redirect(url_for('documents.document_list'))
-        
-        return send_file(file_path, as_attachment=False, download_name=filename)
-        
-    except Exception as e:
-        flash(f'Error viewing file: {str(e)}', 'error')
-        return redirect(url_for('documents.document_list'))
-
-@documents_bp.route('/folder/<path:folder_path>/<filename>/download')
-@login_required
-def download_folder_file(folder_path, filename):
-    """Download a file from the organized folder structure"""
-    try:
-        # Security check - ensure path is within uploads directory
-        safe_folder = folder_path.replace('..', '').strip('/')
-        safe_filename = filename.replace('..', '').strip('/')
-        
-        file_path = os.path.join(os.getcwd(), 'uploads', safe_folder, safe_filename)
-        
-        # Ensure file exists and is within uploads directory
-        uploads_dir = os.path.join(os.getcwd(), 'uploads')
-        if not file_path.startswith(uploads_dir) or not os.path.exists(file_path):
-            flash('File not found', 'error')
-            return redirect(url_for('documents.document_list'))
-        
-        return send_file(file_path, as_attachment=True, download_name=filename)
-        
-    except Exception as e:
-        flash(f'Error downloading file: {str(e)}', 'error')
-        return redirect(url_for('documents.document_list'))
+                         transactions_with_docs=transactions_with_docs)
 
 @documents_bp.route('/upload/<transaction_type>/<int:transaction_id>', methods=['GET', 'POST'])
 @login_required

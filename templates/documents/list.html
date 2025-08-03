@@ -105,70 +105,10 @@
         </div>
     </div>
 
-    <!-- Organized Folder Structure -->
-    {% if folder_structure %}
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5><i class="fas fa-folder-open me-2"></i>Organized File Structure</h5>
-            <small class="text-muted">Documents are automatically organized into folders based on their type</small>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                {% for folder_path, folder_info in folder_structure.items() %}
-                {% if folder_info.count > 0 %}
-                <div class="col-md-6 col-lg-4 mb-3">
-                    <div class="border rounded p-3 h-100">
-                        <div class="d-flex align-items-center mb-2">
-                            <i class="fas fa-folder text-warning me-2"></i>
-                            <strong>{{ folder_path }}</strong>
-                            <span class="badge bg-primary ms-auto">{{ folder_info.count }}</span>
-                        </div>
-                        <div class="small text-muted">
-                            {% for file in folder_info.files[:3] %}
-                            <div class="d-flex align-items-center mb-1">
-                                <i class="fas fa-file text-secondary me-1" style="font-size: 0.8em;"></i>
-                                <a href="{{ url_for('documents.view_folder_file', folder_path=folder_path, filename=file.name) }}" 
-                                   class="text-decoration-none text-truncate me-auto" 
-                                   target="_blank" 
-                                   title="Click to view {{ file.name }}">
-                                    {{ file.name }}
-                                </a>
-                                <div class="btn-group btn-group-sm ms-1">
-                                    <a href="{{ url_for('documents.view_folder_file', folder_path=folder_path, filename=file.name) }}" 
-                                       class="btn btn-outline-primary btn-sm" 
-                                       target="_blank" 
-                                       title="View">
-                                        <i class="fas fa-eye" style="font-size: 0.7em;"></i>
-                                    </a>
-                                    <a href="{{ url_for('documents.download_folder_file', folder_path=folder_path, filename=file.name) }}" 
-                                       class="btn btn-outline-secondary btn-sm" 
-                                       title="Download">
-                                        <i class="fas fa-download" style="font-size: 0.7em;"></i>
-                                    </a>
-                                </div>
-                                <small class="text-muted ms-1">{{ (file.size / 1024)|round(1) }} KB</small>
-                            </div>
-                            {% endfor %}
-                            {% if folder_info.count > 3 %}
-                            <div class="text-center">
-                                <small class="text-muted">... and {{ folder_info.count - 3 }} more files</small>
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-                {% endfor %}
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
     <!-- Documents Table -->
     <div class="card">
         <div class="card-header">
-            <h5><i class="fas fa-table me-2"></i>Registered Documents</h5>
-            <small class="text-muted">Documents tracked in the database with transaction links</small>
+            <h5><i class="fas fa-table me-2"></i>Documents</h5>
         </div>
         <div class="card-body">
             {% if documents.items %}
