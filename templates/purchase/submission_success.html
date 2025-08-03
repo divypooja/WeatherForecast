@@ -34,11 +34,11 @@
                                 </tr>
                                 <tr>
                                     <td><strong>PO Date:</strong></td>
-                                    <td>{{ po.po_date.strftime('%d/%m/%Y') if po.po_date else 'N/A' }}</td>
+                                    <td>{{ po.order_date.strftime('%d/%m/%Y') if po.order_date else 'N/A' }}</td>
                                 </tr>
                                 <tr>
                                     <td><strong>Expected Delivery:</strong></td>
-                                    <td>{{ po.delivery_date.strftime('%d/%m/%Y') if po.delivery_date else 'N/A' }}</td>
+                                    <td>{{ po.expected_date.strftime('%d/%m/%Y') if po.expected_date else 'N/A' }}</td>
                                 </tr>
                             </table>
                         </div>
@@ -173,7 +173,7 @@
 
 Please find attached Purchase Order {{ po.po_number }} for your review and processing.
 
-Expected Delivery Date: {{ po.delivery_date.strftime('%d/%m/%Y') if po.delivery_date else 'As per agreement' }}
+Expected Delivery Date: {{ po.expected_date.strftime('%d/%m/%Y') if po.expected_date else 'As per agreement' }}
 Total Amount: ₹{{ "%.2f"|format(po.total_amount or 0) }}
 
 Please confirm receipt and provide delivery timeline.
@@ -216,7 +216,7 @@ Best regards,
 
 Purchase Order {{ po.po_number }} has been created.
 Total Amount: ₹{{ "%.2f"|format(po.total_amount or 0) }}
-Expected Delivery: {{ po.delivery_date.strftime('%d/%m/%Y') if po.delivery_date else 'As per agreement' }}
+Expected Delivery: {{ po.expected_date.strftime('%d/%m/%Y') if po.expected_date else 'As per agreement' }}
 
 PDF will be shared separately.
 
@@ -264,8 +264,7 @@ function confirmSendEmail() {
     fetch('{{ url_for("purchase.send_purchase_order_email", id=po.id) }}', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token() }}'
+            'Content-Type': 'application/json'
         },
         body: JSON.stringify({
             email_to: emailTo,
@@ -309,8 +308,7 @@ function confirmSendWhatsApp() {
     fetch('{{ url_for("purchase.send_purchase_order_whatsapp", id=po.id) }}', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token() }}'
+            'Content-Type': 'application/json'
         },
         body: JSON.stringify({
             whatsapp_number: whatsappNumber,
