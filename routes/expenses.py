@@ -8,8 +8,7 @@ from datetime import datetime, date
 from sqlalchemy import func, desc, extract
 from utils_documents import save_uploaded_file_expense
 from utils_export import export_factory_expenses
-# Temporarily comment out OCR import to fix OpenCV dependency issue
-# from utils_ocr import process_receipt_image
+from services.ocr_service import ocr_service
 import calendar
 import os
 import tempfile
@@ -339,6 +338,62 @@ def expense_detail(id):
     
     return render_template('expenses/detail.html', expense=expense, documents=documents)
 
+@expenses_bp.route('/process_ocr', methods=['POST'])
+@login_required
+def process_ocr():
+    """Process OCR for receipt/invoice image"""
+    try:
+        if 'receipt_image' not in request.files:
+            return jsonify({'success': False, 'message': 'No file provided'})
+        
+        file = request.files['receipt_image']
+        if file.filename == '':
+            return jsonify({'success': False, 'message': 'No file selected'})
+        
+        # Process with OCR service
+        result = ocr_service.process_document(
+            file=file,
+            module_type='expense',
+            reference_id=None,
+            reference_type='factory_expense',
+            uploaded_by=current_user.id
+        )
+        
+        if result['success']:
+            ocr_result = result['ocr_result']
+            extracted_fields = ocr_result.get_extracted_fields()
+            
+            # Format data for expense form
+            formatted_data = {
+                'amount': extracted_fields.get('total_amount') or extracted_fields.get('amount'),
+                'base_amount': extracted_fields.get('base_amount'),
+                'tax_amount': extracted_fields.get('tax_amount') or extracted_fields.get('gst_amount'),
+                'vendor': extracted_fields.get('vendor_name') or extracted_fields.get('supplier_name'),
+                'invoice_number': extracted_fields.get('invoice_number') or extracted_fields.get('bill_number'),
+                'date': extracted_fields.get('invoice_date') or extracted_fields.get('date'),
+                'category': extracted_fields.get('category'),
+                'department': extracted_fields.get('department'),
+                'gstin': extracted_fields.get('gstin'),
+                'confidence': ocr_result.confidence_score
+            }
+            
+            return jsonify({
+                'success': True,
+                'data': formatted_data,
+                'message': f'OCR processed successfully with {ocr_result.confidence_score:.1f}% confidence'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': result.get('error', 'OCR processing failed')
+            })
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error processing OCR: {str(e)}'
+        })
+
 @expenses_bp.route('/approve/<int:id>', methods=['POST'])
 @login_required
 def approve_expense(id):
@@ -457,75 +512,3 @@ def delete_expense(id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
-@expenses_bp.route("/process_ocr", methods=["POST"])
-@login_required
-def process_ocr():
-    """Process receipt image using OCR to extract structured data"""
-    try:
-        # Check if file was uploaded
-        if "receipt_image" not in request.files:
-            return jsonify({"success": False, "message": "No file uploaded"})
-        
-        file = request.files["receipt_image"]
-        if file.filename == "":
-            return jsonify({"success": False, "message": "No file selected"})
-        
-        # Validate file type
-        allowed_extensions = {"png", "jpg", "jpeg", "gif", "bmp", "tiff", "webp", "pdf"}
-        file_extension = file.filename.lower().split(".")[-1] if "." in file.filename else ""
-        if not file_extension in allowed_extensions:
-            return jsonify({"success": False, "message": "Invalid file type. Please upload an image file (PNG, JPG, JPEG, GIF, BMP, TIFF, WEBP) or PDF."})
-        
-        # Create temporary file
-        file_extension = file.filename.split('.')[-1] if '.' in file.filename else 'tmp'
-        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{file_extension}") as tmp_file:
-            file.save(tmp_file.name)
-            temp_path = tmp_file.name
-        
-        try:
-            # Simulate OCR processing for demo
-            import random
-            from datetime import date
-            
-            # Demo OCR result - replace with real OCR when dependencies are resolved
-            ocr_result = {
-                "date": date.today().strftime("%Y-%m-%d"),
-                "amount": round(random.uniform(100, 5000), 2),
-                "base_amount": round(random.uniform(85, 4500), 2),
-                "tax_amount": round(random.uniform(15, 500), 2),
-                "vendor": f"Sample Vendor {random.randint(1, 10)}",
-                "invoice_number": f"INV-{random.randint(1000, 9999)}",
-                "category": random.choice(["utilities", "materials", "transport", "maintenance"]),
-                "department": random.choice(["production", "maintenance", "administration", "accounts_finance"]),
-                "gst_rate": random.choice([5, 12, 18, 28]),
-                "gstin": f"22AAAAA0000A1Z{random.randint(1, 9)}",
-                "confidence": random.randint(75, 95)
-            }
-            
-            # Clean up temporary file
-            os.unlink(temp_path)
-            
-            if "error" in ocr_result:
-                return jsonify({
-                    "success": False, 
-                    "message": f"OCR processing failed: {ocr_result['error']}"
-                })
-            
-            # Return processed data
-            return jsonify({
-                "success": True,
-                "message": "Receipt processed successfully (Demo Mode)",
-                "data": ocr_result
-            })
-            
-        except Exception as e:
-            # Clean up temporary file in case of error
-            if os.path.exists(temp_path):
-                os.unlink(temp_path)
-            raise e
-            
-    except Exception as e:
-        return jsonify({
-            "success": False,
-            "message": f"Error processing receipt: {str(e)}"
-        })
