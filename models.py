@@ -2768,33 +2768,7 @@ class NotificationSettings(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-class NotificationLog(db.Model):
-    __tablename__ = 'notification_logs'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    type = db.Column(db.String(20), nullable=False)  # email, sms, whatsapp
-    recipient = db.Column(db.String(255), nullable=False)
-    subject = db.Column(db.String(255))
-    message = db.Column(db.Text)
-    success = db.Column(db.Boolean, nullable=False)
-    response = db.Column(db.Text)
-    sent_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # Optional: Link to specific events
-    event_type = db.Column(db.String(50))  # low_stock, order_update, production_complete
-    event_id = db.Column(db.Integer)  # ID of the related record
-
-class NotificationRecipient(db.Model):
-    __tablename__ = 'notification_recipients'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(120))
-    phone = db.Column(db.String(20))
-    notification_types = db.Column(db.String(100))  # comma-separated: email,sms,whatsapp
-    event_types = db.Column(db.String(200))  # comma-separated: low_stock,order_update,production
-    is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+# Notification models moved to models_notifications.py to prevent conflicts
 
 class DeliverySchedule(db.Model):
     __tablename__ = 'delivery_schedules'

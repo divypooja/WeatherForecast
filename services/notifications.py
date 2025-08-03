@@ -196,7 +196,7 @@ class NotificationService:
                          subject: str, success: bool, response: str):
         """Log notification attempt to database"""
         try:
-            from models import NotificationLog
+            from models_notifications import NotificationLog
             log_entry = NotificationLog(
                 type=notification_type.value,
                 recipient=recipient,
@@ -293,6 +293,347 @@ class NotificationTemplates:
                     <p><strong>Quantity Produced:</strong> {quantity} units</p>
                 </div>
                 <p>Best regards,<br>AK Innovations Factory Management System</p>
+            </div>
+            '''
+        }
+    
+    # PURCHASE ORDER TEMPLATES
+    @staticmethod
+    def po_created_vendor(po_number: str, vendor_name: str, total_amount: float, items_count: int) -> Dict[str, str]:
+        return {
+            'subject': f'🛒 Purchase Order #{po_number} - AK Innovations',
+            'message': f'Dear {vendor_name}, We have issued Purchase Order #{po_number} for {items_count} items worth ₹{total_amount:,.2f}. Please confirm receipt and delivery schedule.',
+            'html': f'''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #007bff;">🛒 Purchase Order Issued</h2>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                    <h3>PO #{po_number}</h3>
+                    <p><strong>Vendor:</strong> {vendor_name}</p>
+                    <p><strong>Items:</strong> {items_count}</p>
+                    <p><strong>Total Amount:</strong> ₹{total_amount:,.2f}</p>
+                </div>
+                <p>Please confirm receipt and provide delivery schedule.</p>
+                <p>Best regards,<br>AK Innovations Procurement Team</p>
+            </div>
+            '''
+        }
+    
+    @staticmethod
+    def po_approved_internal(po_number: str, vendor_name: str, approver_name: str) -> Dict[str, str]:
+        return {
+            'subject': f'✅ PO #{po_number} Approved by {approver_name}',
+            'message': f'Purchase Order #{po_number} for {vendor_name} has been approved by {approver_name}. Proceeding with procurement.',
+            'html': f'''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #28a745;">✅ Purchase Order Approved</h2>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                    <h3>PO #{po_number}</h3>
+                    <p><strong>Vendor:</strong> {vendor_name}</p>
+                    <p><strong>Approved by:</strong> {approver_name}</p>
+                </div>
+                <p>Procurement can proceed as planned.</p>
+                <p>Best regards,<br>AK Innovations Purchase Team</p>
+            </div>
+            '''
+        }
+    
+    @staticmethod
+    def po_partially_fulfilled(po_number: str, completed_items: int, total_items: int) -> Dict[str, str]:
+        return {
+            'subject': f'⚠️ PO #{po_number} Partially Fulfilled',
+            'message': f'Purchase Order #{po_number} is partially complete. {completed_items}/{total_items} items received. Follow up on pending deliveries.',
+            'html': f'''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #ffc107;">⚠️ Partial Fulfillment Alert</h2>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                    <h3>PO #{po_number}</h3>
+                    <p><strong>Completed:</strong> {completed_items}/{total_items} items</p>
+                    <p><strong>Status:</strong> Pending follow up</p>
+                </div>
+                <p>Please follow up on remaining deliveries.</p>
+                <p>Best regards,<br>AK Innovations Store Team</p>
+            </div>
+            '''
+        }
+    
+    # GRN TEMPLATES
+    @staticmethod
+    def grn_created_accounts(grn_number: str, vendor_name: str, total_amount: float) -> Dict[str, str]:
+        return {
+            'subject': f'📦 GRN #{grn_number} Created - Update Required',
+            'message': f'GRN #{grn_number} from {vendor_name} (₹{total_amount:,.2f}) has been created. Please update accounting records.',
+            'html': f'''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #007bff;">📦 GRN Created</h2>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                    <h3>GRN #{grn_number}</h3>
+                    <p><strong>Vendor:</strong> {vendor_name}</p>
+                    <p><strong>Amount:</strong> ₹{total_amount:,.2f}</p>
+                    <p><strong>Action:</strong> Update accounting records</p>
+                </div>
+                <p>Best regards,<br>AK Innovations Store Team</p>
+            </div>
+            '''
+        }
+    
+    @staticmethod
+    def material_rejected(grn_number: str, item_name: str, rejected_qty: float, reason: str) -> Dict[str, str]:
+        return {
+            'subject': f'❌ Material Rejected - GRN #{grn_number}',
+            'message': f'Material rejected in GRN #{grn_number}. Item: {item_name}, Qty: {rejected_qty}, Reason: {reason}. Replacement required.',
+            'html': f'''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #dc3545;">❌ Material Rejection Notice</h2>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                    <h3>GRN #{grn_number}</h3>
+                    <p><strong>Item:</strong> {item_name}</p>
+                    <p><strong>Rejected Qty:</strong> {rejected_qty}</p>
+                    <p><strong>Reason:</strong> {reason}</p>
+                </div>
+                <p>Please arrange replacement material.</p>
+                <p>Best regards,<br>AK Innovations QC Team</p>
+            </div>
+            '''
+        }
+    
+    # JOB WORK TEMPLATES
+    @staticmethod
+    def job_work_issued(jw_number: str, vendor_name: str, item_name: str, quantity: float) -> Dict[str, str]:
+        return {
+            'subject': f'🔧 Job Work #{jw_number} Dispatched to {vendor_name}',
+            'message': f'Job Work #{jw_number} has been dispatched. Item: {item_name}, Qty: {quantity}. Please confirm receipt.',
+            'html': f'''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #fd7e14;">🔧 Job Work Dispatched</h2>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                    <h3>Job Work #{jw_number}</h3>
+                    <p><strong>Vendor:</strong> {vendor_name}</p>
+                    <p><strong>Item:</strong> {item_name}</p>
+                    <p><strong>Quantity:</strong> {quantity}</p>
+                </div>
+                <p>Please confirm receipt and provide expected completion date.</p>
+                <p>Best regards,<br>AK Innovations Production Team</p>
+            </div>
+            '''
+        }
+    
+    @staticmethod
+    def job_work_delayed(jw_number: str, vendor_name: str, days_delayed: int) -> Dict[str, str]:
+        return {
+            'subject': f'⚠️ Job Work #{jw_number} Delayed - Follow Up Required',
+            'message': f'Job Work #{jw_number} from {vendor_name} is delayed by {days_delayed} days. Immediate follow up required.',
+            'html': f'''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #ffc107;">⚠️ Job Work Delayed</h2>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                    <h3>Job Work #{jw_number}</h3>
+                    <p><strong>Vendor:</strong> {vendor_name}</p>
+                    <p><strong>Delayed by:</strong> {days_delayed} days</p>
+                    <p><strong>Action:</strong> Immediate follow up required</p>
+                </div>
+                <p>Please contact vendor immediately.</p>
+                <p>Best regards,<br>AK Innovations Production Team</p>
+            </div>
+            '''
+        }
+    
+    @staticmethod
+    def job_work_received(jw_number: str, item_name: str, quantity: float) -> Dict[str, str]:
+        return {
+            'subject': f'✅ Job Work #{jw_number} Output Received',
+            'message': f'Job Work #{jw_number} output received. Item: {item_name}, Qty: {quantity}. Update inventory and accounting.',
+            'html': f'''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #28a745;">✅ Job Work Output Received</h2>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                    <h3>Job Work #{jw_number}</h3>
+                    <p><strong>Item:</strong> {item_name}</p>
+                    <p><strong>Quantity:</strong> {quantity}</p>
+                    <p><strong>Action:</strong> Update inventory and accounting</p>
+                </div>
+                <p>Best regards,<br>AK Innovations Store Team</p>
+            </div>
+            '''
+        }
+    
+    # SALES ORDER TEMPLATES
+    @staticmethod
+    def so_created_internal(so_number: str, customer_name: str, total_amount: float) -> Dict[str, str]:
+        return {
+            'subject': f'🛍️ Sales Order #{so_number} Created',
+            'message': f'New Sales Order #{so_number} from {customer_name} for ₹{total_amount:,.2f}. Please confirm booking.',
+            'html': f'''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #28a745;">🛍️ New Sales Order</h2>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                    <h3>SO #{so_number}</h3>
+                    <p><strong>Customer:</strong> {customer_name}</p>
+                    <p><strong>Amount:</strong> ₹{total_amount:,.2f}</p>
+                    <p><strong>Status:</strong> Booking confirmed</p>
+                </div>
+                <p>Best regards,<br>AK Innovations Sales Team</p>
+            </div>
+            '''
+        }
+    
+    @staticmethod
+    def material_ready_dispatch(so_number: str, customer_name: str, items_ready: int) -> Dict[str, str]:
+        return {
+            'subject': f'🚚 SO #{so_number} Ready for Dispatch',
+            'message': f'Sales Order #{so_number} for {customer_name} is ready for dispatch. {items_ready} items prepared.',
+            'html': f'''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #17a2b8;">🚚 Ready for Dispatch</h2>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                    <h3>SO #{so_number}</h3>
+                    <p><strong>Customer:</strong> {customer_name}</p>
+                    <p><strong>Items Ready:</strong> {items_ready}</p>
+                    <p><strong>Status:</strong> Awaiting dispatch coordination</p>
+                </div>
+                <p>Please coordinate dispatch schedule.</p>
+                <p>Best regards,<br>AK Innovations Logistics Team</p>
+            </div>
+            '''
+        }
+    
+    @staticmethod
+    def invoice_generated_customer(invoice_number: str, customer_name: str, total_amount: float) -> Dict[str, str]:
+        return {
+            'subject': f'📋 Invoice #{invoice_number} - AK Innovations',
+            'message': f'Dear {customer_name}, Your invoice #{invoice_number} for ₹{total_amount:,.2f} has been generated. Please find attached.',
+            'html': f'''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #007bff;">📋 Invoice Generated</h2>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                    <h3>Invoice #{invoice_number}</h3>
+                    <p><strong>Customer:</strong> {customer_name}</p>
+                    <p><strong>Amount:</strong> ₹{total_amount:,.2f}</p>
+                    <p><strong>Due Date:</strong> As per terms</p>
+                </div>
+                <p>Payment as per agreed terms and conditions.</p>
+                <p>Best regards,<br>AK Innovations Accounts Team</p>
+            </div>
+            '''
+        }
+    
+    @staticmethod
+    def payment_overdue(customer_name: str, invoice_number: str, overdue_days: int, amount: float) -> Dict[str, str]:
+        return {
+            'subject': f'🔔 Payment Overdue - Invoice #{invoice_number}',
+            'message': f'Dear {customer_name}, Payment for Invoice #{invoice_number} (₹{amount:,.2f}) is overdue by {overdue_days} days. Please arrange payment.',
+            'html': f'''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #dc3545;">🔔 Payment Overdue Notice</h2>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                    <h3>Invoice #{invoice_number}</h3>
+                    <p><strong>Customer:</strong> {customer_name}</p>
+                    <p><strong>Amount:</strong> ₹{amount:,.2f}</p>
+                    <p><strong>Overdue by:</strong> {overdue_days} days</p>
+                </div>
+                <p>Please arrange immediate payment to avoid service interruption.</p>
+                <p>Best regards,<br>AK Innovations Accounts Team</p>
+            </div>
+            '''
+        }
+    
+    # ACCOUNTS TEMPLATES
+    @staticmethod
+    def vendor_payment_due(vendor_name: str, amount: float, due_date: str) -> Dict[str, str]:
+        return {
+            'subject': f'💰 Payment Due to {vendor_name} - ₹{amount:,.2f}',
+            'message': f'Payment of ₹{amount:,.2f} to {vendor_name} is due on {due_date}. Please process payment.',
+            'html': f'''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #ffc107;">💰 Payment Due Notice</h2>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                    <h3>Payment Due</h3>
+                    <p><strong>Vendor:</strong> {vendor_name}</p>
+                    <p><strong>Amount:</strong> ₹{amount:,.2f}</p>
+                    <p><strong>Due Date:</strong> {due_date}</p>
+                </div>
+                <p>Please process payment to maintain good vendor relations.</p>
+                <p>Best regards,<br>AK Innovations Accounts Payable</p>
+            </div>
+            '''
+        }
+    
+    @staticmethod
+    def customer_payment_received(customer_name: str, amount: float, reference: str) -> Dict[str, str]:
+        return {
+            'subject': f'✅ Payment Received from {customer_name}',
+            'message': f'Payment of ₹{amount:,.2f} received from {customer_name}. Reference: {reference}',
+            'html': f'''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #28a745;">✅ Payment Received</h2>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                    <h3>Payment Confirmation</h3>
+                    <p><strong>Customer:</strong> {customer_name}</p>
+                    <p><strong>Amount:</strong> ₹{amount:,.2f}</p>
+                    <p><strong>Reference:</strong> {reference}</p>
+                </div>
+                <p>Payment successfully recorded in accounts.</p>
+                <p>Best regards,<br>AK Innovations Accounts Receivable</p>
+            </div>
+            '''
+        }
+    
+    @staticmethod
+    def journal_voucher_posted(voucher_number: str, amount: float, narration: str) -> Dict[str, str]:
+        return {
+            'subject': f'📊 Journal Voucher #{voucher_number} Auto-Posted',
+            'message': f'Journal Voucher #{voucher_number} (₹{amount:,.2f}) has been auto-posted. Narration: {narration}',
+            'html': f'''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #6f42c1;">📊 Journal Voucher Posted</h2>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                    <h3>Voucher #{voucher_number}</h3>
+                    <p><strong>Amount:</strong> ₹{amount:,.2f}</p>
+                    <p><strong>Narration:</strong> {narration}</p>
+                    <p><strong>Status:</strong> Auto-posted</p>
+                </div>
+                <p>Please review for audit trail.</p>
+                <p>Best regards,<br>AK Innovations Accounting System</p>
+            </div>
+            '''
+        }
+    
+    # INVENTORY TEMPLATES
+    @staticmethod
+    def scrap_threshold_exceeded(item_name: str, scrap_qty: float, threshold: float) -> Dict[str, str]:
+        return {
+            'subject': f'⚠️ Scrap Threshold Exceeded - {item_name}',
+            'message': f'Scrap quantity for {item_name} ({scrap_qty}) has exceeded threshold ({threshold}). Quality investigation required.',
+            'html': f'''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #dc3545;">⚠️ Scrap Threshold Alert</h2>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                    <h3>{item_name}</h3>
+                    <p><strong>Scrap Quantity:</strong> {scrap_qty}</p>
+                    <p><strong>Threshold:</strong> {threshold}</p>
+                    <p><strong>Action:</strong> Quality investigation required</p>
+                </div>
+                <p>Please investigate quality issues immediately.</p>
+                <p>Best regards,<br>AK Innovations Quality Team</p>
+            </div>
+            '''
+        }
+    
+    @staticmethod
+    def transfer_complete(from_location: str, to_location: str, items_count: int) -> Dict[str, str]:
+        return {
+            'subject': f'📦 Transfer Complete: {from_location} → {to_location}',
+            'message': f'Stock transfer from {from_location} to {to_location} completed. {items_count} items transferred.',
+            'html': f'''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #17a2b8;">📦 Transfer Complete</h2>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                    <h3>Stock Transfer</h3>
+                    <p><strong>From:</strong> {from_location}</p>
+                    <p><strong>To:</strong> {to_location}</p>
+                    <p><strong>Items:</strong> {items_count}</p>
+                </div>
+                <p>Please acknowledge receipt at destination.</p>
+                <p>Best regards,<br>AK Innovations Store Team</p>
             </div>
             '''
         }

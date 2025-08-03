@@ -6,6 +6,7 @@ import models_grn
 import models_accounting
 import models_accounting_settings
 import models_grn_workflow
+import models_notifications
 
 # Register accounting settings blueprint
 from routes.accounting_settings import accounting_settings_bp

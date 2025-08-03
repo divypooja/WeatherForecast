@@ -39,7 +39,7 @@ def create_app():
     login_manager.login_message_category = 'info'
     
     # Import models
-    from models import User, Item, Supplier, PurchaseOrder, SalesOrder, Employee, JobWork, Production, BOM, NotificationSettings, NotificationLog, NotificationRecipient, CompanySettings, QualityIssue, QualityControlLog, FactoryExpense
+    from models import User, Item, Supplier, PurchaseOrder, SalesOrder, Employee, JobWork, Production, BOM, NotificationSettings, CompanySettings, QualityIssue, QualityControlLog, FactoryExpense
     from models_document import Document, DocumentAccessLog
     from models_uom import UnitOfMeasure, UOMConversion, ItemUOMConversion, UOMConversionLog
     from models_department import Department
@@ -156,6 +156,10 @@ def create_app():
     from routes.module_placeholders import register_placeholder_routes
     register_placeholder_routes(app)
     
+    # Register notifications blueprint
+    from routes.notifications import notifications_bp
+    app.register_blueprint(notifications_bp, url_prefix='/notifications')
+    
     # Template context processors
     @app.context_processor
     def utility_processor():
@@ -170,6 +174,7 @@ def create_app():
         import models_custom_reports  # Custom report models
         import models_intelligence  # Manufacturing intelligence models
         import models_document  # Document upload models
+        import models_notifications  # Notification system models
         
         db.create_all()
         

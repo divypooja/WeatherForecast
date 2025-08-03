@@ -207,6 +207,18 @@ def add_purchase_order():
         
         db.session.commit()
         
+        # Send notifications
+        from services.comprehensive_notifications import comprehensive_notification_service
+        try:
+            # Send to vendor if contact info available
+            vendor_contact = {
+                'email': po.supplier.email if hasattr(po.supplier, 'email') and po.supplier.email else None,
+                'phone': po.supplier.phone if hasattr(po.supplier, 'phone') and po.supplier.phone else None
+            }
+            comprehensive_notification_service.notify_po_created(po, vendor_contact)
+        except Exception as e:
+            print(f"Notification error: {e}")
+        
         if accounting_result:
             flash('Purchase Order created successfully with accounting entries', 'success')
         else:

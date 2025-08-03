@@ -182,6 +182,13 @@ def add_sales_order():
         
         db.session.commit()
         
+        # Send SO created notification
+        from services.comprehensive_notifications import comprehensive_notification_service
+        try:
+            comprehensive_notification_service.notify_so_created(so)
+        except Exception as e:
+            print(f"SO notification error: {e}")
+        
         if accounting_result:
             flash('Sales Order created successfully with accounting entries', 'success')
         else:

@@ -554,6 +554,13 @@ def create_grn(job_work_id):
             db.session.add(grn)
             db.session.commit()
             
+            # Send GRN created notification
+            from services.comprehensive_notifications import comprehensive_notification_service
+            try:
+                comprehensive_notification_service.notify_grn_created(grn)
+            except Exception as e:
+                print(f"GRN notification error: {e}")
+            
             flash(f'GRN {grn.grn_number} created successfully!', 'success')
             return redirect(url_for('grn.add_line_items', grn_id=grn.id))
             
