@@ -3,108 +3,178 @@
 {% block title %}{{ title }} - Factory Management System{% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="container-fluid">
+    <!-- Enhanced Header Section -->
     <div class="row mb-4">
         <div class="col">
-            <h1><i class="fas fa-sitemap"></i> {{ title }}</h1>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
-                    <li class="breadcrumb-item"><a href="{{ url_for('production.dashboard') }}">Production</a></li>
-                    <li class="breadcrumb-item"><a href="{{ url_for('production.list_bom') }}">Bill of Materials</a></li>
-                    <li class="breadcrumb-item active">{{ title }}</li>
-                </ol>
-            </nav>
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h1 class="mb-2">
+                        <i class="fas fa-sitemap text-primary"></i> 
+                        {{ title }}
+                        {% if bom %}
+                            <span class="badge bg-info ms-2">{{ bom.status|title }}</span>
+                        {% else %}
+                            <span class="badge bg-success ms-2">New BOM</span>
+                        {% endif %}
+                    </h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}"><i class="fas fa-home"></i> Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('production.dashboard') }}"><i class="fas fa-industry"></i> Production</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('production.list_bom') }}"><i class="fas fa-sitemap"></i> Bill of Materials</a></li>
+                            <li class="breadcrumb-item active">{{ title }}</li>
+                        </ol>
+                    </nav>
+                </div>
+                {% if bom %}
+                <div class="text-end">
+                    <div class="btn-group" role="group">
+                        <a href="{{ url_for('production.view_bom', id=bom.id) }}" class="btn btn-outline-info btn-sm">
+                            <i class="fas fa-eye"></i> View BOM
+                        </a>
+                        <a href="{{ url_for('production.list_bom') }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-list"></i> All BOMs
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 
+    <!-- Progress Indicator for New BOM -->
+    {% if not bom %}
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card border-primary">
+                <div class="card-body p-2">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar bg-primary" role="progressbar" style="width: 33%"></div>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <small class="text-muted">Step 1 of 3: Basic Information</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <div class="row">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5><i class="fas fa-info-circle"></i> BOM Information</h5>
+        <div class="col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        {% if bom %}Edit BOM Information{% else %}Create New BOM{% endif %}
+                    </h5>
+                    {% if bom %}
+                        <small class="opacity-75">BOM Code: {{ bom.bom_code }}</small>
+                    {% endif %}
                 </div>
                 <div class="card-body">
                     <form method="POST">
                         {{ form.hidden_tag() }}
                         
-                        <div class="mb-3">
-                            {{ form.product_id.label(class="form-label") }}
-                            {{ form.product_id(class="form-select") }}
+                        <!-- Product Selection with Enhanced Styling -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-box text-primary me-1"></i>
+                                Final Product <span class="text-danger">*</span>
+                            </label>
+                            {{ form.product_id(class="form-select form-select-lg") }}
                             {% if form.product_id.errors %}
-                                <div class="text-danger">
+                                <div class="alert alert-danger mt-2 py-2">
                                     {% for error in form.product_id.errors %}
-                                        <small>{{ error }}</small>
+                                        <small><i class="fas fa-exclamation-triangle me-1"></i>{{ error }}</small>
                                     {% endfor %}
                                 </div>
                             {% endif %}
+                            <div class="form-text">
+                                <i class="fas fa-lightbulb text-warning me-1"></i>
+                                Select the final product that this BOM will produce
+                            </div>
                         </div>
 
-                        <div class="mb-3">
-                            {{ form.bom_code.label(class="form-label") }}
-                            <div class="input-group">
-                                {{ form.bom_code(class="form-control", placeholder="Leave empty for auto-generation (BOM-2025-0001)") }}
-                                <span class="input-group-text"><i class="fas fa-magic text-primary" title="Auto-generates if empty"></i></span>
+                        <!-- BOM Code with Enhanced Auto-Generation -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-barcode text-success me-1"></i>
+                                BOM Code
+                            </label>
+                            <div class="input-group input-group-lg">
+                                {{ form.bom_code(class="form-control", placeholder="Auto-generated: BOM-2025-0001") }}
+                                <span class="input-group-text bg-success text-white">
+                                    <i class="fas fa-magic" title="Auto-generates if empty"></i>
+                                </span>
                             </div>
                             {% if form.bom_code.errors %}
-                                <div class="text-danger">
+                                <div class="alert alert-danger mt-2 py-2">
                                     {% for error in form.bom_code.errors %}
-                                        <small>{{ error }}</small>
+                                        <small><i class="fas fa-exclamation-triangle me-1"></i>{{ error }}</small>
                                     {% endfor %}
                                 </div>
                             {% endif %}
-                            <small class="text-muted"><i class="fas fa-info-circle"></i> Leave empty to auto-generate unique BOM code (BOM-2025-0001)</small>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle text-info me-1"></i>
+                                Leave empty for automatic generation. Format: BOM-YYYY-0001
+                            </div>
                         </div>
 
-                        <div class="mb-3">
-                            {{ form.version.label(class="form-label") }}
-                            {{ form.version(class="form-control") }}
-                            {% if form.version.errors %}
-                                <div class="text-danger">
-                                    {% for error in form.version.errors %}
-                                        <small>{{ error }}</small>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                            <small class="text-muted">Version number for this BOM (e.g., 1.0, 1.1, 2.0)</small>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-8">
-                                <div class="mb-3">
-                                    {{ form.output_quantity.label(class="form-label") }}
-                                    {{ form.output_quantity(class="form-control", step="0.001") }}
-                                    {% if form.output_quantity.errors %}
-                                        <div class="text-danger">
-                                            {% for error in form.output_quantity.errors %}
-                                                <small>{{ error }}</small>
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                    <small class="text-muted">Number of units this BOM produces (e.g., 1 MS Sheet produces 400 Mounted Plates)</small>
-                                </div>
-                            </div>
+                        <!-- Version and Output Quantity in Enhanced Layout -->
+                        <div class="row mb-4">
                             <div class="col-md-4">
-                                <div class="mb-3">
-                                    {{ form.output_uom_id.label(class="form-label") }}
-                                    {{ form.output_uom_id(class="form-select") }}
-                                    {% if form.output_uom_id.errors %}
-                                        <div class="text-danger">
-                                            {% for error in form.output_uom_id.errors %}
-                                                <small>{{ error }}</small>
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                    <small class="text-muted">Select output unit</small>
-                                </div>
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-code-branch text-info me-1"></i>
+                                    Version
+                                </label>
+                                {{ form.version(class="form-control form-control-lg") }}
+                                <div class="form-text">BOM version (e.g., 1.0, 2.0)</div>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-calculator text-warning me-1"></i>
+                                    Output Quantity <span class="text-danger">*</span>
+                                </label>
+                                {{ form.output_quantity(class="form-control form-control-lg", step="0.001") }}
+                                {% if form.output_quantity.errors %}
+                                    <div class="text-danger mt-1">
+                                        {% for error in form.output_quantity.errors %}
+                                            <small><i class="fas fa-exclamation-triangle me-1"></i>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Units this BOM produces</div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-ruler text-secondary me-1"></i>
+                                    Unit
+                                </label>
+                                {{ form.output_uom_id(class="form-select form-select-lg") }}
+                                <div class="form-text">Output unit</div>
                             </div>
                         </div>
 
-                        <!-- Scrap Tracking Section -->
-                        <div class="card mt-3">
-                            <div class="card-header bg-warning">
-                                <h6><i class="fas fa-recycle"></i> Scrap Management <span class="badge bg-success">NEW</span></h6>
-                            </div>
+                        <!-- Collapsible Advanced Sections -->
+                        <div class="accordion mt-4" id="bomAccordion">
+                            <!-- Scrap Tracking Section -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="scrapHeading">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                            data-bs-target="#scrapCollapse" aria-expanded="false" aria-controls="scrapCollapse">
+                                        <i class="fas fa-recycle text-warning me-2"></i>
+                                        <strong>Scrap Management</strong>
+                                        <span class="badge bg-success ms-2">Optional</span>
+                                    </button>
+                                </h2>
+                                <div id="scrapCollapse" class="accordion-collapse collapse" aria-labelledby="scrapHeading" 
+                                     data-bs-parent="#bomAccordion">
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-md-6">
@@ -138,14 +208,21 @@
                                         </div>
                                     </div>
                                 </div>
+                                </div>
                             </div>
-                        </div>
-
-                        <!-- Labor Cost Section -->
-                        <div class="card mt-3">
-                            <div class="card-header">
-                                <h6><i class="fas fa-users"></i> Labor Costs</h6>
-                            </div>
+                            
+                            <!-- Labor Cost Section -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="laborHeading">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                            data-bs-target="#laborCollapse" aria-expanded="false" aria-controls="laborCollapse">
+                                        <i class="fas fa-users text-primary me-2"></i>
+                                        <strong>Labor Costs</strong>
+                                        <span class="badge bg-info ms-2">Optional</span>
+                                    </button>
+                                </h2>
+                                <div id="laborCollapse" class="accordion-collapse collapse" aria-labelledby="laborHeading" 
+                                     data-bs-parent="#bomAccordion">
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-md-6">
@@ -166,14 +243,21 @@
                                     {{ form.labor_cost_per_unit(class="form-control", step="0.01") }}
                                     <small class="text-muted">Or enter direct labor cost per unit</small>
                                 </div>
+                                </div>
                             </div>
-                        </div>
-
-                        <!-- Overhead Cost Section -->
-                        <div class="card mt-3">
-                            <div class="card-header">
-                                <h6><i class="fas fa-industry"></i> Overhead Costs</h6>
-                            </div>
+                            
+                            <!-- Overhead Cost Section -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="overheadHeading">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                            data-bs-target="#overheadCollapse" aria-expanded="false" aria-controls="overheadCollapse">
+                                        <i class="fas fa-industry text-info me-2"></i>
+                                        <strong>Overhead Costs</strong>
+                                        <span class="badge bg-info ms-2">Optional</span>
+                                    </button>
+                                </h2>
+                                <div id="overheadCollapse" class="accordion-collapse collapse" aria-labelledby="overheadHeading" 
+                                     data-bs-parent="#bomAccordion">
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-md-6">
@@ -191,14 +275,21 @@
                                         </div>
                                     </div>
                                 </div>
+                                </div>
                             </div>
-                        </div>
-
-                        <!-- Freight Cost Section (Optional) -->
-                        <div class="card mt-3">
-                            <div class="card-header">
-                                <h6><i class="fas fa-truck"></i> Freight/Transportation Costs <span class="badge bg-secondary">Optional</span></h6>
-                            </div>
+                            
+                            <!-- Freight Cost Section -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="freightHeading">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                            data-bs-target="#freightCollapse" aria-expanded="false" aria-controls="freightCollapse">
+                                        <i class="fas fa-truck text-success me-2"></i>
+                                        <strong>Freight/Transportation Costs</strong>
+                                        <span class="badge bg-secondary ms-2">Optional</span>
+                                    </button>
+                                </h2>
+                                <div id="freightCollapse" class="accordion-collapse collapse" aria-labelledby="freightHeading" 
+                                     data-bs-parent="#bomAccordion">
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-md-8">
@@ -216,14 +307,21 @@
                                         </div>
                                     </div>
                                 </div>
+                                </div>
                             </div>
-                        </div>
-
-                        <!-- Multi-Level BOM Section -->
-                        <div class="card mt-3">
-                            <div class="card-header bg-info text-white">
-                                <h6><i class="fas fa-layer-group"></i> Multi-Level BOM <span class="badge bg-success">NEW</span></h6>
-                            </div>
+                            
+                            <!-- Multi-Level BOM Section -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="multilevelHeading">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                            data-bs-target="#multilevelCollapse" aria-expanded="false" aria-controls="multilevelCollapse">
+                                        <i class="fas fa-layer-group text-info me-2"></i>
+                                        <strong>Multi-Level BOM</strong>
+                                        <span class="badge bg-warning ms-2">Advanced</span>
+                                    </button>
+                                </h2>
+                                <div id="multilevelCollapse" class="accordion-collapse collapse" aria-labelledby="multilevelHeading" 
+                                     data-bs-parent="#bomAccordion">
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-md-6">
@@ -257,42 +355,51 @@
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-
-                        <!-- Markup Section -->
-                        <div class="card mt-3">
-                            <div class="card-header">
-                                <h6><i class="fas fa-percentage"></i> Markup/Profit Margin</h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="mb-3">
-                                    {{ form.markup_percentage.label(class="form-label") }}
-                                    {{ form.markup_percentage(class="form-control", step="0.1") }}
-                                    <small class="text-muted">Markup percentage applied to total cost (material + labor + overhead + freight)</small>
                                 </div>
                             </div>
-                        </div>
+                            
+                            <!-- Markup Section -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="markupHeading">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                            data-bs-target="#markupCollapse" aria-expanded="false" aria-controls="markupCollapse">
+                                        <i class="fas fa-percentage text-success me-2"></i>
+                                        <strong>Markup/Profit Margin</strong>
+                                        <span class="badge bg-secondary ms-2">Optional</span>
+                                    </button>
+                                </h2>
+                                <div id="markupCollapse" class="accordion-collapse collapse" aria-labelledby="markupHeading" 
+                                     data-bs-parent="#bomAccordion">
+                                    <div class="accordion-body">
+                                        <div class="mb-3">
+                                            {{ form.markup_percentage.label(class="form-label") }}
+                                            {{ form.markup_percentage(class="form-control form-control-lg", step="0.1") }}
+                                            <div class="form-text">Markup percentage applied to total cost (material + labor + overhead + freight)</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div> <!-- End accordion -->
 
-                        <!-- Save button for new BOM or when no components are added yet -->
-                        <div class="card-footer">
-                            <div class="d-flex justify-content-between gap-2">
-                                <a href="{{ url_for('production.list_bom') }}" class="btn btn-secondary">
-                                    <i class="fas fa-times"></i> Cancel
+                        <!-- Enhanced Action Buttons -->
+                        <div class="card-footer bg-light">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <a href="{{ url_for('production.list_bom') }}" class="btn btn-outline-secondary btn-lg">
+                                    <i class="fas fa-arrow-left me-2"></i>Cancel
                                 </a>
-                                <div class="d-flex gap-2">
+                                <div class="d-flex gap-3">
                                     {% if not bom %}
                                     <!-- For new BOM creation -->
-                                    <button type="submit" name="action" value="save_and_close" class="btn btn-success btn-lg">
-                                        <i class="fas fa-save"></i> Create BOM & Close
+                                    <button type="submit" name="action" value="save_and_close" class="btn btn-success btn-lg px-4">
+                                        <i class="fas fa-check me-2"></i>Create BOM & Close
                                     </button>
-                                    <button type="submit" name="action" value="save_and_continue" class="btn btn-primary btn-lg">
-                                        <i class="fas fa-plus"></i> Create BOM & Add Components
+                                    <button type="submit" name="action" value="save_and_continue" class="btn btn-primary btn-lg px-4">
+                                        <i class="fas fa-plus me-2"></i>Create BOM & Add Components
                                     </button>
                                     {% else %}
                                     <!-- For existing BOM update -->
-                                    <button type="submit" class="btn btn-success btn-lg">
-                                        <i class="fas fa-save"></i> Update BOM
+                                    <button type="submit" class="btn btn-success btn-lg px-4">
+                                        <i class="fas fa-save me-2"></i>Update BOM Information
                                     </button>
                                     {% endif %}
                                 </div>
@@ -304,32 +411,152 @@
             </div>
         </div>
 
+        <!-- Professional Information Sidebar -->
+        <div class="col-lg-6">
+            <div class="row">
+                <!-- Quick Stats Card -->
+                <div class="col-12 mb-4">
+                    <div class="card bg-gradient-primary text-white">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-8">
+                                    <h6 class="text-white-50 mb-2">BOM Creation Progress</h6>
+                                    {% if bom %}
+                                        <h4 class="mb-0">Editing: {{ bom.bom_code }}</h4>
+                                        <small class="opacity-75">{{ bom.items|length }} components, {{ bom.processes|length }} processes</small>
+                                    {% else %}
+                                        <h4 class="mb-0">Create New BOM</h4>
+                                        <small class="opacity-75">Fill basic information to continue</small>
+                                    {% endif %}
+                                </div>
+                                <div class="col-4 text-end">
+                                    <i class="fas fa-sitemap fa-3x opacity-50"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Help & Guidelines -->
+                <div class="col-12 mb-4">
+                    <div class="card border-info">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-info-circle me-2"></i>
+                                BOM Creation Guidelines
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex align-items-start mb-3">
+                                <div class="flex-shrink-0">
+                                    <span class="badge bg-primary rounded-pill">1</span>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">Select Final Product</h6>
+                                    <small class="text-muted">Choose the item this BOM will produce</small>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-start mb-3">
+                                <div class="flex-shrink-0">
+                                    <span class="badge bg-warning rounded-pill">2</span>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">Configure Advanced Options</h6>
+                                    <small class="text-muted">Set scrap, labor, overhead costs as needed</small>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-start">
+                                <div class="flex-shrink-0">
+                                    <span class="badge bg-success rounded-pill">3</span>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">Save & Add Components</h6>
+                                    <small class="text-muted">Create BOM then add materials and processes</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cost Calculation Preview -->
+                {% if bom %}
+                <div class="col-12 mb-4">
+                    <div class="card border-success">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-calculator me-2"></i>
+                                Cost Summary
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <h5 class="text-primary mb-1">₹{{ "%.2f"|format(bom.material_cost or 0) }}</h5>
+                                    <small class="text-muted">Material Cost</small>
+                                </div>
+                                <div class="col-6">
+                                    <h5 class="text-warning mb-1">₹{{ "%.2f"|format(bom.labor_cost_per_unit or 0) }}</h5>
+                                    <small class="text-muted">Labor Cost</small>
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="text-center">
+                                <h4 class="text-success mb-1">₹{{ "%.2f"|format(bom.total_cost or 0) }}</h4>
+                                <small class="text-muted">Total Cost per Unit</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
         {% if bom %}
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5><i class="fas fa-plus-circle"></i> Add Material/Component</h5>
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-plus-circle me-2"></i>
+                        Add Material/Component
+                    </h5>
+                    <small class="opacity-75">Add materials required for this BOM</small>
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ url_for('production.add_bom_item', bom_id=bom.id) }}">
-                        <div class="mb-3">
-                            <label class="form-label">Material/Component</label>
-                            <select name="item_id" id="material_select" class="form-select" required onchange="updateUnitCost()">
-                                <option value="">Select Material/Component</option>
-                                {% for material in materials %}
-                                    <option value="{{ material.id }}" data-unit-price="{{ material.unit_price or 0 }}">{{ material.code }} - {{ material.name }} (₹{{ "%.2f"|format(material.unit_price or 0) }})</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Quantity Required</label>
-                            <input type="number" name="quantity_required" class="form-control" step="0.01" min="0" required>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Unit</label>
-                            <select name="unit" class="form-select" required>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">
+                                        <i class="fas fa-cubes text-primary me-1"></i>
+                                        Material/Component <span class="text-danger">*</span>
+                                    </label>
+                                    <select name="item_id" id="material_select" class="form-select form-select-lg" required onchange="updateUnitCost()">
+                                        <option value="">Choose Material/Component...</option>
+                                        {% for material in materials %}
+                                            <option value="{{ material.id }}" data-unit-price="{{ material.unit_price or 0 }}">
+                                                {{ material.code }} - {{ material.name }} (₹{{ "%.2f"|format(material.unit_price or 0) }})
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">
+                                        <i class="fas fa-calculator text-warning me-1"></i>
+                                        Quantity <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="number" name="quantity_required" class="form-control form-control-lg" 
+                                           step="0.01" min="0" required placeholder="0.00">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">
+                                        <i class="fas fa-ruler text-info me-1"></i>
+                                        Unit <span class="text-danger">*</span>
+                                    </label>
+                                    <select name="unit" class="form-select form-select-lg" required>
                                 {% if uom_choices %}
                                     {% for value, label in uom_choices %}
                                         <option value="{{ value }}" {% if value == 'pcs' %}selected{% endif %}>{{ label }}</option>
@@ -346,19 +573,37 @@
                                     <option value="sqft">Square Feet (sq.ft)</option>
                                     <option value="sqm">Square Meters (sq.m)</option>
                                 {% endif %}
-                            </select>
-                            <small class="text-muted">Select the unit for this material in the BOM</small>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">Unit Cost (Auto-filled from Inventory)</label>
-                            <input type="number" name="unit_cost" id="unit_cost" class="form-control" step="0.01" min="0" value="0" readonly>
-                            <small class="text-muted">Cost will be automatically filled from inventory item price</small>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">
+                                        <i class="fas fa-rupee-sign text-success me-1"></i>
+                                        Unit Cost
+                                    </label>
+                                    <div class="input-group input-group-lg">
+                                        <span class="input-group-text">₹</span>
+                                        <input type="number" name="unit_cost" id="unit_cost" class="form-control" 
+                                               step="0.01" min="0" value="0" readonly>
+                                        <span class="input-group-text bg-success text-white">
+                                            <i class="fas fa-magic" title="Auto-filled from inventory"></i>
+                                        </span>
+                                    </div>
+                                    <div class="form-text">Cost automatically filled from inventory item price</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end">
+                                <div class="mb-3 w-100">
+                                    <button type="submit" class="btn btn-success btn-lg w-100">
+                                        <i class="fas fa-plus me-2"></i>Add to BOM
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-
-                        <button type="submit" class="btn btn-success">
-                            <i class="fas fa-plus"></i> Add to BOM
-                        </button>
                     </form>
                 </div>
             </div>
