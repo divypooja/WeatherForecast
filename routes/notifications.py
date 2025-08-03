@@ -51,8 +51,31 @@ def admin_dashboard():
         NotificationLog.sent_at >= seven_days_ago
     ).group_by(func.date(NotificationLog.sent_at)).all()
     
-    # Get current settings
-    settings = NotificationSettings.get_settings()
+    # Get current settings - force creation if missing
+    try:
+        settings = NotificationSettings.get_settings()
+        if not settings:
+            # Force create settings if get_settings failed
+            settings = NotificationSettings(
+                email_enabled=True,
+                sms_enabled=True,
+                whatsapp_enabled=True,
+                po_notifications=True,
+                grn_notifications=True,
+                sales_notifications=True
+            )
+            db.session.add(settings)
+            db.session.commit()
+        
+        # Debug: Print settings to console
+        print(f"DEBUG - Settings object found: {settings}")
+        print(f"DEBUG - Email enabled: {settings.email_enabled}")
+        print(f"DEBUG - SMS enabled: {settings.sms_enabled}")
+        print(f"DEBUG - WhatsApp enabled: {settings.whatsapp_enabled}")
+        
+    except Exception as e:
+        print(f"DEBUG - Error getting settings: {e}")
+        settings = None
     
     return render_template('notifications/admin/dashboard.html',
                          stats=stats,

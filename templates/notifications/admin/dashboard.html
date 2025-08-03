@@ -94,74 +94,75 @@
                     <h5><i class="fas fa-cog"></i> Current Settings</h5>
                 </div>
                 <div class="card-body">
+                    <!-- Debug: Show settings object status -->
                     {% if settings %}
+                        <!-- Settings found, showing configuration -->
                     <div class="row mb-2">
                         <div class="col-6">Email:</div>
                         <div class="col-6">
-                            {% if settings.email_enabled %}
-                                <span class="badge badge-success">Enabled</span>
+                            {% if settings.email_enabled == True %}
+                                <span class="badge bg-success">Enabled</span>
                             {% else %}
-                                <span class="badge badge-danger">Disabled</span>
+                                <span class="badge bg-danger">Disabled</span>
                             {% endif %}
                         </div>
                     </div>
                     <div class="row mb-2">
                         <div class="col-6">SMS:</div>
                         <div class="col-6">
-                            {% if settings.sms_enabled %}
-                                <span class="badge badge-success">Enabled</span>
+                            {% if settings.sms_enabled == True %}
+                                <span class="badge bg-success">Enabled</span>
                             {% else %}
-                                <span class="badge badge-danger">Disabled</span>
+                                <span class="badge bg-danger">Disabled</span>
                             {% endif %}
                         </div>
                     </div>
                     <div class="row mb-2">
                         <div class="col-6">WhatsApp:</div>
                         <div class="col-6">
-                            {% if settings.whatsapp_enabled %}
-                                <span class="badge badge-success">Enabled</span>
+                            {% if settings.whatsapp_enabled == True %}
+                                <span class="badge bg-success">Enabled</span>
                             {% else %}
-                                <span class="badge badge-danger">Disabled</span>
+                                <span class="badge bg-danger">Disabled</span>
                             {% endif %}
                         </div>
                     </div>
                     <div class="row mb-2">
                         <div class="col-6">PO Notifications:</div>
                         <div class="col-6">
-                            {% if settings.po_notifications %}
-                                <span class="badge badge-success">On</span>
+                            {% if settings.po_notifications == True %}
+                                <span class="badge bg-success">On</span>
                             {% else %}
-                                <span class="badge badge-warning">Off</span>
+                                <span class="badge bg-warning">Off</span>
                             {% endif %}
                         </div>
                     </div>
                     <div class="row mb-2">
                         <div class="col-6">GRN Notifications:</div>
                         <div class="col-6">
-                            {% if settings.grn_notifications %}
-                                <span class="badge badge-success">On</span>
+                            {% if settings.grn_notifications == True %}
+                                <span class="badge bg-success">On</span>
                             {% else %}
-                                <span class="badge badge-warning">Off</span>
+                                <span class="badge bg-warning">Off</span>
                             {% endif %}
                         </div>
                     </div>
                     <div class="row mb-2">
                         <div class="col-6">Sales Notifications:</div>
                         <div class="col-6">
-                            {% if settings.sales_notifications %}
-                                <span class="badge badge-success">On</span>
+                            {% if settings.sales_notifications == True %}
+                                <span class="badge bg-success">On</span>
                             {% else %}
-                                <span class="badge badge-warning">Off</span>
+                                <span class="badge bg-warning">Off</span>
                             {% endif %}
                         </div>
                     </div>
                     {% else %}
                     <div class="text-center text-muted py-3">
-                        <i class="fas fa-exclamation-triangle"></i><br>
-                        Settings not configured
-                        <br><small>
-                            <a href="{{ url_for('notifications.admin_settings') }}">Configure Now</a>
-                        </small>
+                        <i class="fas fa-exclamation-triangle text-warning"></i><br>
+                        <strong>Settings Object Missing</strong>
+                        <br><small class="text-danger">Debug: Settings variable is None or empty</small>
+                        <br><a href="{{ url_for('notifications.admin_settings') }}" class="btn btn-primary btn-sm mt-2">Initialize Settings</a>
                     </div>
                     {% endif %}
                 </div>
