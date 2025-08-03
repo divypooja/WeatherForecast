@@ -72,7 +72,7 @@ class GRNWorkflowService:
             
             # Calculate total value
             total_value = sum(
-                item.received_quantity * item.unit_price 
+                item.quantity_received * getattr(item, 'rate_per_unit', 0) 
                 for item in grn.line_items
             )
             
@@ -412,8 +412,8 @@ class GRNWorkflowService:
                     db.session.add(fulfillment_status)
                 
                 # Update received quantities
-                fulfillment_status.received_quantity += grn_item.received_quantity
-                fulfillment_status.received_value += (grn_item.received_quantity * grn_item.unit_price)
+                fulfillment_status.received_quantity += grn_item.quantity_received
+                fulfillment_status.received_value += (grn_item.quantity_received * getattr(grn_item, 'rate_per_unit', 0))
                 fulfillment_status.last_grn_date = grn.receipt_date or date.today()
                 
                 # Update status
