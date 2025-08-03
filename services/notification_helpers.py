@@ -10,7 +10,8 @@ logger = logging.getLogger(__name__)
 def send_low_stock_alert(item):
     """Send low stock alert for an item"""
     try:
-        from models import NotificationSettings, NotificationRecipient
+        from models import NotificationSettings
+        from models_notifications import NotificationRecipient
         
         settings = NotificationSettings.query.first()
         if not settings or not settings.low_stock_notifications:
@@ -87,7 +88,8 @@ def send_low_stock_alert(item):
 def send_order_status_update(order_type: str, order_id: str, status: str, customer_email: str = None):
     """Send order status update notification"""
     try:
-        from models import NotificationSettings, NotificationRecipient
+        from models import NotificationSettings
+        from models_notifications import NotificationRecipient
         
         settings = NotificationSettings.query.first()
         if not settings or not settings.order_status_notifications:
@@ -137,7 +139,8 @@ def send_order_status_update(order_type: str, order_id: str, status: str, custom
 def send_production_complete_notification(production_id: str, item_name: str, quantity: int):
     """Send production completion notification"""
     try:
-        from models import NotificationSettings, NotificationRecipient
+        from models import NotificationSettings
+        from models_notifications import NotificationRecipient
         
         settings = NotificationSettings.query.first()
         if not settings or not settings.production_notifications:
@@ -207,7 +210,8 @@ def check_and_alert_low_stock():
 def send_system_alert(subject: str, message: str, alert_type: str = 'system_alert'):
     """Send system alert to relevant recipients"""
     try:
-        from models import NotificationSettings, NotificationRecipient
+        from models import NotificationSettings
+        from models_notifications import NotificationRecipient
         
         settings = NotificationSettings.query.first()
         if not settings:
