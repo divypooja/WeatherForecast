@@ -1,0 +1,117 @@
+To **store uploaded documents** alongside the OCR data in your Factory Management System, you’ll need to enhance your architecture to include a **document storage system** with metadata and linkage to respective modules.
+
+---
+
+## ✅ Document Upload + OCR + Storage Workflow
+
+### 🔄 Full Flow:
+
+```
+[User Uploads PDF/Image]
+        ↓
+[Save file to storage (e.g., /uploads or S3)]
+        ↓
+[Run Preprocessing + OCR]
+        ↓
+[Extract Fields → Show Editable Preview]
+        ↓
+[User Confirms → Save structured data + file path]
+```
+
+---
+
+## 🗃️ Database Schema (Suggested)
+
+### 📄 `DocumentUpload` Table
+
+| Field           | Type       | Description                              |
+| --------------- | ---------- | ---------------------------------------- |
+| id              | UUID / INT | Primary key                              |
+| file\_name      | TEXT       | Original file name                       |
+| file\_path      | TEXT       | Server path or S3 URL                    |
+| doc\_type       | ENUM       | `'PO'`, `'Invoice'`, `'GRN'`, etc.       |
+| related\_module | TEXT       | Related module/table (e.g., `po`, `grn`) |
+| related\_id     | INT / UUID | ID from related module (PO ID, etc.)     |
+| upload\_by      | INT        | User ID                                  |
+| upload\_at      | TIMESTAMP  | Upload date                              |
+
+---
+
+## 📦 Where to Save Documents?
+
+* ✅ Local path: `/uploads/invoices/2025-08-03/filename.pdf`
+* ✅ Or cloud: Amazon S3 / Google Drive / Supabase Storage (free)
+* ✅ Save metadata in DB with link
+
+---
+
+## 🧩 Integration Points with System Modules
+
+| Module       | OCR Doc Attachment Saved As |
+| ------------ | --------------------------- |
+| PO           | PO Document                 |
+| GRN          | Delivery Challan            |
+| Job Work     | Job Work Return Slip        |
+| Invoice      | Vendor Bill or GST Invoice  |
+| Production   | Shop Floor Sheet            |
+| Expense      | Freight/Electricity Bill    |
+| Tally Import | Scanned Ledger              |
+
+📝 Each module links the uploaded file to its record and shows a **download/view** option in the form or history page.
+
+---
+
+## 📥 Flask Integration Snippet
+
+```python
+# Save file
+file = request.files['document']
+filename = secure_filename(file.filename)
+filepath = os.path.join(UPLOAD_FOLDER, filename)
+file.save(filepath)
+
+# Save to DB
+document = DocumentUpload(
+    file_name=filename,
+    file_path=filepath,
+    doc_type='invoice',
+    related_module='grn',
+    related_id=grn_id,
+    upload_by=current_user.id
+)
+db.session.add(document)
+db.session.commit()
+```
+
+---
+
+## 🖥️ UI Suggestion: Attachments Section
+
+For each module form:
+
+```
+📁 Attachments
+-------------------------
+[Upload File]  [OCR & Preview]
+- Invoice_PO_245.pdf     [👁 View] [⏬ Download]
+- JobWork_Return_123.jpg [👁 View]
+```
+
+---
+
+## 🔐 Security Considerations
+
+* ✔️ Restrict file types (PDF, JPG, PNG)
+* ✔️ Set upload size limits
+* ✔️ Store with hashed filename if needed
+* ✔️ Serve files via secure URL with permission checks
+
+---
+
+Would you like:
+
+* A sample file upload form + Flask route?
+* Integration with Supabase Storage (free, cloud)?
+* A central "Document Center" in dashboard?
+
+Let me know!
