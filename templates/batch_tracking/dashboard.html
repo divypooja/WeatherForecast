@@ -209,9 +209,9 @@
                 <div class="col-lg-6 col-xl-4 mb-3">
                     <div class="card batch-card h-100">
                         <div class="card-header d-flex justify-content-between align-items-center py-2">
-                            <strong>{{ batch.batch_number or 'N/A' }}</strong>
-                            <span class="badge bg-{{ 'success' if batch.quality_status == 'good' else 'warning' if batch.quality_status == 'pending_inspection' else 'danger' }}">
-                                {{ batch.quality_status.replace('_', ' ').title() }}
+                            <strong>{{ batch.batch_code or 'N/A' }}</strong>
+                            <span class="badge bg-{{ 'success' if batch.inspection_status == 'passed' else 'warning' if batch.inspection_status == 'pending' else 'danger' }}">
+                                {{ batch.inspection_status.replace('_', ' ').title() }}
                             </span>
                         </div>
                         <div class="card-body">
@@ -228,47 +228,29 @@
                                 <strong>{{ batch.available_quantity }} {{ batch.item.unit_of_measure if batch.item else 'Units' }}</strong>
                             </div>
                             
-                            {% if batch.storage_location %}
+                            {% if batch.location %}
                             <div class="mb-2">
                                 <small class="text-muted">Location: </small>
-                                {{ batch.storage_location }}
+                                {{ batch.location }}
                             </div>
                             {% endif %}
                             
                             <!-- Process Status Badges -->
                             <div class="mt-2">
+                                {% if batch.qty_inspection and batch.qty_inspection > 0 %}
+                                <span class="process-badge process-inspection bg-warning">Inspection: {{ batch.qty_inspection }}</span>
+                                {% endif %}
                                 {% if batch.qty_raw and batch.qty_raw > 0 %}
-                                <span class="process-badge process-raw">Raw: {{ batch.qty_raw }}</span>
+                                <span class="process-badge process-raw bg-info">Raw: {{ batch.qty_raw }}</span>
                                 {% endif %}
-                                {% if batch.qty_wip_cutting and batch.qty_wip_cutting > 0 %}
-                                <span class="process-badge process-cutting">Cutting: {{ batch.qty_wip_cutting }}</span>
-                                {% endif %}
-                                {% if batch.qty_wip_bending and batch.qty_wip_bending > 0 %}
-                                <span class="process-badge process-bending">Bending: {{ batch.qty_wip_bending }}</span>
-                                {% endif %}
-                                {% if batch.qty_wip_welding and batch.qty_wip_welding > 0 %}
-                                <span class="process-badge process-welding">Welding: {{ batch.qty_wip_welding }}</span>
-                                {% endif %}
-                                {% if batch.qty_wip_zinc and batch.qty_wip_zinc > 0 %}
-                                <span class="process-badge process-zinc">Zinc: {{ batch.qty_wip_zinc }}</span>
-                                {% endif %}
-                                {% if batch.qty_wip_painting and batch.qty_wip_painting > 0 %}
-                                <span class="process-badge process-painting">Painting: {{ batch.qty_wip_painting }}</span>
-                                {% endif %}
-                                {% if batch.qty_wip_assembly and batch.qty_wip_assembly > 0 %}
-                                <span class="process-badge process-assembly">Assembly: {{ batch.qty_wip_assembly }}</span>
-                                {% endif %}
-                                {% if batch.qty_wip_machining and batch.qty_wip_machining > 0 %}
-                                <span class="process-badge process-machining">Machining: {{ batch.qty_wip_machining }}</span>
-                                {% endif %}
-                                {% if batch.qty_wip_polishing and batch.qty_wip_polishing > 0 %}
-                                <span class="process-badge process-polishing">Polishing: {{ batch.qty_wip_polishing }}</span>
+                                {% if batch.qty_wip and batch.qty_wip > 0 %}
+                                <span class="process-badge process-wip bg-primary">WIP: {{ batch.qty_wip }}</span>
                                 {% endif %}
                                 {% if batch.qty_finished and batch.qty_finished > 0 %}
-                                <span class="process-badge process-finished">Finished: {{ batch.qty_finished }}</span>
+                                <span class="process-badge process-finished bg-success">Finished: {{ batch.qty_finished }}</span>
                                 {% endif %}
                                 {% if batch.qty_scrap and batch.qty_scrap > 0 %}
-                                <span class="process-badge process-scrap">Scrap: {{ batch.qty_scrap }}</span>
+                                <span class="process-badge process-scrap bg-danger">Scrap: {{ batch.qty_scrap }}</span>
                                 {% endif %}
                             </div>
                         </div>
