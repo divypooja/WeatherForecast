@@ -373,7 +373,7 @@ def add_salary():
         # Validate required fields manually for calculation
         if employee_id and employee_id != '0' and pay_period_start and pay_period_end and daily_rate:
             try:
-
+                print(f"DEBUG: Processing calculation for employee_id={employee_id}, dates={pay_period_start} to {pay_period_end}, rate={daily_rate}")
                 
                 # Parse dates
                 start_date = datetime.strptime(pay_period_start, '%Y-%m-%d').date()
@@ -392,25 +392,35 @@ def add_salary():
                 
                 # Calculate attendance-based values
                 attendance_data = temp_salary.calculate_attendance_based_salary()
+                print(f"DEBUG: Attendance calculation result: {attendance_data}")
                 
-                # Update form fields with calculated values
-                form.employee_id.data = employee_id_int
-                form.pay_period_start.data = start_date
-                form.pay_period_end.data = end_date
-                form.daily_rate.data = daily_rate_float
-                form.overtime_rate.data = 150.0
-                form.expected_working_days.data = int(attendance_data['expected_working_days'])
-                form.actual_days_worked.data = int(attendance_data['actual_days_worked'])
-                form.basic_amount.data = float(attendance_data['basic_amount'])
-                form.overtime_hours.data = float(attendance_data['overtime_hours'])
+                # Create a completely new form with calculated values to avoid WTForms issues
+                calculated_form = SalaryRecordForm()
                 
-                # Also ensure payment method has a default value
-                if not form.payment_method.data:
-                    form.payment_method.data = 'cash'
+                # Set all the basic form data
+                calculated_form.salary_number.data = form.salary_number.data
+                calculated_form.employee_id.data = employee_id_int
+                calculated_form.pay_period_start.data = start_date
+                calculated_form.pay_period_end.data = end_date
+                calculated_form.daily_rate.data = daily_rate_float
+                calculated_form.overtime_rate.data = 150.0
+                calculated_form.payment_method.data = 'cash'
+                
+                # Set calculated attendance values
+                calculated_form.expected_working_days.data = int(attendance_data['expected_working_days'])
+                calculated_form.actual_days_worked.data = int(attendance_data['actual_days_worked'])
+                calculated_form.basic_amount.data = float(attendance_data['basic_amount'])
+                calculated_form.overtime_hours.data = float(attendance_data['overtime_hours'])
+                
+                print(f"DEBUG: Form fields set - actual_days_worked: {calculated_form.actual_days_worked.data}, basic_amount: {calculated_form.basic_amount.data}")
+                
+                # Populate employee choices for the new form
+                employees = Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
+                calculated_form.employee_id.choices = [(0, 'Select Employee')] + [(emp.id, f'{emp.name} ({emp.employee_code})') for emp in employees]
                 
                 flash(f'✅ Attendance calculated successfully! {attendance_data["actual_days_worked"]} days worked out of {attendance_data["expected_working_days"]} expected days. Basic Amount: ₹{attendance_data["basic_amount"]:.2f}', 'success')
                 
-                return render_template('hr/salary_form.html', form=form, title='Add Salary Record')
+                return render_template('hr/salary_form.html', form=calculated_form, title='Add Salary Record')
                 
             except Exception as e:
                 flash(f'❌ Error calculating attendance: {str(e)}', 'error')
