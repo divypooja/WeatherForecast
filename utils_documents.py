@@ -47,8 +47,8 @@ def validate_uploaded_file(file):
     
     return errors
 
-def generate_unique_filename(original_filename):
-    """Generate unique filename while preserving extension"""
+def generate_unique_filename(original_filename, reference_number=None):
+    """Generate unique filename with optional reference number"""
     if not original_filename:
         return None
     
@@ -57,14 +57,45 @@ def generate_unique_filename(original_filename):
     if '.' in original_filename:
         ext = '.' + original_filename.rsplit('.', 1)[1].lower()
     
-    # Generate unique name with timestamp and UUID
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    unique_id = str(uuid.uuid4())[:8]
+    # Get base name without extension
+    base_name = original_filename.rsplit('.', 1)[0] if '.' in original_filename else original_filename
+    base_name = secure_filename(base_name)
     
-    return f"{timestamp}_{unique_id}{ext}"
+    if reference_number:
+        # Use reference number as primary identifier
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        return f"{reference_number}_{base_name}_{timestamp}{ext}"
+    else:
+        # Generate unique name with timestamp and UUID
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        unique_id = str(uuid.uuid4())[:8]
+        return f"{timestamp}_{unique_id}_{base_name}{ext}"
 
-def save_uploaded_file(file, subfolder='general'):
-    """Save uploaded file and return file info"""
+# Document type to folder mapping
+DOCUMENT_FOLDERS = {
+    'purchase_order': 'po',
+    'po': 'po',
+    'grn': 'grn',
+    'jobwork': 'jobwork', 
+    'job_work': 'jobwork',
+    'invoice': 'invoices',
+    'invoices': 'invoices',
+    'employee': 'hr/employees',
+    'salary': 'hr/salaries',
+    'advance': 'hr/advances',
+    'inventory': 'inventory',
+    'production': 'production',
+    'quality': 'quality',
+    'expense': 'expenses',
+    'general': 'general'
+}
+
+def get_document_folder(document_type):
+    """Get the appropriate folder for document type"""
+    return DOCUMENT_FOLDERS.get(document_type.lower(), 'general')
+
+def save_uploaded_file(file, subfolder='general', reference_number=None):
+    """Save uploaded file with organized structure and return file info"""
     if not file:
         return None
     
@@ -74,13 +105,16 @@ def save_uploaded_file(file, subfolder='general'):
         return {'error': errors[0]}
     
     try:
+        # Get the appropriate folder for the document type
+        document_folder = get_document_folder(subfolder)
+        
         # Create upload directory if it doesn't exist
-        upload_dir = os.path.join(current_app.root_path, 'uploads', subfolder)
+        upload_dir = os.path.join(current_app.root_path, 'uploads', document_folder)
         os.makedirs(upload_dir, exist_ok=True)
         
-        # Generate unique filename
+        # Generate unique filename with reference number if provided
         original_filename = secure_filename(file.filename)
-        unique_filename = generate_unique_filename(original_filename)
+        unique_filename = generate_unique_filename(original_filename, reference_number)
         
         # Save file
         file_path = os.path.join(upload_dir, unique_filename)
@@ -95,7 +129,7 @@ def save_uploaded_file(file, subfolder='general'):
             'original_filename': original_filename,
             'saved_filename': unique_filename,
             'file_path': file_path,
-            'relative_path': os.path.join('uploads', subfolder, unique_filename),
+            'relative_path': os.path.join('uploads', document_folder, unique_filename),
             'file_size': file_size,
             'mime_type': mime_type or 'application/octet-stream',
             'upload_date': datetime.now()
@@ -104,16 +138,18 @@ def save_uploaded_file(file, subfolder='general'):
     except Exception as e:
         return {'error': f'Failed to save file: {str(e)}'}
 
-def save_multiple_files(files, subfolder='general'):
-    """Save multiple uploaded files"""
+def save_multiple_files(files, subfolder='general', reference_number=None):
+    """Save multiple uploaded files with organized structure"""
     results = []
     
     if not files:
         return results
     
-    for file in files:
+    for i, file in enumerate(files):
         if file and file.filename:
-            result = save_uploaded_file(file, subfolder)
+            # Add file index to reference number for multiple files
+            file_ref = f"{reference_number}_{i+1:02d}" if reference_number else None
+            result = save_uploaded_file(file, subfolder, file_ref)
             if result:
                 results.append(result)
     
@@ -209,8 +245,8 @@ def get_documents_for_reference(reference_type, reference_id):
     except ImportError:
         return []
 
-def save_uploaded_documents(files, reference_type, reference_id, module_name='general', user_id=None):
-    """Save uploaded documents and create database records"""
+def save_uploaded_documents(files, reference_type, reference_id, module_name='general', user_id=None, reference_number=None):
+    """Save uploaded documents with organized structure and create database records"""
     try:
         from models_document import create_document_record
         saved_documents = []
@@ -218,10 +254,13 @@ def save_uploaded_documents(files, reference_type, reference_id, module_name='ge
         if not files:
             return saved_documents
         
-        for file in files:
+        for i, file in enumerate(files):
             if file and file.filename:
-                # Save file to disk
-                file_info = save_uploaded_file(file, subfolder=module_name)
+                # Generate file reference number for better organization
+                file_ref = f"{reference_number}_{i+1:02d}" if reference_number else None
+                
+                # Save file to disk with organized structure
+                file_info = save_uploaded_file(file, subfolder=module_name, reference_number=file_ref)
                 
                 if file_info and file_info.get('success'):
                     # Create database record

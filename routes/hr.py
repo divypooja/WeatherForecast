@@ -124,7 +124,12 @@ def add_employee():
         documents_uploaded = 0
         if form.documents.data:
             files = request.files.getlist('documents')
-            documents_uploaded = save_uploaded_documents(files, 'employee', employee.id)
+            documents_uploaded = save_uploaded_documents(
+                files, 'employee', employee.id, 
+                module_name='employee', 
+                user_id=current_user.id,
+                reference_number=employee.employee_code
+            )
         
         success_message = f'Employee added successfully'
         if documents_uploaded > 0:
@@ -164,7 +169,12 @@ def edit_employee(id):
         documents_uploaded = 0
         if form.documents.data:
             files = request.files.getlist('documents')
-            documents_uploaded = save_uploaded_documents(files, 'employee', employee.id)
+            documents_uploaded = save_uploaded_documents(
+                files, 'employee', employee.id, 
+                module_name='employee', 
+                user_id=current_user.id,
+                reference_number=employee.employee_code
+            )
         
         db.session.commit()
         success_message = f'Employee updated successfully'
