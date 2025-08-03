@@ -125,15 +125,24 @@ def view_document(document_id):
     
     if not document.is_active:
         flash('Document not found', 'error')
-        return redirect(url_for('main.dashboard'))
+        return redirect(url_for('documents.document_list'))
     
     file_path = document.file_path
     
-    if not os.path.exists(file_path):
-        flash('File not found on disk', 'error')
-        return redirect(url_for('main.dashboard'))
+    # Debug logging
+    print(f"Attempting to view document {document_id}: {document.original_filename}")
+    print(f"File path: {file_path}")
+    print(f"File exists: {os.path.exists(file_path) if file_path else False}")
     
-    return send_file(file_path, as_attachment=False, download_name=document.original_filename)
+    if not file_path or not os.path.exists(file_path):
+        flash(f'File not found on disk: {document.original_filename}', 'warning')
+        return redirect(url_for('documents.document_list'))
+    
+    try:
+        return send_file(file_path, as_attachment=False, download_name=document.original_filename)
+    except Exception as e:
+        flash(f'Error viewing file: {str(e)}', 'error')
+        return redirect(url_for('documents.document_list'))
 
 @documents_bp.route('/download/<int:document_id>')
 @login_required
@@ -143,15 +152,24 @@ def download_document(document_id):
     
     if not document.is_active:
         flash('Document not found', 'error')
-        return redirect(url_for('main.dashboard'))
+        return redirect(url_for('documents.document_list'))
     
     file_path = document.file_path
     
-    if not os.path.exists(file_path):
-        flash('File not found on disk', 'error')
-        return redirect(url_for('main.dashboard'))
+    # Debug logging
+    print(f"Attempting to download document {document_id}: {document.original_filename}")
+    print(f"File path: {file_path}")
+    print(f"File exists: {os.path.exists(file_path) if file_path else False}")
     
-    return send_file(file_path, as_attachment=True, download_name=document.original_filename)
+    if not file_path or not os.path.exists(file_path):
+        flash(f'File not found on disk: {document.original_filename}', 'warning')
+        return redirect(url_for('documents.document_list'))
+    
+    try:
+        return send_file(file_path, as_attachment=True, download_name=document.original_filename)
+    except Exception as e:
+        flash(f'Error downloading file: {str(e)}', 'error')
+        return redirect(url_for('documents.document_list'))
 
 @documents_bp.route('/edit/<int:document_id>', methods=['GET', 'POST'])
 @login_required
