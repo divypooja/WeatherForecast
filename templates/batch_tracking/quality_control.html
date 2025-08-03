@@ -233,11 +233,11 @@
 </div>
 
 <!-- Quality Update Modal -->
-<div class="modal fade" id="qualityModal" tabindex="-1">
-    <div class="modal-dialog">
+<div class="modal fade" id="qualityModal" tabindex="-1" aria-labelledby="qualityModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Update Quality Status</h5>
+                <h5 class="modal-title" id="qualityModalLabel">Update Quality Status</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -279,7 +279,12 @@ function updateQualityStatus(batchId, status) {
     document.querySelector('[name="quality_status"]').value = status;
     
     // Use Bootstrap 5 modal API instead of jQuery
-    const modal = new bootstrap.Modal(document.getElementById('qualityModal'));
+    const modalElement = document.getElementById('qualityModal');
+    const modal = new bootstrap.Modal(modalElement, {
+        backdrop: true,
+        keyboard: true,
+        focus: true
+    });
     modal.show();
 }
 
@@ -306,8 +311,11 @@ function saveQualityUpdate() {
     .then(data => {
         if (data.success) {
             // Hide modal using Bootstrap 5 API
-            const modal = bootstrap.Modal.getInstance(document.getElementById('qualityModal'));
-            modal.hide();
+            const modalElement = document.getElementById('qualityModal');
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) {
+                modal.hide();
+            }
             location.reload();
         } else {
             alert('Error updating quality status: ' + (data.error || data.message));
