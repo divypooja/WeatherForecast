@@ -240,28 +240,28 @@
                 </div>
                 <div class="card-body">
                     <div class="d-flex flex-wrap">
-                        {% if traceability_data.batch.states.raw and traceability_data.batch.states.raw > 0 %}
-                            <span class="process-badge process-raw">Raw: {{ traceability_data.batch.states.raw }}</span>
+                        {% if traceability_data.batch.qty_inspection and traceability_data.batch.qty_inspection > 0 %}
+                            <span class="process-badge process-inspection bg-warning">Inspection: {{ traceability_data.batch.qty_inspection }}</span>
                         {% endif %}
                         
-                        {% if traceability_data.batch.states.wip_breakdown %}
-                            {% for process, qty in traceability_data.batch.states.wip_breakdown.items() %}
-                                {% if qty and qty > 0 %}
-                                    <span class="process-badge process-{{ process }}">{{ process.title() }}: {{ qty }}</span>
-                                {% endif %}
-                            {% endfor %}
+                        {% if traceability_data.batch.qty_raw and traceability_data.batch.qty_raw > 0 %}
+                            <span class="process-badge process-raw bg-info">Raw: {{ traceability_data.batch.qty_raw }}</span>
                         {% endif %}
                         
-                        {% if traceability_data.batch.states.finished and traceability_data.batch.states.finished > 0 %}
-                            <span class="process-badge process-finished">Finished: {{ traceability_data.batch.states.finished }}</span>
+                        {% if traceability_data.batch.qty_wip and traceability_data.batch.qty_wip > 0 %}
+                            <span class="process-badge process-wip bg-primary">WIP: {{ traceability_data.batch.qty_wip }}</span>
                         {% endif %}
                         
-                        {% if traceability_data.batch.states.scrap and traceability_data.batch.states.scrap > 0 %}
-                            <span class="process-badge process-scrap">Scrap: {{ traceability_data.batch.states.scrap }}</span>
+                        {% if traceability_data.batch.qty_finished and traceability_data.batch.qty_finished > 0 %}
+                            <span class="process-badge process-finished bg-success">Finished: {{ traceability_data.batch.qty_finished }}</span>
                         {% endif %}
                         
-                        {% if not (traceability_data.batch.states.raw or traceability_data.batch.states.wip_total or traceability_data.batch.states.finished) %}
-                            <p class="text-muted">No process breakdown available.</p>
+                        {% if traceability_data.batch.qty_scrap and traceability_data.batch.qty_scrap > 0 %}
+                            <span class="process-badge process-scrap bg-danger">Scrap: {{ traceability_data.batch.qty_scrap }}</span>
+                        {% endif %}
+                        
+                        {% if not (traceability_data.batch.qty_inspection or traceability_data.batch.qty_raw or traceability_data.batch.qty_wip or traceability_data.batch.qty_finished or traceability_data.batch.qty_scrap) %}
+                            <p class="text-muted">No quantities in any state.</p>
                         {% endif %}
                     </div>
                 </div>
