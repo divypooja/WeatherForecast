@@ -350,6 +350,17 @@ def api_update_batch_quality(batch_id):
         new_status = data.get('inspection_status')
         quality_notes = data.get('quality_notes', '')
         
+        # Map quality status values
+        status_mapping = {
+            'approved': 'passed',
+            'rejected': 'failed', 
+            'pending': 'pending',
+            'on_hold': 'quarantine'
+        }
+        
+        if new_status in status_mapping:
+            new_status = status_mapping[new_status]
+        
         if new_status not in ['passed', 'failed', 'pending', 'quarantine']:
             return jsonify({'success': False, 'error': 'Invalid inspection status'}), 400
         

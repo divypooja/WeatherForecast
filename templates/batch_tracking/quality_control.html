@@ -278,11 +278,20 @@ function updateQualityStatus(batchId, status) {
 }
 
 function saveQualityUpdate() {
-    const formData = new FormData(document.getElementById('qualityForm'));
+    const form = document.getElementById('qualityForm');
+    const formData = new FormData(form);
     
-    fetch(`/batch-tracking/api/update-quality/${currentBatchId}`, {
+    const data = {
+        inspection_status: formData.get('quality_status'),
+        quality_notes: formData.get('notes')
+    };
+    
+    fetch(`/batch-tracking/api/batch/${currentBatchId}/update-quality`, {
         method: 'POST',
-        body: formData
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
     })
     .then(response => response.json())
     .then(data => {
@@ -290,7 +299,7 @@ function saveQualityUpdate() {
             $('#qualityModal').modal('hide');
             location.reload();
         } else {
-            alert('Error updating quality status: ' + data.message);
+            alert('Error updating quality status: ' + (data.error || data.message));
         }
     })
     .catch(error => {
