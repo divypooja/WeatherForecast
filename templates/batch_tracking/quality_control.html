@@ -271,6 +271,11 @@
 <script>
 let currentBatchId = null;
 
+function getCsrfToken() {
+    return document.querySelector('meta[name=csrf-token]') ? 
+           document.querySelector('meta[name=csrf-token]').getAttribute('content') : '';
+}
+
 function updateQualityStatus(batchId, status) {
     currentBatchId = batchId;
     document.querySelector('[name="quality_status"]').value = status;
@@ -286,12 +291,15 @@ function saveQualityUpdate() {
         quality_notes: formData.get('notes')
     };
     
+    console.log('Updating batch:', currentBatchId, 'with data:', data);
+    
     fetch(`/batch-tracking/api/batch/${currentBatchId}/update-quality`, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json'
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
+        credentials: 'same-origin'
     })
     .then(response => response.json())
     .then(data => {
