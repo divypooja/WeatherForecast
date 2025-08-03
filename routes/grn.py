@@ -563,7 +563,7 @@ def create_grn(job_work_id):
                          job_work=job_work)
 
 
-@grn_bp.route('/create/purchase_order/<int:purchase_order_id>')
+@grn_bp.route('/create/purchase_order/<int:purchase_order_id>', methods=['GET', 'POST'])
 @login_required
 def create_grn_for_po(purchase_order_id):
     """Create a new GRN for a purchase order"""
