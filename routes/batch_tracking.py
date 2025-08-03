@@ -389,15 +389,57 @@ def api_update_batch_quality(batch_id):
         db.session.commit()
         print(f"Successfully committed status change")
         
-        return jsonify({
+        response_data = {
             'success': True,
-            'message': f'Batch {batch.batch_code} inspection status updated to {new_status}'
-        })
+            'message': f'Batch {batch.batch_code} inspection status updated to {new_status}',
+            'new_status': new_status,
+            'batch_id': batch_id
+        }
+        print(f"Sending response: {response_data}")
+        return jsonify(response_data)
         
     except Exception as e:
         print(f"Exception in api_update_batch_quality: {str(e)}")
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@batch_tracking_bp.route('/batch/<int:batch_id>/update-quality-direct', methods=['POST'])
+@login_required
+def update_batch_quality_direct(batch_id):
+    """Direct form-based quality status update (non-AJAX)"""
+    try:
+        batch = InventoryBatch.query.get_or_404(batch_id)
+        
+        new_status = request.form.get('quality_status')
+        quality_notes = request.form.get('quality_notes', '')
+        
+        print(f"Direct update - Batch: {batch_id}, Status: {new_status}")
+        
+        if new_status not in ['passed', 'failed', 'pending', 'quarantine']:
+            flash(f'Invalid quality status: {new_status}', 'error')
+            return redirect(url_for('batch_tracking.batch_detail', batch_id=batch_id))
+        
+        # Update batch
+        batch.inspection_status = new_status
+        batch.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        status_names = {
+            'passed': 'Approved',
+            'failed': 'Rejected', 
+            'pending': 'Pending',
+            'quarantine': 'On Hold'
+        }
+        
+        flash(f'Batch {batch.batch_code} quality status updated to {status_names.get(new_status, new_status)}', 'success')
+        return redirect(url_for('batch_tracking.batch_detail', batch_id=batch_id))
+        
+    except Exception as e:
+        print(f"Exception in update_batch_quality_direct: {str(e)}")
+        db.session.rollback()
+        flash(f'Error updating quality status: {str(e)}', 'error')
+        return redirect(url_for('batch_tracking.batch_detail', batch_id=batch_id))
 
 @batch_tracking_bp.route('/api/batch/<int:batch_id>/update-location', methods=['POST'])
 @login_required

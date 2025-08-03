@@ -243,7 +243,7 @@
                             <i class="fas fa-route"></i> Complete Traceability
                         </a>
                         
-                        <button class="btn btn-outline-success" onclick="toggleQualityForm()">
+                        <button class="btn btn-outline-success" onclick="showQualityUpdate()">
                             <i class="fas fa-check-circle"></i> Update Quality Status
                         </button>
                         
@@ -290,43 +290,8 @@
     </div>
 </div>
 
-<!-- Quality Status Update Form (Hidden by default) -->
-<div id="qualityUpdateForm" class="card mb-4" style="display: none;">
-    <div class="card-header bg-success text-white">
-        <h5 class="card-title mb-0">
-            <i class="fas fa-check-circle"></i> Update Quality Status
-            <button type="button" class="btn btn-sm btn-outline-light float-end" onclick="toggleQualityForm()">
-                <i class="fas fa-times"></i> Cancel
-            </button>
-        </h5>
-    </div>
-    <div class="card-body">
-        <form id="qualityForm">
-            <div class="row">
-                <div class="col-md-6">
-                    <label class="form-label">Quality Status</label>
-                    <select class="form-select" name="quality_status" required>
-                        <option value="pending" {{ 'selected' if batch.quality_status == 'pending' }}>Pending Inspection</option>
-                        <option value="approved" {{ 'selected' if batch.quality_status == 'approved' }}>Approved</option>
-                        <option value="rejected" {{ 'selected' if batch.quality_status == 'rejected' }}>Rejected</option>
-                        <option value="defective" {{ 'selected' if batch.quality_status == 'defective' }}>Defective</option>
-                        <option value="good" {{ 'selected' if batch.quality_status == 'good' }}>Good</option>
-                    </select>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label">Quality Notes</label>
-                    <textarea class="form-control" name="quality_notes" rows="2" placeholder="Add quality inspection notes...">{{ batch.quality_notes or '' }}</textarea>
-                </div>
-            </div>
-            <div class="mt-3">
-                <button type="button" class="btn btn-primary" onclick="saveQualityStatus()">
-                    <i class="fas fa-save"></i> Save Changes
-                </button>
-                <button type="button" class="btn btn-secondary" onclick="toggleQualityForm()">Cancel</button>
-            </div>
-        </form>
-    </div>
-</div>
+<!-- Include standalone quality update form -->
+{% include 'batch_tracking/batch_quality_update.html' %}
 
 <!-- Storage Location Update Form (Hidden by default) -->
 <div id="locationUpdateForm" class="card mb-4" style="display: none;">
@@ -400,34 +365,7 @@ function toggleLocationForm() {
     }
 }
 
-function saveQualityStatus() {
-    const formData = new FormData(document.getElementById('qualityForm'));
-    
-    fetch(`{{ url_for('batch_tracking.api_update_batch_quality', batch_id=batch.id) }}`, {
-        method: 'POST',
-        body: JSON.stringify({
-            quality_status: formData.get('quality_status'),
-            quality_notes: formData.get('quality_notes')
-        }),
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert(data.message);
-            toggleQualityForm(); // Hide the form
-            location.reload();
-        } else {
-            alert('Error: ' + data.error);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Failed to update quality status');
-    });
-}
+// Quality status function removed - now using direct form submission
 
 function saveStorageLocation() {
     const formData = new FormData(document.getElementById('locationForm'));
