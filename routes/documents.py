@@ -27,18 +27,18 @@ def document_list():
     query = Document.query.filter_by(is_active=True)
     
     if transaction_type:
-        query = query.filter(Document.transaction_type == transaction_type)
+        query = query.filter(Document.reference_type == transaction_type)
     
     if document_category:
-        query = query.filter(Document.document_category == document_category)
+        query = query.filter(Document.document_type == document_category)
     
     if file_type:
-        query = query.filter(Document.file_type == file_type)
+        query = query.filter(Document.mime_type.contains(file_type))
     
     if search:
         query = query.filter(Document.original_filename.contains(search))
     
-    documents = query.order_by(Document.uploaded_at.desc()).paginate(
+    documents = query.order_by(Document.upload_date.desc()).paginate(
         page=page, per_page=per_page, error_out=False
     )
     
@@ -46,8 +46,8 @@ def document_list():
     total_documents = Document.query.filter_by(is_active=True).count()
     total_size = db.session.query(func.sum(Document.file_size)).filter_by(is_active=True).scalar() or 0
     total_size_mb = round(total_size / 1024 / 1024, 2)
-    document_types_count = db.session.query(func.count(func.distinct(Document.file_type))).filter_by(is_active=True).scalar()
-    transactions_with_docs = db.session.query(func.count(func.distinct(Document.transaction_id))).filter_by(is_active=True).scalar()
+    document_types_count = db.session.query(func.count(func.distinct(Document.document_type))).filter_by(is_active=True).scalar()
+    transactions_with_docs = db.session.query(func.count(func.distinct(Document.reference_id))).filter_by(is_active=True).scalar()
     
     return render_template('documents/list.html',
                          documents=documents,
