@@ -65,12 +65,16 @@
                                 <a href="{{ url_for('purchase.po_detail', id=document.reference_id) }}" class="btn btn-secondary">
                                     <i class="fas fa-times"></i> Cancel
                                 </a>
-                            {% elif document.transaction_type == 'sales_order' %}
-                                <a href="{{ url_for('sales.so_detail', id=document.transaction_id) }}" class="btn btn-secondary">
+                            {% elif document.reference_type == 'sales_order' %}
+                                <a href="{{ url_for('sales.so_detail', id=document.reference_id) }}" class="btn btn-secondary">
                                     <i class="fas fa-times"></i> Cancel
                                 </a>
-                            {% elif document.transaction_type == 'job_work' %}
-                                <a href="{{ url_for('jobwork.job_detail', id=document.transaction_id) }}" class="btn btn-secondary">
+                            {% elif document.reference_type == 'job_work' %}
+                                <a href="{{ url_for('jobwork.job_detail', id=document.reference_id) }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            {% else %}
+                                <a href="#" class="btn btn-secondary">
                                     <i class="fas fa-times"></i> Cancel
                                 </a>
                             {% endif %}
@@ -96,8 +100,8 @@
                         <tr>
                             <td><strong>File Type:</strong></td>
                             <td>
-                                <i class="{{ get_file_icon(document.file_type) }}"></i>
-                                {{ document.file_type.upper() }}
+                                <i class="fas fa-file"></i>
+                                {{ document.mime_type.upper() if document.mime_type else 'N/A' }}
                             </td>
                         </tr>
                         <tr>
@@ -110,7 +114,7 @@
                         </tr>
                         <tr>
                             <td><strong>Upload Date:</strong></td>
-                            <td>{{ document.uploaded_at.strftime('%d %b %Y at %I:%M %p') }}</td>
+                            <td>{{ document.upload_date.strftime('%d %b %Y at %I:%M %p') }}</td>
                         </tr>
                     </table>
                     

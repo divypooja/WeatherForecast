@@ -2,7 +2,7 @@
 <div class="card mt-3">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h6 class="mb-0"><i class="fas fa-paperclip"></i> Documents</h6>
-        <a href="{{ url_for('documents.upload_document', transaction_type=transaction_type, transaction_id=transaction_id) }}" 
+        <a href="{{ url_for('documents.upload_document', reference_type=reference_type, reference_id=reference_id) }}" 
            class="btn btn-sm btn-outline-primary">
             <i class="fas fa-plus"></i> Upload Document
         </a>
@@ -44,7 +44,7 @@
             </div>
             {% if documents|length > 4 %}
             <div class="text-center mt-2">
-                <a href="{{ url_for('documents.list_documents', transaction_type=transaction_type, transaction_id=transaction_id) }}" 
+                <a href="{{ url_for('documents.list_documents', reference_type=reference_type, reference_id=reference_id) }}" 
                    class="btn btn-sm btn-outline-secondary">
                     View All {{ documents|length }} Documents <i class="fas fa-arrow-right"></i>
                 </a>
