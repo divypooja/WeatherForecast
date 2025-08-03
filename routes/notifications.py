@@ -67,14 +67,9 @@ def admin_dashboard():
             db.session.add(settings)
             db.session.commit()
         
-        # Debug: Print settings to console
-        print(f"DEBUG - Settings object found: {settings}")
-        print(f"DEBUG - Email enabled: {settings.email_enabled}")
-        print(f"DEBUG - SMS enabled: {settings.sms_enabled}")
-        print(f"DEBUG - WhatsApp enabled: {settings.whatsapp_enabled}")
         
     except Exception as e:
-        print(f"DEBUG - Error getting settings: {e}")
+        print(f"Error getting notification settings: {e}")
         settings = None
     
     return render_template('notifications/admin/dashboard.html',
