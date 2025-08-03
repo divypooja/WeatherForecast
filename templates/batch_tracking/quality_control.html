@@ -195,12 +195,12 @@
                                                 </a>
                                                 {% if batch.inspection_status == 'pending' %}
                                                 <button class="btn btn-outline-success" 
-                                                        onclick="updateQualityStatus({{ batch.id }}, 'approved')" 
+                                                        onclick="approveDirectly({{ batch.id }})" 
                                                         title="Approve">
                                                     <i class="fas fa-check"></i>
                                                 </button>
                                                 <button class="btn btn-outline-danger" 
-                                                        onclick="updateQualityStatus({{ batch.id }}, 'rejected')" 
+                                                        onclick="rejectDirectly({{ batch.id }})" 
                                                         title="Reject">
                                                     <i class="fas fa-times"></i>
                                                 </button>
@@ -232,74 +232,31 @@
     </div>
 </div>
 
-<!-- Quality Update Modal -->
-<div class="modal fade" id="qualityModal" tabindex="-1" aria-labelledby="qualityModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="qualityModalLabel">Update Quality Status</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="qualityForm">
-                    <div class="form-group">
-                        <label>Quality Status</label>
-                        <select class="form-control" name="quality_status" required>
-                            <option value="pending">Pending Review</option>
-                            <option value="approved">Approved</option>
-                            <option value="rejected">Rejected</option>
-                            <option value="on_hold">On Hold</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Notes</label>
-                        <textarea class="form-control" name="notes" rows="3" 
-                                  placeholder="Quality control notes..."></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="saveQualityUpdate()">Update Status</button>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- Simple confirmation alert will be used instead of modal -->
 
 <script>
-let currentBatchId = null;
-
-function getCsrfToken() {
-    return document.querySelector('meta[name=csrf-token]') ? 
-           document.querySelector('meta[name=csrf-token]').getAttribute('content') : '';
+function approveDirectly(batchId) {
+    if (confirm('Are you sure you want to approve this batch?')) {
+        updateBatchStatus(batchId, 'approved', 'Batch approved via quality control');
+    }
 }
 
-function updateQualityStatus(batchId, status) {
-    currentBatchId = batchId;
-    document.querySelector('[name="quality_status"]').value = status;
-    
-    // Use Bootstrap 5 modal API instead of jQuery
-    const modalElement = document.getElementById('qualityModal');
-    const modal = new bootstrap.Modal(modalElement, {
-        backdrop: true,
-        keyboard: true,
-        focus: true
-    });
-    modal.show();
+function rejectDirectly(batchId) {
+    const reason = prompt('Please provide a reason for rejection (optional):');
+    if (reason !== null) { // User didn't cancel
+        updateBatchStatus(batchId, 'rejected', reason || 'Batch rejected via quality control');
+    }
 }
 
-function saveQualityUpdate() {
-    const form = document.getElementById('qualityForm');
-    const formData = new FormData(form);
-    
+function updateBatchStatus(batchId, status, notes) {
     const data = {
-        inspection_status: formData.get('quality_status'),
-        quality_notes: formData.get('notes')
+        inspection_status: status,
+        quality_notes: notes
     };
     
-    console.log('Updating batch:', currentBatchId, 'with data:', data);
+    console.log('Updating batch:', batchId, 'with data:', data);
     
-    fetch(`/batch-tracking/api/batch/${currentBatchId}/update-quality`, {
+    fetch(`/batch-tracking/api/batch/${batchId}/update-quality`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -310,12 +267,7 @@ function saveQualityUpdate() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Hide modal using Bootstrap 5 API
-            const modalElement = document.getElementById('qualityModal');
-            const modal = bootstrap.Modal.getInstance(modalElement);
-            if (modal) {
-                modal.hide();
-            }
+            alert('Batch status updated successfully!');
             location.reload();
         } else {
             alert('Error updating quality status: ' + (data.error || data.message));
@@ -323,7 +275,7 @@ function saveQualityUpdate() {
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error updating quality status');
+        alert('Error updating quality status. Please try again.');
     });
 }
 </script>
