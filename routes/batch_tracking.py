@@ -6,7 +6,8 @@ Provides complete visibility into batch movements, states, and traceability
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
 from flask_login import login_required, current_user
 from app import db
-from models import ItemBatch, Item, JobWork, JobWorkBatch
+from models import Item, JobWork
+from models_batch import InventoryBatch, BatchMovement
 from utils_batch_tracking import BatchTracker, BatchValidator
 from sqlalchemy import func, and_, or_, desc
 from datetime import datetime, timedelta
@@ -21,7 +22,7 @@ def reset_batch_data():
         from datetime import date
         
         # Clear existing batches
-        ItemBatch.query.delete()
+        InventoryBatch.query.delete()
         
         # Get first available item
         item = Item.query.first()
@@ -30,28 +31,24 @@ def reset_batch_data():
             return redirect(url_for('batch_tracking.dashboard'))
         
         # Create sample batches
-        batch1 = ItemBatch(
+        batch1 = InventoryBatch(
             item_id=item.id,
-            batch_number='B25001-RESET',
-            manufacture_date=date.today(),
+            batch_code='B25001-RESET',
             qty_raw=100.0,
             qty_finished=0.0,
             qty_scrap=5.0,
-            storage_location='MAIN-STORE',
-            quality_status='approved',
-            created_by=current_user.id
+            location='MAIN-STORE',
+            inspection_status='passed'
         )
         
-        batch2 = ItemBatch(
+        batch2 = InventoryBatch(
             item_id=item.id,
-            batch_number='B25002-RESET',
-            manufacture_date=date.today(),
+            batch_code='B25002-RESET',
             qty_raw=0.0,
             qty_finished=50.0,
             qty_scrap=2.0,
-            storage_location='FINISHED-GOODS',
-            quality_status='approved',
-            created_by=current_user.id
+            location='FINISHED-GOODS',
+            inspection_status='passed'
         )
         
         db.session.add(batch1)
@@ -79,36 +76,38 @@ def dashboard():
     date_to = request.args.get('date_to', '')
     
     # Build base query - use outerjoin to handle missing items
-    query = ItemBatch.query.outerjoin(Item)
+    query = InventoryBatch.query.outerjoin(Item)
     
     # Apply filters
     if item_filter:
-        query = query.filter(ItemBatch.item_id == item_filter)
+        query = query.filter(InventoryBatch.item_id == item_filter)
     
     if state_filter:
         if state_filter == 'raw':
-            query = query.filter(ItemBatch.qty_raw > 0)
+            query = query.filter(InventoryBatch.qty_raw > 0)
         elif state_filter == 'finished':
-            query = query.filter(ItemBatch.qty_finished > 0)
+            query = query.filter(InventoryBatch.qty_finished > 0)
         elif state_filter == 'scrap':
-            query = query.filter(ItemBatch.qty_scrap > 0)
-        elif state_filter in ['cutting', 'bending', 'welding', 'zinc', 'painting', 'assembly', 'machining', 'polishing']:
-            query = query.filter(getattr(ItemBatch, f'qty_wip_{state_filter}') > 0)
+            query = query.filter(InventoryBatch.qty_scrap > 0)
+        elif state_filter == 'inspection':
+            query = query.filter(InventoryBatch.qty_inspection > 0)
+        elif state_filter == 'wip':
+            query = query.filter(InventoryBatch.qty_wip > 0)
     
     if location_filter:
-        query = query.filter(ItemBatch.storage_location.ilike(f'%{location_filter}%'))
+        query = query.filter(InventoryBatch.location.ilike(f'%{location_filter}%'))
     
     if date_from:
         try:
             from_date = datetime.strptime(date_from, '%Y-%m-%d').date()
-            query = query.filter(ItemBatch.manufacture_date >= from_date)
+            query = query.filter(InventoryBatch.created_at >= from_date)
         except ValueError:
             pass
     
     if date_to:
         try:
             to_date = datetime.strptime(date_to, '%Y-%m-%d').date()
-            query = query.filter(ItemBatch.manufacture_date <= to_date)
+            query = query.filter(InventoryBatch.created_at <= to_date)
         except ValueError:
             pass
     
@@ -116,52 +115,40 @@ def dashboard():
     page = request.args.get('page', 1, type=int)
     per_page = 25
     
-    batches = query.order_by(desc(ItemBatch.created_at)).paginate(
+    batches = query.order_by(desc(InventoryBatch.created_at)).paginate(
         page=page, per_page=per_page, error_out=False
     )
     
     # Calculate dashboard statistics
     stats = {
-        'total_batches': ItemBatch.query.count(),
-        'active_batches': ItemBatch.query.filter(
+        'total_batches': InventoryBatch.query.count(),
+        'active_batches': InventoryBatch.query.filter(
             or_(
-                ItemBatch.qty_raw > 0,
-                ItemBatch.qty_wip_cutting > 0,
-                ItemBatch.qty_wip_bending > 0,
-                ItemBatch.qty_wip_welding > 0,
-                ItemBatch.qty_wip_zinc > 0,
-                ItemBatch.qty_wip_painting > 0,
-                ItemBatch.qty_wip_assembly > 0,
-                ItemBatch.qty_wip_machining > 0,
-                ItemBatch.qty_wip_polishing > 0,
-                ItemBatch.qty_finished > 0
-            ),
-            ItemBatch.quality_status != 'expired'
+                InventoryBatch.qty_raw > 0,
+                InventoryBatch.qty_wip > 0,
+                InventoryBatch.qty_finished > 0,
+                InventoryBatch.qty_inspection > 0
+            )
         ).count(),
-        'expired_batches': ItemBatch.query.filter(
-            ItemBatch.expiry_date < datetime.now().date()
+        'expired_batches': InventoryBatch.query.filter(
+            InventoryBatch.expiry_date < datetime.now().date()
+        ).count() if InventoryBatch.query.filter(InventoryBatch.expiry_date != None).count() > 0 else 0,
+        'pending_inspection': InventoryBatch.query.filter(
+            InventoryBatch.qty_inspection > 0
         ).count(),
-        'pending_inspection': ItemBatch.query.filter(
-            ItemBatch.quality_status == 'pending_inspection'
-        ).count(),
-        'total_raw_quantity': db.session.query(func.sum(ItemBatch.qty_raw)).scalar() or 0,
-        'total_wip_quantity': db.session.query(
-            func.sum(ItemBatch.qty_wip_cutting + ItemBatch.qty_wip_bending + 
-                    ItemBatch.qty_wip_welding + ItemBatch.qty_wip_zinc + 
-                    ItemBatch.qty_wip_painting + ItemBatch.qty_wip_assembly + 
-                    ItemBatch.qty_wip_machining + ItemBatch.qty_wip_polishing)
-        ).scalar() or 0,
-        'total_finished_quantity': db.session.query(func.sum(ItemBatch.qty_finished)).scalar() or 0
+        'total_raw_quantity': db.session.query(func.sum(InventoryBatch.qty_raw)).scalar() or 0,
+        'total_wip_quantity': db.session.query(func.sum(InventoryBatch.qty_wip)).scalar() or 0,
+        'total_finished_quantity': db.session.query(func.sum(InventoryBatch.qty_finished)).scalar() or 0
     }
     
     # Get process-wise inventory summary
     process_summary = BatchTracker.get_process_wise_inventory_summary()
     
     # Get items for filter dropdown
-    items = Item.query.filter(Item.batches.any()).order_by(Item.name).all()
+    items = Item.query.join(InventoryBatch).order_by(Item.name).distinct().all()
     
     # Get unique storage locations
-    storage_locations = db.session.query(ItemBatch.storage_location).distinct().all()
+    storage_locations = db.session.query(InventoryBatch.location).distinct().all()
     locations = [loc[0] for loc in storage_locations if loc[0]]
     
     return render_template(
