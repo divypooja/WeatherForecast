@@ -212,7 +212,7 @@ def add_purchase_order():
         else:
             flash('Purchase Order created successfully but accounting integration failed', 'warning')
         
-        return redirect(url_for('purchase.submission_success', po_id=po.id))
+        return redirect(url_for('purchase.list_purchase_orders'))
     
     # Get items with BOM rates and UOM conversion data
     items_data = db.session.query(Item, BOMItem.unit_cost, ItemUOMConversion).outerjoin(
@@ -497,9 +497,8 @@ def delete_supplier(id):
     return redirect(url_for('purchase.list_suppliers'))
 
 @purchase_bp.route('/print/<int:id>')
-@purchase_bp.route('/print/<int:id>/<format>')
 @login_required  
-def print_purchase_order(id, format='html'):
+def print_purchase_order(id):
     po = PurchaseOrder.query.get_or_404(id)
     
     # Convert total amount to words (simple function)
@@ -528,136 +527,7 @@ def print_purchase_order(id, format='html'):
     amount_words = number_to_words(int(po.total_amount))
     company = CompanySettings.get_settings()
     
-    if format == 'pdf':
-        # Generate PDF
-        from weasyprint import HTML
-        po_html = render_template('purchase/po_print_enhanced.html', po=po, amount_words=amount_words, company=company)
-        pdf_data = HTML(string=po_html).write_pdf()
-        
-        from flask import make_response
-        response = make_response(pdf_data)
-        response.headers['Content-Type'] = 'application/pdf'
-        response.headers['Content-Disposition'] = f'attachment; filename=PO_{po.po_number}.pdf'
-        return response
-    
     return render_template('purchase/po_print_enhanced.html', po=po, amount_words=amount_words, company=company)
-
-@purchase_bp.route('/view/<int:id>')
-@login_required
-def view_purchase_order(id):
-    """View purchase order details"""
-    po = PurchaseOrder.query.get_or_404(id)
-    return render_template('purchase/view.html', po=po, title=f'Purchase Order {po.po_number}')
-
-@purchase_bp.route('/submission-success/<int:po_id>')
-@login_required
-def submission_success(po_id):
-    """PO submission success page with download and communication options"""
-    po = PurchaseOrder.query.get_or_404(po_id)
-    return render_template('purchase/submission_success.html', po=po, title='Purchase Order Submitted Successfully')
-
-@purchase_bp.route('/send-email/<int:id>', methods=['POST'])
-@login_required  
-def send_purchase_order_email(id):
-    """Send PO via email"""
-    po = PurchaseOrder.query.get_or_404(id)
-    
-    try:
-        data = request.get_json()
-        email_to = data.get('email_to')
-        email_subject = data.get('email_subject')
-        email_message = data.get('email_message')
-        
-        if not all([email_to, email_subject, email_message]):
-            return jsonify({'success': False, 'message': 'Missing required fields'})
-        
-        # Check if SendGrid API key exists
-        import os
-        if not os.environ.get('SENDGRID_API_KEY'):
-            return jsonify({'success': False, 'message': 'Email service not configured. Please contact administrator.'})
-        
-        # Generate PDF attachment
-        from weasyprint import HTML, CSS
-        from flask import url_for
-        
-        # Render PO template to HTML
-        po_html = render_template('purchase/po_print_enhanced.html', po=po, 
-                                company=CompanySettings.get_settings(),
-                                amount_words=number_to_words(int(po.total_amount)))
-        
-        # Generate PDF from HTML
-        pdf_data = HTML(string=po_html).write_pdf()
-        
-        # Send email using SendGrid
-        from sendgrid import SendGridAPIClient
-        from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
-        import base64
-        
-        sg = SendGridAPIClient(api_key=os.environ.get('SENDGRID_API_KEY'))
-        
-        message = Mail(
-            from_email='noreply@akinnovations.com',
-            to_emails=email_to,
-            subject=email_subject,
-            html_content=email_message.replace('\n', '<br>')
-        )
-        
-        # Add PDF attachment
-        encoded_file = base64.b64encode(pdf_data).decode()
-        attachment = Attachment(
-            FileContent(encoded_file),
-            FileName(f'PO_{po.po_number}.pdf'),
-            FileType('application/pdf'),
-            Disposition('attachment')
-        )
-        message.attachment = attachment
-        
-        response = sg.send(message)
-        
-        return jsonify({'success': True, 'message': 'Email sent successfully'})
-        
-    except Exception as e:
-        return jsonify({'success': False, 'message': f'Error sending email: {str(e)}'})
-
-@purchase_bp.route('/send-whatsapp/<int:id>', methods=['POST'])
-@login_required
-def send_purchase_order_whatsapp(id):
-    """Send PO via WhatsApp"""
-    po = PurchaseOrder.query.get_or_404(id)
-    
-    try:
-        data = request.get_json()
-        whatsapp_number = data.get('whatsapp_number')
-        whatsapp_message = data.get('whatsapp_message')
-        
-        if not all([whatsapp_number, whatsapp_message]):
-            return jsonify({'success': False, 'message': 'Missing required fields'})
-        
-        # Check if Twilio credentials exist
-        import os
-        if not all([os.environ.get('TWILIO_ACCOUNT_SID'), os.environ.get('TWILIO_AUTH_TOKEN')]):
-            return jsonify({'success': False, 'message': 'WhatsApp service not configured. Please contact administrator.'})
-        
-        # Send WhatsApp message using Twilio
-        from twilio.rest import Client
-        
-        client = Client(os.environ.get('TWILIO_ACCOUNT_SID'), os.environ.get('TWILIO_AUTH_TOKEN'))
-        
-        # Clean phone number format
-        clean_number = whatsapp_number.replace(' ', '').replace('-', '')
-        if not clean_number.startswith('+'):
-            clean_number = '+' + clean_number
-        
-        message = client.messages.create(
-            body=whatsapp_message,
-            from_=f'whatsapp:{os.environ.get("TWILIO_PHONE_NUMBER")}',
-            to=f'whatsapp:{clean_number}'
-        )
-        
-        return jsonify({'success': True, 'message': 'WhatsApp message sent successfully'})
-        
-    except Exception as e:
-        return jsonify({'success': False, 'message': f'Error sending WhatsApp: {str(e)}'})
 
 @purchase_bp.route('/send/<int:po_id>', methods=['GET', 'POST'])
 @login_required
