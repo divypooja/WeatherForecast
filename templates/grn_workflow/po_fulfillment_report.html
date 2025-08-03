@@ -190,15 +190,17 @@
                                 <td>{{ item.last_grn_date.strftime('%d-%m-%Y') if item.last_grn_date and item.last_grn_date != 'None' else 'Not received' }}</td>
                                 <td>
                                     {% if item.status != 'fully_received' %}
-                                        <a href="{{ url_for('grn.add_line_items', po_id=item.po_id) }}" 
+                                        <a href="#" 
                                            class="btn btn-sm btn-outline-primary" 
-                                           title="Create GRN">
+                                           title="Create GRN"
+                                           onclick="alert('GRN creation feature coming soon!')">
                                             <i class="fas fa-plus"></i>
                                         </a>
                                     {% endif %}
-                                    <a href="{{ url_for('purchase.view_po', po_id=item.po_id) }}" 
+                                    <a href="#" 
                                        class="btn btn-sm btn-outline-info" 
-                                       title="View PO">
+                                       title="View PO"
+                                       onclick="alert('PO view feature coming soon!')">
                                         <i class="fas fa-eye"></i>
                                     </a>
                                 </td>

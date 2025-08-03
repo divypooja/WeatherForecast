@@ -126,15 +126,17 @@
                                 </td>
                                 <td>
                                     {% if item.outstanding_amount > 0 %}
-                                        <a href="{{ url_for('grn_workflow.create_payment', invoice_id=item.invoice_id) }}" 
+                                        <a href="#" 
                                            class="btn btn-sm btn-outline-success" 
-                                           title="Record Payment">
+                                           title="Record Payment"
+                                           onclick="alert('Payment recording feature coming soon!')">
                                             <i class="fas fa-money-bill"></i>
                                         </a>
                                     {% endif %}
-                                    <a href="{{ url_for('grn_workflow.view_invoice', invoice_id=item.invoice_id) }}" 
+                                    <a href="#" 
                                        class="btn btn-sm btn-outline-info" 
-                                       title="View Invoice">
+                                       title="View Invoice"
+                                       onclick="alert('Invoice view feature coming soon!')">
                                         <i class="fas fa-eye"></i>
                                     </a>
                                 </td>
