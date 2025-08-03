@@ -278,48 +278,74 @@ class FieldExtractor:
     
     def __init__(self):
         self.field_patterns = {
-            # Invoice patterns
+            # Invoice patterns - enhanced with more variations
             'invoice_number': [
-                r'invoice\s*(?:no|number)?[:\s]*([A-Z0-9/-]+)',
-                r'inv\s*(?:no|#)?[:\s]*([A-Z0-9/-]+)',
-                r'bill\s*(?:no|number)?[:\s]*([A-Z0-9/-]+)'
+                r'invoice\s*(?:no|number|#)?[:\s]*([A-Z0-9/-]+)',
+                r'inv\s*(?:no|#|number)?[:\s]*([A-Z0-9/-]+)',
+                r'bill\s*(?:no|number|#)?[:\s]*([A-Z0-9/-]+)',
+                r'receipt\s*(?:no|number|#)?[:\s]*([A-Z0-9/-]+)',
+                r'voucher\s*(?:no|number|#)?[:\s]*([A-Z0-9/-]+)'
             ],
             'date': [
+                r'invoice\s*date[:\s]*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})',
+                r'bill\s*date[:\s]*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})',
                 r'date[:\s]*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})',
                 r'dated[:\s]*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})',
-                r'(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})'
+                r'(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})',
+                r'(\d{2}[/-]\d{2}[/-]\d{4})',
+                r'(\d{4}[/-]\d{2}[/-]\d{2})',
+                r'(\d{1,2}\s+[a-zA-Z]{3,9}\s+\d{2,4})'  # "15 March 2025"
             ],
             'amount': [
-                r'total[:\s]*₹?\s*([0-9,]+\.?\d*)',
-                r'amount[:\s]*₹?\s*([0-9,]+\.?\d*)',
-                r'₹\s*([0-9,]+\.?\d*)'
+                r'(?:total|grand\s*total|net\s*amount)[:\s]*₹?\s*([0-9,]+\.?\d*)',
+                r'(?:amount|total\s*amount)[:\s]*₹?\s*([0-9,]+\.?\d*)',
+                r'₹\s*([0-9,]+\.?\d*)',
+                r'rs\.?\s*([0-9,]+\.?\d*)',
+                r'inr\s*([0-9,]+\.?\d*)',
+                r'([0-9,]+\.?\d*)\s*/-',
+                r'([0-9,]+\.?\d*)\s*only'
             ],
             'gstin': [
                 r'gstin[:\s]*([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1})',
-                r'gst\s*no[:\s]*([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1})'
+                r'gst\s*(?:no|number|registration)[:\s]*([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1})',
+                r'tin[:\s]*([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1})',
+                r'([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1})'  # Direct GSTIN pattern
             ],
             # Purchase Order patterns
             'po_number': [
-                r'po\s*(?:no|number)?[:\s]*([A-Z0-9/-]+)',
-                r'purchase\s*order[:\s]*([A-Z0-9/-]+)',
-                r'order\s*(?:no|number)?[:\s]*([A-Z0-9/-]+)'
+                r'po\s*(?:no|number|#)?[:\s]*([A-Z0-9/-]+)',
+                r'purchase\s*order\s*(?:no|number|#)?[:\s]*([A-Z0-9/-]+)',
+                r'order\s*(?:no|number|#)?[:\s]*([A-Z0-9/-]+)',
+                r'ref\s*(?:no|number)?[:\s]*([A-Z0-9/-]+)'
             ],
-            # Vendor/Customer patterns
+            # Vendor/Customer patterns - improved to capture more variations
             'vendor_name': [
-                r'vendor[:\s]*([A-Za-z\s&.]+?)(?:\n|address|gstin)',
-                r'supplier[:\s]*([A-Za-z\s&.]+?)(?:\n|address|gstin)',
-                r'from[:\s]*([A-Za-z\s&.]+?)(?:\n|address|gstin)'
+                r'vendor[:\s]*([A-Za-z\s&.,()]+?)(?:\n|address|gstin|phone)',
+                r'supplier[:\s]*([A-Za-z\s&.,()]+?)(?:\n|address|gstin|phone)',
+                r'from[:\s]*([A-Za-z\s&.,()]+?)(?:\n|address|gstin|phone)',
+                r'billed\s*by[:\s]*([A-Za-z\s&.,()]+?)(?:\n|address|gstin|phone)'
             ],
             'customer_name': [
-                r'to[:\s]*([A-Za-z\s&.]+?)(?:\n|address|gstin)',
-                r'customer[:\s]*([A-Za-z\s&.]+?)(?:\n|address|gstin)',
-                r'bill\s*to[:\s]*([A-Za-z\s&.]+?)(?:\n|address|gstin)'
+                r'to[:\s]*([A-Za-z\s&.,()]+?)(?:\n|address|gstin|phone)',
+                r'customer[:\s]*([A-Za-z\s&.,()]+?)(?:\n|address|gstin|phone)',
+                r'bill\s*to[:\s]*([A-Za-z\s&.,()]+?)(?:\n|address|gstin|phone)',
+                r'ship\s*to[:\s]*([A-Za-z\s&.,()]+?)(?:\n|address|gstin|phone)'
             ],
             # Quantity patterns
             'quantity': [
                 r'qty[:\s]*(\d+(?:\.\d+)?)',
                 r'quantity[:\s]*(\d+(?:\.\d+)?)',
-                r'(\d+(?:\.\d+)?)\s*(?:pcs|nos|kg|mt)'
+                r'(\d+(?:\.\d+)?)\s*(?:pcs|nos|kg|mt|units|pieces)',
+                r'(\d+(?:\.\d+)?)\s*(?:pc|no|piece)'
+            ],
+            # Additional patterns for better extraction
+            'tax_amount': [
+                r'(?:tax|gst|vat)[:\s]*₹?\s*([0-9,]+\.?\d*)',
+                r'(?:cgst|sgst|igst)[:\s]*₹?\s*([0-9,]+\.?\d*)'
+            ],
+            'discount': [
+                r'discount[:\s]*₹?\s*([0-9,]+\.?\d*)',
+                r'less[:\s]*₹?\s*([0-9,]+\.?\d*)'
             ]
         }
     
@@ -444,10 +470,19 @@ class OCREngine:
             if use_preprocessing:
                 processed_file_path = self.preprocessor.preprocess_image(processed_file_path)
             
-            # Step 3: Extract text using Tesseract
-            text, confidence = self.tesseract.extract_text(processed_file_path)
+            # Step 3: Extract text using Tesseract with enhanced configuration
+            text, confidence = self.tesseract.extract_text(processed_file_path, config='high_accuracy')
             
             processing_time = time.time() - start_time
+            
+            # If confidence is low, try alternative processing
+            if confidence < 60.0 and use_preprocessing:
+                logger.info(f"Low confidence ({confidence:.1f}%), trying alternative processing")
+                # Try without preprocessing
+                alt_text, alt_confidence = self.tesseract.extract_text(file_path, config='high_accuracy')
+                if alt_confidence > confidence:
+                    text, confidence = alt_text, alt_confidence
+                    logger.info(f"Alternative processing improved confidence to {confidence:.1f}%")
             
             if not text.strip():
                 return OCRResult(
