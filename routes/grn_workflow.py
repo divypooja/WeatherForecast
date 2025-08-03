@@ -360,17 +360,18 @@ def get_grn_workflow_status(grn_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@grn_workflow_bp.route('/setup-clearing-accounts')
+@grn_workflow_bp.route('/setup-clearing-accounts', methods=['GET', 'POST'])
 @login_required
 def setup_clearing_accounts():
     """Setup required clearing accounts"""
     try:
         success = GRNWorkflowService.setup_clearing_accounts()
         if success:
-            flash('Clearing accounts setup completed successfully!', 'success')
+            flash('✅ Clearing accounts setup completed successfully! GRN Clearing Account (2150) and GST Input Tax (1180) are ready.', 'success')
         else:
-            flash('Error setting up clearing accounts', 'error')
+            flash('❌ Error setting up clearing accounts. Please check the logs.', 'error')
     except Exception as e:
-        flash(f'Error: {str(e)}', 'error')
+        flash(f'❌ Setup Error: {str(e)}', 'error')
+        print(f"Setup clearing accounts error: {e}")
     
     return redirect(url_for('grn_workflow.dashboard'))
