@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}Notification Recipients{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-users"></i> Notification Recipients</h2>
+                <div class="btn-group">
+                    <a href="{{ url_for('notifications.admin_dashboard') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                    <a href="{{ url_for('notifications.add_recipient') }}" class="btn btn-success">
+                        <i class="fas fa-user-plus"></i> Add Recipient
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="role" class="form-label">Filter by Role</label>
+                            <select name="role" id="role" class="form-select">
+                                <option value="">All Roles</option>
+                                {% for role in role_list %}
+                                <option value="{{ role }}" {{ 'selected' if request.args.get('role') == role else '' }}>
+                                    {{ role.replace('_', ' ').title() }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="status" class="form-label">Filter by Status</label>
+                            <select name="status" id="status" class="form-select">
+                                <option value="">All Statuses</option>
+                                <option value="active" {{ 'selected' if request.args.get('status') == 'active' else '' }}>Active</option>
+                                <option value="inactive" {{ 'selected' if request.args.get('status') == 'inactive' else '' }}>Inactive</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="fas fa-filter"></i> Filter
+                            </button>
+                            <a href="{{ url_for('notifications.admin_recipients') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Clear
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recipients Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-list"></i> Recipients ({{ recipients.total }} total)</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if recipients.items %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Role</th>
+                                    <th>Department</th>
+                                    <th>Contact</th>
+                                    <th>Notification Types</th>
+                                    <th>Event Subscriptions</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for recipient in recipients.items %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ recipient.name }}</strong>
+                                        {% if recipient.is_external %}
+                                        <span class="badge bg-info ms-1">External</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ recipient.role.replace('_', ' ').title() if recipient.role else 'No Role' }}</span>
+                                    </td>
+                                    <td>{{ recipient.department or '-' }}</td>
+                                    <td>
+                                        {% if recipient.email %}
+                                        <i class="fas fa-envelope text-primary" title="{{ recipient.email }}"></i>
+                                        {% endif %}
+                                        {% if recipient.phone %}
+                                        <i class="fas fa-phone text-success ms-1" title="{{ recipient.phone }}"></i>
+                                        {% endif %}
+                                        {% if not recipient.email and not recipient.phone %}
+                                        <span class="text-muted">No contact</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if recipient.notification_types %}
+                                            {% set types = recipient.notification_types.split(',') %}
+                                            {% for type in types %}
+                                                {% if type.strip() == 'email' %}
+                                                <span class="badge bg-primary me-1">Email</span>
+                                                {% elif type.strip() == 'sms' %}
+                                                <span class="badge bg-success me-1">SMS</span>
+                                                {% elif type.strip() == 'whatsapp' %}
+                                                <span class="badge bg-info me-1">WhatsApp</span>
+                                                {% elif type.strip() == 'in_app' %}
+                                                <span class="badge bg-secondary me-1">In-App</span>
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% else %}
+                                        <span class="text-muted">None</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% set event_count = 0 %}
+                                        {% if recipient.po_events %}{% set event_count = event_count + 1 %}{% endif %}
+                                        {% if recipient.grn_events %}{% set event_count = event_count + 1 %}{% endif %}
+                                        {% if recipient.job_work_events %}{% set event_count = event_count + 1 %}{% endif %}
+                                        {% if recipient.production_events %}{% set event_count = event_count + 1 %}{% endif %}
+                                        {% if recipient.sales_events %}{% set event_count = event_count + 1 %}{% endif %}
+                                        {% if recipient.accounts_events %}{% set event_count = event_count + 1 %}{% endif %}
+                                        {% if recipient.inventory_events %}{% set event_count = event_count + 1 %}{% endif %}
+                                        
+                                        {% if event_count > 0 %}
+                                        <span class="badge bg-success">{{ event_count }} events</span>
+                                        {% else %}
+                                        <span class="text-muted">No events</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if recipient.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('notifications.edit_recipient', id=recipient.id) }}" 
+                                               class="btn btn-outline-primary" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button class="btn btn-outline-danger" title="Delete" 
+                                                    onclick="confirmDelete('{{ recipient.name }}', '{{ url_for('notifications.delete_recipient', id=recipient.id) }}')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if recipients.pages > 1 %}
+                    <div class="card-footer">
+                        <nav aria-label="Recipients pagination">
+                            <ul class="pagination justify-content-center mb-0">
+                                {% if recipients.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('notifications.admin_recipients', page=recipients.prev_num, role=request.args.get('role', ''), status=request.args.get('status', '')) }}">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </a>
+                                </li>
+                                {% endif %}
+                                
+                                {% for page_num in recipients.iter_pages() %}
+                                    {% if page_num %}
+                                        {% if page_num != recipients.page %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('notifications.admin_recipients', page=page_num, role=request.args.get('role', ''), status=request.args.get('status', '')) }}">
+                                                {{ page_num }}
+                                            </a>
+                                        </li>
+                                        {% else %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ page_num }}</span>
+                                        </li>
+                                        {% endif %}
+                                    {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if recipients.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('notifications.admin_recipients', page=recipients.next_num, role=request.args.get('role', ''), status=request.args.get('status', '')) }}">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
+
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No Recipients Found</h5>
+                        <p class="text-muted">Get started by adding your first notification recipient.</p>
+                        <a href="{{ url_for('notifications.add_recipient') }}" class="btn btn-primary">
+                            <i class="fas fa-user-plus"></i> Add First Recipient
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete recipient <strong id="deleteRecipientName"></strong>?</p>
+                <p class="text-muted">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="#" id="deleteConfirmBtn" class="btn btn-danger">Delete</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmDelete(recipientName, deleteUrl) {
+    document.getElementById('deleteRecipientName').textContent = recipientName;
+    document.getElementById('deleteConfirmBtn').href = deleteUrl;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% endblock %}
