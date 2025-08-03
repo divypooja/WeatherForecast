@@ -298,6 +298,26 @@ def api_get_production_batch_consumption(production_id):
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
+@production_bp.route('/view/<int:production_id>')
+@login_required
+def view(production_id):
+    """View production details"""
+    production = Production.query.get_or_404(production_id)
+    
+    # Get production batches and related data
+    batches = ProductionBatch.query.filter_by(production_id=production_id).all()
+    
+    # Get BOM items if available
+    bom_items = []
+    if production.bom:
+        bom_items = production.bom.items
+    
+    return render_template('production/view.html', 
+                         production=production,
+                         batches=batches,
+                         bom_items=bom_items,
+                         title=f'Production {production.production_number}')
+
 @production_bp.route('/add', methods=['GET', 'POST'])
 @login_required
 def add_production():
