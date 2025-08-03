@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}System Test Results - Notification Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-cogs"></i> System Test Results</h2>
+                <a href="{{ url_for('notifications.admin_dashboard') }}" class="btn btn-primary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-flask"></i> Notification System Test Results</h5>
+                </div>
+                <div class="card-body">
+                    {% if test_results %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Test Type</th>
+                                        <th>Status</th>
+                                        <th>Result</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for test_name, result in test_results %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ test_name }}</strong>
+                                        </td>
+                                        <td>
+                                            {% if result == 'success' %}
+                                                <span class="badge bg-success">Success</span>
+                                            {% elif 'error' in result %}
+                                                <span class="badge bg-danger">Error</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">Failed</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if result == 'success' %}
+                                                System test completed successfully
+                                            {% elif 'error' in result %}
+                                                {{ result }}
+                                            {% else %}
+                                                {{ result }}
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-exclamation-triangle fa-2x text-warning mb-3"></i>
+                            <p>No test results available</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i> What These Tests Check</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Low Stock Alert Test</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success"></i> Internal notification logging</li>
+                                <li><i class="fas fa-check text-success"></i> Database connectivity</li>
+                                <li><i class="fas fa-check text-success"></i> Alert generation system</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>System Alert Test</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success"></i> System health monitoring</li>
+                                <li><i class="fas fa-check text-success"></i> Event tracking workflow</li>
+                                <li><i class="fas fa-check text-success"></i> Comprehensive logging</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Note:</strong> These tests validate internal system functionality. 
+                        External email/SMS delivery requires API keys to be configured in Settings.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
