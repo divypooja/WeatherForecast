@@ -1170,11 +1170,16 @@ def add_line_items(grn_id):
     
     form = GRNLineItemForm()
     form.grn_id.data = grn_id
-    form.item_id.data = grn.job_work.item_id
+    if grn.job_work_id and grn.job_work:
+        form.item_id.data = grn.job_work.item_id
     
-    # Pre-fill form with job work item details
-    if not form.unit_of_measure.data:
+    # Pre-fill form with job work or PO item details
+    if grn.job_work_id and grn.job_work and not form.unit_of_measure.data:
         form.unit_of_measure.data = grn.job_work.item.unit_of_measure
+    elif grn.purchase_order_id and grn.purchase_order and grn.purchase_order.items:
+        # For PO-based GRNs, populate with PO items for selection
+        form.item_id.choices = [(item.item.id, f"{item.item.name} ({item.qty} {item.item.unit_of_measure})") 
+                               for item in grn.purchase_order.items]
     
     if form.validate_on_submit():
         try:
