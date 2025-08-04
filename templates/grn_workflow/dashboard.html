@@ -162,7 +162,7 @@
                                 <tr>
                                     <td><strong>{{ grn.grn_number }}</strong></td>
                                     <td>{{ grn.purchase_order.supplier.name if grn.purchase_order else 'N/A' }}</td>
-                                    <td>{{ grn.receipt_date.strftime('%d-%m-%Y') if grn.receipt_date else 'N/A' }}</td>
+                                    <td>{{ grn.received_date.strftime('%d-%m-%Y') if grn.received_date else 'N/A' }}</td>
                                     <td class="text-end">₹{{ "%.2f"|format(grn.line_items|sum(attribute='quantity_received')|float * (grn.line_items|first).rate_per_unit|float if grn.line_items else 0) }}</td>
                                     <td>
                                         {% if workflow_status %}
