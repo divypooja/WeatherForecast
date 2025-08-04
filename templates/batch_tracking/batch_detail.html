@@ -178,7 +178,7 @@
                                 {% if batch.grn_id %}
                                 <dt class="col-sm-5">GRN Reference:</dt>
                                 <dd class="col-sm-7">
-                                    <a href="{{ url_for('grn_workflow.invoice_detail', grn_id=batch.grn_id) }}" class="btn btn-sm btn-outline-info">
+                                    <a href="{{ url_for('grn_workflow.view_invoice', grn_id=batch.grn_id) }}" class="btn btn-sm btn-outline-info">
                                         <i class="fas fa-file-invoice"></i> View GRN #{{ batch.grn_id }}
                                     </a>
                                 </dd>
