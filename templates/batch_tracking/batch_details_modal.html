@@ -1,0 +1,109 @@
+<div class="row">
+    <div class="col-md-6">
+        <h6 class="text-muted mb-3">Basic Information</h6>
+        <table class="table table-sm">
+            <tr>
+                <td><strong>Batch Number:</strong></td>
+                <td>{{ batch.batch_number }}</td>
+            </tr>
+            <tr>
+                <td><strong>Item:</strong></td>
+                <td>{{ batch.item.code }} - {{ batch.item.name }}</td>
+            </tr>
+            <tr>
+                <td><strong>Storage Location:</strong></td>
+                <td>{{ batch.storage_location }}</td>
+            </tr>
+            <tr>
+                <td><strong>Quality Status:</strong></td>
+                <td>
+                    <span class="badge bg-{{ 'success' if batch.quality_status == 'passed' else 'warning' if batch.quality_status == 'pending_inspection' else 'danger' }}">
+                        {{ batch.quality_status|title }}
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Created Date:</strong></td>
+                <td>{{ batch.created_date.strftime('%d/%m/%Y %H:%M') if batch.created_date else 'N/A' }}</td>
+            </tr>
+            {% if batch.expiry_date %}
+            <tr>
+                <td><strong>Expiry Date:</strong></td>
+                <td>{{ batch.expiry_date.strftime('%d/%m/%Y') }}</td>
+            </tr>
+            {% endif %}
+        </table>
+    </div>
+    
+    <div class="col-md-6">
+        <h6 class="text-muted mb-3">Quantity Breakdown</h6>
+        <div class="row">
+            <div class="col-6 mb-3">
+                <div class="card text-center">
+                    <div class="card-body py-2">
+                        <h5 class="card-title text-warning mb-1">{{ batch.qty_raw or 0 }}</h5>
+                        <small class="text-muted">Raw Material</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 mb-3">
+                <div class="card text-center">
+                    <div class="card-body py-2">
+                        <h5 class="card-title text-primary mb-1">{{ batch.qty_wip or 0 }}</h5>
+                        <small class="text-muted">Work in Progress</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 mb-3">
+                <div class="card text-center">
+                    <div class="card-body py-2">
+                        <h5 class="card-title text-success mb-1">{{ batch.qty_finished or 0 }}</h5>
+                        <small class="text-muted">Finished Goods</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 mb-3">
+                <div class="card text-center">
+                    <div class="card-body py-2">
+                        <h5 class="card-title text-danger mb-1">{{ batch.qty_scrap or 0 }}</h5>
+                        <small class="text-muted">Scrap</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-3">
+            <strong>Total Quantity: </strong>
+            {{ (batch.qty_raw or 0) + (batch.qty_wip or 0) + (batch.qty_finished or 0) + (batch.qty_scrap or 0) }} {{ batch.item.unit_of_measure }}
+        </div>
+    </div>
+</div>
+
+{% if batch.supplier_batch %}
+<div class="row mt-4">
+    <div class="col-12">
+        <h6 class="text-muted mb-3">Supplier Information</h6>
+        <p><strong>Supplier Batch:</strong> {{ batch.supplier_batch }}</p>
+    </div>
+</div>
+{% endif %}
+
+<div class="row mt-4">
+    <div class="col-12">
+        <h6 class="text-muted mb-3">Actions</h6>
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-primary" onclick="editBatch({{ batch.id }})">
+                <i class="fas fa-edit"></i> Edit
+            </button>
+            <button type="button" class="btn btn-outline-success" onclick="processBatch({{ batch.id }})">
+                <i class="fas fa-cogs"></i> Process
+            </button>
+            <button type="button" class="btn btn-outline-info" onclick="moveBatch({{ batch.id }})">
+                <i class="fas fa-exchange-alt"></i> Move
+            </button>
+            <button type="button" class="btn btn-outline-warning" onclick="splitBatch({{ batch.id }})">
+                <i class="fas fa-cut"></i> Split
+            </button>
+        </div>
+    </div>
+</div>

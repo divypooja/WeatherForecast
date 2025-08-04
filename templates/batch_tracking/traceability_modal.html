@@ -1,0 +1,191 @@
+<div class="row">
+    <div class="col-12">
+        <h6 class="text-muted mb-3">Batch Traceability Timeline</h6>
+        
+        <div class="timeline">
+            <!-- Batch Creation -->
+            <div class="timeline-item">
+                <div class="timeline-marker bg-primary"></div>
+                <div class="timeline-content">
+                    <h6 class="mb-1">Batch Created</h6>
+                    <p class="mb-1">Initial batch creation for {{ batch.item.name }}</p>
+                    <small class="text-muted">
+                        <i class="fas fa-calendar"></i> {{ batch.created_date.strftime('%d/%m/%Y %H:%M') if batch.created_date else 'N/A' }}
+                    </small>
+                </div>
+            </div>
+            
+            <!-- Raw Material Receipt -->
+            {% if batch.qty_raw and batch.qty_raw > 0 %}
+            <div class="timeline-item">
+                <div class="timeline-marker bg-warning"></div>
+                <div class="timeline-content">
+                    <h6 class="mb-1">Raw Material Receipt</h6>
+                    <p class="mb-1">{{ batch.qty_raw }} {{ batch.item.unit_of_measure }} received</p>
+                    <small class="text-muted">
+                        <i class="fas fa-map-marker-alt"></i> {{ batch.storage_location }}
+                    </small>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Quality Inspection -->
+            <div class="timeline-item">
+                <div class="timeline-marker bg-{{ 'success' if batch.quality_status == 'passed' else 'warning' if batch.quality_status == 'pending_inspection' else 'danger' }}"></div>
+                <div class="timeline-content">
+                    <h6 class="mb-1">Quality Inspection</h6>
+                    <p class="mb-1">Status: {{ batch.quality_status|title }}</p>
+                    <small class="text-muted">
+                        <i class="fas fa-clipboard-check"></i> Quality Control
+                    </small>
+                </div>
+            </div>
+            
+            <!-- Production Activities -->
+            {% if batch.qty_wip and batch.qty_wip > 0 %}
+            <div class="timeline-item">
+                <div class="timeline-marker bg-primary"></div>
+                <div class="timeline-content">
+                    <h6 class="mb-1">Production Started</h6>
+                    <p class="mb-1">{{ batch.qty_wip }} {{ batch.item.unit_of_measure }} in progress</p>
+                    <small class="text-muted">
+                        <i class="fas fa-cogs"></i> Manufacturing Floor
+                    </small>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Finished Goods -->
+            {% if batch.qty_finished and batch.qty_finished > 0 %}
+            <div class="timeline-item">
+                <div class="timeline-marker bg-success"></div>
+                <div class="timeline-content">
+                    <h6 class="mb-1">Production Completed</h6>
+                    <p class="mb-1">{{ batch.qty_finished }} {{ batch.item.unit_of_measure }} finished</p>
+                    <small class="text-muted">
+                        <i class="fas fa-check-circle"></i> Finished Goods Store
+                    </small>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Scrap Generation -->
+            {% if batch.qty_scrap and batch.qty_scrap > 0 %}
+            <div class="timeline-item">
+                <div class="timeline-marker bg-danger"></div>
+                <div class="timeline-content">
+                    <h6 class="mb-1">Scrap Generated</h6>
+                    <p class="mb-1">{{ batch.qty_scrap }} {{ batch.item.unit_of_measure }} scrapped</p>
+                    <small class="text-muted">
+                        <i class="fas fa-trash"></i> Scrap Area
+                    </small>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <h6 class="text-muted mb-3">Related Documents</h6>
+        <div class="list-group list-group-flush">
+            {% if batch.grn_id %}
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="fas fa-file-alt text-primary"></i>
+                    GRN Reference
+                </div>
+                <span class="badge bg-primary">GRN-{{ batch.grn_id }}</span>
+            </div>
+            {% endif %}
+            
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="fas fa-barcode text-info"></i>
+                    Batch Number
+                </div>
+                <span class="badge bg-info">{{ batch.batch_number }}</span>
+            </div>
+            
+            {% if batch.supplier_batch %}
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="fas fa-truck text-warning"></i>
+                    Supplier Batch
+                </div>
+                <span class="badge bg-warning">{{ batch.supplier_batch }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <h6 class="text-muted mb-3">Current Status</h6>
+        <div class="card">
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border-end">
+                            <h5 class="text-primary mb-1">{{ batch.storage_location }}</h5>
+                            <small class="text-muted">Current Location</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <h5 class="text-{{ 'success' if batch.quality_status == 'passed' else 'warning' if batch.quality_status == 'pending_inspection' else 'danger' }} mb-1">
+                            {{ batch.quality_status|title }}
+                        </h5>
+                        <small class="text-muted">Quality Status</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% if batch.expiry_date %}
+        <div class="alert alert-warning mt-3" role="alert">
+            <i class="fas fa-hourglass-half"></i>
+            <strong>Expiry:</strong> {{ batch.expiry_date.strftime('%d/%m/%Y') }}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.75rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -1.5rem;
+    top: 0.25rem;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 2px #dee2e6;
+}
+
+.timeline-content {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    border-left: 3px solid #007bff;
+}
+</style>

@@ -1,0 +1,640 @@
+{% extends "base.html" %}
+
+{% block title %}Advanced Batch Tracking Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .batch-card {
+        transition: all 0.3s ease;
+        border-left: 4px solid #dee2e6;
+    }
+    
+    .batch-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .batch-card.raw { border-left-color: #ffc107; }
+    .batch-card.wip { border-left-color: #fd7e14; }
+    .batch-card.finished { border-left-color: #198754; }
+    .batch-card.scrap { border-left-color: #dc3545; }
+    
+    .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 8px;
+    }
+    
+    .status-passed { background-color: #198754; }
+    .status-pending { background-color: #ffc107; }
+    .status-failed { background-color: #dc3545; }
+    .status-mixed { background-color: #fd7e14; }
+    
+    .metric-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .metric-value {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    
+    .batch-timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+    
+    .timeline-item {
+        position: relative;
+        padding-bottom: 1rem;
+        border-left: 2px solid #dee2e6;
+        padding-left: 1.5rem;
+        margin-left: 0.5rem;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -6px;
+        top: 0;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background-color: #007bff;
+    }
+    
+    .filter-panel {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .batch-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .real-time-indicator {
+        position: fixed;
+        top: 70px;
+        right: 20px;
+        z-index: 1000;
+        background: rgba(0, 123, 255, 0.1);
+        border: 1px solid #007bff;
+        border-radius: 20px;
+        padding: 5px 15px;
+        font-size: 0.875rem;
+        color: #007bff;
+    }
+    
+    .real-time-indicator.updating {
+        background: rgba(40, 167, 69, 0.1);
+        border-color: #28a745;
+        color: #28a745;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+    
+    .state-distribution {
+        display: flex;
+        justify-content: space-around;
+        margin: 1rem 0;
+    }
+    
+    .state-item {
+        text-align: center;
+        padding: 1rem;
+        border-radius: 8px;
+        flex: 1;
+        margin: 0 0.5rem;
+        background-color: #f8f9fa;
+    }
+    
+    .advanced-search {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+    }
+    
+    .batch-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+    
+    .btn-action {
+        padding: 0.25rem 0.75rem;
+        font-size: 0.875rem;
+        border-radius: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="page-title">
+                <i class="fas fa-barcode me-2"></i>
+                Advanced Batch Tracking Dashboard
+            </h1>
+            <p class="page-subtitle">Complete batch visibility and real-time tracking</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary" onclick="refreshDashboard()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            <button class="btn btn-primary" onclick="exportBatchData()">
+                <i class="fas fa-download"></i> Export
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Real-time Update Indicator -->
+<div id="realTimeIndicator" class="real-time-indicator">
+    <i class="fas fa-circle"></i> Live Updates
+</div>
+
+<!-- Dashboard Metrics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="metric-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="metric-value">{{ dashboard_stats.total_batches }}</div>
+            <div class="metric-label">Total Batches</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <div class="metric-value">{{ dashboard_stats.active_batches }}</div>
+            <div class="metric-label">Active Batches</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <div class="metric-value">{{ dashboard_stats.items_tracked }}</div>
+            <div class="metric-label">Items Tracked</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+            <div class="metric-value">{{ dashboard_stats.locations }}</div>
+            <div class="metric-label">Storage Locations</div>
+        </div>
+    </div>
+</div>
+
+<!-- State Distribution -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-chart-pie me-2"></i>
+            Batch State Distribution
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="state-distribution">
+            <div class="state-item raw">
+                <div class="h3 mb-2">{{ state_distribution.raw }}</div>
+                <div><i class="fas fa-cube text-warning"></i> Raw Material</div>
+            </div>
+            <div class="state-item wip">
+                <div class="h3 mb-2">{{ state_distribution.wip }}</div>
+                <div><i class="fas fa-cogs text-primary"></i> Work in Progress</div>
+            </div>
+            <div class="state-item finished">
+                <div class="h3 mb-2">{{ state_distribution.finished }}</div>
+                <div><i class="fas fa-check-circle text-success"></i> Finished Goods</div>
+            </div>
+            <div class="state-item scrap">
+                <div class="h3 mb-2">{{ state_distribution.scrap }}</div>
+                <div><i class="fas fa-trash text-danger"></i> Scrap</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Advanced Search and Filters -->
+<div class="advanced-search">
+    <h5 class="mb-3">
+        <i class="fas fa-search me-2"></i>
+        Advanced Batch Search & Filters
+    </h5>
+    <form id="batchFilterForm">
+        <div class="row">
+            <div class="col-md-3">
+                <label class="form-label">Item</label>
+                <select class="form-select" name="item_id" id="itemFilter">
+                    <option value="">All Items</option>
+                    {% for item in items %}
+                    <option value="{{ item.id }}" {{ 'selected' if item.id == current_filters.item_id }}>
+                        {{ item.code }} - {{ item.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">State</label>
+                <select class="form-select" name="state" id="stateFilter">
+                    <option value="">All States</option>
+                    <option value="raw" {{ 'selected' if current_filters.state == 'raw' }}>Raw Material</option>
+                    <option value="wip" {{ 'selected' if current_filters.state == 'wip' }}>Work in Progress</option>
+                    <option value="finished" {{ 'selected' if current_filters.state == 'finished' }}>Finished Goods</option>
+                    <option value="scrap" {{ 'selected' if current_filters.state == 'scrap' }}>Scrap</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Location</label>
+                <select class="form-select" name="location" id="locationFilter">
+                    <option value="">All Locations</option>
+                    {% for location in locations %}
+                    <option value="{{ location }}" {{ 'selected' if location == current_filters.location }}>
+                        {{ location }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Quality Status</label>
+                <select class="form-select" name="quality_status" id="qualityFilter">
+                    <option value="">All Status</option>
+                    <option value="passed" {{ 'selected' if current_filters.quality_status == 'passed' }}>Passed</option>
+                    <option value="pending_inspection" {{ 'selected' if current_filters.quality_status == 'pending_inspection' }}>Pending</option>
+                    <option value="failed" {{ 'selected' if current_filters.quality_status == 'failed' }}>Failed</option>
+                    <option value="mixed" {{ 'selected' if current_filters.quality_status == 'mixed' }}>Mixed</option>
+                </select>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-md-3">
+                <label class="form-label">Date From</label>
+                <input type="date" class="form-control" name="date_from" value="{{ current_filters.date_from }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Date To</label>
+                <input type="date" class="form-control" name="date_to" value="{{ current_filters.date_to }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Batch Number</label>
+                <input type="text" class="form-control" name="batch_number" placeholder="Search batch number..." value="{{ current_filters.batch_number }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Apply Filters
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="clearFilters()">
+                        <i class="fas fa-times"></i> Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Batch Grid -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="mb-0">Batch Inventory ({{ batches|length }} batches)</h5>
+    <div class="btn-group" role="group">
+        <input type="radio" class="btn-check" name="viewMode" id="gridView" checked>
+        <label class="btn btn-outline-primary" for="gridView">
+            <i class="fas fa-th"></i> Grid
+        </label>
+        <input type="radio" class="btn-check" name="viewMode" id="listView">
+        <label class="btn btn-outline-primary" for="listView">
+            <i class="fas fa-list"></i> List
+        </label>
+    </div>
+</div>
+
+<div id="batchContainer" class="batch-grid">
+    {% for batch in batches %}
+    <div class="card batch-card {{ batch.primary_state }}" data-batch-id="{{ batch.id }}">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <strong>{{ batch.batch_number }}</strong>
+                <span class="status-indicator status-{{ batch.quality_status }}"></span>
+                <span class="badge bg-{{ 'success' if batch.quality_status == 'passed' else 'warning' if batch.quality_status == 'pending_inspection' else 'danger' }}">
+                    {{ batch.quality_status|title }}
+                </span>
+            </div>
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    Actions
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" onclick="viewBatchDetails({{ batch.id }})">
+                        <i class="fas fa-eye"></i> View Details
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="viewTraceability({{ batch.id }})">
+                        <i class="fas fa-route"></i> Traceability
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="updateQuality({{ batch.id }})">
+                        <i class="fas fa-clipboard-check"></i> Quality Update
+                    </a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="mb-2">
+                <small class="text-muted">Item:</small><br>
+                <strong>{{ batch.item.code }} - {{ batch.item.name }}</strong>
+            </div>
+            
+            <div class="row mb-2">
+                <div class="col-6">
+                    <small class="text-muted">Raw:</small><br>
+                    <span class="badge bg-warning">{{ batch.qty_raw or 0 }} {{ batch.item.unit_of_measure }}</span>
+                </div>
+                <div class="col-6">
+                    <small class="text-muted">Finished:</small><br>
+                    <span class="badge bg-success">{{ batch.qty_finished or 0 }} {{ batch.item.unit_of_measure }}</span>
+                </div>
+            </div>
+            
+            <div class="row mb-2">
+                <div class="col-6">
+                    <small class="text-muted">WIP:</small><br>
+                    <span class="badge bg-primary">{{ batch.qty_wip or 0 }} {{ batch.item.unit_of_measure }}</span>
+                </div>
+                <div class="col-6">
+                    <small class="text-muted">Scrap:</small><br>
+                    <span class="badge bg-danger">{{ batch.qty_scrap or 0 }} {{ batch.item.unit_of_measure }}</span>
+                </div>
+            </div>
+            
+            <div class="mb-2">
+                <small class="text-muted">Location:</small><br>
+                <i class="fas fa-map-marker-alt text-primary"></i> {{ batch.storage_location }}
+            </div>
+            
+            <div class="mb-2">
+                <small class="text-muted">Created:</small><br>
+                <i class="fas fa-calendar text-muted"></i> {{ batch.created_date.strftime('%d/%m/%Y') if batch.created_date }}
+            </div>
+            
+            {% if batch.expiry_date %}
+            <div class="mb-2">
+                <small class="text-muted">Expires:</small><br>
+                <i class="fas fa-hourglass-half text-warning"></i> {{ batch.expiry_date.strftime('%d/%m/%Y') }}
+            </div>
+            {% endif %}
+        </div>
+        <div class="card-footer">
+            <div class="batch-actions">
+                <button class="btn btn-sm btn-outline-primary btn-action" onclick="moveBatch({{ batch.id }})">
+                    <i class="fas fa-exchange-alt"></i> Move
+                </button>
+                <button class="btn btn-sm btn-outline-success btn-action" onclick="processBatch({{ batch.id }})">
+                    <i class="fas fa-cogs"></i> Process
+                </button>
+                <button class="btn btn-sm btn-outline-info btn-action" onclick="splitBatch({{ batch.id }})">
+                    <i class="fas fa-cut"></i> Split
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if not batches %}
+<div class="text-center py-5">
+    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+    <h5 class="text-muted">No batches found</h5>
+    <p class="text-muted">Try adjusting your filters or create new batches</p>
+    <a href="{{ url_for('batch_tracking.reset_batch_data') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Create Sample Data
+    </a>
+</div>
+{% endif %}
+
+<!-- Modals for various actions -->
+<div class="modal fade" id="batchDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Batch Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="batchDetailsContent">
+                <!-- Content loaded via AJAX -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="traceabilityModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Batch Traceability</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="traceabilityContent">
+                <!-- Content loaded via AJAX -->
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Real-time updates
+let updateInterval;
+let isUpdating = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeDashboard();
+    startRealTimeUpdates();
+});
+
+function initializeDashboard() {
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Set up form submission
+    document.getElementById('batchFilterForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        applyFilters();
+    });
+    
+    // Set up view mode toggles
+    document.querySelectorAll('input[name="viewMode"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            toggleViewMode(this.id);
+        });
+    });
+}
+
+function startRealTimeUpdates() {
+    updateInterval = setInterval(function() {
+        if (!isUpdating) {
+            updateBatchData();
+        }
+    }, 30000); // Update every 30 seconds
+}
+
+function updateBatchData() {
+    isUpdating = true;
+    const indicator = document.getElementById('realTimeIndicator');
+    indicator.classList.add('updating');
+    indicator.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> Updating...';
+    
+    // Get current filters
+    const formData = new FormData(document.getElementById('batchFilterForm'));
+    const params = new URLSearchParams(formData);
+    
+    fetch(`{{ url_for('batch_tracking.api_batch_data') }}?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateDashboardMetrics(data.metrics);
+                updateBatchGrid(data.batches);
+            }
+        })
+        .catch(error => {
+            console.error('Error updating batch data:', error);
+        })
+        .finally(() => {
+            isUpdating = false;
+            indicator.classList.remove('updating');
+            indicator.innerHTML = '<i class="fas fa-circle"></i> Live Updates';
+        });
+}
+
+function updateDashboardMetrics(metrics) {
+    // Update metric cards
+    const metricElements = document.querySelectorAll('.metric-value');
+    if (metricElements.length >= 4) {
+        metricElements[0].textContent = metrics.total_batches;
+        metricElements[1].textContent = metrics.active_batches;
+        metricElements[2].textContent = metrics.items_tracked;
+        metricElements[3].textContent = metrics.locations;
+    }
+}
+
+function updateBatchGrid(batches) {
+    // This would update the batch grid with new data
+    // For now, just refresh the page if there are changes
+    if (JSON.stringify(batches) !== JSON.stringify(window.currentBatches)) {
+        window.currentBatches = batches;
+        // You could implement dynamic updates here
+    }
+}
+
+function applyFilters() {
+    const form = document.getElementById('batchFilterForm');
+    const formData = new FormData(form);
+    const params = new URLSearchParams(formData);
+    
+    // Redirect with new filters
+    window.location.href = `{{ url_for('batch_tracking.dashboard') }}?${params}`;
+}
+
+function clearFilters() {
+    document.getElementById('batchFilterForm').reset();
+    window.location.href = '{{ url_for("batch_tracking.dashboard") }}';
+}
+
+function refreshDashboard() {
+    updateBatchData();
+}
+
+function exportBatchData() {
+    const form = document.getElementById('batchFilterForm');
+    const formData = new FormData(form);
+    const params = new URLSearchParams(formData);
+    
+    window.open(`{{ url_for('batch_tracking.export_batch_data') }}?${params}`, '_blank');
+}
+
+function toggleViewMode(mode) {
+    const container = document.getElementById('batchContainer');
+    if (mode === 'listView') {
+        container.className = 'list-group';
+        // Convert cards to list items
+    } else {
+        container.className = 'batch-grid';
+        // Convert back to grid
+    }
+}
+
+function viewBatchDetails(batchId) {
+    fetch(`{{ url_for('batch_tracking.api_batch_details') }}/${batchId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('batchDetailsContent').innerHTML = data.html;
+                new bootstrap.Modal(document.getElementById('batchDetailsModal')).show();
+            }
+        })
+        .catch(error => {
+            console.error('Error loading batch details:', error);
+        });
+}
+
+function viewTraceability(batchId) {
+    fetch(`{{ url_for('batch_tracking.api_batch_traceability') }}/${batchId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('traceabilityContent').innerHTML = data.html;
+                new bootstrap.Modal(document.getElementById('traceabilityModal')).show();
+            }
+        })
+        .catch(error => {
+            console.error('Error loading traceability:', error);
+        });
+}
+
+function updateQuality(batchId) {
+    // Redirect to quality update page
+    window.location.href = `{{ url_for('batch_tracking.quality_update') }}/${batchId}`;
+}
+
+function moveBatch(batchId) {
+    // Show move batch modal
+    console.log('Move batch:', batchId);
+}
+
+function processBatch(batchId) {
+    // Show process batch modal
+    console.log('Process batch:', batchId);
+}
+
+function splitBatch(batchId) {
+    // Show split batch modal
+    console.log('Split batch:', batchId);
+}
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    if (updateInterval) {
+        clearInterval(updateInterval);
+    }
+});
+</script>
+{% endblock %}

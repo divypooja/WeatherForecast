@@ -21,38 +21,65 @@ def reset_batch_data():
     try:
         from datetime import date
         
-        # Clear existing batches
-        InventoryBatch.query.delete()
+        # Clear existing batches from ItemBatch table
+        from models import ItemBatch
+        ItemBatch.query.delete()
         
         # Get first available item
-        item = Item.query.first()
-        if not item:
+        items = Item.query.limit(3).all()
+        if not items:
             flash('No items found. Please create items first.', 'error')
             return redirect(url_for('batch_tracking.dashboard'))
         
-        # Create sample batches
-        batch1 = InventoryBatch(
-            item_id=item.id,
-            batch_code='B25001-RESET',
-            qty_raw=100.0,
-            qty_finished=0.0,
-            qty_scrap=5.0,
-            location='MAIN-STORE',
-            inspection_status='passed'
-        )
+        # Create sample batches with various states
+        sample_batches = []
         
-        batch2 = InventoryBatch(
-            item_id=item.id,
-            batch_code='B25002-RESET',
-            qty_raw=0.0,
-            qty_finished=50.0,
-            qty_scrap=2.0,
-            location='FINISHED-GOODS',
-            inspection_status='passed'
-        )
+        for i, item in enumerate(items):
+            # Raw material batch
+            batch1 = ItemBatch(
+                item_id=item.id,
+                batch_number=f'B25{i+1:03d}-RAW',
+                qty_raw=100.0 + (i * 20),
+                qty_wip=0.0,
+                qty_finished=0.0,
+                qty_scrap=2.0,
+                storage_location=f'STORE-{i+1}',
+                quality_status='passed',
+                created_date=datetime.now() - timedelta(days=i*2)
+            )
+            
+            # WIP batch
+            batch2 = ItemBatch(
+                item_id=item.id,
+                batch_number=f'B25{i+1:03d}-WIP',
+                qty_raw=20.0,
+                qty_wip=50.0 + (i * 10),
+                qty_finished=0.0,
+                qty_scrap=3.0,
+                storage_location='PRODUCTION-FLOOR',
+                quality_status='pending_inspection',
+                created_date=datetime.now() - timedelta(days=i*2+1)
+            )
+            
+            # Finished goods batch
+            batch3 = ItemBatch(
+                item_id=item.id,
+                batch_number=f'B25{i+1:03d}-FG',
+                qty_raw=0.0,
+                qty_wip=0.0,
+                qty_finished=75.0 + (i * 15),
+                qty_scrap=1.0,
+                storage_location='FINISHED-GOODS',
+                quality_status='passed',
+                created_date=datetime.now() - timedelta(days=i)
+            )
+            
+            sample_batches.extend([batch1, batch2, batch3])
         
-        db.session.add(batch1)
-        db.session.add(batch2)
+        # Add all batches to session
+        for batch in sample_batches:
+            db.session.add(batch)
+        
         db.session.commit()
         
         flash('Batch data has been reset with sample data.', 'success')
@@ -66,21 +93,295 @@ def reset_batch_data():
 @batch_tracking_bp.route('/dashboard')
 @login_required
 def dashboard():
-    """Comprehensive batch tracking dashboard"""
-    
-    # Get filter parameters
-    item_filter = request.args.get('item_id', type=int)
-    state_filter = request.args.get('state', '')
-    location_filter = request.args.get('location', '')
-    date_from = request.args.get('date_from', '')
-    date_to = request.args.get('date_to', '')
-    
-    # Build base query - use outerjoin to handle missing items
-    query = InventoryBatch.query.outerjoin(Item)
-    
-    # Apply filters
-    if item_filter:
-        query = query.filter(InventoryBatch.item_id == item_filter)
+    """Advanced batch tracking dashboard with real-time updates"""
+    try:
+        # Get filter parameters
+        item_filter = request.args.get('item_id', type=int)
+        state_filter = request.args.get('state', '')
+        location_filter = request.args.get('location', '')
+        quality_filter = request.args.get('quality_status', '')
+        date_from = request.args.get('date_from', '')
+        date_to = request.args.get('date_to', '')
+        batch_number_filter = request.args.get('batch_number', '')
+        
+        # Build base query for ItemBatch (using the correct model)
+        from models import ItemBatch
+        query = ItemBatch.query.join(Item)
+        
+        # Apply filters
+        if item_filter:
+            query = query.filter(ItemBatch.item_id == item_filter)
+        
+        if location_filter:
+            query = query.filter(ItemBatch.storage_location == location_filter)
+            
+        if quality_filter:
+            query = query.filter(ItemBatch.quality_status == quality_filter)
+            
+        if batch_number_filter:
+            query = query.filter(ItemBatch.batch_number.contains(batch_number_filter))
+            
+        if date_from:
+            from datetime import datetime
+            date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
+            query = query.filter(ItemBatch.created_date >= date_from_obj)
+            
+        if date_to:
+            from datetime import datetime
+            date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
+            query = query.filter(ItemBatch.created_date <= date_to_obj)
+        
+        # State filter logic (based on quantities)
+        if state_filter == 'raw':
+            query = query.filter(ItemBatch.qty_raw > 0)
+        elif state_filter == 'wip':
+            query = query.filter(ItemBatch.qty_wip > 0)
+        elif state_filter == 'finished':
+            query = query.filter(ItemBatch.qty_finished > 0)
+        elif state_filter == 'scrap':
+            query = query.filter(ItemBatch.qty_scrap > 0)
+        
+        # Get batches with ordering
+        batches = query.order_by(ItemBatch.created_date.desc()).limit(100).all()
+        
+        # Calculate dashboard statistics
+        total_batches = ItemBatch.query.count()
+        active_batches = ItemBatch.query.filter(
+            or_(
+                ItemBatch.qty_raw > 0,
+                ItemBatch.qty_wip > 0,
+                ItemBatch.qty_finished > 0
+            )
+        ).count()
+        
+        items_tracked = db.session.query(ItemBatch.item_id).distinct().count()
+        locations = db.session.query(ItemBatch.storage_location).filter(
+            ItemBatch.storage_location.isnot(None)
+        ).distinct().count()
+        
+        dashboard_stats = {
+            'total_batches': total_batches,
+            'active_batches': active_batches,
+            'items_tracked': items_tracked,
+            'locations': locations
+        }
+        
+        # Calculate state distribution
+        state_distribution = {
+            'raw': ItemBatch.query.filter(ItemBatch.qty_raw > 0).count(),
+            'wip': ItemBatch.query.filter(ItemBatch.qty_wip > 0).count(),
+            'finished': ItemBatch.query.filter(ItemBatch.qty_finished > 0).count(),
+            'scrap': ItemBatch.query.filter(ItemBatch.qty_scrap > 0).count()
+        }
+        
+        # Get filter options
+        items = Item.query.order_by(Item.code).all()
+        locations = db.session.query(ItemBatch.storage_location).filter(
+            ItemBatch.storage_location.isnot(None)
+        ).distinct().all()
+        locations = [loc[0] for loc in locations if loc[0]]
+        
+        # Add primary state to batches for display
+        for batch in batches:
+            if batch.qty_finished > 0:
+                batch.primary_state = 'finished'
+            elif batch.qty_wip > 0:
+                batch.primary_state = 'wip'
+            elif batch.qty_raw > 0:
+                batch.primary_state = 'raw'
+            else:
+                batch.primary_state = 'scrap'
+        
+        # Current filters for form persistence
+        current_filters = {
+            'item_id': item_filter,
+            'state': state_filter,
+            'location': location_filter,
+            'quality_status': quality_filter,
+            'date_from': date_from,
+            'date_to': date_to,
+            'batch_number': batch_number_filter
+        }
+        
+        return render_template('batch_tracking/dashboard_new.html',
+                             batches=batches,
+                             dashboard_stats=dashboard_stats,
+                             state_distribution=state_distribution,
+                             items=items,
+                             locations=locations,
+                             current_filters=current_filters)
+                             
+    except Exception as e:
+        flash(f'Error loading dashboard: {str(e)}', 'error')
+        return render_template('batch_tracking/dashboard_new.html',
+                             batches=[],
+                             dashboard_stats={'total_batches': 0, 'active_batches': 0, 'items_tracked': 0, 'locations': 0},
+                             state_distribution={'raw': 0, 'wip': 0, 'finished': 0, 'scrap': 0},
+                             items=[],
+                             locations=[],
+                             current_filters={})
+
+# API endpoints for real-time updates
+@batch_tracking_bp.route('/api/batch-data')
+@login_required
+def api_batch_data():
+    """API endpoint for real-time batch data updates"""
+    try:
+        # Get same filter parameters as dashboard
+        item_filter = request.args.get('item_id', type=int)
+        state_filter = request.args.get('state', '')
+        location_filter = request.args.get('location', '')
+        quality_filter = request.args.get('quality_status', '')
+        
+        from models import ItemBatch
+        
+        # Calculate metrics
+        total_batches = ItemBatch.query.count()
+        active_batches = ItemBatch.query.filter(
+            or_(
+                ItemBatch.qty_raw > 0,
+                ItemBatch.qty_wip > 0, 
+                ItemBatch.qty_finished > 0
+            )
+        ).count()
+        
+        items_tracked = db.session.query(ItemBatch.item_id).distinct().count()
+        locations = db.session.query(ItemBatch.storage_location).filter(
+            ItemBatch.storage_location.isnot(None)
+        ).distinct().count()
+        
+        metrics = {
+            'total_batches': total_batches,
+            'active_batches': active_batches,
+            'items_tracked': items_tracked,
+            'locations': locations
+        }
+        
+        # Get batch data (simplified for JSON response)
+        batches = ItemBatch.query.join(Item).limit(50).all()
+        batch_data = []
+        for batch in batches:
+            batch_data.append({
+                'id': batch.id,
+                'batch_number': batch.batch_number,
+                'item_name': batch.item.name,
+                'qty_raw': batch.qty_raw or 0,
+                'qty_finished': batch.qty_finished or 0,
+                'location': batch.storage_location,
+                'status': batch.quality_status
+            })
+        
+        return jsonify({
+            'success': True,
+            'metrics': metrics,
+            'batches': batch_data
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
+@batch_tracking_bp.route('/api/batch-details/<int:batch_id>')
+@login_required
+def api_batch_details(batch_id):
+    """API endpoint for batch details modal"""
+    try:
+        from models import ItemBatch
+        batch = ItemBatch.query.get_or_404(batch_id)
+        
+        # Render batch details template
+        details_html = render_template('batch_tracking/batch_details_modal.html', batch=batch)
+        
+        return jsonify({
+            'success': True,
+            'html': details_html
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
+@batch_tracking_bp.route('/api/batch-traceability/<int:batch_id>')
+@login_required  
+def api_batch_traceability(batch_id):
+    """API endpoint for batch traceability modal"""
+    try:
+        from models import ItemBatch
+        batch = ItemBatch.query.get_or_404(batch_id)
+        
+        # Get traceability data
+        traceability_data = BatchTracker.get_batch_traceability(batch_id)
+        
+        # Render traceability template
+        traceability_html = render_template('batch_tracking/traceability_modal.html', 
+                                          batch=batch, 
+                                          traceability=traceability_data)
+        
+        return jsonify({
+            'success': True,
+            'html': traceability_html
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
+@batch_tracking_bp.route('/export-batch-data')
+@login_required
+def export_batch_data():
+    """Export batch data to Excel"""
+    try:
+        from models import ItemBatch
+        import pandas as pd
+        from io import BytesIO
+        from flask import send_file
+        
+        # Get filtered batches
+        query = ItemBatch.query.join(Item)
+        batches = query.all()
+        
+        # Prepare data for export
+        data = []
+        for batch in batches:
+            data.append({
+                'Batch Number': batch.batch_number,
+                'Item Code': batch.item.code,
+                'Item Name': batch.item.name,
+                'Raw Quantity': batch.qty_raw or 0,
+                'WIP Quantity': batch.qty_wip or 0,
+                'Finished Quantity': batch.qty_finished or 0,
+                'Scrap Quantity': batch.qty_scrap or 0,
+                'Location': batch.storage_location,
+                'Quality Status': batch.quality_status,
+                'Created Date': batch.created_date.strftime('%Y-%m-%d') if batch.created_date else '',
+                'Expiry Date': batch.expiry_date.strftime('%Y-%m-%d') if batch.expiry_date else ''
+            })
+        
+        # Create DataFrame and Excel file
+        df = pd.DataFrame(data)
+        
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, sheet_name='Batch Data', index=False)
+        
+        output.seek(0)
+        
+        return send_file(
+            output,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=f'batch_data_{datetime.now().strftime("%Y%m%D_%H%M%S")}.xlsx'
+        )
+        
+    except Exception as e:
+        flash(f'Error exporting data: {str(e)}', 'error')
+        return redirect(url_for('batch_tracking.dashboard'))
     
     if state_filter:
         if state_filter == 'raw':
