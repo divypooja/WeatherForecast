@@ -146,10 +146,10 @@
                             </td>
                             <td class="text-end">₹{{ "%.2f"|format(link.allocated_amount) }}</td>
                             <td>
-                                {% if link.is_active %}
-                                    <span class="badge bg-success">Active</span>
+                                {% if link.allocated_amount > 0 %}
+                                    <span class="badge bg-success">Linked</span>
                                 {% else %}
-                                    <span class="badge bg-secondary">Inactive</span>
+                                    <span class="badge bg-warning">Pending</span>
                                 {% endif %}
                             </td>
                         </tr>
