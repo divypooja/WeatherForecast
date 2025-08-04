@@ -59,7 +59,7 @@ class GRNWorkflowService:
             voucher = Voucher(
                 voucher_type_id=voucher_type.id,
                 voucher_number=f"GRNMR-{grn.grn_number}",
-                transaction_date=grn.receipt_date or date.today(),
+                transaction_date=grn.received_date or date.today(),
                 narration=f"Material received against GRN {grn.grn_number}",
                 total_amount=total_value,
                 reference_type='grn',
