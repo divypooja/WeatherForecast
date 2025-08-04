@@ -83,7 +83,7 @@
                         <!-- Parent Row (Purchase Order) -->
                         <tr class="parent-row" data-parent-id="{{ parent.id }}">
                             <td><strong>{{ parent.po_number }}</strong></td>
-                            <td>{{ parent.po_date.strftime('%d/%m/%Y') }}</td>
+                            <td>{{ parent.order_date.strftime('%d/%m/%Y') if parent.order_date else parent.created_at.strftime('%d/%m/%Y') }}</td>
                             <td>{{ parent.supplier.name }}</td>
                             <td>{{ "%.2f"|format(parent.total_amount) }}</td>
                             <td>
