@@ -1,0 +1,115 @@
+/* Tailwind CSS Configuration */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* Custom Components */
+@layer components {
+  .btn-primary {
+    @apply bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  .btn-success {
+    @apply bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  .btn-warning {
+    @apply bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  .card {
+    @apply bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden;
+  }
+  
+  .card-header {
+    @apply bg-gray-50 px-6 py-4 border-b border-gray-200;
+  }
+  
+  .card-body {
+    @apply p-6;
+  }
+  
+  .metric-card {
+    @apply bg-white rounded-xl shadow-lg p-6 border-l-4 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1;
+  }
+  
+  .metric-card-primary {
+    @apply border-l-blue-500;
+  }
+  
+  .metric-card-success {
+    @apply border-l-green-500;
+  }
+  
+  .metric-card-warning {
+    @apply border-l-yellow-500;
+  }
+  
+  .metric-card-danger {
+    @apply border-l-red-500;
+  }
+  
+  .table-responsive {
+    @apply overflow-x-auto rounded-lg border border-gray-200;
+  }
+  
+  .table {
+    @apply min-w-full divide-y divide-gray-200;
+  }
+  
+  .table thead {
+    @apply bg-gray-50;
+  }
+  
+  .table th {
+    @apply px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;
+  }
+  
+  .table td {
+    @apply px-6 py-4 whitespace-nowrap text-sm text-gray-900;
+  }
+  
+  .table tbody tr:nth-child(even) {
+    @apply bg-gray-50;
+  }
+  
+  .table tbody tr:hover {
+    @apply bg-blue-50;
+  }
+  
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .badge-success {
+    @apply bg-green-100 text-green-800;
+  }
+  
+  .badge-warning {
+    @apply bg-yellow-100 text-yellow-800;
+  }
+  
+  .badge-info {
+    @apply bg-blue-100 text-blue-800;
+  }
+  
+  .badge-secondary {
+    @apply bg-gray-100 text-gray-800;
+  }
+  
+  .progress {
+    @apply w-full bg-gray-200 rounded-full h-2;
+  }
+  
+  .progress-bar {
+    @apply bg-blue-600 h-2 rounded-full transition-all duration-300;
+  }
+}

@@ -107,6 +107,10 @@ def create_app():
     app.register_blueprint(jobwork_bp, url_prefix='/jobwork')
     app.register_blueprint(jobwork_rates_bp, url_prefix='/jobwork-rates')
     app.register_blueprint(production_bp, url_prefix='/production')
+    
+    # Register HTMX-enabled production routes
+    from routes.production_htmx import production_htmx_bp
+    app.register_blueprint(production_htmx_bp, url_prefix='/production')
     app.register_blueprint(hr_bp, url_prefix='/hr')
     app.register_blueprint(reports_bp, url_prefix='/reports')
     app.register_blueprint(settings_bp, url_prefix='/settings')
