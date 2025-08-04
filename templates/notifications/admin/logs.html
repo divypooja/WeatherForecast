@@ -141,7 +141,7 @@
                                 <small>{{ log.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
                             </td>
                             <td>
-                                <span class="badge bg-secondary">{{ log.notification_type.upper() }}</span>
+                                <span class="badge bg-secondary">{{ log.type.upper() if log.type else 'UNKNOWN' }}</span>
                             </td>
                             <td>
                                 <div>
