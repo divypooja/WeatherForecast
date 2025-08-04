@@ -391,13 +391,6 @@ def api_update_batch_quality(batch_id):
         batch.inspection_status = new_status
         batch.updated_at = datetime.utcnow()
         
-        # Automatic quantity movement for approved batches
-        if new_status == 'passed' and batch.qty_inspection > 0:
-            qty_to_move = batch.qty_inspection
-            batch.qty_inspection = 0.0
-            batch.qty_raw += qty_to_move
-            print(f"Auto-moved {qty_to_move} units from inspection to raw for approved batch {batch.batch_code}")
-        
         print(f"About to commit status change to: {new_status}")
         db.session.commit()
         print(f"Successfully committed status change")
@@ -435,13 +428,6 @@ def update_batch_quality_direct(batch_id):
         # Update batch
         batch.inspection_status = new_status
         batch.updated_at = datetime.utcnow()
-        
-        # Automatic quantity movement for approved batches
-        if new_status == 'passed' and batch.qty_inspection > 0:
-            qty_to_move = batch.qty_inspection
-            batch.qty_inspection = 0.0
-            batch.qty_raw += qty_to_move
-            print(f"Auto-moved {qty_to_move} units from inspection to raw for approved batch {batch.batch_code}")
         
         db.session.commit()
         

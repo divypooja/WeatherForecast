@@ -73,34 +73,11 @@ def dashboard():
         ).limit(15).all()
         uom_stats = db.session.query(Item.unit_of_measure, func.count(Item.id)).group_by(Item.unit_of_measure).all()
     
-    # Prepare clean dashboard data structure similar to Purchase Dashboard
-    dashboard_stats = {
-        'total_items': stats.get('total_items', 0),
-        'low_stock_items': stats.get('low_stock_items', 0),
-        'total_stock_value': stats.get('total_stock_value', 0),
-        'out_of_stock': stats.get('out_of_stock_items', 0),
-        'active_skus': stats.get('total_items', 0),
-        'need_reorder': stats.get('low_stock_items', 0),
-        'inventory_worth': stats.get('total_stock_value', 0)
-    }
-    
-    # Multi-state statistics
-    multi_state_stats = {
-        'raw_materials': stats.get('raw_material_items', 0),
-        'work_in_progress': stats.get('wip_items', 0),
-        'finished_goods': stats.get('finished_goods_items', 0),
-        'scrap': stats.get('scrap_items', 0)
-    }
-    
-    # Unit distribution for sidebar
-    unit_distribution = dict(uom_stats) if uom_stats else {}
-    
-    return render_template('inventory/dashboard_clean.html', 
-                         stats=dashboard_stats, 
-                         multi_state_stats=multi_state_stats,
+    return render_template('inventory/dashboard.html', 
+                         stats=stats, 
                          recent_items=recent_items,
                          low_stock_items=low_stock_items,
-                         unit_distribution=unit_distribution)
+                         uom_stats=uom_stats)
 
 @inventory_bp.route('/batch-tracking')
 @login_required
@@ -195,123 +172,68 @@ def batch_wise_view():
     state_filter = request.args.get('state', '')
     location_filter = request.args.get('location', '')
     
-    # Build base query - use InventoryBatch instead of ItemBatch
-    from models_batch import InventoryBatch
-    query = InventoryBatch.query.join(Item)
+    # Build base query
+    query = ItemBatch.query.join(Item)
     
     # Apply filters
     if item_filter:
-        query = query.filter(InventoryBatch.item_id == item_filter)
+        query = query.filter(ItemBatch.item_id == item_filter)
     
     if state_filter:
         if state_filter == 'raw':
-            query = query.filter(InventoryBatch.qty_raw > 0)
+            query = query.filter(ItemBatch.qty_raw > 0)
         elif state_filter == 'finished':
-            query = query.filter(InventoryBatch.qty_finished > 0)
+            query = query.filter(ItemBatch.qty_finished > 0)
         elif state_filter == 'scrap':
-            query = query.filter(InventoryBatch.qty_scrap > 0)
-        elif state_filter == 'wip':
-            query = query.filter(InventoryBatch.qty_wip > 0)
-        elif state_filter == 'inspection':
-            query = query.filter(InventoryBatch.qty_inspection > 0)
+            query = query.filter(ItemBatch.qty_scrap > 0)
+        elif state_filter in ['cutting', 'bending', 'welding', 'zinc', 'painting', 'assembly', 'machining', 'polishing']:
+            query = query.filter(getattr(ItemBatch, f'qty_wip_{state_filter}') > 0)
     
     if location_filter:
-        query = query.filter(InventoryBatch.location.ilike(f'%{location_filter}%'))
+        query = query.filter(ItemBatch.storage_location.ilike(f'%{location_filter}%'))
     
     # Pagination
     page = request.args.get('page', 1, type=int)
-    batches = query.order_by(desc(InventoryBatch.created_at)).paginate(
+    batches = query.order_by(desc(ItemBatch.created_at)).paginate(
         page=page, per_page=20, error_out=False
     )
     
     # Get process-wise summary
     process_summary = BatchTracker.get_process_wise_inventory_summary()
     
-    # Prepare parent-child batch data for template
-    from models_grn import GRN
-    from models import PurchaseOrder
-    parent_child_data = []
-    
-    # Group GRNs by their parent documents (Purchase Orders)
-    purchase_orders = PurchaseOrder.query.filter(PurchaseOrder.grn_receipts_po.any()).order_by(desc(PurchaseOrder.created_at)).limit(10).all()
-    
-    for idx, po in enumerate(purchase_orders):
-        po_grns = po.grn_receipts_po
-        if po_grns:
-            # Prepare child GRNs data
-            child_grns = []
-            total_qty = 0
-            
-            for grn in po_grns:
-                grn_batches = InventoryBatch.query.filter_by(grn_id=grn.id).all()
-                if grn_batches:
-                    grn_qty = sum(batch.total_quantity for batch in grn_batches)
-                    total_qty += grn_qty
-                    
-                    child_grns.append({
-                        'grn_id': grn.id,
-                        'grn_number': grn.grn_number,
-                        'grn_date': grn.created_at.date() if grn.created_at else None,
-                        'status': grn.status,
-                        'batch_numbers': [batch.batch_code for batch in grn_batches],
-                        'item_name': grn_batches[0].item.name if grn_batches[0].item else 'Unknown Item',
-                        'received_qty': grn_qty,
-                        'scrap_qty': sum(batch.qty_scrap or 0 for batch in grn_batches)
-                    })
-            
-            # Create parent data structure
-            parent_data = {
-                'parent_id': f'po_{po.id}',
-                'parent_doc': po.po_number,
-                'date': po.created_at.date() if po.created_at else None,
-                'type': 'Purchase Order',
-                'vendor_customer': po.supplier.name if po.supplier else 'Unknown Supplier',
-                'status': po.status,
-                'total_qty': total_qty,
-                'grn_count': len(child_grns),
-                'child_grns': child_grns
-            }
-            parent_child_data.append(parent_data)
-    
-    # Get recent batch movements
-    from models_batch_movement import BatchMovementLedger
-    recent_movements = BatchMovementLedger.query.order_by(desc(BatchMovementLedger.created_at)).limit(10).all()
-    
     # Get filter options
-    items = Item.query.order_by(Item.name).all()
-    storage_locations = db.session.query(InventoryBatch.location).distinct().all()
+    items = Item.query.filter(Item.batch_required == True).order_by(Item.name).all()
+    storage_locations = db.session.query(ItemBatch.storage_location).distinct().all()
     locations = [loc[0] for loc in storage_locations if loc[0]]
     
     # Calculate batch statistics
     batch_stats = {
-        'total_batches': InventoryBatch.query.count(),
-        'active_batches': InventoryBatch.query.filter(
+        'total_batches': ItemBatch.query.count(),
+        'active_batches': ItemBatch.query.filter(
             db.or_(
-                InventoryBatch.qty_raw > 0,
-                InventoryBatch.qty_wip > 0,
-                InventoryBatch.qty_finished > 0,
-                InventoryBatch.qty_inspection > 0
+                ItemBatch.qty_raw > 0,
+                ItemBatch.qty_wip_cutting > 0,
+                ItemBatch.qty_wip_bending > 0,
+                ItemBatch.qty_wip_welding > 0,
+                ItemBatch.qty_wip_zinc > 0,
+                ItemBatch.qty_wip_painting > 0,
+                ItemBatch.qty_wip_assembly > 0,
+                ItemBatch.qty_wip_machining > 0,
+                ItemBatch.qty_wip_polishing > 0,
+                ItemBatch.qty_finished > 0
             )
         ).count(),
-        'expired_batches': InventoryBatch.query.filter(
-            InventoryBatch.expiry_date < datetime.now().date()
-        ).count() if InventoryBatch.query.filter(InventoryBatch.expiry_date != None).count() > 0 else 0,
-        'batches_expiring_soon': InventoryBatch.query.filter(
-            InventoryBatch.expiry_date.between(
-                datetime.now().date(),
-                (datetime.now() + timedelta(days=30)).date()
-            )
-        ).count() if InventoryBatch.query.filter(InventoryBatch.expiry_date != None).count() > 0 else 0,
-        'quality_issues': InventoryBatch.query.filter(InventoryBatch.inspection_status == 'failed').count()
+        'expired_batches': ItemBatch.query.filter(
+            ItemBatch.expiry_date < datetime.now().date()
+        ).count() if hasattr(ItemBatch, 'expiry_date') else 0,
+        'quality_issues': ItemBatch.query.filter(ItemBatch.quality_status == 'defective').count()
     }
     
-    return render_template('inventory/batch_tracking_dashboard_clean.html',
+    return render_template('inventory/batch_tracking_dashboard.html',
                          title='Batch-Wise Inventory Tracking',
                          batches=batches,
                          process_summary=process_summary,
                          stats=batch_stats,
-                         parent_child_data=parent_child_data,
-                         recent_movements=recent_movements,
                          items=items,
                          locations=locations,
                          current_filters={

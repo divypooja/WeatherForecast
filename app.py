@@ -20,8 +20,8 @@ def create_app():
     
     # Configuration
     app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key-change-in-production")
-    # Use PostgreSQL database from environment
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///factory.db")
+    # Use SQLite for now to avoid database connection issues
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///factory.db"
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
         "pool_recycle": 300,
         "pool_pre_ping": True,
@@ -177,11 +177,7 @@ def create_app():
         import models_document  # Document upload models
         import models_notifications  # Notification system models
         
-        try:
-            db.create_all()
-        except Exception as e:
-            print(f"Database initialization warning: {e}")
-            # Continue even if some tables already exist
+        db.create_all()
         
         # Initialize default dashboard modules
         from models_dashboard import init_default_modules
