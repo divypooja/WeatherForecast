@@ -100,7 +100,7 @@ class GRNWorkflowService:
             db.session.add(clearing_entry)
             
             # Post voucher
-            voucher.post_voucher()
+            voucher.post_voucher(1)  # Use admin user ID
             
             # Update workflow status
             workflow_status.material_received = True
@@ -247,7 +247,7 @@ class GRNWorkflowService:
             db.session.add(vendor_entry)
             
             # Post voucher
-            voucher.post_voucher()
+            voucher.post_voucher(1)  # Use admin user ID
             
             # Update workflow status for linked GRNs
             for link in grn_links:
@@ -292,8 +292,10 @@ class GRNWorkflowService:
                 transaction_date=payment_voucher.payment_date,
                 narration=f"Payment to {payment_voucher.vendor.name}",
                 total_amount=payment_voucher.payment_amount,
-                reference_type='payment_voucher',
-                reference_id=payment_voucher.id
+                reference_number=payment_voucher.voucher_number,
+                party_id=payment_voucher.vendor_id,
+                party_type='supplier',
+                created_by=1  # Default admin user
             )
             db.session.add(voucher)
             db.session.flush()
@@ -319,7 +321,9 @@ class GRNWorkflowService:
                 entry_type='debit',
                 amount=payment_voucher.payment_amount,
                 narration=f"Payment to vendor - {payment_voucher.voucher_number}",
-                transaction_date=voucher.transaction_date
+                transaction_date=voucher.transaction_date,
+                reference_type='payment_voucher',
+                reference_id=payment_voucher.id
             )
             db.session.add(vendor_entry)
             
@@ -330,12 +334,14 @@ class GRNWorkflowService:
                 entry_type='credit',
                 amount=payment_voucher.payment_amount,
                 narration=f"Payment made - {payment_voucher.voucher_number}",
-                transaction_date=voucher.transaction_date
+                transaction_date=voucher.transaction_date,
+                reference_type='payment_voucher',
+                reference_id=payment_voucher.id
             )
             db.session.add(payment_entry)
             
             # Post voucher
-            voucher.post_voucher()
+            voucher.post_voucher(1)  # Use admin user ID
             
             # Update payment voucher
             payment_voucher.voucher_id = voucher.id
