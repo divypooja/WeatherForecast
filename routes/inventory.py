@@ -73,11 +73,38 @@ def dashboard():
         ).limit(15).all()
         uom_stats = db.session.query(Item.unit_of_measure, func.count(Item.id)).group_by(Item.unit_of_measure).all()
     
+    # Process unit distribution
+    unit_distribution = [{'unit': uom[0] or 'Unknown', 'count': uom[1]} for uom in uom_stats]
+    
+    # Multi-state statistics
+    multi_state_stats = {
+        'raw_materials': stats.get('raw_material_items', 0),
+        'wip': stats.get('wip_items', 0), 
+        'finished_goods': stats.get('finished_goods_items', 0),
+        'scrap': stats.get('scrap_items', 0)
+    }
+    
+    # Status summary
+    status_summary = {
+        'ready': stats.get('total_items', 0) - stats.get('low_stock_items', 0) - stats.get('out_of_stock_items', 0),
+        'pending': stats.get('low_stock_items', 0),
+        'completed': stats.get('out_of_stock_items', 0)
+    }
+    
+    # Add missing fields to stats for template
+    stats.update({
+        'work_alerts': stats.get('low_stock_items', 0) + stats.get('out_of_stock_items', 0),
+        'low_stock': stats.get('low_stock_items', 0),
+        'out_of_stock': stats.get('out_of_stock_items', 0)
+    })
+    
     return render_template('inventory/dashboard.html', 
                          stats=stats, 
                          recent_items=recent_items,
                          low_stock_items=low_stock_items,
-                         uom_stats=uom_stats)
+                         unit_distribution=unit_distribution,
+                         multi_state_stats=multi_state_stats,
+                         status_summary=status_summary)
 
 @inventory_bp.route('/batch-tracking')
 @login_required
