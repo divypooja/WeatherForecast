@@ -71,8 +71,21 @@ def create_invoice_for_grn(grn_id):
     form.vendor_id.choices = [(grn.purchase_order.supplier.id, grn.purchase_order.supplier.name)]
     form.vendor_id.default = grn.purchase_order.supplier.id
     
-    # Calculate GRN total
-    grn_total = sum(item.quantity_received * getattr(item, 'rate_per_unit', 0) for item in grn.line_items)
+    # Calculate GRN total (ensure rates are populated)
+    grn_total = 0
+    for item in grn.line_items:
+        if item.rate_per_unit == 0 and grn.purchase_order:
+            # Try to get rate from PO if not set
+            po_item = next((poi for poi in grn.purchase_order.items if poi.item_id == item.item_id), None)
+            if po_item:
+                item.rate_per_unit = float(po_item.rate)
+                item.total_value = item.quantity_received * item.rate_per_unit
+                db.session.add(item)
+        
+        grn_total += item.quantity_received * item.rate_per_unit
+    
+    if grn_total > 0:
+        db.session.commit()
     
     if request.method == 'GET':
         # Pre-populate amounts
