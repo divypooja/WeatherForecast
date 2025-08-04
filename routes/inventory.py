@@ -73,11 +73,34 @@ def dashboard():
         ).limit(15).all()
         uom_stats = db.session.query(Item.unit_of_measure, func.count(Item.id)).group_by(Item.unit_of_measure).all()
     
-    return render_template('inventory/dashboard.html', 
-                         stats=stats, 
+    # Prepare clean dashboard data structure similar to Purchase Dashboard
+    dashboard_stats = {
+        'total_items': stats.get('total_items', 0),
+        'low_stock_items': stats.get('low_stock_items', 0),
+        'total_stock_value': stats.get('total_stock_value', 0),
+        'out_of_stock': stats.get('out_of_stock_items', 0),
+        'active_skus': stats.get('total_items', 0),
+        'need_reorder': stats.get('low_stock_items', 0),
+        'inventory_worth': stats.get('total_stock_value', 0)
+    }
+    
+    # Multi-state statistics
+    multi_state_stats = {
+        'raw_materials': stats.get('raw_material_items', 0),
+        'work_in_progress': stats.get('wip_items', 0),
+        'finished_goods': stats.get('finished_goods_items', 0),
+        'scrap': stats.get('scrap_items', 0)
+    }
+    
+    # Unit distribution for sidebar
+    unit_distribution = dict(uom_stats) if uom_stats else {}
+    
+    return render_template('inventory/dashboard_clean.html', 
+                         stats=dashboard_stats, 
+                         multi_state_stats=multi_state_stats,
                          recent_items=recent_items,
                          low_stock_items=low_stock_items,
-                         uom_stats=uom_stats)
+                         unit_distribution=unit_distribution)
 
 @inventory_bp.route('/batch-tracking')
 @login_required
