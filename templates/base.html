@@ -203,10 +203,7 @@
                     <i class="fas fa-tools"></i>
                     Job Work
                 </a>
-                <a class="nav-link {{ 'active' if 'live_status' in request.endpoint }}" href="{{ url_for('live_status.process_dashboard') }}">
-                    <i class="fas fa-broadcast-tower"></i>
-                    Live Process Status
-                </a>
+
                 <a class="nav-link {{ 'active' if 'sales' in request.endpoint }}" href="{{ url_for('sales.dashboard') }}">
                     <i class="fas fa-chart-line"></i>
                     Sales Orders

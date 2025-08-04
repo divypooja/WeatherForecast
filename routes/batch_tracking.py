@@ -45,7 +45,7 @@ def reset_batch_data():
                 qty_scrap=2.0,
                 storage_location=f'STORE-{i+1}',
                 quality_status='passed',
-                created_date=datetime.now() - timedelta(days=i*2)
+                created_at=datetime.now() - timedelta(days=i*2)
             )
             
             # WIP batch
@@ -58,7 +58,7 @@ def reset_batch_data():
                 qty_scrap=3.0,
                 storage_location='PRODUCTION-FLOOR',
                 quality_status='pending_inspection',
-                created_date=datetime.now() - timedelta(days=i*2+1)
+                created_at=datetime.now() - timedelta(days=i*2+1)
             )
             
             # Finished goods batch
@@ -71,7 +71,7 @@ def reset_batch_data():
                 qty_scrap=1.0,
                 storage_location='FINISHED-GOODS',
                 quality_status='passed',
-                created_date=datetime.now() - timedelta(days=i)
+                created_at=datetime.now() - timedelta(days=i)
             )
             
             sample_batches.extend([batch1, batch2, batch3])
@@ -124,12 +124,12 @@ def dashboard():
         if date_from:
             from datetime import datetime
             date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
-            query = query.filter(ItemBatch.created_date >= date_from_obj)
+            query = query.filter(ItemBatch.created_at >= date_from_obj)
             
         if date_to:
             from datetime import datetime
             date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
-            query = query.filter(ItemBatch.created_date <= date_to_obj)
+            query = query.filter(ItemBatch.created_at <= date_to_obj)
         
         # State filter logic (based on quantities)
         if state_filter == 'raw':
@@ -142,7 +142,7 @@ def dashboard():
             query = query.filter(ItemBatch.qty_scrap > 0)
         
         # Get batches with ordering
-        batches = query.order_by(ItemBatch.created_date.desc()).limit(100).all()
+        batches = query.order_by(ItemBatch.created_at.desc()).limit(100).all()
         
         # Calculate dashboard statistics
         total_batches = ItemBatch.query.count()
@@ -359,7 +359,7 @@ def export_batch_data():
                 'Scrap Quantity': batch.qty_scrap or 0,
                 'Location': batch.storage_location,
                 'Quality Status': batch.quality_status,
-                'Created Date': batch.created_date.strftime('%Y-%m-%d') if batch.created_date else '',
+                'Created Date': batch.created_at.strftime('%Y-%m-%d') if batch.created_at else '',
                 'Expiry Date': batch.expiry_date.strftime('%Y-%m-%d') if batch.expiry_date else ''
             })
         
