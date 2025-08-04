@@ -3,28 +3,6 @@
 {% block title %}{{ title }} - Factory Management System{% endblock %}
 
 {% block head %}
-<style>
-.automation-helper {
-    background: linear-gradient(45deg, #e3f2fd, #f3e5f5);
-    border: 1px solid #2196f3;
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 20px;
-}
-.auto-calculated {
-    background-color: #e8f5e8 !important;
-    border-color: #28a745 !important;
-}
-.efficiency-indicator {
-    font-size: 0.875rem;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-weight: 500;
-}
-.efficiency-excellent { background: #d4edda; color: #155724; }
-.efficiency-good { background: #fff3cd; color: #856404; }
-.efficiency-poor { background: #f8d7da; color: #721c24; }
-</style>
 {% endblock %}
 
 {% block content %}
@@ -47,25 +25,7 @@
                     <h5>Production Order Details</h5>
                 </div>
                 <div class="card-body">
-                    <!-- Automation Helper Panel -->
-                    <div class="automation-helper">
-                        <div class="row align-items-center">
-                            <div class="col-md-8">
-                                <h6 class="mb-2"><i class="fas fa-magic text-primary"></i> Smart Production Assistant</h6>
-                                <p class="mb-0 small text-muted">Automatic calculations and intelligent defaults to speed up your production entry</p>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="autoFillDefaults()">
-                                    <i class="fas fa-bolt"></i> Auto-Fill Defaults
-                                </button>
-                            </div>
-                        </div>
-                        <div id="efficiency-display" class="mt-2" style="display: none;">
-                            <span class="efficiency-indicator" id="efficiency-badge"></span>
-                        </div>
-                    </div>
-                    
-                    <form method="POST" id="production-form">
+                    <form method="POST">
                         {{ form.hidden_tag() }}
                         
                         <div class="row">
@@ -97,7 +57,7 @@
                         <div class="row">
                             <div class="col-md-3 mb-3">
                                 {{ form.quantity_planned.label(class="form-label") }}
-                                {{ form.quantity_planned(class="form-control", id="quantity_planned") }}
+                                {{ form.quantity_planned(class="form-control") }}
                                 {% if form.quantity_planned.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.quantity_planned.errors %}
@@ -109,7 +69,7 @@
                             
                             <div class="col-md-3 mb-3">
                                 {{ form.planned_uom.label(class="form-label") }}
-                                {{ form.planned_uom(class="form-select", id="planned_uom") }}
+                                {{ form.planned_uom(class="form-select") }}
                                 {% if form.planned_uom.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.planned_uom.errors %}
@@ -151,12 +111,7 @@
                             </div>
                             <div class="col-md-3 mb-3">
                                 {{ form.quantity_produced.label(class="form-label") }}
-                                <div class="input-group">
-                                    {{ form.quantity_produced(class="form-control", id="quantity_produced") }}
-                                    <button class="btn btn-outline-secondary" type="button" id="auto_calc_produced" title="Auto-calculate from Good + Damaged quantities">
-                                        <i class="fas fa-calculator"></i>
-                                    </button>
-                                </div>
+                                {{ form.quantity_produced(class="form-control") }}
                                 {% if form.quantity_produced.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.quantity_produced.errors %}
@@ -168,7 +123,7 @@
                             
                             <div class="col-md-3 mb-3">
                                 {{ form.produced_uom.label(class="form-label") }}
-                                {{ form.produced_uom(class="form-select", id="produced_uom") }}
+                                {{ form.produced_uom(class="form-select") }}
                                 {% if form.produced_uom.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.produced_uom.errors %}
@@ -180,7 +135,7 @@
                             
                             <div class="col-md-3 mb-3">
                                 {{ form.quantity_good.label(class="form-label") }}
-                                {{ form.quantity_good(class="form-control", id="quantity_good") }}
+                                {{ form.quantity_good(class="form-control") }}
                                 {% if form.quantity_good.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.quantity_good.errors %}
@@ -192,7 +147,7 @@
                             
                             <div class="col-md-3 mb-3">
                                 {{ form.good_uom.label(class="form-label") }}
-                                {{ form.good_uom(class="form-select", id="good_uom") }}
+                                {{ form.good_uom(class="form-select") }}
                                 {% if form.good_uom.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.good_uom.errors %}
@@ -204,7 +159,7 @@
                             
                             <div class="col-md-3 mb-3">
                                 {{ form.quantity_damaged.label(class="form-label") }}
-                                {{ form.quantity_damaged(class="form-control", id="quantity_damaged") }}
+                                {{ form.quantity_damaged(class="form-control") }}
                                 {% if form.quantity_damaged.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.quantity_damaged.errors %}
@@ -557,95 +512,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-
-    // Production Form Automation
-    const quantityPlannedInput = document.getElementById('quantity_planned');
-    const plannedUomSelect = document.getElementById('planned_uom');
-    const quantityProducedInput = document.getElementById('quantity_produced');
-    const producedUomSelect = document.getElementById('produced_uom');
-    const quantityGoodInput = document.getElementById('quantity_good');
-    const goodUomSelect = document.getElementById('good_uom');
-    const quantityDamagedInput = document.getElementById('quantity_damaged');
-    const autoCalcButton = document.getElementById('auto_calc_produced');
-
-    // Auto-sync UOM fields
-    function syncUOMFields() {
-        const plannedUOM = plannedUomSelect?.value;
-        if (plannedUOM && producedUomSelect && goodUomSelect) {
-            producedUomSelect.value = plannedUOM;
-            goodUomSelect.value = plannedUOM;
-            [producedUomSelect, goodUomSelect].forEach(select => {
-                select.classList.add('auto-calculated');
-                setTimeout(() => select.classList.remove('auto-calculated'), 2000);
-            });
-        }
-    }
-
-    // Auto-calculate total produced quantity
-    function autoCalculateProduced() {
-        const goodQty = parseFloat(quantityGoodInput?.value) || 0;
-        const damagedQty = parseFloat(quantityDamagedInput?.value) || 0;
-        const totalProduced = goodQty + damagedQty;
-        
-        if (totalProduced > 0 && quantityProducedInput) {
-            quantityProducedInput.value = totalProduced.toFixed(2);
-            quantityProducedInput.classList.add('auto-calculated');
-            setTimeout(() => quantityProducedInput.classList.remove('auto-calculated'), 2000);
-            calculateEfficiency();
-        }
-    }
-
-    // Calculate production efficiency
-    function calculateEfficiency() {
-        const planned = parseFloat(quantityPlannedInput?.value) || 0;
-        const good = parseFloat(quantityGoodInput?.value) || 0;
-        
-        if (planned > 0 && good > 0) {
-            const efficiency = (good / planned) * 100;
-            const efficiencyDisplay = document.getElementById('efficiency-display');
-            const efficiencyBadge = document.getElementById('efficiency-badge');
-            
-            if (efficiencyDisplay && efficiencyBadge) {
-                let badgeClass = efficiency >= 95 ? 'efficiency-excellent' : 
-                                efficiency >= 80 ? 'efficiency-good' : 'efficiency-poor';
-                let badgeText = `${badgeClass.includes('excellent') ? 'Excellent' : 
-                                 badgeClass.includes('good') ? 'Good' : 'Needs improvement'}: ${efficiency.toFixed(1)}% efficiency`;
-                
-                efficiencyBadge.className = `efficiency-indicator ${badgeClass}`;
-                efficiencyBadge.textContent = badgeText;
-                efficiencyDisplay.style.display = 'block';
-            }
-        }
-    }
-
-    // Auto-fill intelligent defaults
-    window.autoFillDefaults = function() {
-        const prodDateInput = document.querySelector('input[name="production_date"]');
-        if (prodDateInput && !prodDateInput.value) {
-            const today = new Date().toISOString().split('T')[0];
-            prodDateInput.value = today;
-            prodDateInput.classList.add('auto-calculated');
-            setTimeout(() => prodDateInput.classList.remove('auto-calculated'), 2000);
-        }
-        syncUOMFields();
-        showToast('Smart defaults applied successfully!', 'success');
-    };
-
-    // Event listeners for automation
-    if (plannedUomSelect) plannedUomSelect.addEventListener('change', syncUOMFields);
-    if (quantityGoodInput) quantityGoodInput.addEventListener('input', autoCalculateProduced);
-    if (quantityDamagedInput) quantityDamagedInput.addEventListener('input', autoCalculateProduced);
-    if (autoCalcButton) autoCalcButton.addEventListener('click', autoCalculateProduced);
-
-    // Toast notification function
-    window.showToast = function(message, type = 'info') {
-        const toast = document.createElement('div');
-        toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-        toast.style.cssText = 'top: 20px; right: 20px; z-index: 1050; min-width: 300px;';
-        toast.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.parentNode?.removeChild(toast), 3000);
-    };
 });
 </script>
 {% endblock %}
