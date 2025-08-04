@@ -226,8 +226,8 @@ def batch_wise_view():
             parent_child_data.append([grn_data])  # Wrap in list to match template expectation
     
     # Get recent batch movements
-    from models_batch_movement import BatchMovement
-    recent_movements = BatchMovement.query.order_by(desc(BatchMovement.created_at)).limit(10).all()
+    from models_batch_movement import BatchMovementLedger
+    recent_movements = BatchMovementLedger.query.order_by(desc(BatchMovementLedger.created_at)).limit(10).all()
     
     # Get filter options
     items = Item.query.order_by(Item.name).all()
