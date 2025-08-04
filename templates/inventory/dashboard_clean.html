@@ -225,22 +225,22 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-3 mb-2">
-                            <a href="{{ url_for('inventory.view_all_items') }}" class="btn btn-primary w-100">
+                            <a href="{{ url_for('inventory.list') }}" class="btn btn-primary w-100">
                                 <i class="fas fa-list"></i> View All Items
                             </a>
                         </div>
                         <div class="col-md-3 mb-2">
-                            <a href="{{ url_for('inventory.low_stock_report') }}" class="btn btn-warning w-100">
+                            <a href="{{ url_for('inventory.list') }}" class="btn btn-warning w-100">
                                 <i class="fas fa-exclamation-triangle"></i> Low Stock Items
                             </a>
                         </div>
                         <div class="col-md-3 mb-2">
-                            <a href="{{ url_for('inventory.batch_wise_view') }}" class="btn btn-info w-100">
+                            <a href="{{ url_for('batch_tracking.dashboard') }}" class="btn btn-info w-100">
                                 <i class="fas fa-search"></i> Batch Tracking
                             </a>
                         </div>
                         <div class="col-md-3 mb-2">
-                            <a href="{{ url_for('custom_reports.create_report') }}" class="btn btn-success w-100">
+                            <a href="{{ url_for('inventory.dashboard') }}" class="btn btn-success w-100">
                                 <i class="fas fa-chart-line"></i> Generate Report
                             </a>
                         </div>
