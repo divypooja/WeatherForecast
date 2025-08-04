@@ -49,15 +49,15 @@ class VendorInvoice(db.Model):
     vendor_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=False)
     
     # Invoice amounts
-    base_amount = db.Column(db.Numeric(15, 2), nullable=False, default=0.0)
-    gst_amount = db.Column(db.Numeric(15, 2), nullable=False, default=0.0)
-    freight_amount = db.Column(db.Numeric(15, 2), nullable=False, default=0.0)
-    other_charges = db.Column(db.Numeric(15, 2), nullable=False, default=0.0)
-    total_amount = db.Column(db.Numeric(15, 2), nullable=False, default=0.0)
+    base_amount = db.Column(db.Numeric(15, 2), nullable=False, default=Decimal('0.00'))
+    gst_amount = db.Column(db.Numeric(15, 2), nullable=False, default=Decimal('0.00'))
+    freight_amount = db.Column(db.Numeric(15, 2), nullable=False, default=Decimal('0.00'))
+    other_charges = db.Column(db.Numeric(15, 2), nullable=False, default=Decimal('0.00'))
+    total_amount = db.Column(db.Numeric(15, 2), nullable=False, default=Decimal('0.00'))
     
     # Payment status
-    paid_amount = db.Column(db.Numeric(15, 2), nullable=False, default=0.0)
-    outstanding_amount = db.Column(db.Numeric(15, 2), nullable=False, default=0.0)
+    paid_amount = db.Column(db.Numeric(15, 2), nullable=False, default=Decimal('0.00'))
+    outstanding_amount = db.Column(db.Numeric(15, 2), nullable=False, default=Decimal('0.00'))
     
     # Status
     status = db.Column(db.String(20), default='pending')  # pending, processed, paid
@@ -90,7 +90,7 @@ class VendorInvoiceGRNLink(db.Model):
     grn_id = db.Column(db.Integer, db.ForeignKey('grn.id'), nullable=False)
     
     # Amount allocation
-    allocated_amount = db.Column(db.Numeric(15, 2), nullable=False, default=0.0)
+    allocated_amount = db.Column(db.Numeric(15, 2), nullable=False, default=Decimal('0.00'))
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -158,16 +158,16 @@ class POFulfillmentStatus(db.Model):
     
     # Quantities
     ordered_quantity = db.Column(db.Numeric(15, 3), nullable=False)
-    received_quantity = db.Column(db.Numeric(15, 3), nullable=False, default=0.0)
-    pending_quantity = db.Column(db.Numeric(15, 3), nullable=False, default=0.0)
+    received_quantity = db.Column(db.Numeric(15, 3), nullable=False, default=Decimal('0.000'))
+    pending_quantity = db.Column(db.Numeric(15, 3), nullable=False, default=Decimal('0.000'))
     
     # Values
     ordered_value = db.Column(db.Numeric(15, 2), nullable=False)
-    received_value = db.Column(db.Numeric(15, 2), nullable=False, default=0.0)
-    pending_value = db.Column(db.Numeric(15, 2), nullable=False, default=0.0)
+    received_value = db.Column(db.Numeric(15, 2), nullable=False, default=Decimal('0.00'))
+    pending_value = db.Column(db.Numeric(15, 2), nullable=False, default=Decimal('0.00'))
     
     # Status
-    fulfillment_percentage = db.Column(db.Numeric(5, 2), default=0.0)
+    fulfillment_percentage = db.Column(db.Numeric(5, 2), default=Decimal('0.00'))
     status = db.Column(db.String(20), default='pending')  # pending, partial, complete
     
     last_grn_date = db.Column(db.Date)
