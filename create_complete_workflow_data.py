@@ -11,8 +11,11 @@ Create comprehensive ERP workflow data including:
 
 from app import app, db
 from models import *
+from models_accounting import *
+from models_grn import GRN, GRNLineItem
 from sqlalchemy import text
 from datetime import datetime, date, timedelta
+from werkzeug.security import generate_password_hash
 import random
 
 def create_complete_workflow():
@@ -66,30 +69,57 @@ def create_complete_workflow():
             db.session.commit()
             print("✅ Created materials and components")
             
+            # 1.5. Create Units of Measure
+            print("\n📏 Creating Units of Measure...")
+            
+            uoms = [
+                {'name': 'Kilogram', 'symbol': 'kg', 'category': 'Weight'},
+                {'name': 'Pieces', 'symbol': 'pcs', 'category': 'Count'},
+                {'name': 'Liter', 'symbol': 'ltr', 'category': 'Volume'},
+                {'name': 'Meter', 'symbol': 'mtr', 'category': 'Length'},
+                {'name': 'Box', 'symbol': 'box', 'category': 'Count'}
+            ]
+            
+            for uom_data in uoms:
+                existing = UnitOfMeasure.query.filter_by(name=uom_data['name']).first()
+                if not existing:
+                    uom = UnitOfMeasure(
+                        name=uom_data['name'],
+                        symbol=uom_data['symbol'],
+                        category=uom_data['category'],
+                        is_base_unit=uom_data['symbol'] in ['kg', 'pcs']
+                    )
+                    db.session.add(uom)
+            
+            db.session.commit()
+            print("✅ Created units of measure")
+            
             # 2. Create Suppliers and Customers
             print("\n🏢 Creating Suppliers and Customers...")
             
             suppliers = [
-                {'code': 'SUP-001', 'name': 'Steel Industries Ltd', 'type': 'supplier'},
-                {'code': 'SUP-002', 'name': 'Plastic Components Co', 'type': 'supplier'},
-                {'code': 'JW-001', 'name': 'Precision Job Works', 'type': 'job_worker'},
+                {'name': 'Steel Industries Ltd', 'type': 'supplier'},
+                {'name': 'Plastic Components Co', 'type': 'supplier'},
+                {'name': 'Precision Job Works', 'type': 'vendor'},
             ]
             
             customers = [
-                {'code': 'CUST-001', 'name': 'ABC Manufacturing', 'type': 'customer'},
-                {'code': 'CUST-002', 'name': 'XYZ Industries', 'type': 'customer'},
+                {'name': 'ABC Manufacturing', 'type': 'customer'},
+                {'name': 'XYZ Industries', 'type': 'customer'},
             ]
             
             for entity in suppliers + customers:
-                existing = Supplier.query.filter_by(code=entity['code']).first()
+                existing = Supplier.query.filter_by(name=entity['name']).first()
                 if not existing:
                     supplier = Supplier(
-                        code=entity['code'],
                         name=entity['name'],
                         partner_type=entity['type'],
-                        email=f"{entity['code'].lower()}@example.com",
+                        email=f"{entity['name'].lower().replace(' ', '')}@example.com",
                         phone="9876543210",
-                        address="Industrial Area"
+                        address="Industrial Area",
+                        city="Mumbai",
+                        state="Maharashtra",
+                        pin_code="400001"
                     )
                     db.session.add(supplier)
             
@@ -110,108 +140,129 @@ def create_complete_workflow():
             product_b = Item.query.filter_by(code='PROD-FINAL-002').first()
             
             # BOM 1: Metal Base Assembly (Level 1 - Component)
-            bom_base = BOM(
-                code='BOM-BASE-001',
-                name='Metal Base Assembly BOM',
-                item_id=base_assembly.id,
-                quantity=1.0,
-                version='1.0',
-                is_active=True,
-                bom_type='production'
-            )
-            db.session.add(bom_base)
-            db.session.flush()
+            existing_bom = BOM.query.filter_by(bom_code='BOM-BASE-001').first()
+            if not existing_bom:
+                bom_base = BOM(
+                    bom_code='BOM-BASE-001',
+                    description='Metal Base Assembly BOM',
+                    product_id=base_assembly.id,
+                    output_quantity=1.0,
+                    version='1.0',
+                    is_active=True,
+                    status='active'
+                )
+                db.session.add(bom_base)
+                db.session.flush()
+            else:
+                bom_base = existing_bom
+            
+            # Get UOMs
+            kg_uom = UnitOfMeasure.query.filter_by(symbol='kg').first()
+            pcs_uom = UnitOfMeasure.query.filter_by(symbol='pcs').first()
+            ltr_uom = UnitOfMeasure.query.filter_by(symbol='ltr').first()
             
             # BOM items for base assembly
             bom_items_base = [
-                {'item_id': steel.id, 'quantity': 2.5, 'unit': 'kg'},
-                {'item_id': screws.id, 'quantity': 4, 'unit': 'pcs'},
-                {'item_id': paint.id, 'quantity': 0.1, 'unit': 'ltr'},
+                {'material_id': steel.id, 'qty_required': 2.5, 'uom_id': kg_uom.id, 'unit': 'kg'},
+                {'material_id': screws.id, 'qty_required': 4, 'uom_id': pcs_uom.id, 'unit': 'pcs'},
+                {'material_id': paint.id, 'qty_required': 0.1, 'uom_id': ltr_uom.id, 'unit': 'ltr'},
             ]
             
             for item_data in bom_items_base:
                 bom_item = BOMItem(
                     bom_id=bom_base.id,
-                    item_id=item_data['item_id'],
-                    quantity=item_data['quantity'],
-                    unit_of_measure=item_data['unit'],
-                    item_type='raw_material'
+                    material_id=item_data['material_id'],
+                    qty_required=item_data['qty_required'],
+                    uom_id=item_data['uom_id'],
+                    unit=item_data['unit']
                 )
                 db.session.add(bom_item)
             
             # BOM 2: Plastic Cover (Level 1 - Component)
-            bom_cover = BOM(
-                code='BOM-COVER-001',
-                name='Plastic Cover BOM',
-                item_id=cover.id,
-                quantity=1.0,
-                version='1.0',
-                is_active=True,
-                bom_type='production'
-            )
-            db.session.add(bom_cover)
-            db.session.flush()
+            existing_bom_cover = BOM.query.filter_by(bom_code='BOM-COVER-001').first()
+            if not existing_bom_cover:
+                bom_cover = BOM(
+                    bom_code='BOM-COVER-001',
+                    description='Plastic Cover BOM',
+                    product_id=cover.id,
+                    output_quantity=1.0,
+                    version='1.0',
+                    is_active=True,
+                    status='active'
+                )
+                db.session.add(bom_cover)
+                db.session.flush()
+            else:
+                bom_cover = existing_bom_cover
             
             bom_item_cover = BOMItem(
                 bom_id=bom_cover.id,
-                item_id=plastic.id,
-                quantity=0.8,
-                unit_of_measure='kg',
-                item_type='raw_material'
+                material_id=plastic.id,
+                qty_required=0.8,
+                uom_id=kg_uom.id,
+                unit='kg'
             )
             db.session.add(bom_item_cover)
             
             # BOM 3: Final Product A (Level 2 - Uses components from above BOMs)
-            bom_final_a = BOM(
-                code='BOM-FINAL-A-001',
-                name='Complete Product A BOM',
-                item_id=product_a.id,
-                quantity=1.0,
-                version='1.0',
-                is_active=True,
-                bom_type='production'
-            )
-            db.session.add(bom_final_a)
-            db.session.flush()
+            existing_bom_final_a = BOM.query.filter_by(bom_code='BOM-FINAL-A-001').first()
+            if not existing_bom_final_a:
+                bom_final_a = BOM(
+                    bom_code='BOM-FINAL-A-001',
+                    description='Complete Product A BOM',
+                    product_id=product_a.id,
+                    output_quantity=1.0,
+                    version='1.0',
+                    is_active=True,
+                    status='active'
+                )
+                db.session.add(bom_final_a)
+                db.session.flush()
+            else:
+                bom_final_a = existing_bom_final_a
             
             # Final product uses components (nested BOM structure)
             bom_items_final = [
-                {'item_id': base_assembly.id, 'quantity': 1, 'unit': 'pcs'},
-                {'item_id': cover.id, 'quantity': 1, 'unit': 'pcs'},
-                {'item_id': screws.id, 'quantity': 2, 'unit': 'pcs'},
+                {'material_id': base_assembly.id, 'qty_required': 1, 'uom_id': pcs_uom.id, 'unit': 'pcs'},
+                {'material_id': cover.id, 'qty_required': 1, 'uom_id': pcs_uom.id, 'unit': 'pcs'},
+                {'material_id': screws.id, 'qty_required': 2, 'uom_id': pcs_uom.id, 'unit': 'pcs'},
             ]
             
             for item_data in bom_items_final:
                 bom_item = BOMItem(
                     bom_id=bom_final_a.id,
-                    item_id=item_data['item_id'],
-                    quantity=item_data['quantity'],
-                    unit_of_measure=item_data['unit'],
-                    item_type='semi_finished' if item_data['item_id'] in [base_assembly.id, cover.id] else 'raw_material'
+                    material_id=item_data['material_id'],
+                    qty_required=item_data['qty_required'],
+                    uom_id=item_data['uom_id'],
+                    unit=item_data['unit']
                 )
                 db.session.add(bom_item)
             
             # BOM 4: Final Product B (similar structure)
-            bom_final_b = BOM(
-                code='BOM-FINAL-B-001',
-                name='Complete Product B BOM',
-                item_id=product_b.id,
-                quantity=1.0,
-                version='1.0',
-                is_active=True,
-                bom_type='production'
-            )
-            db.session.add(bom_final_b)
-            db.session.flush()
+            existing_bom_final_b = BOM.query.filter_by(bom_code='BOM-FINAL-B-001').first()
+            if not existing_bom_final_b:
+                bom_final_b = BOM(
+                    bom_code='BOM-FINAL-B-001',
+                    description='Complete Product B BOM',
+                    product_id=product_b.id,
+                    output_quantity=1.0,
+                    version='1.0',
+                    is_active=True,
+                    status='active'
+                )
+                db.session.add(bom_final_b)
+                db.session.flush()
+            else:
+                bom_final_b = existing_bom_final_b
             
             # Similar structure for Product B
             for item_data in bom_items_final:
                 bom_item = BOMItem(
                     bom_id=bom_final_b.id,
-                    item_id=item_data['item_id'],
-                    quantity=item_data['quantity'] * 1.2,  # Slightly different quantities
-                    unit_of_measure=item_data['unit'],
-                    item_type='semi_finished' if item_data['item_id'] in [base_assembly.id, cover.id] else 'raw_material'
+                    material_id=item_data['material_id'],
+                    qty_required=item_data['qty_required'] * 1.2,  # Slightly different quantities
+                    uom_id=item_data['uom_id'],
+                    unit=item_data['unit']
                 )
                 db.session.add(bom_item)
             
@@ -276,8 +327,8 @@ def create_complete_workflow():
             # 5. Create Sales Orders
             print("\n📋 Creating Sales Orders...")
             
-            customer1 = Supplier.query.filter_by(code='CUST-001').first()
-            customer2 = Supplier.query.filter_by(code='CUST-002').first()
+            customer1 = Supplier.query.filter_by(name='ABC Manufacturing').first()
+            customer2 = Supplier.query.filter_by(name='XYZ Industries').first()
             
             sales_orders = [
                 {
@@ -298,12 +349,12 @@ def create_complete_workflow():
             ]
             
             for so_data in sales_orders:
-                existing = SalesOrder.query.filter_by(sales_order_number=so_data['number']).first()
+                existing = SalesOrder.query.filter_by(so_number=so_data['number']).first()
                 if not existing:
                     total_amount = sum(item['quantity'] * item['rate'] for item in so_data['items'])
                     
                     sales_order = SalesOrder(
-                        sales_order_number=so_data['number'],
+                        so_number=so_data['number'],
                         customer_id=so_data['customer_id'],
                         order_date=date.today(),
                         delivery_date=date.today() + timedelta(days=30),
@@ -319,7 +370,7 @@ def create_complete_workflow():
                         so_item = SalesOrderItem(
                             sales_order_id=sales_order.id,
                             item_id=item_data['item_id'],
-                            quantity=item_data['quantity'],
+                            quantity_ordered=item_data['quantity'],
                             unit_price=item_data['rate'],
                             total_price=item_data['quantity'] * item_data['rate']
                         )
@@ -331,7 +382,7 @@ def create_complete_workflow():
             # 6. Create Job Work Orders
             print("\n🔧 Creating Job Work Orders...")
             
-            job_worker = Supplier.query.filter_by(code='JW-001').first()
+            job_worker = Supplier.query.filter_by(name='Precision Job Works').first()
             
             job_orders = [
                 {
@@ -351,29 +402,22 @@ def create_complete_workflow():
             ]
             
             for jw_data in job_orders:
-                existing = JobWork.query.filter_by(job_work_number=jw_data['number']).first()
+                existing = JobWork.query.filter_by(job_number=jw_data['number']).first()
                 if not existing:
                     job_work = JobWork(
-                        job_work_number=jw_data['number'],
-                        vendor_id=jw_data['vendor_id'],
-                        process_type=jw_data['process_type'],
-                        status='in_progress',
-                        start_date=date.today(),
-                        expected_completion_date=date.today() + timedelta(days=7),
+                        job_number=jw_data['number'],
+                        customer_name=f"Customer for {jw_data['process_type']}",
+                        item_id=jw_data['item_id'],
+                        process=jw_data['process_type'],
+                        quantity_sent=jw_data['quantity'],
+                        rate_per_unit=150.00,
+                        work_type='outsourced',
+                        sent_date=date.today(),
+                        expected_return=date.today() + timedelta(days=7),
+                        status='sent',
                         created_by=admin.id
                     )
                     db.session.add(job_work)
-                    db.session.flush()
-                    
-                    # Add job work items
-                    jw_item = JobWorkItem(
-                        job_work_id=job_work.id,
-                        item_id=jw_data['item_id'],
-                        quantity_sent=jw_data['quantity'],
-                        quantity_received=0,
-                        rate_per_unit=50.00
-                    )
-                    db.session.add(jw_item)
             
             db.session.commit()
             print("✅ Created job work orders")
@@ -381,8 +425,8 @@ def create_complete_workflow():
             # 7. Create Purchase Orders for raw materials
             print("\n🛒 Creating Purchase Orders...")
             
-            supplier1 = Supplier.query.filter_by(code='SUP-001').first()
-            supplier2 = Supplier.query.filter_by(code='SUP-002').first()
+            supplier1 = Supplier.query.filter_by(name='Steel Industries Ltd').first()
+            supplier2 = Supplier.query.filter_by(name='Plastic Components Co').first()
             
             purchase_orders = [
                 {
@@ -404,17 +448,17 @@ def create_complete_workflow():
             ]
             
             for po_data in purchase_orders:
-                existing = PurchaseOrder.query.filter_by(purchase_order_number=po_data['number']).first()
+                existing = PurchaseOrder.query.filter_by(po_number=po_data['number']).first()
                 if not existing:
                     total_amount = sum(item['quantity'] * item['rate'] for item in po_data['items'])
                     
                     purchase_order = PurchaseOrder(
-                        purchase_order_number=po_data['number'],
+                        po_number=po_data['number'],
                         supplier_id=po_data['supplier_id'],
                         order_date=date.today(),
-                        expected_delivery_date=date.today() + timedelta(days=15),
+                        expected_date=date.today() + timedelta(days=15),
                         total_amount=total_amount,
-                        status='approved',
+                        status='sent',
                         created_by=admin.id
                     )
                     db.session.add(purchase_order)
@@ -425,7 +469,10 @@ def create_complete_workflow():
                         po_item = PurchaseOrderItem(
                             purchase_order_id=purchase_order.id,
                             item_id=item_data['item_id'],
-                            quantity=item_data['quantity'],
+                            qty=item_data['quantity'],
+                            rate=item_data['rate'],
+                            amount=item_data['quantity'] * item_data['rate'],
+                            quantity_ordered=item_data['quantity'],
                             unit_price=item_data['rate'],
                             total_price=item_data['quantity'] * item_data['rate']
                         )
@@ -437,30 +484,34 @@ def create_complete_workflow():
             # 8. Create GRNs for received materials
             print("\n📦 Creating GRNs (Goods Receipt Notes)...")
             
-            po1 = PurchaseOrder.query.filter_by(purchase_order_number='PO-2025-001').first()
-            po2 = PurchaseOrder.query.filter_by(purchase_order_number='PO-2025-002').first()
+            po1 = PurchaseOrder.query.filter_by(po_number='PO-2025-001').first()
+            po2 = PurchaseOrder.query.filter_by(po_number='PO-2025-002').first()
             
             if po1:
-                grn1 = GRN(
-                    grn_number='GRN-2025-001',
-                    purchase_order_id=po1.id,
-                    supplier_id=po1.supplier_id,
-                    received_date=date.today(),
-                    status='received',
-                    created_by=admin.id
-                )
-                db.session.add(grn1)
-                db.session.flush()
+                existing_grn = GRN.query.filter_by(grn_number='GRN-2025-001').first()
+                if not existing_grn:
+                    grn1 = GRN(
+                        grn_number='GRN-2025-001',
+                        purchase_order_id=po1.id,
+                        received_date=date.today(),
+                        status='received',
+                        received_by=admin.id
+                    )
+                    db.session.add(grn1)
+                    db.session.flush()
+                else:
+                    grn1 = existing_grn
                 
                 # Add GRN line items
                 for po_item in po1.items:
                     grn_item = GRNLineItem(
                         grn_id=grn1.id,
                         item_id=po_item.item_id,
-                        ordered_quantity=po_item.quantity,
-                        received_quantity=po_item.quantity * 0.9,  # 90% received
-                        unit_price=po_item.unit_price,
-                        status='received'
+                        quantity_received=po_item.qty * 0.9,  # 90% received
+                        quantity_passed=po_item.qty * 0.85,  # 85% passed inspection
+                        quantity_rejected=po_item.qty * 0.05,  # 5% rejected
+                        rate_per_unit=po_item.rate,
+                        inspection_status='passed'
                     )
                     db.session.add(grn_item)
             
@@ -477,16 +528,248 @@ def create_complete_workflow():
             db.session.commit()
             print("✅ Updated inventory levels")
             
+            # 10. Create HR Data (Employees and Departments)
+            print("\n👥 Creating HR Data...")
+            
+            # Create departments
+            departments = [
+                {'code': 'PROD', 'name': 'Production Department'},
+                {'code': 'QC', 'name': 'Quality Control'},
+                {'code': 'ADMIN', 'name': 'Administration'},
+                {'code': 'SALES', 'name': 'Sales & Marketing'},
+                {'code': 'PURCHASE', 'name': 'Purchase & Procurement'}
+            ]
+            
+            for dept_data in departments:
+                existing = Department.query.filter_by(code=dept_data['code']).first()
+                if not existing:
+                    dept = Department(
+                        code=dept_data['code'],
+                        name=dept_data['name'],
+                        is_active=True
+                    )
+                    db.session.add(dept)
+            
+            db.session.commit()
+            
+            # Create employees
+            prod_dept = Department.query.filter_by(code='PROD').first()
+            qc_dept = Department.query.filter_by(code='QC').first()
+            
+            employees = [
+                {'code': 'EMP-001', 'name': 'John Smith', 'dept': 'PROD', 'role': 'Production Manager', 'salary': 45000},
+                {'code': 'EMP-002', 'name': 'Sarah Wilson', 'dept': 'QC', 'role': 'Quality Inspector', 'salary': 35000},
+                {'code': 'EMP-003', 'name': 'Mike Johnson', 'dept': 'PROD', 'role': 'Machine Operator', 'salary': 28000},
+                {'code': 'EMP-004', 'name': 'Lisa Brown', 'dept': 'SALES', 'role': 'Sales Executive', 'salary': 40000}
+            ]
+            
+            for emp_data in employees:
+                existing = User.query.filter_by(username=emp_data['code']).first()
+                if not existing:
+                    employee = User(
+                        username=emp_data['code'],
+                        email=f"{emp_data['code'].lower()}@company.com",
+                        password_hash=generate_password_hash('employee123'),
+                        role='staff',
+                        is_active=True
+                    )
+                    db.session.add(employee)
+            
+            db.session.commit()
+            print("✅ Created HR data (departments and employees)")
+            
+            # 11. Create Accounting Entries for all transactions
+            print("\n💰 Creating Accounting Entries...")
+            
+            # Get or create Chart of Accounts
+            accounts_data = [
+                {'code': '1001', 'name': 'Cash', 'type': 'asset', 'group': 'current_assets'},
+                {'code': '1002', 'name': 'Accounts Receivable', 'type': 'asset', 'group': 'current_assets'},
+                {'code': '1100', 'name': 'Raw Material Inventory', 'type': 'asset', 'group': 'current_assets'},
+                {'code': '1101', 'name': 'WIP Inventory', 'type': 'asset', 'group': 'current_assets'},
+                {'code': '1102', 'name': 'Finished Goods Inventory', 'type': 'asset', 'group': 'current_assets'},
+                {'code': '2001', 'name': 'Accounts Payable', 'type': 'liability', 'group': 'current_liabilities'},
+                {'code': '2100', 'name': 'Salary Payable', 'type': 'liability', 'group': 'current_liabilities'},
+                {'code': '4001', 'name': 'Sales Revenue', 'type': 'income', 'group': 'revenue'},
+                {'code': '5001', 'name': 'Cost of Goods Sold', 'type': 'expense', 'group': 'cost_of_sales'},
+                {'code': '5100', 'name': 'Direct Material Cost', 'type': 'expense', 'group': 'cost_of_sales'},
+                {'code': '5200', 'name': 'Direct Labor Cost', 'type': 'expense', 'group': 'cost_of_sales'},
+                {'code': '6001', 'name': 'Job Work Expenses', 'type': 'expense', 'group': 'operating_expenses'},
+                {'code': '6100', 'name': 'Salary Expenses', 'type': 'expense', 'group': 'operating_expenses'}
+            ]
+            
+            for acc_data in accounts_data:
+                existing = ChartOfAccounts.query.filter_by(account_code=acc_data['code']).first()
+                if not existing:
+                    account = ChartOfAccounts(
+                        account_code=acc_data['code'],
+                        account_name=acc_data['name'],
+                        account_type=acc_data['type'],
+                        account_group=acc_data['group'],
+                        is_active=True
+                    )
+                    db.session.add(account)
+            
+            db.session.commit()
+            
+            # Create journal entries for purchase transactions
+            cash_account = ChartOfAccounts.query.filter_by(account_code='1001').first()
+            inventory_account = ChartOfAccounts.query.filter_by(account_code='1100').first()
+            payable_account = ChartOfAccounts.query.filter_by(account_code='2001').first()
+            
+            # Purchase entry for PO-2025-001
+            po1 = PurchaseOrder.query.filter_by(purchase_order_number='PO-2025-001').first()
+            if po1:
+                journal_entry = JournalEntry(
+                    entry_number='JE-2025-001',
+                    date=date.today(),
+                    description=f'Purchase of materials - {po1.purchase_order_number}',
+                    reference_type='purchase_order',
+                    reference_id=po1.id,
+                    total_amount=po1.total_amount,
+                    created_by=admin.id
+                )
+                db.session.add(journal_entry)
+                db.session.flush()
+                
+                # Debit: Raw Material Inventory
+                debit_entry = JournalEntryLine(
+                    journal_entry_id=journal_entry.id,
+                    account_id=inventory_account.id,
+                    debit_amount=po1.total_amount,
+                    credit_amount=0,
+                    description='Raw materials purchased'
+                )
+                db.session.add(debit_entry)
+                
+                # Credit: Accounts Payable
+                credit_entry = JournalEntryLine(
+                    journal_entry_id=journal_entry.id,
+                    account_id=payable_account.id,
+                    debit_amount=0,
+                    credit_amount=po1.total_amount,
+                    description='Amount payable to supplier'
+                )
+                db.session.add(credit_entry)
+            
+            # Create salary entries
+            salary_payable = ChartOfAccounts.query.filter_by(account_code='2100').first()
+            salary_expense = ChartOfAccounts.query.filter_by(account_code='6100').first()
+            
+            total_salaries = sum(emp['salary'] for emp in employees)
+            
+            salary_journal = JournalEntry(
+                entry_number='JE-2025-002',
+                date=date.today(),
+                description='Monthly salary provision',
+                reference_type='payroll',
+                total_amount=total_salaries,
+                created_by=admin.id
+            )
+            db.session.add(salary_journal)
+            db.session.flush()
+            
+            # Debit: Salary Expense
+            salary_debit = JournalEntryLine(
+                journal_entry_id=salary_journal.id,
+                account_id=salary_expense.id,
+                debit_amount=total_salaries,
+                credit_amount=0,
+                description='Monthly salary expense'
+            )
+            db.session.add(salary_debit)
+            
+            # Credit: Salary Payable
+            salary_credit = JournalEntryLine(
+                journal_entry_id=salary_journal.id,
+                account_id=salary_payable.id,
+                debit_amount=0,
+                credit_amount=total_salaries,
+                description='Salary payable to employees'
+            )
+            db.session.add(salary_credit)
+            
+            # Create sales revenue entries
+            revenue_account = ChartOfAccounts.query.filter_by(account_code='4001').first()
+            receivable_account = ChartOfAccounts.query.filter_by(account_code='1002').first()
+            
+            so1 = SalesOrder.query.filter_by(so_number='SO-2025-001').first()
+            if so1:
+                sales_journal = JournalEntry(
+                    entry_number='JE-2025-003',
+                    date=date.today(),
+                    description=f'Sales revenue - {so1.sales_order_number}',
+                    reference_type='sales_order',
+                    reference_id=so1.id,
+                    total_amount=so1.total_amount,
+                    created_by=admin.id
+                )
+                db.session.add(sales_journal)
+                db.session.flush()
+                
+                # Debit: Accounts Receivable
+                sales_debit = JournalEntryLine(
+                    journal_entry_id=sales_journal.id,
+                    account_id=receivable_account.id,
+                    debit_amount=so1.total_amount,
+                    credit_amount=0,
+                    description='Amount receivable from customer'
+                )
+                db.session.add(sales_debit)
+                
+                # Credit: Sales Revenue
+                sales_credit = JournalEntryLine(
+                    journal_entry_id=sales_journal.id,
+                    account_id=revenue_account.id,
+                    debit_amount=0,
+                    credit_amount=so1.total_amount,
+                    description='Sales revenue earned'
+                )
+                db.session.add(sales_credit)
+            
+            db.session.commit()
+            print("✅ Created accounting entries for all transactions")
+            
+            # 12. Create Expense entries
+            print("\n💸 Creating Factory Expenses...")
+            
+            expense_categories = [
+                {'name': 'Electricity', 'amount': 15000, 'account_code': '6001'},
+                {'name': 'Maintenance', 'amount': 8000, 'account_code': '6001'},
+                {'name': 'Factory Rent', 'amount': 25000, 'account_code': '6001'},
+                {'name': 'Job Work Charges', 'amount': 5000, 'account_code': '6001'}
+            ]
+            
+            for exp_data in expense_categories:
+                expense = FactoryExpense(
+                    expense_number=f"EXP-{exp_data['name'][:3].upper()}-001",
+                    expense_type=exp_data['name'].lower().replace(' ', '_'),
+                    amount=exp_data['amount'],
+                    description=f"Monthly {exp_data['name']} charges",
+                    expense_date=date.today(),
+                    status='approved',
+                    created_by=admin.id
+                )
+                db.session.add(expense)
+            
+            db.session.commit()
+            print("✅ Created factory expenses")
+            
             print("\n🎉 Complete ERP workflow data created successfully!")
             print("\n📈 Summary:")
-            print(f"   - 4 Nested BOMs created")
-            print(f"   - 4 Production Orders")
+            print(f"   - 4 Nested BOMs created (2-level hierarchy)")
+            print(f"   - 4 Production Orders with BOM linkage")
             print(f"   - 2 Sales Orders with multiple items")
-            print(f"   - 2 Job Work Orders")
-            print(f"   - 2 Purchase Orders")
+            print(f"   - 2 Job Work Orders for external processing")
+            print(f"   - 2 Purchase Orders for raw materials")
             print(f"   - 1 GRN with material receipts")
-            print(f"   - Inventory movements tracked")
-            print(f"   - Complete data flow integration")
+            print(f"   - 5 Departments and 4 Employees (HR)")
+            print(f"   - 13 Chart of Accounts setup")
+            print(f"   - 3 Journal Entries (Purchase, Payroll, Sales)")
+            print(f"   - 4 Factory Expense categories")
+            print(f"   - Complete inventory movements tracked")
+            print(f"   - Full accounting integration with double-entry")
+            print(f"   - End-to-end ERP data flow")
             
             return True
             
