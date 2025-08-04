@@ -24,14 +24,16 @@ def test_expense_submission():
         
         print(f"👤 Using test user: {test_user.username}")
         
-        # Create a test expense
+        # Create a test expense with unique number
+        import random
+        test_number = f'TEST-{random.randint(100, 999)}'
         test_expense = FactoryExpense(
-            expense_number='TEST-001',
+            expense_number=test_number,
             expense_date=date.today(),
             category='Maintenance & Repairs',
             subcategory='Equipment Repair',
             department_code='ACCOUNTS',
-            description='Test expense submission',
+            description='Test expense submission after migration',
             amount=100.0,
             tax_amount=0.0,
             total_amount=100.0,

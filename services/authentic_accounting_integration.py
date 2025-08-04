@@ -179,7 +179,7 @@ class AuthenticAccountingIntegration:
             return None
     
     @staticmethod
-    def create_simple_voucher(voucher_type_code, reference_number, description, entries, transaction_date=None):
+    def create_simple_voucher(voucher_type_code, reference_number, description, entries, transaction_date=None, created_by=None):
         """
         Create a simple voucher with journal entries
         Uses existing accounting system without modifying it
@@ -205,7 +205,8 @@ class AuthenticAccountingIntegration:
                 reference_number=reference_number,
                 narration=description,
                 total_amount=Decimal(str(total_amount)),
-                status='posted'
+                status='posted',
+                created_by=created_by or 1  # Default to admin user ID if not provided
             )
             
             db.session.add(voucher)

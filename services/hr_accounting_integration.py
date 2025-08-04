@@ -207,11 +207,12 @@ class HRAccountingIntegration:
             ]
             
             voucher = AuthenticAccountingIntegration.create_simple_voucher(
-                'JNL',
+                'JOU',
                 expense.expense_number,
                 f'Factory Expense - {expense.description}',
                 entries,
-                expense.expense_date
+                expense.expense_date,
+                created_by=expense.requested_by_id
             )
             
             if voucher:
