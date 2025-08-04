@@ -31,39 +31,52 @@ class HRAccountingIntegration:
                 logger.error("Required account groups not found")
                 return False
             
-            # Create HR-specific accounts if they don't exist
-            hr_accounts = [
-                {
+            # Use existing accounts or create only if absolutely needed
+            # Check for existing salary/wage accounts first
+            salary_account = (Account.query.filter_by(code='WAGES').first() or 
+                             Account.query.filter_by(code='SAL_WAGES').first() or
+                             Account.query.filter(Account.name.ilike('%wage%')).first() or
+                             Account.query.filter(Account.name.ilike('%salary%')).first())
+            
+            # Create only missing accounts
+            hr_accounts = []
+            
+            if not salary_account:
+                hr_accounts.append({
                     'name': 'Salaries & Wages',
                     'code': 'SAL_WAGES',
                     'account_group_id': expense_group.id,
                     'account_type': 'expense'
-                },
-                {
+                })
+            
+            # Check for other accounts
+            if not Account.query.filter_by(code='EMP_ADV').first():
+                hr_accounts.append({
                     'name': 'Employee Advances',
                     'code': 'EMP_ADV',
                     'account_group_id': current_asset_group.id,
                     'account_type': 'current_asset'
-                },
-                {
+                })
+            
+            if not Account.query.filter_by(code='FACT_OH').first():
+                hr_accounts.append({
                     'name': 'Factory Overhead',
                     'code': 'FACT_OH',
                     'account_group_id': expense_group.id,
                     'account_type': 'expense'
-                },
-                {
+                })
+            
+            if not Account.query.filter_by(code='EMP_BEN').first():
+                hr_accounts.append({
                     'name': 'Employee Benefits',
                     'code': 'EMP_BEN',
                     'account_group_id': expense_group.id,
                     'account_type': 'expense'
-                }
-            ]
+                })
             
             for account_data in hr_accounts:
-                existing_account = Account.query.filter_by(code=account_data['code']).first()
-                if not existing_account:
-                    account = Account(**account_data)
-                    db.session.add(account)
+                account = Account(**account_data)
+                db.session.add(account)
             
             db.session.commit()
             return True
@@ -89,14 +102,13 @@ class HRAccountingIntegration:
                 logger.error("Payment voucher type not found")
                 return False
             
-            # Get required accounts
-            salary_account = Account.query.filter_by(code='SAL_WAGES').first()
-            cash_account = Account.query.filter_by(is_cash_account=True).first()
+            # Get required accounts - use existing ones first
+            salary_account = (Account.query.filter_by(code='WAGES').first() or 
+                             Account.query.filter_by(code='SAL_WAGES').first() or
+                             Account.query.filter(Account.name.ilike('%wage%')).first() or
+                             Account.query.filter(Account.name.ilike('%salary%')).first())
             
-            if not salary_account:
-                salary_account = Account.query.filter(
-                    Account.name.ilike('%salary%')
-                ).first()
+            cash_account = Account.query.filter_by(is_cash_account=True).first()
             
             if not cash_account:
                 cash_account = Account.query.filter_by(code='CASH').first()
@@ -171,10 +183,13 @@ class HRAccountingIntegration:
                 logger.error("Journal voucher type not found")
                 return False
             
-            # Determine expense account based on category
+            # Determine expense account based on category - use existing accounts
             expense_account = None
             if expense.category in ['salary', 'wages']:
-                expense_account = Account.query.filter_by(code='SAL_WAGES').first()
+                expense_account = (Account.query.filter_by(code='WAGES').first() or 
+                                 Account.query.filter_by(code='SAL_WAGES').first() or
+                                 Account.query.filter(Account.name.ilike('%wage%')).first() or
+                                 Account.query.filter(Account.name.ilike('%salary%')).first())
             elif expense.category in ['utilities', 'maintenance', 'overhead']:
                 expense_account = Account.query.filter_by(code='FACT_OH').first()
             else:
