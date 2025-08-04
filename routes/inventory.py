@@ -206,24 +206,49 @@ def batch_wise_view():
     
     # Prepare parent-child batch data for template
     from models_grn import GRN
+    from models import PurchaseOrder
     parent_child_data = []
     
-    # Get all GRNs with their associated batches
-    grns = GRN.query.order_by(desc(GRN.created_at)).limit(20).all()
-    for grn in grns:
-        grn_batches = InventoryBatch.query.filter_by(grn_id=grn.id).all()
-        if grn_batches:
-            grn_data = {
-                'grn_number': grn.grn_number,
-                'grn_date': grn.created_at.date() if grn.created_at else None,
-                'status': grn.status,
-                'vendor_name': grn.purchase_order.supplier.name if grn.purchase_order and grn.purchase_order.supplier else 'Unknown',
-                'batch_numbers': [batch.batch_code for batch in grn_batches],
-                'item_name': grn_batches[0].item.name if grn_batches[0].item else 'Unknown Item',
-                'received_qty': sum(batch.total_quantity for batch in grn_batches),
-                'scrap_qty': sum(batch.qty_scrap or 0 for batch in grn_batches)
+    # Group GRNs by their parent documents (Purchase Orders)
+    purchase_orders = PurchaseOrder.query.filter(PurchaseOrder.grn_receipts_po.any()).order_by(desc(PurchaseOrder.created_at)).limit(10).all()
+    
+    for idx, po in enumerate(purchase_orders):
+        po_grns = po.grn_receipts_po
+        if po_grns:
+            # Prepare child GRNs data
+            child_grns = []
+            total_qty = 0
+            
+            for grn in po_grns:
+                grn_batches = InventoryBatch.query.filter_by(grn_id=grn.id).all()
+                if grn_batches:
+                    grn_qty = sum(batch.total_quantity for batch in grn_batches)
+                    total_qty += grn_qty
+                    
+                    child_grns.append({
+                        'grn_id': grn.id,
+                        'grn_number': grn.grn_number,
+                        'grn_date': grn.created_at.date() if grn.created_at else None,
+                        'status': grn.status,
+                        'batch_numbers': [batch.batch_code for batch in grn_batches],
+                        'item_name': grn_batches[0].item.name if grn_batches[0].item else 'Unknown Item',
+                        'received_qty': grn_qty,
+                        'scrap_qty': sum(batch.qty_scrap or 0 for batch in grn_batches)
+                    })
+            
+            # Create parent data structure
+            parent_data = {
+                'parent_id': f'po_{po.id}',
+                'parent_doc': po.po_number,
+                'date': po.created_at.date() if po.created_at else None,
+                'type': 'Purchase Order',
+                'vendor_customer': po.supplier.name if po.supplier else 'Unknown Supplier',
+                'status': po.status,
+                'total_qty': total_qty,
+                'grn_count': len(child_grns),
+                'child_grns': child_grns
             }
-            parent_child_data.append([grn_data])  # Wrap in list to match template expectation
+            parent_child_data.append(parent_data)
     
     # Get recent batch movements
     from models_batch_movement import BatchMovementLedger
