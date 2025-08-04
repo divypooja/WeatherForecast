@@ -215,9 +215,9 @@ def batch_wise_view():
         if grn_batches:
             grn_data = {
                 'grn_number': grn.grn_number,
-                'grn_date': grn.grn_date,
+                'grn_date': grn.created_at.date() if grn.created_at else None,
                 'status': grn.status,
-                'vendor_name': grn.supplier.name if grn.supplier else 'Unknown',
+                'vendor_name': grn.purchase_order.supplier.name if grn.purchase_order and grn.purchase_order.supplier else 'Unknown',
                 'batch_numbers': [batch.batch_code for batch in grn_batches],
                 'item_name': grn_batches[0].item.name if grn_batches[0].item else 'Unknown Item',
                 'received_qty': sum(batch.total_quantity for batch in grn_batches),
