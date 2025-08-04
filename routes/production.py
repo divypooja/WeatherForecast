@@ -89,12 +89,31 @@ def dashboard():
     # Products with BOM
     products_with_bom = db.session.query(Item).join(BOM).filter(BOM.is_active == True).all()
     
-    return render_template('production/dashboard.html', 
-                         stats=stats, 
+    # Prepare data structure for clean dashboard template
+    dashboard_stats = {
+        'production_target': stats.get('total_productions', 1),
+        'pending_review': stats.get('planned_productions', 0),
+        'active_job_stages': stats.get('in_progress_productions', 0),
+        'cost_per_unit': round(stats.get('avg_cost_per_unit', 0), 2),
+        'total_orders': stats.get('total_productions', 0),
+        'planned_orders': stats.get('planned_productions', 0),
+        'completed_orders': stats.get('completed_productions', 0)
+    }
+    
+    # Cost monitor data
+    cost_monitor = {
+        'material_cost': round(stats.get('avg_material_cost', 0), 2),
+        'labor_cost': round(stats.get('avg_labor_cost', 0), 2),
+        'overhead_cost': round(stats.get('avg_cost_per_unit', 0) * 0.1, 2),
+        'total_cost': round(stats.get('avg_cost_per_unit', 0), 2)
+    }
+    
+    return render_template('production/dashboard_clean.html', 
+                         stats=dashboard_stats,
+                         cost_monitor=cost_monitor,
                          recent_productions=recent_productions,
                          active_productions=active_productions,
-                         today_productions=today_productions,
-                         products_with_bom=products_with_bom)
+                         bom_status=products_with_bom[:5])
 
 @production_bp.route('/list')
 @login_required

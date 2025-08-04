@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+{% block title %}Production Command Center - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-industry"></i> Production Command Center</h1>
+            <p class="text-muted">Real-time production monitoring and control</p>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group">
+                <a href="{{ url_for('production.add') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Start Production
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card bg-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Production Target</h5>
+                            <h3>{{ stats.production_target or 1 }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-bullseye fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card bg-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Pending Review</h5>
+                            <h3>{{ stats.pending_review or 0 }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-hourglass-half fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card bg-info">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Active Job Stages</h5>
+                            <h3>{{ stats.active_job_stages or 0 }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-cogs fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card bg-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Cost per Unit</h5>
+                            <h3>₹{{ stats.cost_per_unit or 0 }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-rupee-sign fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Secondary Stats Row -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card bg-info">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total Orders</h6>
+                            <h4>{{ stats.total_orders or 0 }}</h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-clipboard-list fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-3">
+            <div class="card bg-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Planned Orders</h6>
+                            <h4>{{ stats.planned_orders or 0 }}</h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-calendar-alt fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-3">
+            <div class="card bg-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Completed</h6>
+                            <h4>{{ stats.completed_orders or 0 }}</h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <ul class="nav nav-tabs card-header-tabs" id="productionTabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#dashboard" data-bs-toggle="tab">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#orders" data-bs-toggle="tab">
+                                <i class="fas fa-clipboard-list"></i> Orders
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#jobwork" data-bs-toggle="tab">
+                                <i class="fas fa-tools"></i> Job Work Stages
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#batches" data-bs-toggle="tab">
+                                <i class="fas fa-cubes"></i> Batches
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#costing" data-bs-toggle="tab">
+                                <i class="fas fa-calculator"></i> Costing
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Production Pipeline -->
+    {% if active_productions %}
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-industry"></i> Active Production Pipeline</h5>
+                </div>
+                <div class="card-body">
+                    {% for production in active_productions %}
+                    <div class="row mb-3 p-3 border rounded">
+                        <div class="col-md-6">
+                            <h6 class="mb-1">{{ production.code }} - {{ production.item_name }}</h6>
+                            <p class="text-muted mb-0">{{ production.status }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <span class="badge bg-info">{{ production.quantity }} units</span>
+                        </div>
+                        <div class="col-md-3 text-end">
+                            <div class="progress mb-2" style="height: 8px;">
+                                <div class="progress-bar" role="progressbar" style="width: {{ production.progress or 0 }}%"></div>
+                            </div>
+                            <small class="text-muted">{{ production.progress or 0 }}% completed</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Smart Actions & Cost Monitor -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-bolt"></i> Smart Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('production.list') }}" class="btn btn-primary w-100">
+                                <i class="fas fa-list"></i> View All Productions
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('production.add') }}" class="btn btn-success w-100">
+                                <i class="fas fa-plus"></i> New Production
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('job_work.dashboard') }}" class="btn btn-info w-100">
+                                <i class="fas fa-tools"></i> Job Work
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('production.process_report') }}" class="btn btn-warning w-100">
+                                <i class="fas fa-chart-line"></i> Process Report
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-line"></i> Cost Monitor</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Material Cost/unit</span>
+                        <span class="fw-bold">₹{{ "%.2f"|format(cost_monitor.material_cost or 0) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Labor Cost/unit</span>
+                        <span class="fw-bold">₹{{ "%.2f"|format(cost_monitor.labor_cost or 0) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Overhead/unit</span>
+                        <span class="fw-bold">₹{{ "%.2f"|format(cost_monitor.overhead_cost or 0) }}</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <span class="fw-bold">Total Cost/unit</span>
+                        <span class="fw-bold text-success">₹{{ "%.2f"|format(cost_monitor.total_cost or 0) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Productions & BOM Status -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-clock"></i> Recent Productions</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_productions %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Production Code</th>
+                                    <th>Item</th>
+                                    <th>Quantity</th>
+                                    <th>Status</th>
+                                    <th>Progress</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for production in recent_productions %}
+                                <tr>
+                                    <td><code>{{ production.code }}</code></td>
+                                    <td>{{ production.item_name }}</td>
+                                    <td>{{ production.quantity }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if production.status == 'completed' else 'warning' }}">
+                                            {{ production.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="height: 6px;">
+                                            <div class="progress-bar" style="width: {{ production.progress or 0 }}%"></div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-industry fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No recent productions</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-sitemap"></i> BOM Status</h5>
+                </div>
+                <div class="card-body">
+                    {% if bom_status %}
+                    {% for bom in bom_status %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>{{ bom.name }}</span>
+                        <span class="badge bg-{{ 'success' if bom.status == 'active' else 'secondary' }}">{{ bom.status }}</span>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-sitemap fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">No BOMs available</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
