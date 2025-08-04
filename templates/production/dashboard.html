@@ -5,34 +5,69 @@
 {% block extra_css %}
 <style>
 .production-header {
-    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
     color: white;
-    border-radius: 15px;
-    padding: 2rem;
+    border-radius: 20px;
+    padding: 2.5rem;
     margin-bottom: 2rem;
+    box-shadow: 0 8px 25px rgba(44, 62, 80, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.production-header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+    animation: float 20s infinite linear;
+}
+
+@keyframes float {
+    0% { transform: translateX(-100px) translateY(-100px); }
+    100% { transform: translateX(100px) translateY(100px); }
 }
 
 .production-card {
     border: none;
-    border-radius: 15px;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
-    transition: all 0.3s ease;
-    margin-bottom: 1.5rem;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    margin-bottom: 2rem;
+    overflow: hidden;
 }
 
 .production-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    transform: translateY(-8px);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+}
+
+.production-card .card-header {
+    background: linear-gradient(135deg, #f8f9fc 0%, #e9ecef 100%);
+    border: none;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #e3e6f0;
 }
 
 .metric-card {
-    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+    background: #fff;
     border: none;
-    border-radius: 12px;
-    padding: 1.5rem;
+    border-radius: 16px;
+    padding: 2rem;
     height: 100%;
     position: relative;
     overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+    transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
 }
 
 .metric-card::before {
@@ -40,28 +75,45 @@
     position: absolute;
     top: 0;
     left: 0;
-    width: 4px;
+    width: 5px;
     height: 100%;
     background: var(--accent-color);
+    border-radius: 0 4px 4px 0;
 }
 
-.metric-card.primary::before { background: #007bff; }
-.metric-card.warning::before { background: #ffc107; }
-.metric-card.info::before { background: #17a2b8; }
-.metric-card.success::before { background: #28a745; }
+.metric-card.primary::before { background: linear-gradient(135deg, #007bff, #0056b3); }
+.metric-card.warning::before { background: linear-gradient(135deg, #ffc107, #e0a800); }
+.metric-card.info::before { background: linear-gradient(135deg, #17a2b8, #138496); }
+.metric-card.success::before { background: linear-gradient(135deg, #28a745, #1e7e34); }
 
 .metric-number {
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin: 0;
+    font-size: 3rem;
+    font-weight: 800;
+    margin: 0.5rem 0;
     color: #2c3e50;
+    line-height: 1;
+    background: linear-gradient(135deg, #2c3e50, #34495e);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .metric-label {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     color: #6c757d;
-    font-weight: 500;
-    margin-bottom: 0.5rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.metric-icon {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    font-size: 2.5rem;
+    opacity: 0.1;
+    z-index: 1;
 }
 
 .process-pipeline {
@@ -160,35 +212,87 @@
 
 .nav-tabs-custom {
     border: none;
-    margin-bottom: 2rem;
+    margin-bottom: 2.5rem;
+    background: #f8f9fc;
+    padding: 0.5rem;
+    border-radius: 50px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .nav-tabs-custom .nav-link {
     border: none;
-    border-radius: 25px;
-    margin-right: 0.5rem;
-    background: #f8f9fa;
+    border-radius: 30px;
+    margin-right: 0.25rem;
+    padding: 0.875rem 1.5rem;
+    background: transparent;
     color: #6c757d;
-    transition: all 0.3s ease;
+    font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    position: relative;
+}
+
+.nav-tabs-custom .nav-link:hover {
+    background: rgba(0, 123, 255, 0.1);
+    color: #007bff;
+    transform: translateY(-1px);
 }
 
 .nav-tabs-custom .nav-link.active {
-    background: #007bff;
+    background: linear-gradient(135deg, #007bff, #0056b3);
     color: white;
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+    transform: translateY(-2px);
 }
 
 .quick-action-btn {
-    border-radius: 25px;
-    padding: 0.75rem 1.5rem;
-    font-weight: 500;
-    transition: all 0.3s ease;
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     border: none;
     margin: 0.25rem;
+    position: relative;
+    overflow: hidden;
+    text-transform: none;
+}
+
+.quick-action-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.quick-action-btn:hover::before {
+    left: 100%;
 }
 
 .quick-action-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.status-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+    animation: pulse-dot 2s infinite;
+}
+
+.status-indicator.active { background: #28a745; }
+.status-indicator.pending { background: #ffc107; }
+.status-indicator.completed { background: #6c757d; }
+
+@keyframes pulse-dot {
+    0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
 }
 </style>
 {% endblock %}
@@ -198,14 +302,37 @@
     <!-- Header Section -->
     <div class="production-header">
         <div class="row align-items-center">
-            <div class="col">
-                <h1><i class="fas fa-industry"></i> Production Command Center</h1>
-                <p class="mb-0">Real-time production monitoring and control</p>
+            <div class="col-lg-8">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="me-4">
+                        <i class="fas fa-industry fa-3x opacity-75"></i>
+                    </div>
+                    <div>
+                        <h1 class="mb-2">Production Command Center</h1>
+                        <p class="mb-0 opacity-90">Real-time production monitoring and intelligent workflow management</p>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center">
+                    <span class="status-indicator active me-2"></span>
+                    <small class="opacity-75">System Status: Online</small>
+                    <span class="mx-3">|</span>
+                    <small class="opacity-75">Last Updated: {{ moment().format('HH:mm') }}</small>
+                </div>
             </div>
-            <div class="col-auto">
-                <button class="btn btn-light btn-lg quick-action-btn" onclick="window.location.href='{{ url_for('production.add_production') }}'">
-                    <i class="fas fa-plus"></i> Start Production
-                </button>
+            <div class="col-lg-4 text-end">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-light btn-lg quick-action-btn" onclick="window.location.href='{{ url_for('production.add_production') }}'">
+                        <i class="fas fa-plus me-2"></i> Start New Production
+                    </button>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-light btn-sm" onclick="location.reload()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <button class="btn btn-outline-light btn-sm" onclick="window.print()">
+                            <i class="fas fa-print"></i> Print
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -244,47 +371,75 @@
         <!-- Dashboard Tab -->
         <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
             <!-- Key Production Metrics -->
-            <div class="row mb-4">
-                <div class="col-md-3 mb-3">
+            <div class="row mb-5">
+                <div class="col-lg-3 col-md-6 mb-4">
                     <div class="metric-card primary">
-                        <div class="metric-label">Production Target</div>
+                        <i class="fas fa-bullseye metric-icon"></i>
+                        <div class="metric-label">Total Productions</div>
                         <div class="metric-number">{{ stats.total_productions }}</div>
-                        <div class="d-flex align-items-center mt-2">
-                            <i class="fas fa-bullseye text-primary me-2"></i>
-                            <small class="text-muted">Total Orders</small>
+                        <div class="d-flex align-items-center justify-content-between mt-3">
+                            <div class="d-flex align-items-center">
+                                <span class="status-indicator completed"></span>
+                                <small class="text-muted">All Orders</small>
+                            </div>
+                            <div class="text-primary">
+                                <i class="fas fa-arrow-up"></i>
+                                <small>+12%</small>
+                            </div>
                         </div>
                     </div>
                 </div>
                 
-                <div class="col-md-3 mb-3">
+                <div class="col-lg-3 col-md-6 mb-4">
                     <div class="metric-card warning">
-                        <div class="metric-label">Pending Review</div>
+                        <i class="fas fa-clock metric-icon"></i>
+                        <div class="metric-label">Awaiting Start</div>
                         <div class="metric-number">{{ stats.planned_productions }}</div>
-                        <div class="d-flex align-items-center mt-2">
-                            <i class="fas fa-clock text-warning me-2"></i>
-                            <small class="text-muted">Planned Orders</small>
+                        <div class="d-flex align-items-center justify-content-between mt-3">
+                            <div class="d-flex align-items-center">
+                                <span class="status-indicator pending"></span>
+                                <small class="text-muted">Planned</small>
+                            </div>
+                            <div class="text-warning">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <small>Review</small>
+                            </div>
                         </div>
                     </div>
                 </div>
                 
-                <div class="col-md-3 mb-3">
+                <div class="col-lg-3 col-md-6 mb-4">
                     <div class="metric-card info">
-                        <div class="metric-label">Active Job Stages</div>
+                        <i class="fas fa-cogs metric-icon"></i>
+                        <div class="metric-label">Active Lines</div>
                         <div class="metric-number">{{ stats.in_progress_productions }}</div>
-                        <div class="d-flex align-items-center mt-2">
-                            <i class="fas fa-spinner text-info me-2"></i>
-                            <small class="text-muted">In Progress</small>
+                        <div class="d-flex align-items-center justify-content-between mt-3">
+                            <div class="d-flex align-items-center">
+                                <span class="status-indicator active"></span>
+                                <small class="text-muted">Running</small>
+                            </div>
+                            <div class="text-info">
+                                <i class="fas fa-play"></i>
+                                <small>Live</small>
+                            </div>
                         </div>
                     </div>
                 </div>
                 
-                <div class="col-md-3 mb-3">
+                <div class="col-lg-3 col-md-6 mb-4">
                     <div class="metric-card success">
-                        <div class="metric-label">Cost per Unit</div>
+                        <i class="fas fa-rupee-sign metric-icon"></i>
+                        <div class="metric-label">Avg Cost/Unit</div>
                         <div class="metric-number">₹{{ "%.0f"|format(stats.avg_cost_per_unit or 0) }}</div>
-                        <div class="d-flex align-items-center mt-2">
-                            <i class="fas fa-check-circle text-success me-2"></i>
-                            <small class="text-muted">Completed: {{ stats.completed_productions }}</small>
+                        <div class="d-flex align-items-center justify-content-between mt-3">
+                            <div class="d-flex align-items-center">
+                                <span class="status-indicator completed"></span>
+                                <small class="text-muted">{{ stats.completed_productions }} Done</small>
+                            </div>
+                            <div class="text-success">
+                                <i class="fas fa-check"></i>
+                                <small>Optimal</small>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -364,32 +519,51 @@
             {% endif %}
 
             <!-- Smart Actions Section -->
-            <div class="row mb-4">
-                <div class="col-md-8">
+            <div class="row mb-5">
+                <div class="col-lg-8 mb-4">
                     <div class="production-card">
-                        <div class="card-header bg-transparent">
-                            <h5><i class="fas fa-bolt"></i> Smart Actions</h5>
+                        <div class="card-header">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <h5 class="mb-0"><i class="fas fa-bolt me-2"></i> Quick Actions</h5>
+                                <small class="text-muted">Production Management</small>
+                            </div>
                         </div>
                         <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <button class="btn btn-primary quick-action-btn w-100" onclick="window.location.href='{{ url_for('production.list_productions') }}'">
-                                        <i class="fas fa-list"></i> View All Productions
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <button class="btn btn-primary quick-action-btn w-100 d-flex align-items-center justify-content-center" onclick="window.location.href='{{ url_for('production.list_productions') }}'">
+                                        <i class="fas fa-list me-2"></i>
+                                        <div class="text-start">
+                                            <div>View All Productions</div>
+                                            <small class="opacity-75">Manage orders</small>
+                                        </div>
                                     </button>
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <button class="btn btn-info quick-action-btn w-100" onclick="window.location.href='{{ url_for('production.list_bom') }}'">
-                                        <i class="fas fa-sitemap"></i> Manage BOM
+                                <div class="col-md-6">
+                                    <button class="btn btn-info quick-action-btn w-100 d-flex align-items-center justify-content-center" onclick="window.location.href='{{ url_for('production.list_bom') }}'">
+                                        <i class="fas fa-sitemap me-2"></i>
+                                        <div class="text-start">
+                                            <div>BOM Management</div>
+                                            <small class="opacity-75">Bill of Materials</small>
+                                        </div>
                                     </button>
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <button class="btn btn-warning quick-action-btn w-100" onclick="window.location.href='{{ url_for('production.list_productions', status='planned') }}'">
-                                        <i class="fas fa-clock"></i> Planned Orders
+                                <div class="col-md-6">
+                                    <button class="btn btn-warning quick-action-btn w-100 d-flex align-items-center justify-content-center" onclick="window.location.href='{{ url_for('production.list_productions', status='planned') }}'">
+                                        <i class="fas fa-clock me-2"></i>
+                                        <div class="text-start">
+                                            <div>Planned Orders</div>
+                                            <small class="opacity-75">{{ stats.planned_productions }} pending</small>
+                                        </div>
                                     </button>
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <button class="btn btn-secondary quick-action-btn w-100" onclick="window.location.href='{{ url_for('reports.production_report') }}'">
-                                        <i class="fas fa-chart-bar"></i> Reports
+                                <div class="col-md-6">
+                                    <button class="btn btn-success quick-action-btn w-100 d-flex align-items-center justify-content-center" onclick="window.location.href='{{ url_for('reports.production_report') }}'">
+                                        <i class="fas fa-chart-line me-2"></i>
+                                        <div class="text-start">
+                                            <div>Analytics & Reports</div>
+                                            <small class="opacity-75">Performance insights</small>
+                                        </div>
                                     </button>
                                 </div>
                             </div>
@@ -397,32 +571,54 @@
                     </div>
                 </div>
                 
-                <div class="col-md-4">
-                    <div class="cost-widget">
-                        <h6><i class="fas fa-calculator"></i> Cost Monitor</h6>
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between">
-                                <span>Material Cost/unit</span>
-                                <strong>₹{{ "%.2f"|format(stats.avg_material_cost or 0) }}</strong>
-                            </div>
-                            <div class="progress mt-1" style="height: 4px;">
-                                <div class="progress-bar bg-info" style="width: 65%"></div>
-                            </div>
+                <div class="col-lg-4">
+                    <div class="production-card cost-widget">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-calculator me-2"></i> Cost Analytics</h6>
                         </div>
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between">
-                                <span>Labor Cost</span>
-                                <strong>₹{{ "%.2f"|format(stats.avg_labor_cost or 0) }}</strong>
+                        <div class="card-body">
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <span class="text-muted">Material Cost</span>
+                                        <br><small class="text-secondary">per unit</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <strong class="h5 text-info">₹{{ "%.2f"|format(stats.avg_material_cost or 0) }}</strong>
+                                    </div>
+                                </div>
+                                <div class="progress" style="height: 6px; border-radius: 10px;">
+                                    <div class="progress-bar bg-info" style="width: 65%; border-radius: 10px;"></div>
+                                </div>
+                                <small class="text-muted mt-1">65% of total cost</small>
                             </div>
-                            <div class="progress mt-1" style="height: 4px;">
-                                <div class="progress-bar bg-warning" style="width: 35%"></div>
+                            
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <span class="text-muted">Labor Cost</span>
+                                        <br><small class="text-secondary">per unit</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <strong class="h5 text-warning">₹{{ "%.2f"|format(stats.avg_labor_cost or 0) }}</strong>
+                                    </div>
+                                </div>
+                                <div class="progress" style="height: 6px; border-radius: 10px;">
+                                    <div class="progress-bar bg-warning" style="width: 35%; border-radius: 10px;"></div>
+                                </div>
+                                <small class="text-muted mt-1">35% of total cost</small>
                             </div>
-                        </div>
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between">
-                                <span>Scrap %</span>
-                                <strong class="text-{{ 'danger' if (stats.avg_scrap_percent or 0) > 5 else 'success' }}">{{ "%.1f"|format(stats.avg_scrap_percent or 0) }}%</strong>
-                            </div>
+                            
+                            <div class="alert alert-{{ 'danger' if (stats.avg_scrap_percent or 0) > 5 else 'success' }} alert-dismissible fade show py-2" role="alert">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>Scrap Rate</strong>
+                                        <br><small>Quality indicator</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <strong class="h5">{{ "%.1f"|format(stats.avg_scrap_percent or 0) }}%</strong>
+                                    </div>
+                                </div>
                         </div>
                         <div class="mb-3">
                             <div class="d-flex justify-content-between">
