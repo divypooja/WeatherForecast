@@ -60,8 +60,17 @@ class ProcessIntegrationService:
         
         # Create accounting cost allocation entry for BOM
         try:
-            from services.accounting_automation import AccountingAutomation
-            AccountingAutomation.create_bom_cost_allocation_entry(bom)
+            from services.authentic_accounting_integration import AuthenticAccountingIntegration
+            # Use authentic accounting integration for BOM cost allocation
+            overhead_account = AuthenticAccountingIntegration.get_overhead_account() 
+            wip_account = AuthenticAccountingIntegration.get_inventory_account('wip')
+            
+            if overhead_account and wip_account and bom.labor_cost_per_unit:
+                entries = [
+                    {'account': wip_account, 'type': 'debit', 'amount': bom.labor_cost_per_unit, 'narration': f'BOM labor cost allocation - {bom.item_name}'},
+                    {'account': overhead_account, 'type': 'credit', 'amount': bom.labor_cost_per_unit, 'narration': f'BOM labor cost allocation - {bom.item_name}'}
+                ]
+                AuthenticAccountingIntegration.create_simple_voucher('JNL', bom.bom_number, f'BOM Cost Allocation - {bom.item_name}', entries)
         except Exception as e:
             print(f"Warning: Failed to create BOM accounting entry: {str(e)}")
         

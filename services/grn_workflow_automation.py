@@ -2,6 +2,7 @@ from app import db
 from models_accounting import Account, AccountGroup, Voucher, VoucherType, JournalEntry
 from models_grn_workflow import GRNWorkflowStatus, VendorInvoice, VendorInvoiceGRNLink, PaymentVoucher, POFulfillmentStatus
 from models_accounting_settings import AdvancedAccountingSettings
+from services.authentic_accounting_integration import AuthenticAccountingIntegration
 from datetime import datetime, date
 from decimal import Decimal
 
@@ -10,42 +11,20 @@ class GRNWorkflowService:
     
     @staticmethod
     def setup_clearing_accounts():
-        """Setup required clearing accounts for GRN workflow"""
+        """Validate required clearing accounts exist for GRN workflow"""
         try:
-            # Create GRN Clearing Account
-            grn_clearing = Account.query.filter_by(name='GRN Clearing Account').first()
-            if not grn_clearing:
-                current_liabilities_group = db.session.query(AccountGroup).filter_by(name='Current Liabilities').first()
-                if current_liabilities_group:
-                    grn_clearing = Account(
-                        name='GRN Clearing Account',
-                        code='2150',
-                        account_group_id=current_liabilities_group.id,
-                        account_type='current_liability',
-                        is_active=True
-                    )
-                    db.session.add(grn_clearing)
+            # Check for existing authentic accounts instead of creating new ones
+            grn_clearing = AuthenticAccountingIntegration.get_grn_clearing_account()
+            gst_input = AuthenticAccountingIntegration.get_gst_account('input')
             
-            # Create GST Input Account
-            gst_input = Account.query.filter_by(name='GST Input Tax').first()
-            if not gst_input:
-                current_assets_group = db.session.query(AccountGroup).filter_by(name='Current Assets').first()
-                if current_assets_group:
-                    gst_input = Account(
-                        name='GST Input Tax',
-                        code='1180',
-                        account_group_id=current_assets_group.id,
-                        account_type='current_asset',
-                        is_active=True
-                    )
-                    db.session.add(gst_input)
-            
-            db.session.commit()
-            return True
+            if grn_clearing and gst_input:
+                return True
+            else:
+                print("Warning: Required authentic accounts not found. Please ensure GRN Clearing (2150) and GST Input (1180) accounts exist.")
+                return False
             
         except Exception as e:
-            db.session.rollback()
-            print(f"Error setting up clearing accounts: {e}")
+            print(f"Error validating clearing accounts: {e}")
             return False
     
     @staticmethod

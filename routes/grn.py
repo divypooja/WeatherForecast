@@ -8,6 +8,7 @@ from forms_grn import GRNForm, GRNLineItemForm, QuickReceiveForm, QuickReceivePO
 from services_batch_management import BatchManager, BatchValidator
 from utils_documents import DocumentUploadManager, save_uploaded_documents
 from models_document import create_document_record
+from services.authentic_accounting_integration import AuthenticAccountingIntegration
 from datetime import datetime, date
 from utils import generate_next_number
 from sqlalchemy import func, and_, or_

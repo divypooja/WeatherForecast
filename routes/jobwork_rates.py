@@ -4,6 +4,7 @@ from forms_jobwork_rates import JobWorkRateForm
 from models import JobWorkRate, Item
 from app import db
 from sqlalchemy import desc
+from services.authentic_accounting_integration import AuthenticAccountingIntegration
 
 jobwork_rates_bp = Blueprint('jobwork_rates', __name__)
 

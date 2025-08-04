@@ -4,6 +4,7 @@ from flask_wtf import FlaskForm
 from forms import ProductionForm, BOMForm, BOMItemForm, BOMProcessForm
 from models import Production, Item, BOM, BOMItem, BOMProcess, Supplier, ItemBatch, ProductionBatch
 from services.process_integration import ProcessIntegrationService
+from services.authentic_accounting_integration import AuthenticAccountingIntegration
 from app import db
 from sqlalchemy import func, or_
 from utils import generate_production_number

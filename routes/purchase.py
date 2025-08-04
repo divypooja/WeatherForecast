@@ -10,7 +10,7 @@ from sqlalchemy import func
 from datetime import datetime
 from utils import generate_po_number
 from services.notification_helpers import send_email_notification, send_whatsapp_notification, send_email_with_attachment
-from services.accounting_automation import AccountingAutomation
+from services.authentic_accounting_integration import AuthenticAccountingIntegration
 from utils_documents import get_documents_for_transaction
 
 purchase_bp = Blueprint('purchase', __name__)

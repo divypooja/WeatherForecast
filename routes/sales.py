@@ -7,6 +7,7 @@ from sqlalchemy import func
 from datetime import datetime
 from utils import generate_so_number
 from utils_documents import get_documents_for_transaction
+from services.authentic_accounting_integration import AuthenticAccountingIntegration
 
 sales_bp = Blueprint('sales', __name__)
 
