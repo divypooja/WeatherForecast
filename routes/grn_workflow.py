@@ -141,49 +141,16 @@ def list_invoices():
         page = request.args.get('page', 1, type=int)
         status_filter = request.args.get('status', 'all')
         
-        # Try to get actual VendorInvoice data or create sample data
-        try:
-            from models_grn_workflow import VendorInvoice
-            query = VendorInvoice.query
-            
-            if status_filter != 'all':
-                query = query.filter(VendorInvoice.status == status_filter)
-            
-            invoices = query.order_by(VendorInvoice.created_at.desc()).paginate(
-                page=page, per_page=20, error_out=False
-            )
-        except:
-            # If VendorInvoice model doesn't exist, create sample data
-            from datetime import datetime, date
-            sample_invoices = []
-            
-            # Get some suppliers for sample data
-            suppliers = Supplier.query.limit(5).all()
-            for i, supplier in enumerate(suppliers):
-                sample_invoices.append(type('MockInvoice', (), {
-                    'id': i + 1,
-                    'invoice_number': f'INV-2025-{str(i+1).zfill(3)}',
-                    'vendor': supplier,
-                    'invoice_date': date.today(),
-                    'due_date': date.today(),
-                    'total_amount': 10000.0,
-                    'outstanding_amount': 5000.0,
-                    'status': 'pending' if i % 2 == 0 else 'overdue'
-                })())
-            
-            # Create pagination-like object with sample data
-            invoices = type('MockPagination', (), {
-                'items': sample_invoices,
-                'total': len(sample_invoices),
-                'pages': 1,
-                'page': 1,
-                'per_page': 20,
-                'has_prev': False,
-                'has_next': False,
-                'prev_num': None,
-                'next_num': None,
-                'iter_pages': lambda: [1]
-            })()
+        # Get actual VendorInvoice data
+        from models_grn_workflow import VendorInvoice
+        query = VendorInvoice.query
+        
+        if status_filter != 'all':
+            query = query.filter(VendorInvoice.status == status_filter)
+        
+        invoices = query.order_by(VendorInvoice.created_at.desc()).paginate(
+            page=page, per_page=20, error_out=False
+        )
         
         return render_template('grn_workflow/invoices_list.html',
                              invoices=invoices,
