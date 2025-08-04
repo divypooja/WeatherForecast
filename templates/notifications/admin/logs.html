@@ -134,7 +134,8 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for log in logs.items if logs else [] %}
+                        {% if logs and logs.items %}
+                            {% for log in logs.items %}
                         <tr>
                             <td>
                                 <small>{{ log.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
@@ -184,6 +185,7 @@
                                 </div>
                             </td>
                         </tr>
+                            {% endfor %}
                         {% else %}
                         <tr>
                             <td colspan="7" class="text-center text-muted py-4">
@@ -191,7 +193,7 @@
                                 No notification logs found
                             </td>
                         </tr>
-                        {% endfor %}
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
