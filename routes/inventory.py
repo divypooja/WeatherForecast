@@ -16,57 +16,95 @@ inventory_bp = Blueprint('inventory', __name__)
 @inventory_bp.route('/dashboard')
 @login_required
 def dashboard():
-    """Enhanced inventory dashboard with multi-state tracking and modern UI"""
+    """Optimized inventory dashboard with efficient database queries"""
     try:
         from services_unified_inventory import UnifiedInventoryService
         
-        # Get unified dashboard statistics
-        stats = UnifiedInventoryService.get_inventory_dashboard_stats()
+        # Single optimized query for all item statistics with corrected case syntax
+        item_stats = db.session.query(
+            func.count(Item.id).label('total_items'),
+            func.sum(func.case(
+                [(Item.item_type == 'raw_material', 1)], else_=0
+            )).label('raw_material_items'),
+            func.sum(func.case(
+                [(Item.item_type == 'finished_good', 1)], else_=0
+            )).label('finished_goods_items'),
+            func.sum(func.case(
+                [(func.coalesce(Item.current_stock, 0) == 0, 1)], else_=0
+            )).label('out_of_stock_items'),
+            func.sum(func.case(
+                [(and_(
+                    func.coalesce(Item.current_stock, 0) <= func.coalesce(Item.minimum_stock, 0),
+                    func.coalesce(Item.current_stock, 0) > 0
+                ), 1)], else_=0
+            )).label('low_stock_items'),
+            func.sum(
+                func.coalesce(Item.current_stock, 0) * func.coalesce(Item.unit_price, 0)
+            ).label('total_stock_value')
+        ).first()
         
-        # Enhanced multi-state inventory counts
-        raw_material_count = Item.query.filter_by(item_type='raw_material').count()
-        finished_goods_count = Item.query.filter_by(item_type='finished_good').count()
+        # Get unified dashboard statistics with fallback
+        try:
+            unified_stats = UnifiedInventoryService.get_inventory_dashboard_stats()
+            wip_items = unified_stats.get('wip_items', 0)
+            scrap_items = unified_stats.get('scrap_items', 0)
+        except:
+            wip_items = scrap_items = 0
         
-        # Add multi-state data to stats
-        stats.update({
-            'raw_material_items': raw_material_count,
-            'finished_goods_items': finished_goods_count,
-            'wip_items': stats.get('wip_items', 0),
-            'scrap_items': stats.get('scrap_items', 0)
-        })
+        # Consolidate stats
+        stats = {
+            'total_items': item_stats.total_items or 0,
+            'raw_material_items': item_stats.raw_material_items or 0,
+            'finished_goods_items': item_stats.finished_goods_items or 0,
+            'out_of_stock_items': item_stats.out_of_stock_items or 0,
+            'low_stock_items': item_stats.low_stock_items or 0,
+            'total_stock_value': item_stats.total_stock_value or 0,
+            'wip_items': wip_items,
+            'scrap_items': scrap_items,
+            'work_alerts': (item_stats.low_stock_items or 0) + (item_stats.out_of_stock_items or 0),
+            'low_stock': item_stats.low_stock_items or 0,
+            'out_of_stock': item_stats.out_of_stock_items or 0
+        }
         
-        # Recent items and low stock alerts
+        # Optimized queries with proper joins and limits
         recent_items = Item.query.order_by(Item.created_at.desc()).limit(8).all()
         
-        # Get low stock items using minimum_stock field
         low_stock_items = Item.query.filter(
-            func.coalesce(Item.current_stock, 0) <= func.coalesce(Item.minimum_stock, 0),
-            func.coalesce(Item.current_stock, 0) > 0
+            and_(
+                func.coalesce(Item.current_stock, 0) <= func.coalesce(Item.minimum_stock, 0),
+                func.coalesce(Item.current_stock, 0) > 0
+            )
         ).limit(15).all()
         
-        # UOM summary
-        uom_stats = db.session.query(Item.unit_of_measure, func.count(Item.id)).group_by(Item.unit_of_measure).all()
+        # UOM statistics
+        uom_stats = db.session.query(
+            Item.unit_of_measure, 
+            func.count(Item.id)
+        ).group_by(Item.unit_of_measure).all()
         
     except Exception as e:
-        # Fallback to basic statistics if unified service fails
-        total_items = Item.query.count()
-        out_of_stock = Item.query.filter(func.coalesce(Item.current_stock, 0) == 0).count()
-        low_stock = Item.query.filter(
-            func.coalesce(Item.current_stock, 0) <= func.coalesce(Item.minimum_stock, 0)
-        ).count()
+        # Optimized fallback with single query and corrected case syntax
+        fallback_stats = db.session.query(
+            func.count(Item.id).label('total'),
+            func.sum(func.case([(func.coalesce(Item.current_stock, 0) == 0, 1)], else_=0)).label('out_of_stock'),
+            func.sum(func.case([(func.coalesce(Item.current_stock, 0) <= func.coalesce(Item.minimum_stock, 0), 1)], else_=0)).label('low_stock'),
+            func.sum(func.coalesce(Item.current_stock, 0) * func.coalesce(Item.unit_price, 0)).label('total_value')
+        ).first()
         
         stats = {
-            'total_items': total_items,
-            'low_stock_items': low_stock,
-            'total_stock_value': db.session.query(func.sum(
-                func.coalesce(Item.current_stock, 0) * func.coalesce(Item.unit_price, 0)
-            )).scalar() or 0,
-            'out_of_stock_items': out_of_stock,
-            'raw_material_items': Item.query.filter_by(item_type='raw_material').count(),
-            'finished_goods_items': Item.query.filter_by(item_type='finished_good').count(),
+            'total_items': fallback_stats.total or 0,
+            'low_stock_items': fallback_stats.low_stock or 0,
+            'total_stock_value': fallback_stats.total_value or 0,
+            'out_of_stock_items': fallback_stats.out_of_stock or 0,
+            'raw_material_items': 0,
+            'finished_goods_items': 0,
             'wip_items': 0,
-            'scrap_items': 0
+            'scrap_items': 0,
+            'work_alerts': (fallback_stats.low_stock or 0) + (fallback_stats.out_of_stock or 0),
+            'low_stock': fallback_stats.low_stock or 0,
+            'out_of_stock': fallback_stats.out_of_stock or 0
         }
+        
         recent_items = Item.query.order_by(Item.created_at.desc()).limit(8).all()
         low_stock_items = Item.query.filter(
             func.coalesce(Item.current_stock, 0) <= func.coalesce(Item.minimum_stock, 0)
@@ -555,21 +593,31 @@ def add_item():
             flash('Item code already exists', 'danger')
             return render_template('inventory/form.html', form=form, title='Add Item')
         
-        item_type_obj = ItemType.query.get(int(form.item_type.data))
-        item = Item(
-            code=form.code.data,
-            name=form.name.data,
-            description=form.description.data,
-            unit_of_measure=form.unit_of_measure.data,
-            hsn_code=form.hsn_code.data,
-            gst_rate=form.gst_rate.data,
-            current_stock=form.current_stock.data,
-            minimum_stock=form.minimum_stock.data,
-            unit_price=form.unit_price.data,
-            unit_weight=form.unit_weight.data,
-            item_type_id=int(form.item_type.data),
-            item_type=item_type_obj.name.lower() if item_type_obj else 'material'
-        )
+        # Optimized item creation with proper error handling
+        try:
+            item_type_obj = ItemType.query.get(int(form.item_type.data)) if form.item_type.data else None
+            
+            item = Item()
+            item.code = form.code.data
+            item.name = form.name.data
+            item.description = form.description.data
+            item.unit_of_measure = form.unit_of_measure.data
+            item.hsn_code = form.hsn_code.data
+            item.gst_rate = form.gst_rate.data or 0.0
+            item.current_stock = form.current_stock.data or 0.0
+            item.minimum_stock = form.minimum_stock.data or 0.0
+            item.unit_price = form.unit_price.data or 0.0
+            item.unit_weight = form.unit_weight.data or 0.0
+            
+            if item_type_obj:
+                item.item_type_id = item_type_obj.id
+                item.item_type = item_type_obj.name.lower()
+            else:
+                item.item_type = 'material'
+                
+        except Exception as e:
+            flash(f'Error creating item: {str(e)}', 'danger')
+            return render_template('inventory/form.html', form=form, title='Add Item')
         db.session.add(item)
         db.session.commit()
         flash('Item added successfully', 'success')

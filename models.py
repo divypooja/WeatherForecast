@@ -50,8 +50,13 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.String(20), nullable=False, default='staff')  # admin, staff
-    is_active = db.Column(db.Boolean, default=True)
+    active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    @property
+    def is_active(self):
+        """Required by Flask-Login"""
+        return self.active
     
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -112,12 +117,11 @@ class User(UserMixin, db.Model):
             existing.granted_by = granted_by_user_id
             existing.granted_at = datetime.utcnow()
         else:
-            user_permission = UserPermission(
-                user_id=self.id,
-                permission_id=permission.id,
-                granted=True,
-                granted_by=granted_by_user_id
-            )
+            user_permission = UserPermission()
+            user_permission.user_id = self.id
+            user_permission.permission_id = permission.id
+            user_permission.granted = True
+            user_permission.granted_by = granted_by_user_id
             db.session.add(user_permission)
         
         return True
@@ -519,17 +523,16 @@ class ItemBatch(db.Model):
         timestamp = datetime.now().strftime("%Y%m%d%H%M")
         output_batch_number = f"{output_batch_prefix}-{self.batch_number}-{timestamp}"
         
-        # Create new batch for output item
-        output_batch = ItemBatch(
-            item_id=output_item_id,
-            batch_number=output_batch_number,
-            qty_finished=output_quantity,
-            manufacture_date=datetime.now().date(),
-            storage_location=self.storage_location,
-            quality_status='pending_inspection',
-            created_by=self.created_by,
-            quality_notes=f"Produced from input batch: {self.batch_number}"
-        )
+        # Create new batch for output item with optimized constructor
+        output_batch = ItemBatch()
+        output_batch.item_id = output_item_id
+        output_batch.batch_number = output_batch_number
+        output_batch.qty_finished = output_quantity
+        output_batch.manufacture_date = datetime.now().date()
+        output_batch.storage_location = self.storage_location
+        output_batch.quality_status = 'pending_inspection'
+        output_batch.created_by = self.created_by
+        output_batch.quality_notes = f"Produced from input batch: {self.batch_number}"
         
         return output_batch
     
@@ -1863,15 +1866,14 @@ class JobWorkBatch(db.Model):
             
             # Create output batch if finished quantity > 0 and output item specified
             if finished_qty > 0 and self.output_item_id:
-                output_batch = ItemBatch(
-                    item_id=self.output_item_id,
-                    batch_number=f"{self.input_batch.batch_number}-{self.process_name}",
-                    qty_finished=finished_qty,
-                    qty_scrap=scrap_qty,
-                    manufacture_date=self.return_date,
-                    quality_status='good' if scrap_qty == 0 else 'mixed',
-                    created_by=self.created_by
-                )
+                output_batch = ItemBatch()
+                output_batch.item_id = self.output_item_id
+                output_batch.batch_number = f"{self.input_batch.batch_number}-{self.process_name}"
+                output_batch.qty_finished = finished_qty
+                output_batch.qty_scrap = scrap_qty
+                output_batch.manufacture_date = self.return_date
+                output_batch.quality_status = 'good' if scrap_qty == 0 else 'mixed'
+                output_batch.created_by = self.created_by
                 db.session.add(output_batch)
                 db.session.flush()
                 self.output_batch_id = output_batch.id
@@ -2005,18 +2007,17 @@ class Production(db.Model):
             # Generate batch number
             batch_number = f"PROD-{self.production_number}-{self.production_date.strftime('%Y%m%d')}"
             
-            # Create new batch for finished goods
-            output_batch = ItemBatch(
-                item_id=self.item_id,
-                batch_number=batch_number,
-                qty_finished=self.quantity_good,
-                qty_scrap=self.quantity_damaged,
-                total_quantity=self.quantity_good,
-                manufacture_date=self.production_date,
-                quality_status='good' if self.quality_control_passed else 'pending_inspection',
-                storage_location='Finished Goods',
-                created_by=self.created_by
-            )
+            # Create new batch for finished goods with optimized constructor
+            output_batch = ItemBatch()
+            output_batch.item_id = self.item_id
+            output_batch.batch_number = batch_number
+            output_batch.qty_finished = self.quantity_good
+            output_batch.qty_scrap = self.quantity_damaged
+            output_batch.total_quantity = self.quantity_good
+            output_batch.manufacture_date = self.production_date
+            output_batch.quality_status = 'good' if self.quality_control_passed else 'pending_inspection'
+            output_batch.storage_location = 'Finished Goods'
+            output_batch.created_by = self.created_by
             
             db.session.add(output_batch)
             db.session.flush()

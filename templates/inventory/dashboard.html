@@ -155,14 +155,15 @@
                                     <div class="row">
                                         <div class="col-6">
                                             <div class="progress" style="height: 4px;">
-                                                <div class="progress-bar bg-{{ 'danger' if (item.current_stock or 0) <= (item.minimum_stock or 0) else 'success' }}" 
-                                                     style="width: {{ ((item.current_stock or 0) / (item.minimum_stock or 1) * 100) if item.minimum_stock else 100 }}%"></div>
+                                                {% set stock_percentage = ((item.current_stock or 0) / (item.minimum_stock or 1) * 100) if item.minimum_stock else 100 %}
+                                                {% set stock_color = 'danger' if (item.current_stock or 0) <= (item.minimum_stock or 0) else 'success' %}
+                                                <div class="progress-bar bg-{{ stock_color }}" style="width: {{ stock_percentage }}%"></div>
                                             </div>
                                         </div>
                                         <div class="col-6">
                                             <div class="progress" style="height: 4px;">
-                                                <div class="progress-bar bg-info" 
-                                                     style="width: {{ ((item.unit_price or 0) * (item.current_stock or 0) / 1000) if item.unit_price else 0 }}%"></div>
+                                                {% set value_percentage = ((item.unit_price or 0) * (item.current_stock or 0) / 1000) if item.unit_price else 0 %}
+                                                <div class="progress-bar bg-info" style="width: {{ value_percentage }}%"></div>
                                             </div>
                                         </div>
                                     </div>

@@ -14,63 +14,104 @@ class UnifiedInventoryService:
     
     @staticmethod
     def get_inventory_dashboard_stats():
-        """Get dashboard statistics per user requirements"""
-        
-        # Get basic counts
-        total_items = Item.query.count()
-        
-        # Use the new view for efficient calculations
-        stats_query = db.session.execute(text("""
-            SELECT 
-                COUNT(*) as total_items,
-                COUNT(CASE WHEN stock_status = 'Low Stock' THEN 1 END) as low_stock_items,
-                COUNT(CASE WHEN stock_status = 'Out of Stock' THEN 1 END) as out_of_stock_items,
-                SUM(CASE WHEN finished_qty > 0 THEN finished_qty * COALESCE(i.unit_price, 0) ELSE 0 END) as stock_value
-            FROM inventory_multi_state ims
-            LEFT JOIN items i ON ims.item_id = i.id
-        """)).fetchone()
-        
-        return {
-            'total_items': stats_query.total_items or 0,
-            'low_stock_items': stats_query.low_stock_items or 0,
-            'out_of_stock_items': stats_query.out_of_stock_items or 0,
-            'total_stock_value': stats_query.stock_value or 0.0
-        }
+        """Optimized dashboard statistics with fallback handling"""
+        try:
+            # Try using the multi-state view if it exists
+            stats_query = db.session.execute(text("""
+                SELECT 
+                    COUNT(*) as total_items,
+                    COUNT(CASE WHEN stock_status = 'Low Stock' THEN 1 END) as low_stock_items,
+                    COUNT(CASE WHEN stock_status = 'Out of Stock' THEN 1 END) as out_of_stock_items,
+                    SUM(CASE WHEN finished_qty > 0 THEN finished_qty * COALESCE(i.unit_price, 0) ELSE 0 END) as stock_value
+                FROM inventory_multi_state ims
+                LEFT JOIN items i ON ims.item_id = i.id
+            """)).fetchone()
+            
+            return {
+                'total_items': stats_query.total_items or 0,
+                'low_stock_items': stats_query.low_stock_items or 0,
+                'out_of_stock_items': stats_query.out_of_stock_items or 0,
+                'total_stock_value': stats_query.stock_value or 0.0
+            }
+        except Exception:
+            # Fallback to direct item queries if view doesn't exist
+            from sqlalchemy import func
+            
+            stats = db.session.query(
+                func.count(Item.id).label('total'),
+                func.sum(func.case(
+                    [(func.coalesce(Item.current_stock, 0) <= func.coalesce(Item.minimum_stock, 0), 1)], 
+                    else_=0
+                )).label('low_stock'),
+                func.sum(func.case(
+                    [(func.coalesce(Item.current_stock, 0) == 0, 1)], 
+                    else_=0
+                )).label('out_of_stock'),
+                func.sum(
+                    func.coalesce(Item.current_stock, 0) * func.coalesce(Item.unit_price, 0)
+                ).label('stock_value')
+            ).first()
+            
+            return {
+                'total_items': stats.total or 0,
+                'low_stock_items': stats.low_stock or 0,
+                'out_of_stock_items': stats.out_of_stock or 0,
+                'total_stock_value': stats.stock_value or 0.0
+            }
     
     @staticmethod
     def get_multi_state_inventory():
-        """Get multi-state inventory breakdown per user requirements"""
-        
-        result = db.session.execute(text("""
-            SELECT 
-                item_code,
-                item_name,
-                item_type,
-                uom,
-                raw_qty,
-                wip_qty,
-                finished_qty,
-                scrap_qty,
-                total_qty,
-                available_qty,
-                stock_status
-            FROM inventory_multi_state
-            ORDER BY item_code
-        """)).fetchall()
-        
-        return [{
-            'item_code': row.item_code,
-            'item_name': row.item_name,
-            'item_type': row.item_type,
-            'uom': row.uom,
-            'raw': row.raw_qty,
-            'wip': row.wip_qty,
-            'finished': row.finished_qty,
-            'scrap': row.scrap_qty,
-            'total': row.total_qty,
-            'available': row.available_qty,
-            'status': row.stock_status
-        } for row in result]
+        """Optimized multi-state inventory with fallback"""
+        try:
+            # Try using the multi-state view
+            result = db.session.execute(text("""
+                SELECT 
+                    item_code,
+                    item_name,
+                    item_type,
+                    uom,
+                    raw_qty,
+                    wip_qty,
+                    finished_qty,
+                    scrap_qty,
+                    total_qty,
+                    available_qty,
+                    stock_status
+                FROM inventory_multi_state
+                ORDER BY item_code
+            """)).fetchall()
+            
+            return [{
+                'item_code': row.item_code,
+                'item_name': row.item_name,
+                'item_type': row.item_type,
+                'uom': row.uom,
+                'raw': row.raw_qty,
+                'wip': row.wip_qty,
+                'finished': row.finished_qty,
+                'scrap': row.scrap_qty,
+                'total': row.total_qty,
+                'available': row.available_qty,
+                'status': row.stock_status
+            } for row in result]
+            
+        except Exception:
+            # Fallback to direct Item queries
+            items = Item.query.order_by(Item.code).all()
+            
+            return [{
+                'item_code': item.code,
+                'item_name': item.name,
+                'item_type': item.item_type or 'material',
+                'uom': item.unit_of_measure,
+                'raw': item.current_stock or 0,
+                'wip': 0,
+                'finished': 0,
+                'scrap': 0,
+                'total': item.current_stock or 0,
+                'available': item.current_stock or 0,
+                'status': 'In Stock' if (item.current_stock or 0) > 0 else 'Out of Stock'
+            } for item in items]
     
     @staticmethod
     def get_batch_tracking_view():
