@@ -141,8 +141,10 @@ class GRNWorkflowService:
                 transaction_date=vendor_invoice.invoice_date,
                 narration=f"Vendor invoice {vendor_invoice.invoice_number}",
                 total_amount=vendor_invoice.total_amount,
-                reference_type='vendor_invoice',
-                reference_id=vendor_invoice.id
+                reference_number=vendor_invoice.invoice_number,
+                party_id=vendor_invoice.vendor_id,
+                party_type='supplier',
+                created_by=1  # Default admin user
             )
             db.session.add(voucher)
             db.session.flush()
@@ -182,7 +184,9 @@ class GRNWorkflowService:
                     entry_type='debit',
                     amount=vendor_invoice.base_amount,
                     narration=f"Invoice processing - {vendor_invoice.invoice_number}",
-                    transaction_date=voucher.transaction_date
+                    transaction_date=voucher.transaction_date,
+                    reference_type='vendor_invoice',
+                    reference_id=vendor_invoice.id
                 )
                 db.session.add(clearing_entry)
             
@@ -194,7 +198,9 @@ class GRNWorkflowService:
                     entry_type='debit',
                     amount=vendor_invoice.gst_amount,
                     narration=f"GST on invoice - {vendor_invoice.invoice_number}",
-                    transaction_date=voucher.transaction_date
+                    transaction_date=voucher.transaction_date,
+                    reference_type='vendor_invoice',
+                    reference_id=vendor_invoice.id
                 )
                 db.session.add(gst_entry)
             
@@ -234,7 +240,9 @@ class GRNWorkflowService:
                 entry_type='credit',
                 amount=vendor_invoice.total_amount,
                 narration=f"Vendor liability - {vendor_invoice.invoice_number}",
-                transaction_date=voucher.transaction_date
+                transaction_date=voucher.transaction_date,
+                reference_type='vendor_invoice',
+                reference_id=vendor_invoice.id
             )
             db.session.add(vendor_entry)
             
