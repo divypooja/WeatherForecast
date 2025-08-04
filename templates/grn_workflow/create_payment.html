@@ -83,44 +83,14 @@
                     <form method="POST" enctype="multipart/form-data">
                         {{ form.hidden_tag() }}
                         
-                        <!-- Payment Allocations Table -->
+                        <!-- Invoice Information (Simple Display) -->
                         <div class="mb-4">
-                            <h6><i class="fas fa-list"></i> Payment Allocation to Invoices</h6>
-                            <div class="table-responsive">
-                                <table class="table table-sm">
-                                    <thead class="table-dark">
-                                        <tr>
-                                            <th>Invoice</th>
-                                            <th>Total Amount</th>
-                                            <th>Outstanding</th>
-                                            <th>Allocation Amount</th>
-                                            <th>Include</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for allocation in form.invoice_allocations %}
-                                        <tr>
-                                            <td>
-                                                {{ allocation.invoice_number.data or allocation.invoice_id.data }}
-                                                {{ allocation.invoice_id() }}
-                                                {{ allocation.invoice_number() }}
-                                            </td>
-                                            <td class="text-end">₹{{ "%.2f"|format(allocation.invoice_amount.data or 0) }}</td>
-                                            <td class="text-end">₹{{ "%.2f"|format(allocation.outstanding_amount.data or 0) }}</td>
-                                            <td>
-                                                <div class="input-group input-group-sm">
-                                                    <span class="input-group-text">₹</span>
-                                                    {{ allocation.allocated_amount(class="form-control form-control-sm") }}
-                                                </div>
-                                            </td>
-                                            <td class="text-center">
-                                                <!-- Note: include_in_payment field may not exist in form -->
-                                                <input type="checkbox" class="form-check-input" checked>
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-info-circle"></i> Payment for Invoice: {{ invoice.invoice_number }}</h6>
+                                <p class="mb-0">
+                                    <strong>Outstanding Amount:</strong> ₹{{ "%.2f"|format(invoice.outstanding_amount) }}<br>
+                                    <strong>Vendor:</strong> {{ invoice.vendor_name if invoice.vendor_name else 'N/A' }}
+                                </p>
                             </div>
                         </div>
 

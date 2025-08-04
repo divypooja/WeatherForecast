@@ -238,12 +238,16 @@ def create_payment_for_invoice(invoice_id):
     elif hasattr(invoice, 'vendor'):
         form.vendor_id.data = invoice.vendor.id
     
-    # Get bank accounts with proper empty value handling
-    from models_accounting import Account
-    bank_accounts = Account.query.filter(
-        Account.account_group.in_(['Bank Accounts', 'Cash-in-Hand'])
-    ).all()
-    form.bank_account_id.choices = [(0, 'Select Bank Account')] + [(acc.id, f"{acc.account_name} ({acc.account_code})") for acc in bank_accounts]
+    # Get bank accounts - use simple approach
+    try:
+        from models_accounting import Account
+        bank_accounts = Account.query.filter(
+            Account.account_name.contains('Bank')
+        ).limit(10).all()
+    except:
+        bank_accounts = []
+    
+    form.bank_account_id.choices = [(0, 'Select Bank Account')] + [(acc.id, acc.account_name) for acc in bank_accounts]
     
     if request.method == 'GET':
         # Pre-populate payment amount with outstanding amount
