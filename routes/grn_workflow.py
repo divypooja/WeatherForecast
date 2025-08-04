@@ -18,16 +18,20 @@ grn_workflow_bp = Blueprint('grn_workflow', __name__, url_prefix='/grn-workflow'
 def dashboard():
     """GRN workflow dashboard"""
     try:
-        # Get workflow statistics
+        # Get workflow statistics (with safe queries)
         stats = {
-            'pending_invoices': GRN.query.join(GRNWorkflowStatus).filter(
-                GRNWorkflowStatus.material_received == True,
-                GRNWorkflowStatus.invoice_received == False
+            'pending_invoices': db.session.query(GRN).join(
+                GRNWorkflowStatus, GRN.id == GRNWorkflowStatus.grn_id, isouter=True
+            ).filter(
+                db.or_(
+                    GRNWorkflowStatus.invoice_received == False,
+                    GRNWorkflowStatus.invoice_received.is_(None)
+                )
             ).count(),
-            'pending_payments': VendorInvoice.query.filter(
+            'pending_payments': db.session.query(VendorInvoice).filter(
                 VendorInvoice.outstanding_amount > 0
             ).count(),
-            'completed_workflows': GRNWorkflowStatus.query.filter(
+            'completed_workflows': db.session.query(GRNWorkflowStatus).filter(
                 GRNWorkflowStatus.payment_made == True
             ).count(),
             'total_grns': GRN.query.count()
@@ -38,10 +42,14 @@ def dashboard():
             GRNWorkflowStatus, GRN.id == GRNWorkflowStatus.grn_id, isouter=True
         ).order_by(GRN.created_at.desc()).limit(10).all()
         
-        # Pending invoices
-        pending_invoices = db.session.query(GRN).join(GRNWorkflowStatus).filter(
-            GRNWorkflowStatus.material_received == True,
-            GRNWorkflowStatus.invoice_received == False
+        # Pending invoices (GRNs without invoices)
+        pending_invoices = db.session.query(GRN).join(
+            GRNWorkflowStatus, GRN.id == GRNWorkflowStatus.grn_id, isouter=True
+        ).filter(
+            db.or_(
+                GRNWorkflowStatus.invoice_received == False,
+                GRNWorkflowStatus.invoice_received.is_(None)
+            )
         ).limit(5).all()
         
         # Outstanding vendor payments
