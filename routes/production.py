@@ -110,27 +110,27 @@ def api_bom_tree():
             """Build a tree node for a BOM"""
             node = {
                 'bom_code': bom.bom_code,
-                'item_name': bom.item.name if bom.item else 'Unknown Item',
-                'quantity': bom.quantity,
-                'uom': bom.item.unit_of_measure.symbol if bom.item and bom.item.unit_of_measure else 'PCS',
+                'item_name': bom.product.name if bom.product else 'Unknown Item',
+                'quantity': bom.output_quantity,
+                'uom': bom.output_uom.symbol if bom.output_uom else (bom.product.unit_of_measure.symbol if bom.product and bom.product.unit_of_measure else 'PCS'),
                 'children': []
             }
             
             # Add child BOMs from BOM items
             for bom_item in bom.items:
-                if bom_item.item:
-                    # Check if this item has its own BOM
-                    child_bom = BOM.query.filter_by(item_id=bom_item.item.id, is_active=True).first()
+                if bom_item.material:
+                    # Check if this material has its own BOM
+                    child_bom = BOM.query.filter_by(product_id=bom_item.material.id, is_active=True).first()
                     if child_bom:
                         child_node = build_bom_tree_node(child_bom)
                         node['children'].append(child_node)
                     else:
                         # Add as leaf node
                         leaf_node = {
-                            'bom_code': bom_item.item.code,
-                            'item_name': bom_item.item.name,
-                            'quantity': bom_item.quantity,
-                            'uom': bom_item.item.unit_of_measure.symbol if bom_item.item.unit_of_measure else 'PCS',
+                            'bom_code': bom_item.material.code,
+                            'item_name': bom_item.material.name,
+                            'quantity': bom_item.qty_required,
+                            'uom': bom_item.uom.symbol if bom_item.uom else (bom_item.material.unit_of_measure.symbol if bom_item.material.unit_of_measure else 'PCS'),
                             'children': []
                         }
                         node['children'].append(leaf_node)
@@ -169,29 +169,38 @@ def api_bom_details(bom_code):
         # Build BOM details
         bom_data = {
             'bom_code': bom.bom_code,
-            'item_name': bom.item.name if bom.item else 'Unknown Item',
-            'quantity': bom.quantity,
-            'uom': bom.item.unit_of_measure.symbol if bom.item and bom.item.unit_of_measure else 'PCS',
+            'item_name': bom.product.name if bom.product else 'Unknown Item',
+            'quantity': bom.output_quantity,
+            'uom': bom.output_uom.symbol if bom.output_uom else (bom.product.unit_of_measure.symbol if bom.product and bom.product.unit_of_measure else 'PCS'),
             'is_active': bom.is_active,
-            'material_cost': float(bom.material_cost) if bom.material_cost else 0.0,
-            'labor_cost': float(bom.labor_cost) if bom.labor_cost else 0.0,
-            'overhead_cost': float(bom.overhead_cost) if bom.overhead_cost else 0.0,
-            'total_cost': float(bom.total_cost) if bom.total_cost else 0.0,
+            'material_cost': 0.0,  # Calculate from BOM items
+            'labor_cost': float(bom.labor_cost_per_unit) if bom.labor_cost_per_unit else 0.0,
+            'overhead_cost': float(bom.overhead_cost_per_unit) if bom.overhead_cost_per_unit else 0.0,
+            'total_cost': 0.0,  # Calculate total
             'items': []
         }
         
-        # Add BOM items
+        # Add BOM items and calculate total costs
+        material_cost = 0.0
         for bom_item in bom.items:
-            if bom_item.item:
+            if bom_item.material:
+                cost_per_unit = float(bom_item.unit_cost) if bom_item.unit_cost else 0.0
+                total_cost = cost_per_unit * bom_item.qty_required
+                material_cost += total_cost
+                
                 item_data = {
-                    'item_code': bom_item.item.code,
-                    'item_name': bom_item.item.name,
-                    'quantity': bom_item.quantity,
-                    'uom': bom_item.item.unit_of_measure.symbol if bom_item.item.unit_of_measure else 'PCS',
-                    'cost_per_unit': float(bom_item.cost_per_unit) if bom_item.cost_per_unit else 0.0,
-                    'total_cost': float(bom_item.total_cost) if bom_item.total_cost else 0.0
+                    'item_code': bom_item.material.code,
+                    'item_name': bom_item.material.name,
+                    'quantity': bom_item.qty_required,
+                    'uom': bom_item.uom.symbol if bom_item.uom else (bom_item.material.unit_of_measure.symbol if bom_item.material.unit_of_measure else 'PCS'),
+                    'cost_per_unit': cost_per_unit,
+                    'total_cost': total_cost
                 }
                 bom_data['items'].append(item_data)
+        
+        # Update calculated costs
+        bom_data['material_cost'] = material_cost
+        bom_data['total_cost'] = material_cost + bom_data['labor_cost'] + bom_data['overhead_cost']
         
         return jsonify({
             'success': True,
