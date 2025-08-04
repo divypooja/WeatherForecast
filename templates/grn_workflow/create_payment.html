@@ -83,6 +83,47 @@
                     <form method="POST" enctype="multipart/form-data">
                         {{ form.hidden_tag() }}
                         
+                        <!-- Payment Allocations Table -->
+                        <div class="mb-4">
+                            <h6><i class="fas fa-list"></i> Payment Allocation to Invoices</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>Invoice</th>
+                                            <th>Total Amount</th>
+                                            <th>Outstanding</th>
+                                            <th>Allocation Amount</th>
+                                            <th>Include</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for allocation in form.invoice_allocations %}
+                                        <tr>
+                                            <td>
+                                                {{ allocation.invoice_number.data or allocation.invoice_id.data }}
+                                                {{ allocation.invoice_id() }}
+                                                {{ allocation.invoice_number() }}
+                                            </td>
+                                            <td class="text-end">₹{{ "%.2f"|format(allocation.invoice_amount.data or 0) }}</td>
+                                            <td class="text-end">₹{{ "%.2f"|format(allocation.outstanding_amount.data or 0) }}</td>
+                                            <td>
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text">₹</span>
+                                                    {{ allocation.allocated_amount(class="form-control form-control-sm") }}
+                                                </div>
+                                            </td>
+                                            <td class="text-center">
+                                                <!-- Note: include_in_payment field may not exist in form -->
+                                                <input type="checkbox" class="form-check-input" checked>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
@@ -116,29 +157,29 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    {{ form.payment_amount.label(class="form-label") }}
+                                    {{ form.total_payment_amount.label(class="form-label") }}
                                     <div class="input-group">
                                         <span class="input-group-text">₹</span>
-                                        {{ form.payment_amount(class="form-control", value=invoice.outstanding_amount) }}
+                                        {{ form.total_payment_amount(class="form-control") }}
                                     </div>
-                                    {% if form.payment_amount.errors %}
+                                    {% if form.total_payment_amount.errors %}
                                         <div class="text-danger">
-                                            {% for error in form.payment_amount.errors %}
+                                            {% for error in form.total_payment_amount.errors %}
                                                 <small>{{ error }}</small>
                                             {% endfor %}
                                         </div>
                                     {% endif %}
-                                    <small class="text-muted">Maximum: ₹{{ "%.2f"|format(invoice.outstanding_amount) }}</small>
+                                    <small class="text-muted">Total payment amount</small>
                                 </div>
                             </div>
                             
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    {{ form.bank_account.label(class="form-label") }}
-                                    {{ form.bank_account(class="form-select") }}
-                                    {% if form.bank_account.errors %}
+                                    {{ form.bank_account_id.label(class="form-label") }}
+                                    {{ form.bank_account_id(class="form-select") }}
+                                    {% if form.bank_account_id.errors %}
                                         <div class="text-danger">
-                                            {% for error in form.bank_account.errors %}
+                                            {% for error in form.bank_account_id.errors %}
                                                 <small>{{ error }}</small>
                                             {% endfor %}
                                         </div>
