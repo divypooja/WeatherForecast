@@ -20,28 +20,20 @@ def dashboard():
     try:
         from services_unified_inventory import UnifiedInventoryService
         
-        # Single optimized query for all item statistics with corrected case syntax
-        item_stats = db.session.query(
-            func.count(Item.id).label('total_items'),
-            func.sum(func.case(
-                [(Item.item_type == 'raw_material', 1)], else_=0
-            )).label('raw_material_items'),
-            func.sum(func.case(
-                [(Item.item_type == 'finished_good', 1)], else_=0
-            )).label('finished_goods_items'),
-            func.sum(func.case(
-                [(func.coalesce(Item.current_stock, 0) == 0, 1)], else_=0
-            )).label('out_of_stock_items'),
-            func.sum(func.case(
-                [(and_(
-                    func.coalesce(Item.current_stock, 0) <= func.coalesce(Item.minimum_stock, 0),
-                    func.coalesce(Item.current_stock, 0) > 0
-                ), 1)], else_=0
-            )).label('low_stock_items'),
-            func.sum(
-                func.coalesce(Item.current_stock, 0) * func.coalesce(Item.unit_price, 0)
-            ).label('total_stock_value')
-        ).first()
+        # Simplified query without complex case statements that cause SQLAlchemy issues
+        from sqlalchemy import text
+        
+        # Use raw SQL for complex aggregations
+        item_stats = db.session.execute(text("""
+            SELECT 
+                COUNT(*) as total_items,
+                SUM(CASE WHEN item_type = 'raw_material' THEN 1 ELSE 0 END) as raw_material_items,
+                SUM(CASE WHEN item_type = 'finished_good' THEN 1 ELSE 0 END) as finished_goods_items,
+                SUM(CASE WHEN COALESCE(current_stock, 0) = 0 THEN 1 ELSE 0 END) as out_of_stock_items,
+                SUM(CASE WHEN COALESCE(current_stock, 0) <= COALESCE(minimum_stock, 0) AND COALESCE(current_stock, 0) > 0 THEN 1 ELSE 0 END) as low_stock_items,
+                SUM(COALESCE(current_stock, 0) * COALESCE(unit_price, 0)) as total_stock_value
+            FROM items
+        """)).fetchone()
         
         # Get unified dashboard statistics with fallback
         try:
@@ -83,13 +75,15 @@ def dashboard():
         ).group_by(Item.unit_of_measure).all()
         
     except Exception as e:
-        # Optimized fallback with single query and corrected case syntax
-        fallback_stats = db.session.query(
-            func.count(Item.id).label('total'),
-            func.sum(func.case([(func.coalesce(Item.current_stock, 0) == 0, 1)], else_=0)).label('out_of_stock'),
-            func.sum(func.case([(func.coalesce(Item.current_stock, 0) <= func.coalesce(Item.minimum_stock, 0), 1)], else_=0)).label('low_stock'),
-            func.sum(func.coalesce(Item.current_stock, 0) * func.coalesce(Item.unit_price, 0)).label('total_value')
-        ).first()
+        # Simple fallback using basic aggregations
+        fallback_stats = db.session.execute(text("""
+            SELECT 
+                COUNT(*) as total,
+                SUM(CASE WHEN COALESCE(current_stock, 0) = 0 THEN 1 ELSE 0 END) as out_of_stock,
+                SUM(CASE WHEN COALESCE(current_stock, 0) <= COALESCE(minimum_stock, 0) THEN 1 ELSE 0 END) as low_stock,
+                SUM(COALESCE(current_stock, 0) * COALESCE(unit_price, 0)) as total_value
+            FROM items
+        """)).fetchone()
         
         stats = {
             'total_items': fallback_stats.total or 0,

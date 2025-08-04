@@ -37,20 +37,15 @@ class UnifiedInventoryService:
             # Fallback to direct item queries if view doesn't exist
             from sqlalchemy import func
             
-            stats = db.session.query(
-                func.count(Item.id).label('total'),
-                func.sum(func.case(
-                    [(func.coalesce(Item.current_stock, 0) <= func.coalesce(Item.minimum_stock, 0), 1)], 
-                    else_=0
-                )).label('low_stock'),
-                func.sum(func.case(
-                    [(func.coalesce(Item.current_stock, 0) == 0, 1)], 
-                    else_=0
-                )).label('out_of_stock'),
-                func.sum(
-                    func.coalesce(Item.current_stock, 0) * func.coalesce(Item.unit_price, 0)
-                ).label('stock_value')
-            ).first()
+            # Use raw SQL to avoid SQLAlchemy case syntax issues
+            stats = db.session.execute(text("""
+                SELECT 
+                    COUNT(*) as total,
+                    SUM(CASE WHEN COALESCE(current_stock, 0) <= COALESCE(minimum_stock, 0) THEN 1 ELSE 0 END) as low_stock,
+                    SUM(CASE WHEN COALESCE(current_stock, 0) = 0 THEN 1 ELSE 0 END) as out_of_stock,
+                    SUM(COALESCE(current_stock, 0) * COALESCE(unit_price, 0)) as stock_value
+                FROM items
+            """)).fetchone()
             
             return {
                 'total_items': stats.total or 0,
