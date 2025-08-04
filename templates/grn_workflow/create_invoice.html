@@ -234,20 +234,26 @@
 
 {% block scripts %}
 <script>
-$(document).ready(function() {
+document.addEventListener('DOMContentLoaded', function() {
     // Auto-calculate total amount
     function calculateTotal() {
-        var baseAmount = parseFloat($('#base_amount').val()) || 0;
-        var gstAmount = parseFloat($('#gst_amount').val()) || 0;
-        var freightAmount = parseFloat($('#freight_amount').val()) || 0;
-        var otherCharges = parseFloat($('#other_charges').val()) || 0;
+        var baseAmount = parseFloat(document.getElementById('base_amount').value) || 0;
+        var gstAmount = parseFloat(document.getElementById('gst_amount').value) || 0;
+        var freightAmount = parseFloat(document.getElementById('freight_amount').value) || 0;
+        var otherCharges = parseFloat(document.getElementById('other_charges').value) || 0;
         
         var totalAmount = baseAmount + gstAmount + freightAmount + otherCharges;
-        $('#total_amount').val(totalAmount.toFixed(2));
+        document.getElementById('total_amount').value = totalAmount.toFixed(2);
     }
     
     // Bind calculation to amount fields
-    $('#base_amount, #gst_amount, #freight_amount, #other_charges').on('input', calculateTotal);
+    var amountFields = ['base_amount', 'gst_amount', 'freight_amount', 'other_charges'];
+    amountFields.forEach(function(fieldId) {
+        var field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('input', calculateTotal);
+        }
+    });
     
     // Calculate initial total
     calculateTotal();
