@@ -260,9 +260,10 @@ class GRNWorkflowService:
                     workflow_status.invoice_voucher_created = True
                     workflow_status.invoice_voucher_id = voucher.id
             
-            # Update invoice status
+            # Update invoice status (ensure all amounts are Decimal)
             vendor_invoice.status = 'processed'
-            vendor_invoice.outstanding_amount = vendor_invoice.total_amount
+            vendor_invoice.paid_amount = Decimal('0.00')  # Ensure paid_amount is Decimal
+            vendor_invoice.outstanding_amount = Decimal(str(vendor_invoice.total_amount))
             
             db.session.commit()
             return voucher
@@ -349,9 +350,12 @@ class GRNWorkflowService:
             payment_voucher.voucher_id = voucher.id
             payment_voucher.status = 'posted'
             
-            # Update invoice outstanding amounts
+            # Update invoice outstanding amounts (ensure all are Decimal)
             for allocation in invoice_allocations:
                 invoice = allocation.invoice
+                # Ensure paid_amount is Decimal before arithmetic
+                if not isinstance(invoice.paid_amount, Decimal):
+                    invoice.paid_amount = Decimal(str(invoice.paid_amount or 0))
                 invoice.paid_amount += Decimal(str(allocation.allocated_amount))
                 invoice.update_outstanding()
                 
