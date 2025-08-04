@@ -34,12 +34,12 @@ class Account(db.Model):
     
     # Tax and compliance
     is_gst_applicable = db.Column(db.Boolean, default=False)
-    gst_rate = db.Column(db.Numeric(5, 2), default=0.0)
+    gst_rate = db.Column(db.Numeric(5, 2), default=Decimal('0.00'))
     hsn_sac_code = db.Column(db.String(20))
     
     # Balance tracking
-    opening_balance = db.Column(db.Numeric(15, 2), default=0.0)
-    current_balance = db.Column(db.Numeric(15, 2), default=0.0)
+    opening_balance = db.Column(db.Numeric(15, 2), default=Decimal('0.00'))
+    current_balance = db.Column(db.Numeric(15, 2), default=Decimal('0.00'))
     
     # Flags
     is_active = db.Column(db.Boolean, default=True)
@@ -160,19 +160,24 @@ class Voucher(db.Model):
         self.posted_by = posted_by_id
         self.posted_at = datetime.utcnow()
         
-        # Update account balances
+        # Update account balances (safe Decimal arithmetic)
+        from decimal import Decimal
         for entry in self.journal_entries:
             account = entry.account
+            # Ensure all values are Decimal to avoid type conflicts
+            current_balance = Decimal(str(account.current_balance or 0))
+            entry_amount = Decimal(str(entry.amount or 0))
+            
             if entry.entry_type == 'debit':
                 if account.balance_type == 'debit':
-                    account.current_balance += entry.amount
+                    account.current_balance = current_balance + entry_amount
                 else:
-                    account.current_balance -= entry.amount
+                    account.current_balance = current_balance - entry_amount
             else:  # credit
                 if account.balance_type == 'credit':
-                    account.current_balance += entry.amount
+                    account.current_balance = current_balance + entry_amount
                 else:
-                    account.current_balance -= entry.amount
+                    account.current_balance = current_balance - entry_amount
         
         db.session.commit()
         return True
