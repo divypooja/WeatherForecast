@@ -358,7 +358,7 @@
                 <div class="col-md-8">
                     <label class="form-label">New Storage Location</label>
                     <input type="text" class="form-control" name="storage_location" 
-                           value="{{ batch.storage_location or '' }}" 
+                           value="{{ batch.location or '' }}" 
                            placeholder="Enter storage location..." required>
                 </div>
                 <div class="col-md-4 d-flex align-items-end">
@@ -421,8 +421,11 @@ function saveStorageLocation() {
     
     fetch(`{{ url_for('batch_tracking.api_update_batch_location', batch_id=batch.id) }}`, {
         method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
-            storage_location: formData.get('storage_location')
+            location: formData.get('storage_location')
         }),
         headers: {
             'Content-Type': 'application/json'
