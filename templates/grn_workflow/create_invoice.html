@@ -117,6 +117,9 @@
                             <div class="input-group">
                                 <span class="input-group-text">₹</span>
                                 {{ form.total_amount(class="form-control", id="total_amount", readonly="readonly") }}
+                                <button type="button" class="btn btn-outline-secondary" onclick="calculateTotal()" title="Recalculate Total">
+                                    <i class="fas fa-calculator"></i>
+                                </button>
                             </div>
                             {% if form.total_amount.errors %}
                                 <div class="text-danger">
@@ -234,29 +237,93 @@
 
 {% block scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Auto-calculate total amount
-    function calculateTotal() {
-        var baseAmount = parseFloat(document.getElementById('base_amount').value) || 0;
-        var gstAmount = parseFloat(document.getElementById('gst_amount').value) || 0;
-        var freightAmount = parseFloat(document.getElementById('freight_amount').value) || 0;
-        var otherCharges = parseFloat(document.getElementById('other_charges').value) || 0;
+// Make calculateTotal globally accessible for the button
+function calculateTotal() {
+    console.log('Calculating total...');
+    
+    // Try multiple possible field ID formats
+    function getFieldValue(fieldName) {
+        var field = document.getElementById(fieldName) || 
+                   document.querySelector('[name="' + fieldName + '"]') ||
+                   document.querySelector('input[id*="' + fieldName + '"]');
         
-        var totalAmount = baseAmount + gstAmount + freightAmount + otherCharges;
-        document.getElementById('total_amount').value = totalAmount.toFixed(2);
+        if (field) {
+            console.log('Found field ' + fieldName + ':', field.value);
+            return parseFloat(field.value) || 0;
+        } else {
+            console.warn('Field not found:', fieldName);
+            return 0;
+        }
     }
     
-    // Bind calculation to amount fields
-    var amountFields = ['base_amount', 'gst_amount', 'freight_amount', 'other_charges'];
-    amountFields.forEach(function(fieldId) {
-        var field = document.getElementById(fieldId);
+    function setTotalField(value) {
+        var totalField = document.getElementById('total_amount') || 
+                        document.querySelector('[name="total_amount"]') ||
+                        document.querySelector('input[id*="total_amount"]');
+        
+        if (totalField) {
+            totalField.value = value.toFixed(2);
+            console.log('Total field updated to:', totalField.value);
+            return true;
+        } else {
+            console.error('Total amount field not found!');
+            return false;
+        }
+    }
+    
+    var baseAmount = getFieldValue('base_amount');
+    var gstAmount = getFieldValue('gst_amount');
+    var freightAmount = getFieldValue('freight_amount');
+    var otherCharges = getFieldValue('other_charges');
+    
+    console.log('Values found:', { baseAmount, gstAmount, freightAmount, otherCharges });
+    
+    var totalAmount = baseAmount + gstAmount + freightAmount + otherCharges;
+    console.log('Total calculated:', totalAmount);
+    
+    if (setTotalField(totalAmount)) {
+        // Flash the total field to show it updated
+        var totalField = document.getElementById('total_amount') || 
+                        document.querySelector('[name="total_amount"]');
+        if (totalField) {
+            totalField.style.backgroundColor = '#d4edda';
+            setTimeout(function() {
+                totalField.style.backgroundColor = '';
+            }, 500);
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('GRN Invoice Calculator loaded');
+    
+    // Try to bind events to amount fields using multiple selectors
+    var fieldNames = ['base_amount', 'gst_amount', 'freight_amount', 'other_charges'];
+    var boundFields = 0;
+    
+    fieldNames.forEach(function(fieldName) {
+        var field = document.getElementById(fieldName) || 
+                   document.querySelector('[name="' + fieldName + '"]') ||
+                   document.querySelector('input[id*="' + fieldName + '"]');
+        
         if (field) {
+            console.log('Binding events to field:', fieldName);
             field.addEventListener('input', calculateTotal);
+            field.addEventListener('change', calculateTotal);
+            field.addEventListener('keyup', calculateTotal);
+            boundFields++;
+        } else {
+            console.error('Could not bind to field:', fieldName);
         }
     });
     
-    // Calculate initial total
-    calculateTotal();
+    console.log('Successfully bound to', boundFields, 'fields out of', fieldNames.length);
+    
+    // Calculate initial total after a short delay
+    setTimeout(function() {
+        console.log('Running initial calculation...');
+        calculateTotal();
+    }, 200);
 });
 </script>
 {% endblock %}
