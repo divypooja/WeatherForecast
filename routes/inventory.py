@@ -665,6 +665,21 @@ def api_item_batch_details(item_code):
         batch_data = []
         for batch in batches:
             # Use InventoryBatch field names
+            # Determine batch status based on inspection_status and quantities
+            if hasattr(batch, 'inspection_status') and batch.inspection_status:
+                if batch.inspection_status == 'passed':
+                    status = 'approved'
+                elif batch.inspection_status == 'failed':
+                    status = 'rejected'
+                elif batch.inspection_status == 'pending':
+                    status = 'pending'
+                else:
+                    status = batch.inspection_status
+            elif batch.total_quantity > 0:
+                status = 'active'
+            else:
+                status = 'empty'
+            
             batch_info = {
                 'batch_id': batch.id,
                 'batch_code': batch.batch_code,
@@ -680,7 +695,8 @@ def api_item_batch_details(item_code):
                 'supplier_batch_no': batch.supplier_batch_no or 'N/A',
                 'created_date': batch.created_at.strftime('%d/%m/%Y') if batch.created_at else 'N/A',
                 'expiry_date': batch.expiry_date.strftime('%d/%m/%Y') if batch.expiry_date else 'N/A',
-                'age_days': batch.age_days
+                'age_days': batch.age_days,
+                'status': status
             }
             batch_data.append(batch_info)
         
