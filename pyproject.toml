@@ -30,4 +30,5 @@ dependencies = [
     "opencv-python>=4.12.0.88",
     "python-dateutil>=2.9.0.post0",
     "flask-migrate>=4.1.0",
+    "vulture>=2.14",
 ]
