@@ -187,6 +187,24 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Document Upload Section -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    {{ form.payment_document.label(class="form-label") }}
+                                    {{ form.payment_document(class="form-control") }}
+                                    {% if form.payment_document.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.payment_document.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <small class="text-muted">Upload receipt, bank statement, or other supporting document (PDF, JPG, PNG)</small>
+                                </div>
+                            </div>
+                        </div>
 
                         {% if form.supporting_document %}
                         <div class="mb-3">

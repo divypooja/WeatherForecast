@@ -329,6 +329,16 @@ def create_payment_for_invoice(invoice_id):
                 created_by=current_user.id
             )
             
+            # Handle document upload
+            if form.payment_document.data:
+                from werkzeug.utils import secure_filename
+                import os
+                filename = secure_filename(form.payment_document.data.filename)
+                upload_path = os.path.join('uploads', 'payments', filename)
+                os.makedirs(os.path.dirname(upload_path), exist_ok=True)
+                form.payment_document.data.save(upload_path)
+                payment_voucher.document_path = upload_path
+            
             db.session.add(payment_voucher)
             db.session.flush()
             

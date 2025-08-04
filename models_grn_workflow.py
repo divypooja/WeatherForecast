@@ -120,6 +120,9 @@ class PaymentVoucher(db.Model):
     bank_account_id = db.Column(db.Integer, db.ForeignKey('accounts.id'))
     reference_number = db.Column(db.String(100))  # cheque number, UPI ref, etc.
     
+    # Document reference
+    document_path = db.Column(db.String(500))  # path to uploaded supporting document
+    
     # Status
     status = db.Column(db.String(20), default='draft')  # draft, posted, cancelled
     

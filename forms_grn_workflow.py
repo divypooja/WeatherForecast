@@ -116,6 +116,10 @@ class PaymentVoucherForm(FlaskForm):
     narration = TextAreaField('Narration/Notes', 
                             validators=[Optional()])
     
+    # Document upload
+    payment_document = FileField('Upload Supporting Document',
+                               validators=[Optional(), FileAllowed(['pdf', 'jpg', 'jpeg', 'png'], 'Only PDF and image files allowed')])
+    
     submit = SubmitField('Record Payment')
 
 class InvoiceAllocationForm(FlaskForm):
@@ -161,6 +165,10 @@ class PaymentWithAllocationForm(FlaskForm):
     # Notes
     narration = TextAreaField('Narration/Notes', 
                             validators=[Optional()])
+    
+    # Document upload
+    payment_document = FileField('Upload Supporting Document',
+                               validators=[Optional(), FileAllowed(['pdf', 'jpg', 'jpeg', 'png'], 'Only PDF and image files allowed')])
     
     submit = SubmitField('Record Payment & Allocate')
 
