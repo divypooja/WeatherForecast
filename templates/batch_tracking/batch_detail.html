@@ -386,14 +386,16 @@ function toggleQualityForm() {
     const form = document.getElementById('qualityUpdateForm');
     const locationForm = document.getElementById('locationUpdateForm');
     
-    // Hide location form if open
-    locationForm.style.display = 'none';
+    // Hide location form if open (check if it exists first)
+    if (locationForm) {
+        locationForm.style.display = 'none';
+    }
     
     // Toggle quality form
-    if (form.style.display === 'none') {
+    if (form && form.style.display === 'none') {
         form.style.display = 'block';
         form.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    } else {
+    } else if (form) {
         form.style.display = 'none';
     }
 }
@@ -402,14 +404,16 @@ function toggleLocationForm() {
     const form = document.getElementById('locationUpdateForm');
     const qualityForm = document.getElementById('qualityUpdateForm');
     
-    // Hide quality form if open
-    qualityForm.style.display = 'none';
+    // Hide quality form if open (check if it exists first)
+    if (qualityForm) {
+        qualityForm.style.display = 'none';
+    }
     
     // Toggle location form
-    if (form.style.display === 'none') {
+    if (form && form.style.display === 'none') {
         form.style.display = 'block';
         form.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    } else {
+    } else if (form) {
         form.style.display = 'none';
     }
 }
@@ -417,7 +421,19 @@ function toggleLocationForm() {
 // Quality status function removed - now using direct form submission
 
 function saveStorageLocation() {
-    const formData = new FormData(document.getElementById('locationForm'));
+    const locationForm = document.getElementById('locationForm');
+    if (!locationForm) {
+        alert('Form not found');
+        return;
+    }
+    
+    const formData = new FormData(locationForm);
+    const newLocation = formData.get('storage_location');
+    
+    if (!newLocation || newLocation.trim() === '') {
+        alert('Please enter a storage location');
+        return;
+    }
     
     fetch(`{{ url_for('batch_tracking.api_update_batch_location', batch_id=batch.id) }}`, {
         method: 'POST',
@@ -425,11 +441,8 @@ function saveStorageLocation() {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            location: formData.get('storage_location')
-        }),
-        headers: {
-            'Content-Type': 'application/json'
-        }
+            location: newLocation.trim()
+        })
     })
     .then(response => response.json())
     .then(data => {
