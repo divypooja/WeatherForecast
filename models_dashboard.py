@@ -93,13 +93,7 @@ def init_default_modules():
             'icon': 'fas fa-shield-alt',
             'url_endpoint': 'quality.dashboard'
         },
-        {
-            'name': 'grn_workflow',
-            'title': 'GRN Workflow',
-            'description': '3-step purchase workflow: GRN → Invoice → Payment',
-            'icon': 'fas fa-route text-primary',
-            'url_endpoint': 'grn_workflow.dashboard'
-        },
+
         {
             'name': 'factory_expenses',
             'title': 'Factory Expenses',

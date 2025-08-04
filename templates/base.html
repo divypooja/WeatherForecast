@@ -258,14 +258,9 @@
                     <i class="fas fa-balance-scale"></i>
                     UOM Management
                 </a>
-                <a class="nav-link {{ 'active' if 'grn' in request.endpoint and 'workflow' not in request.endpoint }}" href="{{ url_for('grn.dashboard') }}">
+                <a class="nav-link {{ 'active' if 'grn' in request.endpoint }}" href="{{ url_for('grn.dashboard') }}">
                     <i class="fas fa-truck"></i>
                     GRN (Goods Receipt)
-                </a>
-                <a class="nav-link {{ 'active' if 'grn_workflow' in request.endpoint }}" href="{{ url_for('grn_workflow.dashboard') }}">
-                    <i class="fas fa-route text-primary"></i>
-                    <span class="fw-bold">GRN Workflow</span>
-                    <span class="badge bg-primary ms-2">3-STEP</span>
                 </a>
                 <a class="nav-link {{ 'active' if 'documents' in request.endpoint }}" href="{{ url_for('documents.document_list') }}">
                     <i class="fas fa-file-alt"></i>
