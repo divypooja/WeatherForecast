@@ -43,7 +43,6 @@ class GRNInvoiceLinkForm(FlaskForm):
     
     grn_id = HiddenField('GRN ID', validators=[DataRequired()])
     grn_number = StringField('GRN Number', render_kw={'readonly': True})
-    grn_amount = DecimalField('GRN Amount', render_kw={'readonly': True})
     allocated_amount = DecimalField('Allocated Amount', 
                                   validators=[DataRequired(), NumberRange(min=0)])
     include_in_invoice = BooleanField('Include in Invoice', default=True)

@@ -136,7 +136,14 @@
                         <tr>
                             <td><strong>{{ link.grn.grn_number if link.grn else 'N/A' }}</strong></td>
                             <td>{{ link.grn.created_at.strftime('%d-%m-%Y') if link.grn and link.grn.created_at else 'N/A' }}</td>
-                            <td class="text-end">₹{{ "%.2f"|format(link.grn_amount) }}</td>
+                            <td class="text-end">
+                                {% if link.grn and link.grn.line_items %}
+                                    {% set grn_total = link.grn.line_items|sum(attribute='quantity_received')|float * (link.grn.line_items|first).rate_per_unit|float %}
+                                    ₹{{ "%.2f"|format(grn_total) }}
+                                {% else %}
+                                    ₹0.00
+                                {% endif %}
+                            </td>
                             <td class="text-end">₹{{ "%.2f"|format(link.allocated_amount) }}</td>
                             <td>
                                 {% if link.is_active %}
