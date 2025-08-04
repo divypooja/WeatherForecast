@@ -229,7 +229,9 @@ class GRNWorkflowService:
                         entry_type='debit',
                         amount=freight_total,
                         narration=f"Freight & charges - {vendor_invoice.invoice_number}",
-                        transaction_date=voucher.transaction_date
+                        transaction_date=voucher.transaction_date,
+                        reference_type='vendor_invoice',
+                        reference_id=vendor_invoice.id
                     )
                     db.session.add(freight_entry)
             
@@ -350,7 +352,7 @@ class GRNWorkflowService:
             # Update invoice outstanding amounts
             for allocation in invoice_allocations:
                 invoice = allocation.invoice
-                invoice.paid_amount += allocation.allocated_amount
+                invoice.paid_amount += Decimal(str(allocation.allocated_amount))
                 invoice.update_outstanding()
                 
                 # Update workflow status for related GRNs
@@ -405,8 +407,8 @@ class GRNWorkflowService:
                     db.session.add(fulfillment_status)
                 
                 # Update received quantities
-                fulfillment_status.received_quantity += grn_item.quantity_received
-                fulfillment_status.received_value += (grn_item.quantity_received * getattr(grn_item, 'rate_per_unit', 0))
+                fulfillment_status.received_quantity += Decimal(str(grn_item.quantity_received))
+                fulfillment_status.received_value += Decimal(str(grn_item.quantity_received * getattr(grn_item, 'rate_per_unit', 0)))
                 fulfillment_status.last_grn_date = grn.receipt_date or date.today()
                 
                 # Update status
