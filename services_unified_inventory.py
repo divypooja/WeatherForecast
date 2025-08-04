@@ -53,8 +53,7 @@ class UnifiedInventoryService:
                 scrap_qty,
                 total_qty,
                 available_qty,
-                stock_status,
-                min_stock
+                stock_status
             FROM inventory_multi_state
             ORDER BY item_code
         """)).fetchall()
@@ -70,8 +69,7 @@ class UnifiedInventoryService:
             'scrap': row.scrap_qty,
             'total': row.total_qty,
             'available': row.available_qty,
-            'status': row.stock_status,
-            'min_stock': row.min_stock
+            'status': row.stock_status
         } for row in result]
     
     @staticmethod
