@@ -283,8 +283,13 @@
                             </a>
                         </div>
                         <div class="col-md-3 mb-2">
-                            <a href="{{ url_for('production.list_productions') }}" class="btn btn-success w-100">
+                            <a href="{{ url_for('production.add_production') }}" class="btn btn-success w-100">
                                 <i class="fas fa-plus"></i> New Production
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('production.list_bom') }}" class="btn btn-warning w-100">
+                                <i class="fas fa-sitemap"></i> Manage BOM
                             </a>
                         </div>
                         <div class="col-md-3 mb-2">
@@ -292,9 +297,26 @@
                                 <i class="fas fa-tools"></i> Job Work
                             </a>
                         </div>
+                    </div>
+                    <div class="row mt-2">
                         <div class="col-md-3 mb-2">
-                            <a href="{{ url_for('production.dashboard') }}" class="btn btn-warning w-100">
-                                <i class="fas fa-chart-line"></i> Process Report
+                            <a href="{{ url_for('production.add_bom') }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-plus-circle"></i> Add New BOM
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('production.bom_tree_view') }}" class="btn btn-outline-secondary w-100">
+                                <i class="fas fa-project-diagram"></i> BOM Tree View
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('inventory.batch_tracking_dashboard') }}" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-cubes"></i> Batch Tracking
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('reports.production_report') }}" class="btn btn-outline-info w-100">
+                                <i class="fas fa-chart-line"></i> Production Reports
                             </a>
                         </div>
                     </div>
