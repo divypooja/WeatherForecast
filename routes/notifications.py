@@ -328,8 +328,17 @@ def admin_logs():
     logs = query.order_by(desc(NotificationLog.sent_at)).paginate(
         page=page, per_page=50, error_out=False)
     
+    # Calculate statistics
+    stats = {
+        'sent': NotificationLog.query.filter(NotificationLog.success == True).count(),
+        'failed': NotificationLog.query.filter(NotificationLog.success == False).count(),
+        'pending': 0,  # Add pending logic if needed
+        'total': NotificationLog.query.count()
+    }
+    
     return render_template('notifications/admin/logs.html',
                          logs=logs,
+                         stats=stats,
                          type_filter=type_filter,
                          status_filter=status_filter,
                          date_filter=date_filter)
