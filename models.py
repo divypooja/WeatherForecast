@@ -2872,6 +2872,9 @@ class FactoryExpense(db.Model):
     # Tally integration
     tally_synced = db.Column(db.Boolean, default=False)
     
+    # Accounting integration
+    voucher_id = db.Column(db.Integer, nullable=True)  # Link to accounting voucher
+    
     # Relationships
     requested_by = db.relationship('User', foreign_keys=[requested_by_id], backref='requested_expenses')
     approved_by = db.relationship('User', foreign_keys=[approved_by_id], backref='approved_expenses')
@@ -2961,6 +2964,9 @@ class SalaryRecord(db.Model):
     notes = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     approved_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    
+    # Accounting integration
+    voucher_id = db.Column(db.Integer, nullable=True)  # Link to accounting voucher
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     approved_at = db.Column(db.DateTime)
     

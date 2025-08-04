@@ -8,6 +8,7 @@ from datetime import datetime, date
 from sqlalchemy import func, desc, extract
 from utils_documents import save_uploaded_file_expense
 from utils_export import export_factory_expenses
+from services.hr_accounting_integration import HRAccountingIntegration
 # Temporarily comment out OCR import to fix OpenCV dependency issue
 # from utils_ocr import process_receipt_image
 import calendar
@@ -234,9 +235,8 @@ def add_expense():
                         except Exception as e:
                             print(f"Error saving document: {str(e)}")
             
-            # Create accounting entries for the expense
-            from services.accounting_automation import AccountingAutomation
-            voucher = AccountingAutomation.create_expense_voucher(expense)
+            # Create accounting entries for the expense using HR integration
+            voucher = HRAccountingIntegration.create_factory_expense_entry(expense)
             
             db.session.commit()
             
@@ -356,9 +356,8 @@ def approve_expense(id):
         expense.approved_by_id = current_user.id
         expense.approval_date = datetime.utcnow()
         
-        # Create accounting entries upon approval
-        from services.accounting_automation import AccountingAutomation
-        voucher = AccountingAutomation.create_expense_voucher(expense)
+        # Create accounting entries upon approval using HR integration
+        voucher = HRAccountingIntegration.create_factory_expense_entry(expense)
         
         db.session.commit()
         

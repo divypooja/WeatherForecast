@@ -6,6 +6,7 @@ from app import db
 from sqlalchemy import func, desc
 from utils import generate_employee_code
 from utils_documents import save_uploaded_documents, get_documents_for_transaction
+from services.hr_accounting_integration import HRAccountingIntegration
 from datetime import datetime, date
 from calendar import monthrange
 import os
@@ -386,34 +387,64 @@ def mark_salary_paid(id):
         salary.status = 'paid'
         salary.payment_date = date.today()
         
-        # Create corresponding factory expense record
-        expense = FactoryExpense(
-            expense_number=FactoryExpense.generate_expense_number(),
-            expense_date=date.today(),
-            category='salary',  # Salaries & Benefits category
-            subcategory='Employee Salary',
-            description=f'Salary Payment - {salary.employee.name} ({salary.salary_number}) for period {salary.pay_period_start.strftime("%b %d")} - {salary.pay_period_end.strftime("%b %d, %Y")}',
-            amount=float(salary.net_amount),
-            tax_amount=0.0,
-            total_amount=float(salary.net_amount),
-            payment_method=salary.payment_method,
-            paid_by=f'Admin - {current_user.username}',
-            vendor_name=salary.employee.name,
-            vendor_contact=salary.employee.mobile_number or 'N/A',
-            invoice_number=salary.salary_number,
-            invoice_date=salary.pay_period_start,
-            status='paid',  # Mark as paid immediately
-            requested_by_id=current_user.id,
-            approved_by_id=current_user.id,
-            approval_date=datetime.utcnow(),
-            payment_date=date.today(),
-            notes=f'Auto-created from Salary Record: {salary.salary_number}\nBasic: ₹{salary.basic_amount}\nOvertime: ₹{salary.overtime_amount}\nBonus: ₹{salary.bonus_amount}\nDeductions: ₹{salary.deduction_amount}\nAdvance Deduction: ₹{salary.advance_deduction}\nNet Amount: ₹{salary.net_amount}'
-        )
+        # Create accounting entry using HR integration service
+        voucher = HRAccountingIntegration.create_salary_payment_entry(salary)
         
-        db.session.add(expense)
-        db.session.commit()
+        if voucher:
+            # Create corresponding factory expense record
+            expense = FactoryExpense(
+                expense_number=FactoryExpense.generate_expense_number(),
+                expense_date=date.today(),
+                category='salary',  # Salaries & Benefits category
+                subcategory='Employee Salary',
+                description=f'Salary Payment - {salary.employee.name} ({salary.salary_number}) for period {salary.pay_period_start.strftime("%b %d")} - {salary.pay_period_end.strftime("%b %d, %Y")}',
+                amount=float(salary.net_amount),
+                tax_amount=0.0,
+                total_amount=float(salary.net_amount),
+                payment_method=salary.payment_method,
+                paid_by=f'Admin - {current_user.username}',
+                vendor_name=salary.employee.name,
+                vendor_contact=salary.employee.phone or 'N/A',
+                invoice_number=salary.salary_number,
+                invoice_date=salary.pay_period_start,
+                status='paid',  # Mark as paid immediately
+                requested_by_id=current_user.id,
+                approved_by_id=current_user.id,
+                approval_date=datetime.utcnow(),
+                payment_date=date.today(),
+                voucher_id=voucher.id,  # Link to accounting entry
+                notes=f'Auto-created from Salary Record: {salary.salary_number}\nBasic: ₹{salary.basic_amount}\nOvertime: ₹{salary.overtime_amount}\nBonus: ₹{salary.bonus_amount}\nDeductions: ₹{salary.deduction_amount}\nAdvance Deduction: ₹{salary.advance_deduction}\nNet Amount: ₹{salary.net_amount}'
+            )
+            
+            db.session.add(expense)
+            db.session.commit()
+            
+            flash(f'Salary {salary.salary_number} marked as paid, accounting entry created, and expense record {expense.expense_number} generated!', 'success')
+        else:
+            # Fallback: still create expense record even if accounting entry fails
+            expense = FactoryExpense(
+                expense_number=FactoryExpense.generate_expense_number(),
+                expense_date=date.today(),
+                category='salary',
+                subcategory='Employee Salary',
+                description=f'Salary Payment - {salary.employee.name} ({salary.salary_number})',
+                amount=float(salary.net_amount),
+                tax_amount=0.0,
+                total_amount=float(salary.net_amount),
+                payment_method=salary.payment_method,
+                paid_by=f'Admin - {current_user.username}',
+                status='paid',
+                requested_by_id=current_user.id,
+                approved_by_id=current_user.id,
+                approval_date=datetime.utcnow(),
+                payment_date=date.today()
+            )
+            
+            db.session.add(expense)
+            db.session.commit()
+            
+            flash(f'Salary {salary.salary_number} marked as paid and expense record {expense.expense_number} created. Note: Accounting entry creation failed.', 'warning')
         
-        flash(f'Salary {salary.salary_number} marked as paid and expense record {expense.expense_number} created!', 'success')
         return redirect(url_for('hr.salary_detail', id=id))
         
     except Exception as e:
