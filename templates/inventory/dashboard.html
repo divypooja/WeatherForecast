@@ -134,35 +134,35 @@
                                 <div class="card-body p-3">
                                     <div class="d-flex justify-content-between align-items-start mb-2">
                                         <h6 class="mb-0">{{ item.name }}</h6>
-                                        <span class="badge bg-{{ 'primary' if item.multi_state_view else 'secondary' }}">
-                                            {{ item.multi_state_view or 'Standard' }}
+                                        <span class="badge bg-{{ 'primary' if item.item_type == 'raw_material' else 'secondary' }}">
+                                            {{ item.item_type|title or 'Standard' }}
                                         </span>
                                     </div>
                                     <div class="row small">
                                         <div class="col-6">
-                                            <strong>Current</strong><br>
-                                            {{ "%.2f"|format(item.current_stock) }} {{ item.unit }}
+                                            <strong>Current Stock</strong><br>
+                                            {{ "%.2f"|format(item.current_stock or 0) }} {{ item.unit_of_measure }}
                                         </div>
                                         <div class="col-6">
-                                            <strong>Received</strong><br>
-                                            {{ "%.2f"|format(item.received_quantity or 0) }}
+                                            <strong>Minimum Stock</strong><br>
+                                            {{ "%.2f"|format(item.minimum_stock or 0) }}
                                         </div>
                                     </div>
                                     <div class="row small mt-2">
-                                        <div class="col-6">Progress</div>
-                                        <div class="col-6">Progress</div>
+                                        <div class="col-6">Stock Level</div>
+                                        <div class="col-6">Value</div>
                                     </div>
                                     <div class="row">
                                         <div class="col-6">
                                             <div class="progress" style="height: 4px;">
-                                                <div class="progress-bar bg-success" 
-                                                     style="width: {{ (item.current_stock / (item.reorder_level or 1) * 100) if item.reorder_level else 100 }}%"></div>
+                                                <div class="progress-bar bg-{{ 'danger' if (item.current_stock or 0) <= (item.minimum_stock or 0) else 'success' }}" 
+                                                     style="width: {{ ((item.current_stock or 0) / (item.minimum_stock or 1) * 100) if item.minimum_stock else 100 }}%"></div>
                                             </div>
                                         </div>
                                         <div class="col-6">
                                             <div class="progress" style="height: 4px;">
                                                 <div class="progress-bar bg-info" 
-                                                     style="width: {{ (item.received_quantity / (item.current_stock or 1) * 100) if item.current_stock else 0 }}%"></div>
+                                                     style="width: {{ ((item.unit_price or 0) * (item.current_stock or 0) / 1000) if item.unit_price else 0 }}%"></div>
                                             </div>
                                         </div>
                                     </div>
