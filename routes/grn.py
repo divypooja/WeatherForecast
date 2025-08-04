@@ -190,18 +190,8 @@ def process_grn_with_batch_tracking(grn, add_to_inventory=True):
         if grn.purchase_order:
             update_po_status_based_on_grn(grn.purchase_order_id)
         
-        # Create GRN voucher using proper 3-step workflow and authentic accounting integration
-        try:
-            # Create authentic accounting entry for GRN material receipt
-            voucher_result = AuthenticAccountingIntegration.create_grn_material_receipt_entry(grn)
-            if voucher_result:
-                grn.voucher_id = voucher_result
-                print(f"GRN {grn.grn_number} accounting entry created successfully: {voucher_result}")
-            else:
-                print(f"Warning: Failed to create accounting entry for GRN {grn.grn_number}")
-        except Exception as accounting_error:
-            print(f"Error creating accounting entry for GRN {grn.grn_number}: {accounting_error}")
-            # Continue processing even if accounting fails
+        # GRN processing complete - accounting entries handled separately via 3-step workflow
+        # The 3-step GRN workflow handles: GRN → Invoice → Payment cycle with proper clearing accounts
         
         db.session.commit()
         return True, "GRN processed successfully with batch tracking and accounting entries"
