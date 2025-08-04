@@ -369,10 +369,10 @@ def dashboard():
         total_qty = sum(item.qty for item in po.items)
         grn_count = len(po.grn_receipts_po)
         
-        # Determine status based on GRN completion
-        if all(grn.status == 'completed' for grn in po.grn_receipts_po):
+        # Use actual PO status from database (more accurate than GRN status logic)
+        if po.status == 'closed':
             po_status = 'Completed'
-        elif any(grn.status in ['received', 'inspected'] for grn in po.grn_receipts_po):
+        elif po.status == 'partial':
             po_status = 'Partial'
         else:
             po_status = 'Pending'
@@ -426,13 +426,22 @@ def dashboard():
         total_qty = getattr(jw, 'quantity_sent', 0)
         grn_count = len(jw.grn_receipts)
         
-        # Determine status based on GRN completion
-        if all(grn.status == 'completed' for grn in jw.grn_receipts):
-            jw_status = 'Completed'
-        elif any(grn.status in ['received', 'inspected'] for grn in jw.grn_receipts):
-            jw_status = 'Partial'
+        # Use JobWork status logic - check if completion is tracked
+        if hasattr(jw, 'status'):
+            if jw.status == 'completed':
+                jw_status = 'Completed'
+            elif jw.status == 'partial':
+                jw_status = 'Partial'
+            else:
+                jw_status = 'Pending'
         else:
-            jw_status = 'Pending'
+            # Fallback to GRN completion logic for JobWork
+            if all(grn.status == 'completed' for grn in jw.grn_receipts):
+                jw_status = 'Completed'
+            elif any(grn.status in ['received', 'inspected'] for grn in jw.grn_receipts):
+                jw_status = 'Partial'
+            else:
+                jw_status = 'Pending'
         
         # Build child GRNs with details
         child_grns = []
