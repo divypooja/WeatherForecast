@@ -221,6 +221,52 @@ def view_invoice(invoice_id):
         flash(f'Error loading invoice: {str(e)}', 'error')
         return redirect(url_for('grn_workflow.list_invoices'))
 
+@grn_workflow_bp.route('/invoices/create', methods=['GET', 'POST'])
+@login_required
+def create_standalone_invoice():
+    """Create standalone vendor invoice"""
+    from forms_grn_workflow import VendorInvoiceForm
+    form = VendorInvoiceForm()
+    
+    # Setup vendor choices
+    vendors = Supplier.query.filter_by(partner_type='vendor').all()
+    form.vendor_id.choices = [(v.id, v.name) for v in vendors]
+    
+    if form.validate_on_submit():
+        try:
+            from decimal import Decimal
+            vendor_invoice = VendorInvoice(
+                invoice_number=form.invoice_number.data,
+                invoice_date=form.invoice_date.data,
+                vendor_id=form.vendor_id.data,
+                base_amount=Decimal(str(form.base_amount.data)),
+                gst_amount=Decimal(str(form.gst_amount.data or 0)),
+                freight_amount=Decimal(str(form.freight_amount.data or 0)),
+                other_charges=Decimal(str(form.other_charges.data or 0)),
+                total_amount=Decimal(str(form.total_amount.data)),
+                outstanding_amount=Decimal(str(form.total_amount.data))  # Initially full amount outstanding
+            )
+            
+            # Handle document upload
+            if form.invoice_document.data:
+                filename = secure_filename(form.invoice_document.data.filename)
+                upload_path = os.path.join('uploads', 'invoices', filename)
+                os.makedirs(os.path.dirname(upload_path), exist_ok=True)
+                form.invoice_document.data.save(upload_path)
+                vendor_invoice.invoice_document_path = upload_path
+            
+            db.session.add(vendor_invoice)
+            db.session.commit()
+            
+            flash(f'Invoice {vendor_invoice.invoice_number} created successfully!', 'success')
+            return redirect(url_for('grn_workflow.view_invoice', invoice_id=vendor_invoice.id))
+                
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error creating invoice: {str(e)}', 'error')
+    
+    return render_template('grn_workflow/create_standalone_invoice.html', form=form)
+
 @grn_workflow_bp.route('/invoice/<int:invoice_id>/create-payment', methods=['GET', 'POST'])
 @login_required
 def create_payment_for_invoice(invoice_id):
