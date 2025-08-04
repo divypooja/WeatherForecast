@@ -282,7 +282,7 @@ def batch_wise_view():
         'quality_issues': InventoryBatch.query.filter(InventoryBatch.inspection_status == 'failed').count()
     }
     
-    return render_template('inventory/batch_tracking_dashboard.html',
+    return render_template('inventory/batch_tracking_dashboard_clean.html',
                          title='Batch-Wise Inventory Tracking',
                          batches=batches,
                          process_summary=process_summary,
