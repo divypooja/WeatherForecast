@@ -127,14 +127,14 @@
                                 <dd class="col-sm-7">{{ batch.item.code }}</dd>
                                 
                                 <dt class="col-sm-5">Supplier Batch:</dt>
-                                <dd class="col-sm-7">{{ batch.supplier_batch or 'N/A' }}</dd>
+                                <dd class="col-sm-7">{{ batch.supplier_batch_no or 'N/A' }}</dd>
                             </dl>
                         </div>
                         <div class="col-md-6">
                             <dl class="row">
                                 <dt class="col-sm-5">Manufacturing Date:</dt>
                                 <dd class="col-sm-7">
-                                    {{ batch.manufacture_date.strftime('%d/%m/%Y') if batch.manufacture_date else 'N/A' }}
+                                    {{ batch.mfg_date.strftime('%d/%m/%Y') if batch.mfg_date else 'N/A' }}
                                 </dd>
                                 
                                 <dt class="col-sm-5">Expiry Date:</dt>
@@ -146,7 +146,56 @@
                                 <dd class="col-sm-7">{{ batch.location or 'Not specified' }}</dd>
                                 
                                 <dt class="col-sm-5">Total Quantity:</dt>
-                                <dd class="col-sm-7"><strong>{{ batch.total_quantity }} {{ batch.item.unit_of_measure }}</strong></dd>
+                                <dd class="col-sm-7"><strong>{{ batch.total_quantity }} {{ batch.uom }}</strong></dd>
+                                
+                                <dt class="col-sm-5">Purchase Rate:</dt>
+                                <dd class="col-sm-7">₹{{ "%.2f"|format(batch.purchase_rate or 0) }}</dd>
+                                
+                                <dt class="col-sm-5">Age (Days):</dt>
+                                <dd class="col-sm-7">{{ batch.age_days }} days</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Source Information Card -->
+            <div class="card batch-stats-card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-shipping-fast"></i> Source Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-5">Source Type:</dt>
+                                <dd class="col-sm-7">
+                                    <span class="badge bg-primary">{{ batch.source_type.title() if batch.source_type else 'Purchase' }}</span>
+                                </dd>
+                                
+                                {% if batch.grn_id %}
+                                <dt class="col-sm-5">GRN Reference:</dt>
+                                <dd class="col-sm-7">
+                                    <a href="{{ url_for('grn_workflow.invoice_detail', grn_id=batch.grn_id) }}" class="btn btn-sm btn-outline-info">
+                                        <i class="fas fa-file-invoice"></i> View GRN #{{ batch.grn_id }}
+                                    </a>
+                                </dd>
+                                {% endif %}
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                {% if batch.source_ref_id %}
+                                <dt class="col-sm-5">Source Ref ID:</dt>
+                                <dd class="col-sm-7">{{ batch.source_ref_id }}</dd>
+                                {% endif %}
+                                
+                                <dt class="col-sm-5">Available Qty:</dt>
+                                <dd class="col-sm-7">
+                                    <span class="badge bg-success fs-6">{{ batch.available_quantity }} {{ batch.uom }}</span>
+                                </dd>
                             </dl>
                         </div>
                     </div>
