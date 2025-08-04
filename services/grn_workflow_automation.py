@@ -350,13 +350,16 @@ class GRNWorkflowService:
             payment_voucher.voucher_id = voucher.id
             payment_voucher.status = 'posted'
             
-            # Update invoice outstanding amounts (ensure all are Decimal)
+            # Update invoice outstanding amounts (completely avoid += operation)
             for allocation in invoice_allocations:
                 invoice = allocation.invoice
-                # Ensure paid_amount is Decimal before arithmetic
-                if not isinstance(invoice.paid_amount, Decimal):
-                    invoice.paid_amount = Decimal(str(invoice.paid_amount or 0))
-                invoice.paid_amount += Decimal(str(allocation.allocated_amount))
+                # Calculate new paid amount without += to avoid type conflicts
+                current_paid = Decimal(str(invoice.paid_amount or 0))
+                new_allocation = Decimal(str(allocation.allocated_amount))
+                new_paid_amount = current_paid + new_allocation
+                
+                # Set the new amount directly
+                invoice.paid_amount = new_paid_amount
                 invoice.update_outstanding()
                 
                 # Update workflow status for related GRNs

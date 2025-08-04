@@ -72,8 +72,11 @@ class VendorInvoice(db.Model):
     vendor = db.relationship('Supplier', backref='vendor_invoices')
     
     def update_outstanding(self):
-        """Update outstanding amount"""
-        self.outstanding_amount = self.total_amount - self.paid_amount
+        """Update outstanding amount (safe Decimal arithmetic)"""
+        total = Decimal(str(self.total_amount or 0))
+        paid = Decimal(str(self.paid_amount or 0))
+        self.outstanding_amount = total - paid
+        
         if self.outstanding_amount <= 0:
             self.status = 'paid'
         elif self.paid_amount > 0:
