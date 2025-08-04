@@ -228,13 +228,22 @@ def create_payment_for_invoice(invoice_id):
     invoice = VendorInvoice.query.get_or_404(invoice_id)
     form = PaymentWithAllocationForm()
     
-    # Pre-populate vendor
-    form.vendor_id.choices = [(invoice.vendor.id, invoice.vendor.name)]
-    form.vendor_id.default = invoice.vendor.id
+    # Pre-populate vendor with proper handling
+    vendors = Supplier.query.filter_by(partner_type='vendor').all()
+    form.vendor_id.choices = [(0, 'Select Vendor')] + [(v.id, v.name) for v in vendors]
     
-    # Get bank accounts
-    bank_accounts = Account.query.filter_by(is_bank_account=True, is_active=True).all()
-    form.bank_account_id.choices = [('', 'Select Bank Account')] + [(acc.id, acc.name) for acc in bank_accounts]
+    # Set default vendor if invoice has one
+    if hasattr(invoice, 'vendor_id'):
+        form.vendor_id.data = invoice.vendor_id
+    elif hasattr(invoice, 'vendor'):
+        form.vendor_id.data = invoice.vendor.id
+    
+    # Get bank accounts with proper empty value handling
+    from models_accounting import Account
+    bank_accounts = Account.query.filter(
+        Account.account_group.in_(['Bank Accounts', 'Cash-in-Hand'])
+    ).all()
+    form.bank_account_id.choices = [(0, 'Select Bank Account')] + [(acc.id, f"{acc.account_name} ({acc.account_code})") for acc in bank_accounts]
     
     if request.method == 'GET':
         # Pre-populate payment amount with outstanding amount
@@ -255,7 +264,7 @@ def create_payment_for_invoice(invoice_id):
                 vendor_id=form.vendor_id.data,
                 payment_method=form.payment_method.data,
                 payment_amount=Decimal(str(form.total_payment_amount.data)),
-                bank_account_id=form.bank_account_id.data if form.bank_account_id.data else None,
+                bank_account_id=form.bank_account_id.data if form.bank_account_id.data and form.bank_account_id.data != 0 else None,
                 reference_number=form.reference_number.data,
                 created_by=current_user.id
             )
