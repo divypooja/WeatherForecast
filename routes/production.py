@@ -17,12 +17,6 @@ production_bp = Blueprint('production', __name__)
 @production_bp.route('/dashboard')
 @login_required
 def dashboard():
-    """Redirect to HTMX-powered dashboard"""
-    return redirect(url_for('production_htmx.dashboard_htmx'))
-
-@production_bp.route('/dashboard-legacy')
-@login_required
-def dashboard_legacy():
     # Enhanced production statistics
     total_productions = Production.query.count()
     planned_productions = Production.query.filter_by(status='planned').count()
