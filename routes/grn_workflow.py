@@ -82,16 +82,17 @@ def create_invoice_for_grn(grn_id):
     
     if form.validate_on_submit():
         try:
-            # Create vendor invoice
+            # Create vendor invoice (ensure all amounts are Decimal)
+            from decimal import Decimal
             vendor_invoice = VendorInvoice(
                 invoice_number=form.invoice_number.data,
                 invoice_date=form.invoice_date.data,
                 vendor_id=form.vendor_id.data,
-                base_amount=form.base_amount.data,
-                gst_amount=form.gst_amount.data or 0,
-                freight_amount=form.freight_amount.data or 0,
-                other_charges=form.other_charges.data or 0,
-                total_amount=form.total_amount.data
+                base_amount=Decimal(str(form.base_amount.data)),
+                gst_amount=Decimal(str(form.gst_amount.data or 0)),
+                freight_amount=Decimal(str(form.freight_amount.data or 0)),
+                other_charges=Decimal(str(form.other_charges.data or 0)),
+                total_amount=Decimal(str(form.total_amount.data))
             )
             
             # Handle document upload
@@ -109,7 +110,7 @@ def create_invoice_for_grn(grn_id):
             grn_link = VendorInvoiceGRNLink(
                 invoice_id=vendor_invoice.id,
                 grn_id=grn.id,
-                allocated_amount=form.base_amount.data
+                allocated_amount=Decimal(str(form.base_amount.data))
             )
             db.session.add(grn_link)
             
@@ -258,13 +259,14 @@ def create_payment_for_invoice(invoice_id):
             voucher_count = PaymentVoucher.query.count() + 1
             voucher_number = f"PAY-{datetime.now().strftime('%Y%m%d')}-{voucher_count:04d}"
             
-            # Create payment voucher
+            # Create payment voucher (ensure all amounts are Decimal)
+            from decimal import Decimal
             payment_voucher = PaymentVoucher(
                 voucher_number=voucher_number,
                 payment_date=form.payment_date.data,
                 vendor_id=form.vendor_id.data,
                 payment_method=form.payment_method.data,
-                payment_amount=form.total_payment_amount.data,
+                payment_amount=Decimal(str(form.total_payment_amount.data)),
                 bank_account_id=form.bank_account_id.data if form.bank_account_id.data else None,
                 reference_number=form.reference_number.data,
                 created_by=current_user.id
@@ -273,11 +275,11 @@ def create_payment_for_invoice(invoice_id):
             db.session.add(payment_voucher)
             db.session.flush()
             
-            # Create invoice allocation
+            # Create invoice allocation (ensure all amounts are Decimal)
             allocation = PaymentInvoiceAllocation(
                 payment_voucher_id=payment_voucher.id,
                 invoice_id=invoice.id,
-                allocated_amount=min(form.total_payment_amount.data, invoice.outstanding_amount)
+                allocated_amount=Decimal(str(min(form.total_payment_amount.data, invoice.outstanding_amount)))
             )
             db.session.add(allocation)
             
