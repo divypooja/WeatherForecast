@@ -168,13 +168,19 @@
                                     {% endif %}
                                 </td>
                                 <td class="text-center">
-                                    {% set days_outstanding = (moment().date() - invoice.invoice_date).days if invoice.invoice_date else 0 %}
-                                    {% if days_outstanding > 30 %}
-                                        <span class="badge bg-danger">{{ days_outstanding }} days</span>
-                                    {% elif days_outstanding > 15 %}
-                                        <span class="badge bg-warning">{{ days_outstanding }} days</span>
+                                    {% if invoice.invoice_date %}
+                                        {% set today = moment().date() %}
+                                        {% set invoice_date = invoice.invoice_date %}
+                                        {% set days_outstanding = (today - invoice_date).days %}
+                                        {% if days_outstanding > 30 %}
+                                            <span class="badge bg-danger">{{ days_outstanding }} days</span>
+                                        {% elif days_outstanding > 15 %}
+                                            <span class="badge bg-warning">{{ days_outstanding }} days</span>
+                                        {% else %}
+                                            <span class="badge bg-info">{{ days_outstanding }} days</span>
+                                        {% endif %}
                                     {% else %}
-                                        <span class="badge bg-info">{{ days_outstanding }} days</span>
+                                        <span class="badge bg-secondary">N/A</span>
                                     {% endif %}
                                 </td>
                                 <td>

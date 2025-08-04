@@ -288,12 +288,12 @@ def create_payment_for_invoice(invoice_id):
     try:
         from models_accounting import Account
         bank_accounts = Account.query.filter(
-            Account.account_name.contains('Bank')
+            Account.name.contains('Bank')
         ).limit(10).all()
     except:
         bank_accounts = []
     
-    form.bank_account_id.choices = [(0, 'Select Bank Account')] + [(acc.id, acc.account_name) for acc in bank_accounts]
+    form.bank_account_id.choices = [(0, 'Select Bank Account')] + [(acc.id, acc.name) for acc in bank_accounts]
     
     if request.method == 'GET':
         # Pre-populate payment amount with outstanding amount
