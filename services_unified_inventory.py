@@ -19,15 +19,20 @@ class UnifiedInventoryService:
         # Get basic counts
         total_items = Item.query.count()
         
-        # Use the new view for efficient calculations
+        # Use direct batch calculations
         stats_query = db.session.execute(text("""
             SELECT 
-                COUNT(*) as total_items,
-                COUNT(CASE WHEN stock_status = 'Low Stock' THEN 1 END) as low_stock_items,
-                COUNT(CASE WHEN stock_status = 'Out of Stock' THEN 1 END) as out_of_stock_items,
-                SUM(CASE WHEN finished_qty > 0 THEN finished_qty * COALESCE(i.unit_price, 0) ELSE 0 END) as stock_value
-            FROM inventory_multi_state ims
-            LEFT JOIN items i ON ims.item_id = i.id
+                COUNT(DISTINCT i.id) as total_items,
+                COUNT(DISTINCT CASE 
+                    WHEN COALESCE(SUM(CASE WHEN ib.current_state IN ('Raw', 'Finished') THEN ib.current_qty ELSE 0 END), 0) < 10 
+                    AND COALESCE(SUM(ib.current_qty), 0) > 0 
+                    THEN i.id 
+                END) as low_stock_items,
+                COUNT(DISTINCT CASE WHEN COALESCE(SUM(ib.current_qty), 0) = 0 THEN i.id END) as out_of_stock_items,
+                SUM(CASE WHEN ib.current_state = 'Finished' THEN ib.current_qty * COALESCE(i.unit_price, 0) ELSE 0 END) as stock_value
+            FROM items i
+            LEFT JOIN inventory_batches ib ON i.id = ib.item_id
+            GROUP BY i.id
         """)).fetchone()
         
         return {
@@ -41,21 +46,28 @@ class UnifiedInventoryService:
     def get_multi_state_inventory():
         """Get multi-state inventory breakdown per user requirements"""
         
+        # Use direct batch tracking instead of the problematic view
         result = db.session.execute(text("""
             SELECT 
-                item_code,
-                item_name,
-                item_type,
-                uom,
-                raw_qty,
-                wip_qty,
-                finished_qty,
-                scrap_qty,
-                total_qty,
-                available_qty,
-                stock_status
-            FROM inventory_multi_state
-            ORDER BY item_code
+                i.item_code,
+                i.name as item_name,
+                i.item_type,
+                i.unit_of_measure as uom,
+                COALESCE(SUM(CASE WHEN ib.current_state = 'Raw' THEN ib.current_qty ELSE 0 END), 0) as raw_qty,
+                COALESCE(SUM(CASE WHEN ib.current_state = 'WIP' THEN ib.current_qty ELSE 0 END), 0) as wip_qty,
+                COALESCE(SUM(CASE WHEN ib.current_state = 'Finished' THEN ib.current_qty ELSE 0 END), 0) as finished_qty,
+                COALESCE(SUM(CASE WHEN ib.current_state = 'Scrap' THEN ib.current_qty ELSE 0 END), 0) as scrap_qty,
+                COALESCE(SUM(ib.current_qty), 0) as total_qty,
+                COALESCE(SUM(CASE WHEN ib.current_state IN ('Raw', 'Finished') THEN ib.current_qty ELSE 0 END), 0) as available_qty,
+                CASE 
+                    WHEN COALESCE(SUM(ib.current_qty), 0) = 0 THEN 'Out of Stock'
+                    WHEN COALESCE(SUM(CASE WHEN ib.current_state IN ('Raw', 'Finished') THEN ib.current_qty ELSE 0 END), 0) < 10 THEN 'Low Stock'
+                    ELSE 'In Stock'
+                END as stock_status
+            FROM items i
+            LEFT JOIN inventory_batches ib ON i.id = ib.item_id
+            GROUP BY i.id, i.item_code, i.name, i.item_type, i.unit_of_measure
+            ORDER BY i.item_code
         """)).fetchall()
         
         return [{
