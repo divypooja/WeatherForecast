@@ -478,11 +478,23 @@ def edit_production(id):
             flash('Production number already exists', 'danger')
             return render_template('production/form.html', form=form, title='Edit Production', production=production)
         
+        # Update all form fields
         production.production_number = form.production_number.data
         production.item_id = form.item_id.data
         production.quantity_planned = form.quantity_planned.data
+        production.planned_uom = form.planned_uom.data
+        production.quantity_produced = form.quantity_produced.data or 0.0
+        production.produced_uom = form.produced_uom.data
+        production.quantity_good = form.quantity_good.data or 0.0
+        production.good_uom = form.good_uom.data
+        production.quantity_damaged = form.quantity_damaged.data or 0.0
+        production.damaged_uom = form.damaged_uom.data
+        production.scrap_quantity = form.scrap_quantity.data or 0.0
+        production.scrap_uom = form.scrap_uom.data
         production.production_date = form.production_date.data
+        production.status = form.status.data
         production.notes = form.notes.data
+        production.updated_at = datetime.utcnow()
         
         db.session.commit()
         flash('Production order updated successfully', 'success')
