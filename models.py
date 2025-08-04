@@ -1963,28 +1963,28 @@ class Production(db.Model):
     @property
     def completion_percentage(self):
         """Calculate production completion percentage"""
-        if self.quantity_planned > 0:
+        if self.quantity_planned and self.quantity_planned > 0 and self.quantity_produced is not None:
             return min((self.quantity_produced / self.quantity_planned) * 100, 100)
         return 0
     
     @property
     def efficiency_percentage(self):
         """Calculate production efficiency (good items / planned items)"""
-        if self.quantity_planned > 0:
+        if self.quantity_planned and self.quantity_planned > 0 and self.quantity_good is not None:
             return min((self.quantity_good / self.quantity_planned) * 100, 100)
         return 0
     
     @property
     def defect_rate(self):
         """Calculate defect rate percentage"""
-        if self.quantity_produced > 0:
+        if self.quantity_produced and self.quantity_produced > 0 and self.quantity_damaged is not None:
             return (self.quantity_damaged / self.quantity_produced) * 100
         return 0
     
     @property
     def scrap_rate(self):
         """Calculate scrap rate percentage"""
-        if self.quantity_produced > 0:
+        if self.quantity_produced and self.quantity_produced > 0 and self.scrap_quantity is not None:
             return (self.scrap_quantity / self.quantity_produced) * 100
         return 0
     

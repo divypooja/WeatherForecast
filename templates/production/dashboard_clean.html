@@ -248,17 +248,17 @@
                     {% for production in active_productions %}
                     <div class="row mb-3 p-3 border rounded">
                         <div class="col-md-6">
-                            <h6 class="mb-1">{{ production.code }} - {{ production.item_name }}</h6>
-                            <p class="text-muted mb-0">{{ production.status }}</p>
+                            <h6 class="mb-1">{{ production.production_number }} - {{ production.produced_item.name if production.produced_item else 'No Item' }}</h6>
+                            <p class="text-muted mb-0">{{ production.status.title() }}</p>
                         </div>
                         <div class="col-md-3">
-                            <span class="badge bg-info">{{ production.quantity }} units</span>
+                            <span class="badge bg-info">{{ production.quantity_planned }} units</span>
                         </div>
                         <div class="col-md-3 text-end">
                             <div class="progress mb-2" style="height: 8px;">
-                                <div class="progress-bar" role="progressbar" style="width: {{ production.progress or 0 }}%"></div>
+                                <div class="progress-bar" role="progressbar" style="width: {{ production.completion_percentage or 0 }}%"></div>
                             </div>
-                            <small class="text-muted">{{ production.progress or 0 }}% completed</small>
+                            <small class="text-muted">{{ production.completion_percentage or 0 }}% completed</small>
                         </div>
                     </div>
                     {% endfor %}
@@ -375,17 +375,17 @@
                             <tbody>
                                 {% for production in recent_productions %}
                                 <tr>
-                                    <td><code>{{ production.code }}</code></td>
-                                    <td>{{ production.item_name }}</td>
-                                    <td>{{ production.quantity }}</td>
+                                    <td><code>{{ production.production_number }}</code></td>
+                                    <td>{{ production.produced_item.name if production.produced_item else 'No Item' }}</td>
+                                    <td>{{ production.quantity_planned }}</td>
                                     <td>
-                                        <span class="badge bg-{{ 'success' if production.status == 'completed' else 'warning' }}">
+                                        <span class="badge bg-{{ 'success' if production.status == 'completed' else ('warning' if production.status == 'in_progress' else 'primary') }}">
                                             {{ production.status }}
                                         </span>
                                     </td>
                                     <td>
                                         <div class="progress" style="height: 6px;">
-                                            <div class="progress-bar" style="width: {{ production.progress or 0 }}%"></div>
+                                            <div class="progress-bar" style="width: {{ production.completion_percentage or 0 }}%"></div>
                                         </div>
                                     </td>
                                 </tr>
