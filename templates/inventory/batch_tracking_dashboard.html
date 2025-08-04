@@ -4,30 +4,31 @@
 
 {% block content %}
 <style>
+/* Reset any floating or positioning issues */
+* {
+    float: none !important;
+}
 .container-fluid {
+    display: block !important;
+    width: 100% !important;
     clear: both !important;
-    overflow: hidden !important;
+    position: relative !important;
 }
-.main-content {
-    clear: both !important;
-    overflow: hidden !important;
+.batch-dashboard {
+    display: block !important;
+    width: calc(100% - 250px) !important;
+    margin-right: 250px !important;
 }
-.row {
-    clear: both !important;
-}
-.floating-widgets {
+.sidebar-widgets {
     position: fixed !important;
-    top: 120px !important;
+    top: 100px !important;
     right: 20px !important;
+    width: 220px !important;
     z-index: 1000 !important;
-    width: 200px !important;
-}
-.main-dashboard-content {
-    margin-right: 220px !important;
-    clear: both !important;
 }
 </style>
-<div class="container-fluid main-dashboard-content">
+<div class="container-fluid">
+<div class="batch-dashboard">
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
@@ -119,7 +120,7 @@
 
     <div class="row">
         <!-- Parent-Child Table -->
-        <div class="col-xl-8 col-lg-7">
+        <div class="col-12">
             <div class="card shadow mb-4">
                 <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
                     <h6 class="m-0 font-weight-bold text-primary">Parent-Child Batch Tracking</h6>
@@ -230,91 +231,93 @@
             </div>
         </div>
 
-        <!-- Recent Batch Movements Side Panel -->
-        <div class="col-xl-4 col-lg-5">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Recent Batch Movements</h6>
-                </div>
-                <div class="card-body">
-                    {% if recent_movements %}
-                    <div class="table-responsive">
-                        <table class="table table-sm">
-                            <tbody>
-                                {% for movement in recent_movements %}
-                                <tr>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="mr-3">
-                                                <div class="icon-circle bg-primary">
-                                                    <i class="fas fa-exchange-alt text-white"></i>
-                                                </div>
-                                            </div>
-                                            <div class="small">
-                                                <div class="font-weight-bold">{{ movement.batch.batch_number }}</div>
-                                                <div class="text-gray-500">{{ movement.item.name }}</div>
-                                                <div class="text-xs text-gray-400">
-                                                    {{ movement.created_at.strftime('%d/%m %H:%M') }}
-                                                </div>
-                                            </div>
+    </div>
+</div>
+
+<!-- Sidebar Widgets -->
+<div class="sidebar-widgets">
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Recent Batch Movements</h6>
+        </div>
+        <div class="card-body">
+            {% if recent_movements %}
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <tbody>
+                        {% for movement in recent_movements %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="mr-3">
+                                        <div class="icon-circle bg-primary">
+                                            <i class="fas fa-exchange-alt text-white"></i>
                                         </div>
-                                    </td>
-                                    <td class="text-right">
-                                        <div class="small">
-                                            <div class="font-weight-bold">{{ movement.quantity }}</div>
-                                            <div class="text-gray-500">{{ movement.to_state or 'N/A' }}</div>
+                                    </div>
+                                    <div class="small">
+                                        <div class="font-weight-bold">{{ movement.batch.batch_number }}</div>
+                                        <div class="text-gray-500">{{ movement.item.name }}</div>
+                                        <div class="text-xs text-gray-400">
+                                            {{ movement.created_at.strftime('%d/%m %H:%M') }}
                                         </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                    <div class="text-center py-3">
-                        <i class="fas fa-info-circle text-gray-300 mb-2"></i>
-                        <p class="text-gray-500 mb-0">No recent movements</p>
-                    </div>
-                    {% endif %}
-                </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-right">
+                                <div class="small">
+                                    <div class="font-weight-bold">{{ movement.quantity }}</div>
+                                    <div class="text-gray-500">{{ movement.to_state or 'N/A' }}</div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-            
-            <!-- Quick Actions -->
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-success">Quick Actions</h6>
+            {% else %}
+            <div class="text-center py-3">
+                <i class="fas fa-info-circle text-gray-300 mb-2"></i>
+                <p class="text-gray-500 mb-0">No recent movements</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-success">Quick Actions</h6>
+        </div>
+        <div class="card-body">
+            <div class="row text-center">
+                <div class="col-6 mb-3">
+                    <a href="{{ url_for('grn.dashboard') }}" class="btn btn-outline-primary btn-sm w-100">
+                        <i class="fas fa-plus-circle"></i><br>
+                        <small>Create GRN</small>
+                    </a>
                 </div>
-                <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-6 mb-3">
-                            <a href="{{ url_for('grn.dashboard') }}" class="btn btn-outline-primary btn-sm w-100">
-                                <i class="fas fa-plus-circle"></i><br>
-                                <small>Create GRN</small>
-                            </a>
-                        </div>
-                        <div class="col-6 mb-3">
-                            <a href="{{ url_for('inventory.multi_state_view') }}" class="btn btn-outline-info btn-sm w-100">
-                                <i class="fas fa-layer-group"></i><br>
-                                <small>Multi-State</small>
-                            </a>
-                        </div>
-                        <div class="col-6 mb-3">
-                            <a href="{{ url_for('batch_tracking.traceability_report') }}" class="btn btn-outline-warning btn-sm w-100">
-                                <i class="fas fa-search"></i><br>
-                                <small>Traceability</small>
-                            </a>
-                        </div>
-                        <div class="col-6 mb-3">
-                            <a href="{{ url_for('production.dashboard') }}" class="btn btn-outline-success btn-sm w-100">
-                                <i class="fas fa-cogs"></i><br>
-                                <small>Production</small>
-                            </a>
-                        </div>
-                    </div>
+                <div class="col-6 mb-3">
+                    <a href="{{ url_for('inventory.multi_state_view') }}" class="btn btn-outline-info btn-sm w-100">
+                        <i class="fas fa-layer-group"></i><br>
+                        <small>Multi-State</small>
+                    </a>
+                </div>
+                <div class="col-6 mb-3">
+                    <a href="{{ url_for('batch_tracking.traceability_report') }}" class="btn btn-outline-warning btn-sm w-100">
+                        <i class="fas fa-search"></i><br>
+                        <small>Traceability</small>
+                    </a>
+                </div>
+                <div class="col-6 mb-3">
+                    <a href="{{ url_for('production.dashboard') }}" class="btn btn-outline-success btn-sm w-100">
+                        <i class="fas fa-cogs"></i><br>
+                        <small>Production</small>
+                    </a>
                 </div>
             </div>
         </div>
     </div>
+</div>
 </div>
 
 <!-- JavaScript for Parent-Child Table Functionality -->
