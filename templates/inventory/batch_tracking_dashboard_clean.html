@@ -73,7 +73,7 @@
                             <th>Document</th>
                             <th>Date</th>
                             <th>Supplier</th>
-                            <th>Amount</th>
+                            <th>Quantity</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -81,18 +81,18 @@
                     <tbody>
                         {% for parent in parent_child_data %}
                         <!-- Parent Row (Purchase Order) -->
-                        <tr class="parent-row" data-parent-id="{{ parent.id }}">
-                            <td><strong>{{ parent.po_number }}</strong></td>
-                            <td>{{ parent.order_date.strftime('%d/%m/%Y') if parent.order_date else parent.created_at.strftime('%d/%m/%Y') }}</td>
-                            <td>{{ parent.supplier.name }}</td>
-                            <td>{{ "%.2f"|format(parent.total_amount) }}</td>
+                        <tr class="parent-row" data-parent-id="{{ parent.parent_id }}">
+                            <td><strong>{{ parent.parent_doc }}</strong></td>
+                            <td>{{ parent.date.strftime('%d/%m/%Y') if parent.date else 'N/A' }}</td>
+                            <td>{{ parent.vendor_customer }}</td>
+                            <td>{{ parent.total_qty }}</td>
                             <td>
                                 <span class="badge bg-primary">{{ parent.status }}</span>
                             </td>
                             <td>
-                                {% if parent.children %}
-                                <button class="btn btn-sm btn-outline-info toggle-children" data-target="{{ parent.id }}">
-                                    <i class="fas fa-chevron-down"></i> {{ parent.children|length }} GRNs
+                                {% if parent.child_grns %}
+                                <button class="btn btn-sm btn-outline-info toggle-children" data-target="{{ parent.parent_id }}">
+                                    <i class="fas fa-chevron-down"></i> {{ parent.child_grns|length }} GRNs
                                 </button>
                                 {% else %}
                                 <span class="text-muted">No GRNs</span>
@@ -101,20 +101,20 @@
                         </tr>
                         
                         <!-- Child Rows (GRNs) -->
-                        {% if parent.children %}
-                        {% for child in parent.children %}
-                        <tr class="child-row child-{{ parent.id }}" style="display: none;">
+                        {% if parent.child_grns %}
+                        {% for child in parent.child_grns %}
+                        <tr class="child-row child-{{ parent.parent_id }}" style="display: none;">
                             <td class="pl-4">
                                 <i class="fas fa-arrow-right text-muted"></i> {{ child.grn_number }}
                             </td>
-                            <td>{{ child.created_at.strftime('%d/%m/%Y') }}</td>
-                            <td>{{ child.purchase_order.supplier.name }}</td>
-                            <td>{{ "%.2f"|format(child.total_received_value or 0) }}</td>
+                            <td>{{ child.grn_date.strftime('%d/%m/%Y') if child.grn_date else 'N/A' }}</td>
+                            <td>{{ child.item_name }}</td>
+                            <td>{{ child.received_qty }}</td>
                             <td>
-                                <span class="badge bg-success">GRN</span>
+                                <span class="badge bg-success">{{ child.status }}</span>
                             </td>
                             <td>
-                                <a href="{{ url_for('grn.view_grn', grn_id=child.id) }}" class="btn btn-sm btn-outline-primary">
+                                <a href="{{ url_for('grn.view_grn', grn_id=child.grn_id) }}" class="btn btn-sm btn-outline-primary">
                                     <i class="fas fa-eye"></i>
                                 </a>
                             </td>
@@ -199,7 +199,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.toggle-children').forEach(button => {
         button.addEventListener('click', function() {
             const targetId = this.getAttribute('data-target');
-            const childRows = document.querySelectorAll('.child-' + targetId);
+            const childRows = document.querySelectorAll('.child-' + targetId.replace('po_', ''));
             const icon = this.querySelector('i');
             
             childRows.forEach(row => {
