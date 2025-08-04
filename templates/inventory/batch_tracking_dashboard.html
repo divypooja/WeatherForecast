@@ -3,7 +3,31 @@
 {% block title %}Batch Tracking Dashboard{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+<style>
+.container-fluid {
+    clear: both !important;
+    overflow: hidden !important;
+}
+.main-content {
+    clear: both !important;
+    overflow: hidden !important;
+}
+.row {
+    clear: both !important;
+}
+.floating-widgets {
+    position: fixed !important;
+    top: 120px !important;
+    right: 20px !important;
+    z-index: 1000 !important;
+    width: 200px !important;
+}
+.main-dashboard-content {
+    margin-right: 220px !important;
+    clear: both !important;
+}
+</style>
+<div class="container-fluid main-dashboard-content">
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
