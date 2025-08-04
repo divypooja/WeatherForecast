@@ -173,6 +173,16 @@ def list_invoices():
             page=page, per_page=20, error_out=False
         )
         
+        # Calculate days outstanding on server side
+        from datetime import date
+        today = date.today()
+        
+        for invoice in invoices.items if invoices else []:
+            if hasattr(invoice, 'invoice_date') and invoice.invoice_date:
+                invoice.days_outstanding = (today - invoice.invoice_date).days
+            else:
+                invoice.days_outstanding = 0
+        
         return render_template('grn_workflow/invoices_list.html',
                              invoices=invoices,
                              status_filter=status_filter)
