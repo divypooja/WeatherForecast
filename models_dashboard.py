@@ -94,11 +94,11 @@ def init_default_modules():
             'url_endpoint': 'quality.dashboard'
         },
         {
-            'name': 'material_inspection',
-            'title': 'Material Inspection',
-            'description': 'Incoming material inspection workflow',
-            'icon': 'fas fa-search',
-            'url_endpoint': 'material_inspection.dashboard'
+            'name': 'grn_workflow',
+            'title': 'GRN Workflow',
+            'description': '3-step purchase workflow: GRN → Invoice → Payment',
+            'icon': 'fas fa-route text-primary',
+            'url_endpoint': 'grn_workflow.dashboard'
         },
         {
             'name': 'factory_expenses',
