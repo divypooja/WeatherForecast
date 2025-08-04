@@ -162,9 +162,9 @@ def list_invoices():
         page = request.args.get('page', 1, type=int)
         status_filter = request.args.get('status', 'all')
         
-        # Get actual VendorInvoice data
+        # Get actual VendorInvoice data with vendor relationships
         from models_grn_workflow import VendorInvoice
-        query = VendorInvoice.query
+        query = VendorInvoice.query.join(Supplier, VendorInvoice.vendor_id == Supplier.id, isouter=True)
         
         if status_filter != 'all':
             query = query.filter(VendorInvoice.status == status_filter)

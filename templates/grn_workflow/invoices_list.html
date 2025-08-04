@@ -140,7 +140,14 @@
                             {% for invoice in invoices.items %}
                             <tr class="{% if invoice.status == 'overdue' %}table-danger{% elif invoice.status == 'pending' %}table-warning{% elif invoice.status == 'paid' %}table-success{% endif %}">
                                 <td><strong>{{ invoice.invoice_number }}</strong></td>
-                                <td>{{ invoice.vendor.name if invoice.vendor else 'N/A' }}</td>
+                                <td>
+                                    {% if invoice.vendor_id %}
+                                        {% set vendor = invoice.vendor if invoice.vendor else 'Vendor #' + invoice.vendor_id|string %}
+                                        {{ vendor.name if vendor and vendor.name else vendor }}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
                                 <td>{{ invoice.invoice_date.strftime('%d-%m-%Y') if invoice.invoice_date else 'N/A' }}</td>
                                 <td>{{ invoice.due_date.strftime('%d-%m-%Y') if invoice.due_date else 'N/A' }}</td>
                                 <td class="text-end">₹{{ "%.2f"|format(invoice.total_amount) }}</td>
