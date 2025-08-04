@@ -114,60 +114,98 @@ def api_bom_tree():
         # Get all root BOMs (BOMs that are not components of other BOMs)
         boms = BOM.query.filter_by(is_active=True).all()
         
-        def build_bom_tree_node(bom):
-            """Build a tree node for a BOM"""
-            # Get UOM symbol safely
-            uom_symbol = 'PCS'
-            if bom.output_uom:
-                uom_symbol = get_uom_symbol(bom.output_uom)
-            elif bom.product and bom.product.unit_of_measure:
-                uom_symbol = get_uom_symbol(bom.product.unit_of_measure)
+        def build_bom_tree_node(bom, visited_boms=None, depth=0):
+            """Build a tree node for a BOM with cycle detection and depth limiting"""
+            if visited_boms is None:
+                visited_boms = set()
             
-            node = {
-                'bom_code': bom.bom_code,
-                'item_name': bom.product.name if bom.product else 'Unknown Item',
-                'quantity': bom.output_quantity,
-                'uom': uom_symbol,
-                'children': []
-            }
+            # Prevent infinite recursion
+            if depth > 10:  # Maximum depth limit
+                return None
+            if bom.id in visited_boms:  # Cycle detection
+                return None
             
-            # Add child BOMs from BOM items
-            for bom_item in bom.items:
-                if bom_item.material:
-                    # Check if this material has its own BOM
-                    child_bom = BOM.query.filter_by(product_id=bom_item.material.id, is_active=True).first()
-                    if child_bom:
-                        child_node = build_bom_tree_node(child_bom)
-                        node['children'].append(child_node)
-                    else:
-                        # Get UOM symbol safely for leaf node
-                        leaf_uom_symbol = 'PCS'
-                        if bom_item.uom:
-                            leaf_uom_symbol = get_uom_symbol(bom_item.uom)
-                        elif bom_item.material and bom_item.material.unit_of_measure:
-                            leaf_uom_symbol = get_uom_symbol(bom_item.material.unit_of_measure)
-                        
-                        # Add as leaf node
-                        leaf_node = {
-                            'bom_code': bom_item.material.code,
-                            'item_name': bom_item.material.name,
-                            'quantity': bom_item.qty_required,
-                            'uom': leaf_uom_symbol,
-                            'children': []
-                        }
-                        node['children'].append(leaf_node)
+            visited_boms.add(bom.id)
             
-            return node
+            try:
+                # Get UOM symbol safely
+                uom_symbol = 'PCS'
+                if bom.output_uom:
+                    uom_symbol = get_uom_symbol(bom.output_uom)
+                elif bom.product and bom.product.unit_of_measure:
+                    uom_symbol = get_uom_symbol(bom.product.unit_of_measure)
+                
+                node = {
+                    'bom_code': bom.bom_code,
+                    'item_name': bom.product.name if bom.product else 'Unknown Item',
+                    'quantity': bom.output_quantity,
+                    'uom': uom_symbol,
+                    'children': []
+                }
+                
+                # Add child BOMs from BOM items with safe database queries
+                if hasattr(bom, 'items') and bom.items:
+                    for bom_item in bom.items:
+                        try:
+                            if bom_item.material and bom_item.material.id:
+                                # Safe database query with error handling
+                                child_bom = BOM.query.filter_by(
+                                    product_id=bom_item.material.id, 
+                                    is_active=True
+                                ).first()
+                                
+                                if child_bom and child_bom.id not in visited_boms:
+                                    child_node = build_bom_tree_node(
+                                        child_bom, 
+                                        visited_boms.copy(), 
+                                        depth + 1
+                                    )
+                                    if child_node:
+                                        node['children'].append(child_node)
+                                else:
+                                    # Get UOM symbol safely for leaf node
+                                    leaf_uom_symbol = 'PCS'
+                                    if bom_item.uom:
+                                        leaf_uom_symbol = get_uom_symbol(bom_item.uom)
+                                    elif bom_item.material and bom_item.material.unit_of_measure:
+                                        leaf_uom_symbol = get_uom_symbol(bom_item.material.unit_of_measure)
+                                    
+                                    # Add as leaf node
+                                    leaf_node = {
+                                        'bom_code': bom_item.material.code if bom_item.material.code else 'N/A',
+                                        'item_name': bom_item.material.name if bom_item.material.name else 'Unknown',
+                                        'quantity': bom_item.qty_required if bom_item.qty_required else 0,
+                                        'uom': leaf_uom_symbol,
+                                        'children': []
+                                    }
+                                    node['children'].append(leaf_node)
+                        except Exception as e:
+                            # Skip problematic BOM items
+                            continue
+                
+                visited_boms.remove(bom.id)
+                return node
+                
+            except Exception as e:
+                # If any error occurs, remove from visited set and return None
+                visited_boms.discard(bom.id)
+                return None
         
-        # Build tree structure
+        # Build tree structure with error handling
         tree_data = []
         for bom in boms:
-            tree_node = build_bom_tree_node(bom)
-            tree_data.append(tree_node)
+            try:
+                tree_node = build_bom_tree_node(bom)
+                if tree_node:  # Only add valid nodes
+                    tree_data.append(tree_node)
+            except Exception as e:
+                # Skip problematic BOMs
+                continue
         
         return jsonify({
             'success': True,
-            'tree': tree_data
+            'tree': tree_data,
+            'message': 'BOM tree loaded successfully' if tree_data else 'No BOMs found'
         })
         
     except Exception as e:
