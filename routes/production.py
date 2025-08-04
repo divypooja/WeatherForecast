@@ -97,3 +97,109 @@ def add_bom():
 def bom_tree_view():
     """BOM tree view"""
     return render_template('production/bom_tree.html')
+
+@production_bp.route('/api/bom-tree')
+@login_required
+def api_bom_tree():
+    """API endpoint for BOM tree data"""
+    try:
+        # Get all root BOMs (BOMs that are not components of other BOMs)
+        boms = BOM.query.filter_by(is_active=True).all()
+        
+        def build_bom_tree_node(bom):
+            """Build a tree node for a BOM"""
+            node = {
+                'bom_code': bom.bom_code,
+                'item_name': bom.item.name if bom.item else 'Unknown Item',
+                'quantity': bom.quantity,
+                'uom': bom.item.unit_of_measure.symbol if bom.item and bom.item.unit_of_measure else 'PCS',
+                'children': []
+            }
+            
+            # Add child BOMs from BOM items
+            for bom_item in bom.items:
+                if bom_item.item:
+                    # Check if this item has its own BOM
+                    child_bom = BOM.query.filter_by(item_id=bom_item.item.id, is_active=True).first()
+                    if child_bom:
+                        child_node = build_bom_tree_node(child_bom)
+                        node['children'].append(child_node)
+                    else:
+                        # Add as leaf node
+                        leaf_node = {
+                            'bom_code': bom_item.item.code,
+                            'item_name': bom_item.item.name,
+                            'quantity': bom_item.quantity,
+                            'uom': bom_item.item.unit_of_measure.symbol if bom_item.item.unit_of_measure else 'PCS',
+                            'children': []
+                        }
+                        node['children'].append(leaf_node)
+            
+            return node
+        
+        # Build tree structure
+        tree_data = []
+        for bom in boms:
+            tree_node = build_bom_tree_node(bom)
+            tree_data.append(tree_node)
+        
+        return jsonify({
+            'success': True,
+            'tree': tree_data
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@production_bp.route('/api/bom/<bom_code>/details')
+@login_required
+def api_bom_details(bom_code):
+    """API endpoint for BOM details"""
+    try:
+        bom = BOM.query.filter_by(bom_code=bom_code).first()
+        if not bom:
+            return jsonify({
+                'success': False,
+                'message': 'BOM not found'
+            }), 404
+        
+        # Build BOM details
+        bom_data = {
+            'bom_code': bom.bom_code,
+            'item_name': bom.item.name if bom.item else 'Unknown Item',
+            'quantity': bom.quantity,
+            'uom': bom.item.unit_of_measure.symbol if bom.item and bom.item.unit_of_measure else 'PCS',
+            'is_active': bom.is_active,
+            'material_cost': float(bom.material_cost) if bom.material_cost else 0.0,
+            'labor_cost': float(bom.labor_cost) if bom.labor_cost else 0.0,
+            'overhead_cost': float(bom.overhead_cost) if bom.overhead_cost else 0.0,
+            'total_cost': float(bom.total_cost) if bom.total_cost else 0.0,
+            'items': []
+        }
+        
+        # Add BOM items
+        for bom_item in bom.items:
+            if bom_item.item:
+                item_data = {
+                    'item_code': bom_item.item.code,
+                    'item_name': bom_item.item.name,
+                    'quantity': bom_item.quantity,
+                    'uom': bom_item.item.unit_of_measure.symbol if bom_item.item.unit_of_measure else 'PCS',
+                    'cost_per_unit': float(bom_item.cost_per_unit) if bom_item.cost_per_unit else 0.0,
+                    'total_cost': float(bom_item.total_cost) if bom_item.total_cost else 0.0
+                }
+                bom_data['items'].append(item_data)
+        
+        return jsonify({
+            'success': True,
+            'bom': bom_data
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
