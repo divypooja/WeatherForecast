@@ -6,6 +6,14 @@ from datetime import datetime, date
 
 production_bp = Blueprint('production', __name__)
 
+def get_uom_symbol(uom_obj):
+    """Safely get UOM symbol whether it's an object or string"""
+    if uom_obj is None:
+        return 'PCS'
+    if hasattr(uom_obj, 'symbol'):
+        return uom_obj.symbol
+    return str(uom_obj)  # If it's already a string
+
 @production_bp.route('/dashboard')
 @login_required
 def dashboard():
@@ -108,11 +116,18 @@ def api_bom_tree():
         
         def build_bom_tree_node(bom):
             """Build a tree node for a BOM"""
+            # Get UOM symbol safely
+            uom_symbol = 'PCS'
+            if bom.output_uom:
+                uom_symbol = get_uom_symbol(bom.output_uom)
+            elif bom.product and bom.product.unit_of_measure:
+                uom_symbol = get_uom_symbol(bom.product.unit_of_measure)
+            
             node = {
                 'bom_code': bom.bom_code,
                 'item_name': bom.product.name if bom.product else 'Unknown Item',
                 'quantity': bom.output_quantity,
-                'uom': bom.output_uom.symbol if bom.output_uom else (bom.product.unit_of_measure.symbol if bom.product and bom.product.unit_of_measure else 'PCS'),
+                'uom': uom_symbol,
                 'children': []
             }
             
@@ -125,12 +140,19 @@ def api_bom_tree():
                         child_node = build_bom_tree_node(child_bom)
                         node['children'].append(child_node)
                     else:
+                        # Get UOM symbol safely for leaf node
+                        leaf_uom_symbol = 'PCS'
+                        if bom_item.uom:
+                            leaf_uom_symbol = get_uom_symbol(bom_item.uom)
+                        elif bom_item.material and bom_item.material.unit_of_measure:
+                            leaf_uom_symbol = get_uom_symbol(bom_item.material.unit_of_measure)
+                        
                         # Add as leaf node
                         leaf_node = {
                             'bom_code': bom_item.material.code,
                             'item_name': bom_item.material.name,
                             'quantity': bom_item.qty_required,
-                            'uom': bom_item.uom.symbol if bom_item.uom else (bom_item.material.unit_of_measure.symbol if bom_item.material.unit_of_measure else 'PCS'),
+                            'uom': leaf_uom_symbol,
                             'children': []
                         }
                         node['children'].append(leaf_node)
@@ -167,11 +189,18 @@ def api_bom_details(bom_code):
             }), 404
         
         # Build BOM details
+        # Get UOM symbol safely
+        bom_uom_symbol = 'PCS'
+        if bom.output_uom:
+            bom_uom_symbol = get_uom_symbol(bom.output_uom)
+        elif bom.product and bom.product.unit_of_measure:
+            bom_uom_symbol = get_uom_symbol(bom.product.unit_of_measure)
+        
         bom_data = {
             'bom_code': bom.bom_code,
             'item_name': bom.product.name if bom.product else 'Unknown Item',
             'quantity': bom.output_quantity,
-            'uom': bom.output_uom.symbol if bom.output_uom else (bom.product.unit_of_measure.symbol if bom.product and bom.product.unit_of_measure else 'PCS'),
+            'uom': bom_uom_symbol,
             'is_active': bom.is_active,
             'material_cost': 0.0,  # Calculate from BOM items
             'labor_cost': float(bom.labor_cost_per_unit) if bom.labor_cost_per_unit else 0.0,
@@ -188,11 +217,18 @@ def api_bom_details(bom_code):
                 total_cost = cost_per_unit * bom_item.qty_required
                 material_cost += total_cost
                 
+                # Get UOM symbol safely for BOM item
+                item_uom_symbol = 'PCS'
+                if bom_item.uom:
+                    item_uom_symbol = get_uom_symbol(bom_item.uom)
+                elif bom_item.material and bom_item.material.unit_of_measure:
+                    item_uom_symbol = get_uom_symbol(bom_item.material.unit_of_measure)
+                
                 item_data = {
                     'item_code': bom_item.material.code,
                     'item_name': bom_item.material.name,
                     'quantity': bom_item.qty_required,
-                    'uom': bom_item.uom.symbol if bom_item.uom else (bom_item.material.unit_of_measure.symbol if bom_item.material.unit_of_measure else 'PCS'),
+                    'uom': item_uom_symbol,
                     'cost_per_unit': cost_per_unit,
                     'total_cost': total_cost
                 }
