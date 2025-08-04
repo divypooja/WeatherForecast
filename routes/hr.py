@@ -264,91 +264,11 @@ def get_employee_hire_date(employee_id):
         employee = Employee.query.get_or_404(employee_id)
         return jsonify({
             'success': True,
-            'hire_date': employee.joining_date.strftime('%Y-%m-%d') if employee.joining_date else None,
+            'hire_date': employee.hire_date.strftime('%Y-%m-%d') if employee.hire_date else None,
             'name': employee.name
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 400
-
-@hr_bp.route('/api/calculate-attendance', methods=['POST'])
-@login_required 
-def calculate_attendance_api():
-    """AJAX endpoint to calculate attendance-based salary"""
-    try:
-        # Get data from request
-        data = request.get_json()
-        employee_id = data.get('employee_id')
-        pay_period_start = data.get('pay_period_start')
-        pay_period_end = data.get('pay_period_end')
-        daily_rate = data.get('daily_rate')
-        overtime_rate = data.get('overtime_rate', 150.0)
-        
-        # Validate required fields
-        if not all([employee_id, pay_period_start, pay_period_end, daily_rate]):
-            return jsonify({
-                'success': False,
-                'error': 'Missing required fields: employee_id, pay_period_start, pay_period_end, daily_rate'
-            }), 400
-        
-        # Parse and validate data
-        try:
-            employee_id = int(employee_id) if employee_id else None
-            daily_rate = float(daily_rate) if daily_rate else None
-            overtime_rate = float(overtime_rate) if overtime_rate else 150.0
-            start_date = datetime.strptime(pay_period_start, '%Y-%m-%d').date() if pay_period_start else None
-            end_date = datetime.strptime(pay_period_end, '%Y-%m-%d').date() if pay_period_end else None
-            
-            # Check for None values after parsing
-            if not all([employee_id, daily_rate, start_date, end_date]):
-                return jsonify({
-                    'success': False,
-                    'error': 'Invalid or missing data after parsing'
-                }), 400
-                
-        except (ValueError, TypeError) as e:
-            return jsonify({
-                'success': False,
-                'error': f'Invalid data format: {str(e)}'
-            }), 400
-        
-        # Verify employee exists
-        employee = Employee.query.get(employee_id)
-        if not employee:
-            return jsonify({
-                'success': False,
-                'error': 'Employee not found'
-            }), 404
-        
-        # Create temporary salary record for calculation
-        temp_salary = SalaryRecord(
-            employee_id=employee_id,
-            pay_period_start=start_date,
-            pay_period_end=end_date,
-            daily_rate=daily_rate,
-            overtime_rate=overtime_rate
-        )
-        
-        # Calculate attendance-based values
-        attendance_data = temp_salary.calculate_attendance_based_salary()
-        
-        return jsonify({
-            'success': True,
-            'data': {
-                'expected_working_days': int(attendance_data['expected_working_days']),
-                'actual_days_worked': int(attendance_data['actual_days_worked']),
-                'basic_amount': float(attendance_data['basic_amount']),
-                'overtime_hours': float(attendance_data['overtime_hours']),
-                'overtime_amount': float(attendance_data.get('overtime_amount', 0)),
-                'daily_rate': float(attendance_data['daily_rate'])
-            },
-            'message': f'Attendance calculated: {attendance_data["actual_days_worked"]} days worked out of {attendance_data["expected_working_days"]} expected days'
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': f'Calculation error: {str(e)}'
-        }), 500
 
 @hr_bp.route('/salaries/add', methods=['GET', 'POST'])
 @login_required
@@ -357,81 +277,27 @@ def add_salary():
     form = SalaryRecordForm()
     form.salary_number.data = SalaryRecord.generate_salary_number()
     
-    # Ensure employee dropdown has choices populated
-    if not form.employee_id.choices or len(form.employee_id.choices) <= 1:
-        employees = Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
-        form.employee_id.choices = [(0, 'Select Employee')] + [(emp.id, f'{emp.name} ({emp.employee_code})') for emp in employees]
-    
-    # Handle attendance calculation button - check if calculate button was pressed
-    if request.method == 'POST' and 'calculate_attendance' in request.form:
-        # Get form data directly from request
-        employee_id = request.form.get('employee_id')
-        pay_period_start = request.form.get('pay_period_start')
-        pay_period_end = request.form.get('pay_period_end')
-        daily_rate = request.form.get('daily_rate')
+    # Handle attendance calculation button
+    if form.calculate_attendance.data and form.employee_id.data and form.pay_period_start.data and form.pay_period_end.data and form.daily_rate.data:
+        # Create temporary salary record to calculate attendance
+        temp_salary = SalaryRecord(
+            employee_id=form.employee_id.data,
+            pay_period_start=form.pay_period_start.data,
+            pay_period_end=form.pay_period_end.data,
+            daily_rate=form.daily_rate.data,
+            overtime_rate=form.overtime_rate.data or 0
+        )
         
-        # Validate required fields manually for calculation
-        if employee_id and employee_id != '0' and pay_period_start and pay_period_end and daily_rate:
-            try:
-                # Parse dates
-                start_date = datetime.strptime(pay_period_start, '%Y-%m-%d').date()
-                end_date = datetime.strptime(pay_period_end, '%Y-%m-%d').date()
-                daily_rate_float = float(daily_rate)
-                employee_id_int = int(employee_id)
-                
-                # Create temporary salary record to calculate attendance
-                temp_salary = SalaryRecord(
-                    employee_id=employee_id_int,
-                    pay_period_start=start_date,
-                    pay_period_end=end_date,
-                    daily_rate=daily_rate_float,
-                    overtime_rate=150.0  # Default overtime rate
-                )
-                
-                # Calculate attendance-based values
-                attendance_data = temp_salary.calculate_attendance_based_salary()
-                
-                # Create a completely new form with calculated values to avoid WTForms issues
-                calculated_form = SalaryRecordForm()
-                
-                # Set all the basic form data
-                calculated_form.salary_number.data = form.salary_number.data
-                calculated_form.employee_id.data = employee_id_int
-                calculated_form.pay_period_start.data = start_date
-                calculated_form.pay_period_end.data = end_date
-                calculated_form.daily_rate.data = daily_rate_float
-                calculated_form.overtime_rate.data = 150.0
-                calculated_form.payment_method.data = 'cash'
-                
-                # Set calculated attendance values
-                calculated_form.expected_working_days.data = int(attendance_data['expected_working_days'])
-                calculated_form.actual_days_worked.data = int(attendance_data['actual_days_worked'])
-                calculated_form.basic_amount.data = float(attendance_data['basic_amount'])
-                calculated_form.overtime_hours.data = float(attendance_data['overtime_hours'])
-                
-                # Populate employee choices for the new form
-                employees = Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
-                calculated_form.employee_id.choices = [(0, 'Select Employee')] + [(emp.id, f'{emp.name} ({emp.employee_code})') for emp in employees]
-                
-                flash(f'✅ Attendance calculated successfully! {attendance_data["actual_days_worked"]} days worked out of {attendance_data["expected_working_days"]} expected days. Basic Amount: ₹{attendance_data["basic_amount"]:.2f}', 'success')
-                
-                # Pass the calculated values directly to template
-                calculated_values = {
-                    'expected_working_days': int(attendance_data['expected_working_days']),
-                    'actual_days_worked': int(attendance_data['actual_days_worked']),
-                    'basic_amount': float(attendance_data['basic_amount']),
-                    'overtime_hours': float(attendance_data['overtime_hours'])
-                }
-                
-                return render_template('hr/salary_form.html', 
-                                     form=calculated_form, 
-                                     title='Add Salary Record',
-                                     calculated_values=calculated_values)
-                
-            except Exception as e:
-                flash(f'❌ Error calculating attendance: {str(e)}', 'error')
-        else:
-            flash('❌ Please fill in Employee, Pay Period dates, and Daily Rate before calculating attendance.', 'warning')
+        # Calculate attendance-based values
+        attendance_data = temp_salary.calculate_attendance_based_salary()
+        
+        # Update form fields with calculated values
+        form.expected_working_days.data = attendance_data['expected_working_days']
+        form.actual_days_worked.data = attendance_data['actual_days_worked']
+        form.basic_amount.data = attendance_data['basic_amount']
+        form.overtime_hours.data = attendance_data['overtime_hours']
+        
+        flash(f'Attendance calculated: {attendance_data["actual_days_worked"]} days worked out of {attendance_data["expected_working_days"]} expected days', 'info')
     
     if form.validate_on_submit() and not form.calculate_attendance.data:
         try:
@@ -498,11 +364,6 @@ def approve_salary(id):
     salary.approved_at = datetime.utcnow()
     
     db.session.commit()
-    
-    # Send notification
-    from services.comprehensive_notifications import comprehensive_notification_service
-    comprehensive_notification_service.send_salary_approval_notification(salary)
-    
     flash(f'Salary record {salary.salary_number} approved successfully!', 'success')
     return redirect(url_for('hr.salary_detail', id=id))
 
@@ -525,70 +386,34 @@ def mark_salary_paid(id):
         salary.status = 'paid'
         salary.payment_date = date.today()
         
-        # Create comprehensive accounting entries using AccountingAutomation
-        from services.accounting_automation import AccountingAutomation
-        
-        voucher = AccountingAutomation.create_salary_payment_voucher(
-            salary_record=salary,
+        # Create corresponding factory expense record
+        expense = FactoryExpense(
+            expense_number=FactoryExpense.generate_expense_number(),
+            expense_date=date.today(),
+            category='salary',  # Salaries & Benefits category
+            subcategory='Employee Salary',
+            description=f'Salary Payment - {salary.employee.name} ({salary.salary_number}) for period {salary.pay_period_start.strftime("%b %d")} - {salary.pay_period_end.strftime("%b %d, %Y")}',
+            amount=float(salary.net_amount),
+            tax_amount=0.0,
+            total_amount=float(salary.net_amount),
             payment_method=salary.payment_method,
+            paid_by=f'Admin - {current_user.username}',
+            vendor_name=salary.employee.name,
+            vendor_contact=salary.employee.mobile_number or 'N/A',
+            invoice_number=salary.salary_number,
+            invoice_date=salary.pay_period_start,
+            status='paid',  # Mark as paid immediately
+            requested_by_id=current_user.id,
+            approved_by_id=current_user.id,
+            approval_date=datetime.utcnow(),
             payment_date=date.today(),
-            created_by=current_user.id
+            notes=f'Auto-created from Salary Record: {salary.salary_number}\nBasic: ₹{salary.basic_amount}\nOvertime: ₹{salary.overtime_amount}\nBonus: ₹{salary.bonus_amount}\nDeductions: ₹{salary.deduction_amount}\nAdvance Deduction: ₹{salary.advance_deduction}\nNet Amount: ₹{salary.net_amount}'
         )
         
-        if voucher:
-            # Create corresponding factory expense record for tracking
-            expense = FactoryExpense(
-                expense_number=FactoryExpense.generate_expense_number(),
-                expense_date=date.today(),
-                category='salary',  # Salaries & Benefits category
-                subcategory='Employee Salary',
-                description=f'Salary Payment - {salary.employee.name} ({salary.salary_number}) for period {salary.pay_period_start.strftime("%b %d")} - {salary.pay_period_end.strftime("%b %d, %Y")}',
-                amount=float(salary.net_amount),
-                tax_amount=0.0,
-                total_amount=float(salary.net_amount),
-                payment_method=salary.payment_method,
-                paid_by=f'Admin - {current_user.username}',
-                vendor_name=salary.employee.name,
-                vendor_contact=salary.employee.mobile_number or 'N/A',
-                invoice_number=salary.salary_number,
-                invoice_date=salary.pay_period_start,
-                status='paid',  # Mark as paid immediately
-                requested_by_id=current_user.id,
-                approved_by_id=current_user.id,
-                approval_date=datetime.utcnow(),
-                payment_date=date.today(),
-                voucher_id=voucher.id,  # Link to accounting voucher
-                notes=f'Auto-created from Salary Record: {salary.salary_number}\nAccounting Voucher: {voucher.voucher_number}\nBasic: ₹{salary.basic_amount}\nOvertime: ₹{salary.overtime_amount}\nBonus: ₹{salary.bonus_amount}\nDeductions: ₹{salary.deduction_amount}\nAdvance Deduction: ₹{salary.advance_deduction}\nNet Amount: ₹{salary.net_amount}'
-            )
-            
-            db.session.add(expense)
-            db.session.commit()
-            
-            # Send notification
-            from services.comprehensive_notifications import comprehensive_notification_service
-            comprehensive_notification_service.send_salary_payment_notification(salary)
-            
-            flash(f'Salary {salary.salary_number} marked as paid! Accounting voucher {voucher.voucher_number} and expense record {expense.expense_number} created!', 'success')
-        else:
-            # Fallback: Create expense record without accounting integration
-            expense = FactoryExpense(
-                expense_number=FactoryExpense.generate_expense_number(),
-                expense_date=date.today(),
-                category='salary',
-                subcategory='Employee Salary',
-                description=f'Salary Payment - {salary.employee.name} ({salary.salary_number})',
-                amount=float(salary.net_amount),
-                tax_amount=0.0,
-                total_amount=float(salary.net_amount),
-                payment_method=salary.payment_method,
-                status='paid',
-                requested_by_id=current_user.id,
-                notes=f'Manual expense record - Accounting integration failed'
-            )
-            db.session.add(expense)
-            db.session.commit()
-            
-            flash(f'Salary {salary.salary_number} marked as paid! Note: Manual accounting entry may be required.', 'warning')
+        db.session.add(expense)
+        db.session.commit()
+        
+        flash(f'Salary {salary.salary_number} marked as paid and expense record {expense.expense_number} created!', 'success')
         return redirect(url_for('hr.salary_detail', id=id))
         
     except Exception as e:
@@ -693,11 +518,6 @@ def approve_advance(id):
     advance.approved_at = datetime.utcnow()
     
     db.session.commit()
-    
-    # Send notification
-    from services.comprehensive_notifications import comprehensive_notification_service
-    comprehensive_notification_service.send_advance_approval_notification(advance)
-    
     flash(f'Advance {advance.advance_number} approved successfully!', 'success')
     return redirect(url_for('hr.advance_detail', id=id))
 
@@ -719,70 +539,34 @@ def mark_advance_paid(id):
         # Update advance status
         advance.status = 'active'  # Active means money has been paid out
         
-        # Create comprehensive accounting entries using AccountingAutomation
-        from services.accounting_automation import AccountingAutomation
-        
-        voucher = AccountingAutomation.create_employee_advance_voucher(
-            advance_record=advance,
+        # Create corresponding factory expense record
+        expense = FactoryExpense(
+            expense_number=FactoryExpense.generate_expense_number(),
+            expense_date=date.today(),
+            category='salary',  # Salaries & Benefits category
+            subcategory='Employee Advance',
+            description=f'Employee Advance Payment - {advance.employee.name} ({advance.advance_number}): {advance.reason}',
+            amount=float(advance.amount),
+            tax_amount=0.0,
+            total_amount=float(advance.amount),
             payment_method=advance.payment_method,
+            paid_by=f'Admin - {current_user.username}',
+            vendor_name=advance.employee.name,
+            vendor_contact=advance.employee.mobile_number or 'N/A',
+            invoice_number=advance.advance_number,
+            invoice_date=advance.advance_date,
+            status='paid',  # Mark as paid immediately
+            requested_by_id=current_user.id,
+            approved_by_id=current_user.id,
+            approval_date=datetime.utcnow(),
             payment_date=date.today(),
-            created_by=current_user.id
+            notes=f'Auto-created from Employee Advance: {advance.advance_number}\nReason: {advance.reason}\nRepayment Period: {advance.repayment_months} months'
         )
         
-        if voucher:
-            # Create corresponding factory expense record for tracking
-            expense = FactoryExpense(
-                expense_number=FactoryExpense.generate_expense_number(),
-                expense_date=date.today(),
-                category='salary',  # Salaries & Benefits category
-                subcategory='Employee Advance',
-                description=f'Employee Advance Payment - {advance.employee.name} ({advance.advance_number}): {advance.reason}',
-                amount=float(advance.amount),
-                tax_amount=0.0,
-                total_amount=float(advance.amount),
-                payment_method=advance.payment_method,
-                paid_by=f'Admin - {current_user.username}',
-                vendor_name=advance.employee.name,
-                vendor_contact=advance.employee.mobile_number or 'N/A',
-                invoice_number=advance.advance_number,
-                invoice_date=advance.advance_date,
-                status='paid',  # Mark as paid immediately
-                requested_by_id=current_user.id,
-                approved_by_id=current_user.id,
-                approval_date=datetime.utcnow(),
-                payment_date=date.today(),
-                voucher_id=voucher.id,  # Link to accounting voucher
-                notes=f'Auto-created from Employee Advance: {advance.advance_number}\nAccounting Voucher: {voucher.voucher_number}\nReason: {advance.reason}\nRepayment Period: {advance.repayment_months} months'
-            )
-            
-            db.session.add(expense)
-            db.session.commit()
-            
-            # Send notification
-            from services.comprehensive_notifications import comprehensive_notification_service
-            comprehensive_notification_service.send_advance_payment_notification(advance)
-            
-            flash(f'Advance {advance.advance_number} marked as paid! Accounting voucher {voucher.voucher_number} and expense record {expense.expense_number} created!', 'success')
-        else:
-            # Fallback: Create expense record without accounting integration
-            expense = FactoryExpense(
-                expense_number=FactoryExpense.generate_expense_number(),
-                expense_date=date.today(),
-                category='salary',
-                subcategory='Employee Advance',
-                description=f'Employee Advance Payment - {advance.employee.name} ({advance.advance_number})',
-                amount=float(advance.amount),
-                tax_amount=0.0,
-                total_amount=float(advance.amount),
-                payment_method=advance.payment_method,
-                status='paid',
-                requested_by_id=current_user.id,
-                notes=f'Manual expense record - Accounting integration failed'
-            )
-            db.session.add(expense)
-            db.session.commit()
-            
-            flash(f'Advance {advance.advance_number} marked as paid! Note: Manual accounting entry may be required.', 'warning')
+        db.session.add(expense)
+        db.session.commit()
+        
+        flash(f'Advance {advance.advance_number} marked as paid and expense record {expense.expense_number} created!', 'success')
         return redirect(url_for('hr.advance_detail', id=id))
         
     except Exception as e:

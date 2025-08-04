@@ -10,7 +10,6 @@ from models_notifications import (
     NotificationTemplate, InAppNotification, NotificationSchedule
 )
 from models import User
-from forms_notifications import NotificationRecipientForm, NotificationSettingsForm, NotificationTemplateForm, TestNotificationForm
 from datetime import datetime, timedelta
 from sqlalchemy import func, desc
 
@@ -160,52 +159,56 @@ def add_recipient():
         flash('Access denied. Admin privileges required.', 'danger')
         return redirect(url_for('main.dashboard'))
     
-    form = NotificationRecipientForm()
-    
-    if form.validate_on_submit():
+    if request.method == 'POST':
         try:
-            # Process notification types
+            # Get notification types
             notification_types = []
-            if form.email_enabled.data:
+            if 'email_notifications' in request.form:
                 notification_types.append('email')
-            if form.sms_enabled.data:
+            if 'sms_notifications' in request.form:
                 notification_types.append('sms')
-            if form.whatsapp_enabled.data:
+            if 'whatsapp_notifications' in request.form:
                 notification_types.append('whatsapp')
+            if 'in_app_notifications' in request.form:
+                notification_types.append('in_app')
             
-            # Process event subscriptions
+            # Get event subscriptions
             event_types = []
-            if form.purchase_notifications.data:
+            if 'po_events' in request.form:
                 event_types.append('purchase_team')
-            if form.sales_notifications.data:
-                event_types.append('sales_team')
-            if form.production_notifications.data:
-                event_types.append('production_team')
-            if form.inventory_notifications.data:
+            if 'grn_events' in request.form:
                 event_types.append('store')
-            if form.jobwork_notifications.data:
-                event_types.append('production_team')
-            if form.accounting_notifications.data:
+            if 'job_work_events' in request.form:
+                event_types.append('production_head')
+            if 'production_events' in request.form:
+                event_types.append('production_supervisor')
+            if 'sales_events' in request.form:
+                event_types.append('sales_team')
+            if 'accounts_events' in request.form:
                 event_types.append('accounts')
+            if 'inventory_events' in request.form:
+                event_types.append('store')
             
             recipient = NotificationRecipient(
-                name=form.name.data,
-                email=form.email.data or None,
-                phone=form.phone.data or None,
-                role=form.role.data,
-                recipient_name=form.name.data,
-                recipient_role=form.role.data,
+                name=request.form['name'],
+                email=request.form.get('email') or None,
+                phone=request.form.get('phone') or None,
+                role=request.form['role'],
+                department=request.form.get('department'),
                 notification_types=','.join(notification_types),
                 event_types=','.join(event_types),
-                po_events=form.purchase_notifications.data,
-                grn_events=form.purchase_notifications.data,
-                job_work_events=form.jobwork_notifications.data,
-                production_events=form.production_notifications.data,
-                sales_events=form.sales_notifications.data,
-                accounts_events=form.accounting_notifications.data,
-                inventory_events=form.inventory_notifications.data,
-                immediate_notifications=True,  # Default to immediate
-                is_active=form.is_active.data
+                po_events='po_events' in request.form,
+                grn_events='grn_events' in request.form,
+                job_work_events='job_work_events' in request.form,
+                production_events='production_events' in request.form,
+                sales_events='sales_events' in request.form,
+                accounts_events='accounts_events' in request.form,
+                inventory_events='inventory_events' in request.form,
+                immediate_notifications='immediate_notifications' in request.form,
+                daily_summary='daily_summary' in request.form,
+                weekly_summary='weekly_summary' in request.form,
+                is_active='is_active' in request.form,
+                is_external='is_external' in request.form
             )
             
             db.session.add(recipient)
@@ -218,7 +221,7 @@ def add_recipient():
             db.session.rollback()
             flash(f'Error adding recipient: {str(e)}', 'danger')
     
-    return render_template('notifications/admin/recipient_form.html', form=form, recipient=None, title='Add Recipient')
+    return render_template('notifications/admin/recipient_form.html', recipient=None, title='Add Recipient')
 
 @notifications_bp.route('/admin/recipients/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -325,31 +328,11 @@ def admin_logs():
     logs = query.order_by(desc(NotificationLog.sent_at)).paginate(
         page=page, per_page=50, error_out=False)
     
-    # Calculate statistics
-    total_logs = NotificationLog.query.count()
-    total_sent = NotificationLog.query.filter_by(success=True).count()
-    total_failed = NotificationLog.query.filter_by(success=False).count()
-    success_rate = round((total_sent / total_logs * 100) if total_logs > 0 else 0, 1)
-    
-    # Today's count
-    today = datetime.utcnow().date()
-    today_count = NotificationLog.query.filter(
-        func.date(NotificationLog.sent_at) == today
-    ).count()
-    
-    stats = {
-        'total_sent': total_sent,
-        'total_failed': total_failed,
-        'success_rate': success_rate,
-        'today_count': today_count
-    }
-    
     return render_template('notifications/admin/logs.html',
                          logs=logs,
                          type_filter=type_filter,
                          status_filter=status_filter,
-                         date_filter=date_filter,
-                         stats=stats)
+                         date_filter=date_filter)
 
 @notifications_bp.route('/admin/test', methods=['GET', 'POST'])
 @login_required
@@ -438,254 +421,34 @@ def bulk_test_notifications():
         # Test different notification scenarios
         test_results = []
         
-        # Test low stock alert - Internal system test
+        # Test low stock alert
         try:
-            from models_notifications import NotificationLog
-            
-            # Test internal logging system
-            test_log = NotificationLog(
-                type='system_alert',
-                recipient='internal_test',
-                subject='🧪 Test Low Stock Alert',
-                message='Internal notification system test - Low stock monitoring',
-                success=True,
-                response='Internal system test successful'
+            from services.notification_helpers import send_system_alert
+            result = send_system_alert(
+                "🧪 Test Low Stock Alert",
+                "This is a test notification for low stock monitoring. System is working correctly.",
+                "system_alert"
             )
-            db.session.add(test_log)
-            db.session.flush()  # Test database write
-            
-            test_results.append(('Low Stock Alert', 'success'))
+            test_results.append(('Low Stock Alert', 'success' if result else 'failed'))
         except Exception as e:
             test_results.append(('Low Stock Alert', f'error: {str(e)}'))
         
-        # Test system alert - Internal system test
+        # Test system alert
         try:
-            from models_notifications import NotificationLog
-            
-            # Test internal logging system
-            test_log = NotificationLog(
-                type='system_alert',
-                recipient='internal_test',
-                subject='🧪 System Test Alert',
-                message='Internal notification system test - System monitoring',
-                success=True,
-                response='Internal system test successful'
+            from services.notification_helpers import send_system_alert
+            result = send_system_alert(
+                "🧪 System Test Alert",
+                "Comprehensive notification system test completed successfully.",
+                "system_alert"
             )
-            db.session.add(test_log)
-            db.session.flush()  # Test database write
-            
-            test_results.append(('System Alert', 'success'))
+            test_results.append(('System Alert', 'success' if result else 'failed'))
         except Exception as e:
             test_results.append(('System Alert', f'error: {str(e)}'))
         
-        # Create test notification logs for demonstration
-        try:
-            from models_notifications import NotificationLog
-            
-            # Add test log entries
-            test_log1 = NotificationLog(
-                type='system_alert',
-                recipient='internal_system',
-                subject='Test Low Stock Alert',
-                message='System test notification for low stock monitoring',
-                success=True,
-                response='Internal logging successful'
-            )
-            
-            test_log2 = NotificationLog(
-                type='system_alert', 
-                recipient='internal_system',
-                subject='System Test Alert',
-                message='Comprehensive notification system test',
-                success=True,
-                response='Internal logging successful'
-            )
-            
-            db.session.add(test_log1)
-            db.session.add(test_log2)
-            db.session.commit()
-            
-            flash('System test completed successfully! Check notification logs for details.', 'success')
-            
-        except Exception as log_error:
-            flash(f'Test completed but logging failed: {str(log_error)}', 'warning')
+        flash('Bulk notification test completed. Check results below.', 'info')
         
         return render_template('notifications/admin/bulk_test_results.html', test_results=test_results)
         
     except Exception as e:
-        flash(f'Error running system test: {str(e)}', 'danger')
+        flash(f'Error running bulk test: {str(e)}', 'danger')
         return redirect(url_for('notifications.admin_dashboard'))
-
-@notifications_bp.route('/api/test-scenario', methods=['POST'])
-@login_required
-def test_business_scenario():
-    """Test common business notification scenarios"""
-    if not current_user.is_admin():
-        return jsonify({'success': False, 'message': 'Access denied'}), 403
-    
-    try:
-        data = request.get_json()
-        scenario = data.get('scenario', '')
-        
-        from models_notifications import NotificationLog
-        
-        # Create test notification based on scenario
-        scenario_data = {
-            'po_created': {
-                'subject': '📋 Purchase Order Created - PO-2025-001',
-                'message': 'New purchase order PO-2025-001 created for supplier ABC Ltd. Total amount: ₹25,000',
-                'type': 'purchase_order'
-            },
-            'grn_received': {
-                'subject': '📦 Goods Receipt Note - GRN-2025-001',
-                'message': 'Materials received against PO-2025-001. GRN-2025-001 generated for quality inspection.',
-                'type': 'grn'
-            },
-            'job_work_issued': {
-                'subject': '🔧 Job Work Issued - JW-2025-001',
-                'message': 'Job work JW-2025-001 issued to vendor XYZ Works. Expected completion: 7 days.',
-                'type': 'job_work'
-            },
-            'low_stock_alert': {
-                'subject': '⚠️ Low Stock Alert - Raw Material Steel',
-                'message': 'Raw Material Steel is running low. Current stock: 50 kg, Minimum required: 100 kg.',
-                'type': 'inventory_alert'
-            }
-        }
-        
-        if scenario not in scenario_data:
-            return jsonify({'success': False, 'message': 'Unknown scenario'}), 400
-        
-        scenario_info = scenario_data[scenario]
-        
-        # Create test log entry
-        test_log = NotificationLog(
-            type=scenario_info['type'],
-            recipient='test_recipient',
-            subject=scenario_info['subject'],
-            message=scenario_info['message'],
-            success=True,
-            response='Test scenario notification logged successfully'
-        )
-        
-        db.session.add(test_log)
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': f'Test notification created and logged successfully! Check notification logs to see the {scenario.replace("_", " ")} notification.'
-        })
-        
-    except Exception as e:
-        return jsonify({'success': False, 'message': f'Error testing scenario: {str(e)}'}), 500
-
-@notifications_bp.route('/api/test-configuration', methods=['POST'])
-@login_required
-def test_system_configuration():
-    """Test system configuration and service availability"""
-    if not current_user.is_admin():
-        return jsonify({'success': False, 'message': 'Access denied'}), 403
-    
-    try:
-        import os
-        from models_notifications import NotificationSettings
-        
-        test_results = []
-        
-        # Test database connectivity
-        try:
-            settings = NotificationSettings.get_settings()
-            test_results.append({
-                'name': 'Database Connection',
-                'success': True,
-                'message': 'Database connection successful'
-            })
-        except Exception as e:
-            test_results.append({
-                'name': 'Database Connection',
-                'success': False,
-                'message': f'Database error: {str(e)}'
-            })
-        
-        # Test notification settings
-        try:
-            settings = NotificationSettings.get_settings()
-            enabled_channels = []
-            if settings.email_enabled:
-                enabled_channels.append('Email')
-            if settings.sms_enabled:
-                enabled_channels.append('SMS')
-            if settings.whatsapp_enabled:
-                enabled_channels.append('WhatsApp')
-            
-            test_results.append({
-                'name': 'Notification Channels',
-                'success': True,
-                'message': f'Enabled channels: {", ".join(enabled_channels) if enabled_channels else "None configured"}'
-            })
-        except Exception as e:
-            test_results.append({
-                'name': 'Notification Channels',
-                'success': False,
-                'message': f'Settings error: {str(e)}'
-            })
-        
-        # Test SendGrid configuration
-        sendgrid_key = os.environ.get('SENDGRID_API_KEY')
-        test_results.append({
-            'name': 'SendGrid API Key',
-            'success': bool(sendgrid_key),
-            'message': 'SendGrid API key configured' if sendgrid_key else 'SendGrid API key not configured - email disabled'
-        })
-        
-        # Test Twilio configuration
-        twilio_sid = os.environ.get('TWILIO_ACCOUNT_SID')
-        twilio_token = os.environ.get('TWILIO_AUTH_TOKEN')
-        twilio_phone = os.environ.get('TWILIO_PHONE_NUMBER')
-        
-        twilio_configured = bool(twilio_sid and twilio_token and twilio_phone)
-        test_results.append({
-            'name': 'Twilio Configuration',
-            'success': twilio_configured,
-            'message': 'Twilio credentials configured' if twilio_configured else 'Twilio credentials not configured - SMS/WhatsApp disabled'
-        })
-        
-        # Test notification logging
-        try:
-            from models_notifications import NotificationLog
-            log_count = NotificationLog.query.count()
-            test_results.append({
-                'name': 'Notification Logging',
-                'success': True,
-                'message': f'Notification logging active - {log_count} logs recorded'
-            })
-        except Exception as e:
-            test_results.append({
-                'name': 'Notification Logging',
-                'success': False,
-                'message': f'Logging error: {str(e)}'
-            })
-        
-        # Test notification scheduler
-        try:
-            from services.scheduler import scheduler
-            test_results.append({
-                'name': 'Notification Scheduler',
-                'success': True,
-                'message': 'Notification scheduler running'
-            })
-        except Exception as e:
-            test_results.append({
-                'name': 'Notification Scheduler',
-                'success': False,
-                'message': f'Scheduler error: {str(e)}'
-            })
-        
-        return jsonify({
-            'success': True,
-            'tests': test_results,
-            'message': 'System configuration test completed'
-        })
-        
-    except Exception as e:
-        return jsonify({'success': False, 'message': f'Configuration test failed: {str(e)}'}), 500

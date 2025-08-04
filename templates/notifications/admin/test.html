@@ -148,7 +148,7 @@
         
         <div class="row">
             <div class="col-md-6">
-                <button class="btn btn-warning btn-block mb-2" onclick="testConfiguration()" id="test-config-btn">
+                <button class="btn btn-warning btn-block mb-2" onclick="testConfiguration()">
                     <i class="fas fa-cog"></i> Test System Configuration
                 </button>
             </div>
@@ -297,77 +297,18 @@ function testScenario(scenario) {
     });
 }
 
-// Test system configuration
-function testConfiguration() {
-    const resultsDiv = document.getElementById('config-test-results');
-    resultsDiv.innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin"></i> Testing system configuration...</div>';
+// Update recipient placeholder based on notification type
+document.getElementById('notification_type').addEventListener('change', function() {
+    const recipientField = document.getElementById('recipient');
+    const type = this.value;
     
-    fetch('/notifications/api/test-configuration', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        let html = '<div class="card"><div class="card-header"><h5>System Configuration Test Results</h5></div><div class="card-body">';
-        
-        data.tests.forEach(test => {
-            const statusClass = test.success ? 'success' : 'danger';
-            const statusIcon = test.success ? 'check' : 'times';
-            html += `
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span><strong>${test.name}:</strong> ${test.message}</span>
-                    <span class="badge bg-${statusClass}">
-                        <i class="fas fa-${statusIcon}"></i> ${test.success ? 'OK' : 'Failed'}
-                    </span>
-                </div>
-            `;
-        });
-        
-        html += '</div></div>';
-        resultsDiv.innerHTML = html;
-    })
-    .catch(error => {
-        resultsDiv.innerHTML = '<div class="alert alert-danger">Error testing configuration: ' + error.message + '</div>';
-    });
-}
-
-// Update recipient placeholder based on notification type (only if element exists)
-document.addEventListener('DOMContentLoaded', function() {
-    const notificationTypeElement = document.getElementById('notification_type');
-    if (notificationTypeElement) {
-        notificationTypeElement.addEventListener('change', function() {
-            const recipientField = document.getElementById('recipient');
-            if (recipientField) {
-                const type = this.value;
-                
-                if (type === 'email') {
-                    recipientField.placeholder = 'user@example.com';
-                } else if (type === 'sms' || type === 'whatsapp') {
-                    recipientField.placeholder = '+91 9876543210';
-                } else {
-                    recipientField.placeholder = 'Email or Phone Number';
-                }
-            }
-        });
+    if (type === 'email') {
+        recipientField.placeholder = 'user@example.com';
+    } else if (type === 'sms' || type === 'whatsapp') {
+        recipientField.placeholder = '+91 9876543210';
+    } else {
+        recipientField.placeholder = 'Email or Phone Number';
     }
 });
-
-// Make testConfiguration available globally
-window.testConfiguration = testConfiguration;
-
-// Also bind directly to button as backup
-document.addEventListener('DOMContentLoaded', function() {
-    const testConfigBtn = document.getElementById('test-config-btn');
-    if (testConfigBtn) {
-        testConfigBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            testConfiguration();
-        });
-    }
-});
-
-// Debug logging removed - function is working correctly
 </script>
 {% endblock %}

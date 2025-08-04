@@ -94,127 +94,66 @@
                     <h5><i class="fas fa-cog"></i> Current Settings</h5>
                 </div>
                 <div class="card-body">
-                    {% if settings %}
-                        <div class="row mb-2">
-                            <div class="col-6">Email:</div>
-                            <div class="col-6">
-                                {% if settings.email_enabled %}
-                                    <span class="badge bg-success text-white">Enabled</span>
-                                    {% if settings.sender_email %}
-                                        <br><small class="text-muted">{{ settings.sender_email }}</small>
-                                    {% endif %}
-                                {% else %}
-                                    <span class="badge bg-danger text-white">Disabled</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="row mb-2">
-                            <div class="col-6">SMS:</div>
-                            <div class="col-6">
-                                {% if settings.sms_enabled %}
-                                    <span class="badge bg-success text-white">Enabled</span>
-                                    {% if settings.twilio_phone_number %}
-                                        <br><small class="text-muted">{{ settings.twilio_phone_number }}</small>
-                                    {% endif %}
-                                {% else %}
-                                    <span class="badge bg-danger text-white">Disabled</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="row mb-2">
-                            <div class="col-6">WhatsApp:</div>
-                            <div class="col-6">
-                                {% if settings.whatsapp_enabled %}
-                                    <span class="badge bg-success text-white">Enabled</span>
-                                {% else %}
-                                    <span class="badge bg-danger text-white">Disabled</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <hr>
-                        <div class="row mb-2">
-                            <div class="col-6">PO Notifications:</div>
-                            <div class="col-6">
-                                {% if settings.po_notifications %}
-                                    <span class="badge bg-success text-white">On</span>
-                                {% else %}
-                                    <span class="badge bg-warning text-dark">Off</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="row mb-2">
-                            <div class="col-6">GRN Notifications:</div>
-                            <div class="col-6">
-                                {% if settings.grn_notifications %}
-                                    <span class="badge bg-success text-white">On</span>
-                                {% else %}
-                                    <span class="badge bg-warning text-dark">Off</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="row mb-2">
-                            <div class="col-6">Sales Notifications:</div>
-                            <div class="col-6">
-                                {% if settings.sales_notifications %}
-                                    <span class="badge bg-success text-white">On</span>
-                                {% else %}
-                                    <span class="badge bg-warning text-dark">Off</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="row mb-2">
-                            <div class="col-6">Accounts Events:</div>
-                            <div class="col-6">
-                                {% if settings.accounts_notifications %}
-                                    <span class="badge bg-success text-white">On</span>
-                                {% else %}
-                                    <span class="badge bg-warning text-dark">Off</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="row mb-2">
-                            <div class="col-6">Production Events:</div>
-                            <div class="col-6">
-                                {% if settings.production_notifications %}
-                                    <span class="badge bg-success text-white">On</span>
-                                {% else %}
-                                    <span class="badge bg-warning text-dark">Off</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="row mb-2">
-                            <div class="col-6">Inventory Alerts:</div>
-                            <div class="col-6">
-                                {% if settings.inventory_notifications %}
-                                    <span class="badge bg-success text-white">On</span>
-                                {% else %}
-                                    <span class="badge bg-warning text-dark">Off</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        {% if settings.admin_email or settings.admin_phone %}
-                            <hr>
-                            <h6 class="text-primary">Admin Contacts</h6>
-                            {% if settings.admin_email %}
-                                <div class="mb-1">
-                                    <small><i class="fas fa-envelope"></i> {{ settings.admin_email }}</small>
-                                </div>
+                    <div class="row mb-2">
+                        <div class="col-6">Email:</div>
+                        <div class="col-6">
+                            {% if settings.email_enabled %}
+                                <span class="badge badge-success">Enabled</span>
+                            {% else %}
+                                <span class="badge badge-danger">Disabled</span>
                             {% endif %}
-                            {% if settings.admin_phone %}
-                                <div class="mb-1">
-                                    <small><i class="fas fa-phone"></i> {{ settings.admin_phone }}</small>
-                                </div>
-                            {% endif %}
-                        {% endif %}
-                    {% else %}
-                        <div class="text-center text-muted">
-                            <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
-                            <p>No settings found</p>
-                            <a href="{{ url_for('notifications.admin_settings') }}" class="btn btn-primary btn-sm">
-                                Configure Settings
-                            </a>
                         </div>
-                    {% endif %}
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6">SMS:</div>
+                        <div class="col-6">
+                            {% if settings.sms_enabled %}
+                                <span class="badge badge-success">Enabled</span>
+                            {% else %}
+                                <span class="badge badge-danger">Disabled</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6">WhatsApp:</div>
+                        <div class="col-6">
+                            {% if settings.whatsapp_enabled %}
+                                <span class="badge badge-success">Enabled</span>
+                            {% else %}
+                                <span class="badge badge-danger">Disabled</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6">PO Notifications:</div>
+                        <div class="col-6">
+                            {% if settings.po_notifications %}
+                                <span class="badge badge-success">On</span>
+                            {% else %}
+                                <span class="badge badge-warning">Off</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6">GRN Notifications:</div>
+                        <div class="col-6">
+                            {% if settings.grn_notifications %}
+                                <span class="badge badge-success">On</span>
+                            {% else %}
+                                <span class="badge badge-warning">Off</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6">Sales Notifications:</div>
+                        <div class="col-6">
+                            {% if settings.sales_notifications %}
+                                <span class="badge badge-success">On</span>
+                            {% else %}
+                                <span class="badge badge-warning">Off</span>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
