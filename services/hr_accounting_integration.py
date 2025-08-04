@@ -170,92 +170,56 @@ class HRAccountingIntegration:
     
     @staticmethod
     def create_factory_expense_entry(expense):
-        """Create journal entry for factory expense"""
+        """Create journal entry for factory expense using authentic accounts"""
         try:
-            # Get required voucher type
-            voucher_type = VoucherType.query.filter_by(code='JNL').first()
-            if not voucher_type:
-                voucher_type = VoucherType.query.filter(
-                    VoucherType.name.ilike('%journal%')
-                ).first()
+            from services.authentic_accounting_integration import AuthenticAccountingIntegration
             
-            if not voucher_type:
-                logger.error("Journal voucher type not found")
-                return False
-            
-            # Determine expense account based on category - use existing accounts
-            expense_account = None
+            # Determine expense account based on category using authentic accounts
             if expense.category in ['salary', 'wages']:
-                expense_account = (Account.query.filter_by(code='WAGES').first() or 
-                                 Account.query.filter_by(code='SAL_WAGES').first() or
-                                 Account.query.filter(Account.name.ilike('%wage%')).first() or
-                                 Account.query.filter(Account.name.ilike('%salary%')).first())
+                expense_account = AuthenticAccountingIntegration.get_salary_account()
             elif expense.category in ['utilities', 'maintenance', 'overhead']:
-                expense_account = Account.query.filter_by(code='FACT_OH').first()
+                expense_account = AuthenticAccountingIntegration.get_overhead_account()
             else:
-                # General factory expense
-                expense_account = Account.query.filter_by(code='FACT_OH').first()
+                # General factory expense - use overhead account
+                expense_account = AuthenticAccountingIntegration.get_overhead_account()
             
-            # Fallback to any expense account
-            if not expense_account:
-                expense_group = AccountGroup.query.filter_by(group_type='expenses').first()
-                if expense_group:
-                    expense_account = Account.query.filter_by(account_group_id=expense_group.id).first()
-            
-            # Get cash/bank account
-            cash_account = Account.query.filter_by(is_cash_account=True).first()
-            if not cash_account:
-                cash_account = Account.query.filter_by(code='CASH').first()
+            # Get cash account
+            cash_account = AuthenticAccountingIntegration.get_cash_account()
             
             if not all([expense_account, cash_account]):
-                logger.error("Required accounts not found for expense entry")
+                logger.error("Required authentic accounts not found for expense entry")
                 return False
             
-            # Create voucher
-            voucher_number = f"EXP-{expense.expense_number}"
-            voucher = Voucher(
-                voucher_number=voucher_number,
-                voucher_type_id=voucher_type.id,
-                transaction_date=expense.expense_date,
-                reference_number=expense.expense_number,
-                narration=expense.description,
-                total_amount=Decimal(str(expense.total_amount)),
-                status='posted',
-                created_by=expense.requested_by_id
+            # Use authentic accounting integration to create the voucher
+            entries = [
+                {
+                    'account': expense_account,
+                    'type': 'debit',
+                    'amount': expense.total_amount,
+                    'narration': f"{expense.category} - {expense.description}"
+                },
+                {
+                    'account': cash_account,
+                    'type': 'credit',
+                    'amount': expense.total_amount,
+                    'narration': f"Cash paid for {expense.category}"
+                }
+            ]
+            
+            voucher = AuthenticAccountingIntegration.create_simple_voucher(
+                'JNL',
+                expense.expense_number,
+                f'Factory Expense - {expense.description}',
+                entries,
+                expense.expense_date
             )
             
-            db.session.add(voucher)
-            db.session.flush()
-            
-            # Create journal entries
-            # Debit expense
-            expense_entry = JournalEntry(
-                voucher_id=voucher.id,
-                account_id=expense_account.id,
-                entry_type='debit',
-                amount=Decimal(str(expense.total_amount)),
-                narration=f"{expense.category} - {expense.description}",
-                transaction_date=voucher.transaction_date
-            )
-            db.session.add(expense_entry)
-            
-            # Credit cash
-            cash_entry = JournalEntry(
-                voucher_id=voucher.id,
-                account_id=cash_account.id,
-                entry_type='credit',
-                amount=Decimal(str(expense.total_amount)),
-                narration=f"Payment for {expense.description}",
-                transaction_date=voucher.transaction_date
-            )
-            db.session.add(cash_entry)
-            
-            # Link voucher to expense
-            expense.voucher_id = voucher.id
-            
-            db.session.commit()
-            logger.info(f"Factory expense entry created: {voucher_number}")
-            return voucher
+            if voucher:
+                logger.info(f"Factory expense entry created: EXP-{expense.expense_number}")
+                return voucher
+            else:
+                logger.error("Failed to create expense voucher")
+                return False
             
         except Exception as e:
             db.session.rollback()
