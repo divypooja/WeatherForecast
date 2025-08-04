@@ -273,6 +273,12 @@ def batch_wise_view():
         'expired_batches': InventoryBatch.query.filter(
             InventoryBatch.expiry_date < datetime.now().date()
         ).count() if InventoryBatch.query.filter(InventoryBatch.expiry_date != None).count() > 0 else 0,
+        'batches_expiring_soon': InventoryBatch.query.filter(
+            InventoryBatch.expiry_date.between(
+                datetime.now().date(),
+                (datetime.now() + timedelta(days=30)).date()
+            )
+        ).count() if InventoryBatch.query.filter(InventoryBatch.expiry_date != None).count() > 0 else 0,
         'quality_issues': InventoryBatch.query.filter(InventoryBatch.inspection_status == 'failed').count()
     }
     
