@@ -89,7 +89,7 @@
                                     </td>
                                     <td>{{ production.start_date.strftime('%Y-%m-%d') if production.start_date else 'Not started' }}</td>
                                     <td>
-                                        <a href="{{ url_for('production.view_production', id=production.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <a href="{{ url_for('production.edit_production', id=production.id) }}" class="btn btn-sm btn-outline-primary">
                                             <i class="fas fa-eye"></i> View
                                         </a>
                                     </td>
@@ -141,7 +141,7 @@
                                         <span class="badge bg-info">{{ production.status.title() }}</span>
                                     </td>
                                     <td>
-                                        <a href="{{ url_for('production.view_production', id=production.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <a href="{{ url_for('production.edit_production', id=production.id) }}" class="btn btn-sm btn-outline-primary">
                                             <i class="fas fa-eye"></i> View
                                         </a>
                                     </td>
