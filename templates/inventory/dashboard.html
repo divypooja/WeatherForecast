@@ -98,19 +98,19 @@
                     <div class="row text-center">
                         <div class="col-md-3">
                             <h6 class="text-muted">Raw Materials</h6>
-                            <h4 class="mb-0">{{ multi_state_stats.raw_materials }}</h4>
+                            <h4 class="mb-0">{{ multi_state_stats.raw_materials or 0 }}</h4>
                         </div>
                         <div class="col-md-3">
                             <h6 class="text-muted">Work in Progress</h6>
-                            <h4 class="mb-0">{{ multi_state_stats.wip }}</h4>
+                            <h4 class="mb-0">{{ multi_state_stats.wip or 0 }}</h4>
                         </div>
                         <div class="col-md-3">
                             <h6 class="text-muted">Finished Goods</h6>
-                            <h4 class="mb-0">{{ multi_state_stats.finished_goods }}</h4>
+                            <h4 class="mb-0">{{ multi_state_stats.finished_goods or 0 }}</h4>
                         </div>
                         <div class="col-md-3">
                             <h6 class="text-muted">Scrap</h6>
-                            <h4 class="mb-0 text-danger">{{ multi_state_stats.scrap }}</h4>
+                            <h4 class="mb-0 text-danger">{{ multi_state_stats.scrap or 0 }}</h4>
                         </div>
                     </div>
                 </div>
@@ -199,19 +199,19 @@
                     <div class="row">
                         <div class="col-md-4 text-center">
                             <div class="border rounded p-3">
-                                <h5 class="text-success">{{ status_summary.ready }}</h5>
+                                <h5 class="text-success">{{ status_summary.ready or 0 }}</h5>
                                 <small class="text-muted">Ready</small>
                             </div>
                         </div>
                         <div class="col-md-4 text-center">
                             <div class="border rounded p-3">
-                                <h5 class="text-warning">{{ status_summary.pending }}</h5>
+                                <h5 class="text-warning">{{ status_summary.pending or 0 }}</h5>
                                 <small class="text-muted">Under 2</small>
                             </div>
                         </div>
                         <div class="col-md-4 text-center">
                             <div class="border rounded p-3">
-                                <h5 class="text-info">{{ status_summary.completed }}</h5>
+                                <h5 class="text-info">{{ status_summary.completed or 0 }}</h5>
                                 <small class="text-muted">Under 2</small>
                             </div>
                         </div>
@@ -283,7 +283,7 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-clock"></i> Recently Added Items</h5>
-                    <small class="text-muted">{{ recent_items|length }} items found</small>
+                    <small class="text-muted">{{ recent_items|length if recent_items else 0 }} items found</small>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -375,345 +375,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const multiStateToggle = document.getElementById('multiStateView');
     if (multiStateToggle) {
         multiStateToggle.addEventListener('change', function() {
-            // Add logic to toggle multi-state view
             console.log('Multi-state view:', this.checked);
         });
     }
-    });
-    });
-});
-</script>
-{% endblock %}
-                        <div class="metric-number">{{ stats.total_items }}</div>
-                        <div class="d-flex align-items-center mt-2">
-                            <i class="fas fa-warehouse text-primary me-2"></i>
-                            <small class="text-muted">Active SKUs</small>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-md-3 mb-3">
-                    <div class="metric-card warning">
-                        <div class="metric-label">Low Stock Alerts</div>
-                        <div class="metric-number">{{ stats.low_stock_items }}</div>
-                        <div class="d-flex align-items-center mt-2">
-                            <i class="fas fa-exclamation-triangle text-warning me-2"></i>
-                            <small class="text-muted">Need Reorder</small>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-md-3 mb-3">
-                    <div class="metric-card success">
-                        <div class="metric-label">Total Stock Value</div>
-                        <div class="metric-number">₹{{ "%.0f"|format(stats.total_stock_value) }}</div>
-                        <div class="d-flex align-items-center mt-2">
-                            <i class="fas fa-chart-line text-success me-2"></i>
-                            <small class="text-muted">Inventory Worth</small>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-md-3 mb-3">
-                    <div class="metric-card danger">
-                        <div class="metric-label">Out of Stock</div>
-                        <div class="metric-number">{{ stats.out_of_stock_items }}</div>
-                        <div class="d-flex align-items-center mt-2">
-                            <i class="fas fa-times-circle text-danger me-2"></i>
-                            <small class="text-muted">Critical Items</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Smart Inventory Status -->
-            <div class="row mb-4">
-                <div class="col-md-8">
-                    <div class="inventory-card">
-                        <div class="card-header bg-transparent">
-                            <h5><i class="fas fa-layer-group"></i> Multi-State Inventory Overview</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-3 text-center">
-                                    <div class="metric-number text-info">{{ stats.get('raw_material_items', 0) }}</div>
-                                    <div class="metric-label">Raw Materials</div>
-                                    <div class="stock-level-indicator stock-level-medium"></div>
-                                </div>
-                                <div class="col-md-3 text-center">
-                                    <div class="metric-number text-warning">{{ stats.get('wip_items', 0) }}</div>
-                                    <div class="metric-label">Work in Progress</div>
-                                    <div class="stock-level-indicator stock-level-low"></div>
-                                </div>
-                                <div class="col-md-3 text-center">
-                                    <div class="metric-number text-success">{{ stats.get('finished_goods_items', 0) }}</div>
-                                    <div class="metric-label">Finished Goods</div>
-                                    <div class="stock-level-indicator stock-level-high"></div>
-                                </div>
-                                <div class="col-md-3 text-center">
-                                    <div class="metric-number text-secondary">{{ stats.get('scrap_items', 0) }}</div>
-                                    <div class="metric-label">Scrap</div>
-                                    <div class="stock-level-indicator stock-level-low"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-md-4">
-                    <div class="inventory-card">
-                        <div class="card-header bg-transparent">
-                            <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="d-grid gap-2">
-                                <button class="btn btn-primary quick-action-btn" onclick="window.location.href='{{ url_for('inventory.list_items') }}'">
-                                    <i class="fas fa-list"></i> View All Items
-                                </button>
-                                <button class="btn btn-warning quick-action-btn" onclick="window.location.href='{{ url_for('inventory.list_items', search='') }}?low_stock=true'">
-                                    <i class="fas fa-exclamation-triangle"></i> Low Stock Items
-                                </button>
-                                <button class="btn btn-info quick-action-btn" onclick="window.location.href='{{ url_for('inventory.batch_tracking_dashboard') }}'">
-                                    <i class="fas fa-cubes"></i> Batch Tracking
-                                </button>
-                                <button class="btn btn-success quick-action-btn" onclick="window.location.href='{{ url_for('reports.inventory_report') }}'">
-                                    <i class="fas fa-chart-bar"></i> Generate Report
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Recent Items - Enhanced Card View -->
-            <div class="row">
-                <div class="col-md-8 mb-4">
-                    <div class="inventory-card">
-                        <div class="card-header bg-transparent">
-                            <h5><i class="fas fa-history"></i> Recently Added Items</h5>
-                        </div>
-                        <div class="card-body">
-                            {% if recent_items %}
-                                {% for item in recent_items %}
-                                <div class="item-card">
-                                    <div class="row align-items-center">
-                                        <div class="col-md-3">
-                                            <h6 class="mb-1">{{ item.code }}</h6>
-                                            <small class="text-muted">{{ item.name[:30] }}{{ '...' if item.name|length > 30 else '' }}</small>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <span class="status-badge bg-info text-white">{{ item.item_type.title() }}</span>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="d-flex align-items-center">
-                                                <div class="fw-bold">{{ item.current_stock or 0 }}</div>
-                                                <small class="text-muted ms-1">{{ item.unit_of_measure }}</small>
-                                            </div>
-                                            <div class="stock-level-indicator {{ 'stock-level-low' if (item.current_stock or 0) <= (item.minimum_stock or 0) else 'stock-level-high' }}"></div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <small class="text-muted">₹{{ "%.2f"|format(item.unit_price or 0) }}</small>
-                                        </div>
-                                        <div class="col-md-2 text-end">
-                                            <button class="btn btn-sm btn-outline-primary" onclick="viewItemDetails('{{ item.id }}')">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            {% else %}
-                                <div class="text-center py-4">
-                                    <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
-                                    <h6>No recent items</h6>
-                                    <p class="text-muted">Add your first inventory item to see activity here</p>
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-md-4 mb-4">
-                    <div class="inventory-card">
-                        <div class="card-header bg-transparent">
-                            <h5><i class="fas fa-chart-pie"></i> Unit Distribution</h5>
-                        </div>
-                        <div class="card-body">
-                            {% if uom_stats %}
-                                {% for uom, count in uom_stats[:6] %}
-                                <div class="batch-explorer mb-2">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h6 class="mb-0">{{ uom.upper() }}</h6>
-                                            <small class="text-muted">{{ count }} items</small>
-                                        </div>
-                                        <div class="text-end">
-                                            <div class="metric-number" style="font-size: 1.5rem;">{{ count }}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            {% else %}
-                                <div class="text-center py-4">
-                                    <i class="fas fa-ruler fa-2x text-muted mb-2"></i>
-                                    <p class="text-muted mb-0">No units defined</p>
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Stock Alerts Tab -->
-        <div class="tab-pane fade" id="alerts" role="tabpanel">
-            <div class="inventory-card">
-                <div class="card-header bg-transparent">
-                    <h5><i class="fas fa-exclamation-triangle"></i> Stock Alert Center</h5>
-                </div>
-                <div class="card-body">
-                    {% if low_stock_items %}
-                        {% for item in low_stock_items %}
-                        <div class="item-card border-warning">
-                            <div class="row align-items-center">
-                                <div class="col-md-4">
-                                    <h6 class="mb-1">{{ item.name }}</h6>
-                                    <small class="text-muted">{{ item.code }}</small>
-                                </div>
-                                <div class="col-md-2">
-                                    <div class="text-center">
-                                        <div class="fw-bold text-danger">{{ item.current_stock or 0 }}</div>
-                                        <small class="text-muted">Current</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    <div class="text-center">
-                                        <div class="fw-bold">{{ item.minimum_stock or 0 }}</div>
-                                        <small class="text-muted">Minimum</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    <div class="text-center">
-                                        <div class="fw-bold">{{ item.unit_of_measure }}</div>
-                                        <small class="text-muted">Unit</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-2 text-end">
-                                    <button class="btn btn-sm btn-warning">
-                                        <i class="fas fa-shopping-cart"></i> Reorder
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="text-center py-5">
-                            <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
-                            <h5>All Good!</h5>
-                            <p class="text-muted">All items are above minimum stock levels</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- Batch Tracking Tab -->
-        <div class="tab-pane fade" id="batches" role="tabpanel">
-            <div class="inventory-card">
-                <div class="card-body">
-                    <h5><i class="fas fa-boxes"></i> Batch Management</h5>
-                    <p class="text-muted">Track inventory across all batch states and processes</p>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <button class="btn btn-primary w-100" onclick="window.location.href='{{ url_for('inventory.batch_tracking_dashboard') }}'">
-                                <i class="fas fa-cubes"></i> Batch Tracking Dashboard
-                            </button>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <button class="btn btn-info w-100" onclick="window.location.href='{{ url_for('inventory.multi_state_view') }}'">
-                                <i class="fas fa-layer-group"></i> Multi-State View
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Analytics Tab -->
-        <div class="tab-pane fade" id="analytics" role="tabpanel">
-            <div class="inventory-card">
-                <div class="card-body">
-                    <h5><i class="fas fa-chart-line"></i> Inventory Analytics</h5>
-                    <p class="text-muted">Comprehensive inventory analysis and reporting</p>
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <button class="btn btn-success w-100" onclick="window.location.href='{{ url_for('reports.inventory_report') }}'">
-                                <i class="fas fa-chart-bar"></i> Inventory Report
-                            </button>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <button class="btn btn-warning w-100" onclick="window.location.href='{{ url_for('reports.export_inventory') }}'">
-                                <i class="fas fa-download"></i> Export Data
-                            </button>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <button class="btn btn-info w-100" onclick="window.location.href='{{ url_for('live_status.wip_breakdown') }}'">
-                                <i class="fas fa-chart-pie"></i> WIP Analysis
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Valuation Tab -->
-        <div class="tab-pane fade" id="valuation" role="tabpanel">
-            <div class="inventory-card">
-                <div class="card-header bg-transparent">
-                    <h5><i class="fas fa-rupee-sign"></i> Inventory Valuation</h5>
-                </div>
-                <div class="card-body">
-                    <div class="inventory-summary">
-                        <div class="row">
-                            <div class="col-md-3 text-center">
-                                <div class="metric-number">₹{{ "%.0f"|format(stats.total_stock_value) }}</div>
-                                <div class="metric-label">Total Value</div>
-                            </div>
-                            <div class="col-md-3 text-center">
-                                <div class="metric-number">₹{{ "%.0f"|format(stats.total_stock_value / stats.total_items if stats.total_items > 0 else 0) }}</div>
-                                <div class="metric-label">Avg. Item Value</div>
-                            </div>
-                            <div class="col-md-3 text-center">
-                                <div class="metric-number">{{ stats.total_items }}</div>
-                                <div class="metric-label">Total Items</div>
-                            </div>
-                            <div class="col-md-3 text-center">
-                                <div class="metric-number">{{ "%.1f"|format((stats.total_items - stats.out_of_stock_items) / stats.total_items * 100 if stats.total_items > 0 else 0) }}%</div>
-                                <div class="metric-label">Stock Health</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-function viewItemDetails(itemId) {
-    window.location.href = `/inventory/view/${itemId}`;
-}
-
-// Tab initialization
-document.addEventListener('DOMContentLoaded', function() {
-    var triggerTabList = [].slice.call(document.querySelectorAll('#inventoryTabs button'));
-    triggerTabList.forEach(function (triggerEl) {
-        var tabTrigger = new bootstrap.Tab(triggerEl);
-        triggerEl.addEventListener('click', function (event) {
-            event.preventDefault();
-            tabTrigger.show();
-        });
-    });
 });
 </script>
 {% endblock %}
