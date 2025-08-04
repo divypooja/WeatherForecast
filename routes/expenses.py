@@ -235,15 +235,18 @@ def add_expense():
                         except Exception as e:
                             print(f"Error saving document: {str(e)}")
             
-            # Create accounting entries for the expense using HR integration
-            voucher = HRAccountingIntegration.create_factory_expense_entry(expense)
-            
+            # Commit the expense first
             db.session.commit()
             
-            if voucher:
-                flash(f'Expense {expense.expense_number} created successfully with accounting entries!', 'success')
-            else:
-                flash(f'Expense {expense.expense_number} created successfully but accounting integration failed!', 'warning')
+            # Create accounting entries for the expense using HR integration
+            try:
+                voucher = HRAccountingIntegration.create_factory_expense_entry(expense)
+                if voucher:
+                    flash(f'Expense {expense.expense_number} created successfully with accounting entries!', 'success')
+                else:
+                    flash(f'Expense {expense.expense_number} created successfully but accounting integration failed!', 'warning')
+            except Exception as e:
+                flash(f'Expense {expense.expense_number} created successfully but accounting integration failed: {str(e)}', 'warning')
             return redirect(url_for('expenses.expense_detail', id=expense.id))
             
         except Exception as e:
