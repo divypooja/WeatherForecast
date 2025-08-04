@@ -172,61 +172,83 @@ def batch_wise_view():
     state_filter = request.args.get('state', '')
     location_filter = request.args.get('location', '')
     
-    # Build base query
-    query = ItemBatch.query.join(Item)
+    # Build base query - use InventoryBatch instead of ItemBatch
+    from models_batch import InventoryBatch
+    query = InventoryBatch.query.join(Item)
     
     # Apply filters
     if item_filter:
-        query = query.filter(ItemBatch.item_id == item_filter)
+        query = query.filter(InventoryBatch.item_id == item_filter)
     
     if state_filter:
         if state_filter == 'raw':
-            query = query.filter(ItemBatch.qty_raw > 0)
+            query = query.filter(InventoryBatch.qty_raw > 0)
         elif state_filter == 'finished':
-            query = query.filter(ItemBatch.qty_finished > 0)
+            query = query.filter(InventoryBatch.qty_finished > 0)
         elif state_filter == 'scrap':
-            query = query.filter(ItemBatch.qty_scrap > 0)
-        elif state_filter in ['cutting', 'bending', 'welding', 'zinc', 'painting', 'assembly', 'machining', 'polishing']:
-            query = query.filter(getattr(ItemBatch, f'qty_wip_{state_filter}') > 0)
+            query = query.filter(InventoryBatch.qty_scrap > 0)
+        elif state_filter == 'wip':
+            query = query.filter(InventoryBatch.qty_wip > 0)
+        elif state_filter == 'inspection':
+            query = query.filter(InventoryBatch.qty_inspection > 0)
     
     if location_filter:
-        query = query.filter(ItemBatch.storage_location.ilike(f'%{location_filter}%'))
+        query = query.filter(InventoryBatch.location.ilike(f'%{location_filter}%'))
     
     # Pagination
     page = request.args.get('page', 1, type=int)
-    batches = query.order_by(desc(ItemBatch.created_at)).paginate(
+    batches = query.order_by(desc(InventoryBatch.created_at)).paginate(
         page=page, per_page=20, error_out=False
     )
     
     # Get process-wise summary
     process_summary = BatchTracker.get_process_wise_inventory_summary()
     
+    # Prepare parent-child batch data for template
+    from models_grn import GRN
+    parent_child_data = []
+    
+    # Get all GRNs with their associated batches
+    grns = GRN.query.order_by(desc(GRN.created_at)).limit(20).all()
+    for grn in grns:
+        grn_batches = InventoryBatch.query.filter_by(grn_id=grn.id).all()
+        if grn_batches:
+            grn_data = {
+                'grn_number': grn.grn_number,
+                'grn_date': grn.grn_date,
+                'status': grn.status,
+                'vendor_name': grn.supplier.name if grn.supplier else 'Unknown',
+                'batch_numbers': [batch.batch_code for batch in grn_batches],
+                'item_name': grn_batches[0].item.name if grn_batches[0].item else 'Unknown Item',
+                'received_qty': sum(batch.total_quantity for batch in grn_batches),
+                'scrap_qty': sum(batch.qty_scrap or 0 for batch in grn_batches)
+            }
+            parent_child_data.append([grn_data])  # Wrap in list to match template expectation
+    
+    # Get recent batch movements
+    from models_batch_movement import BatchMovement
+    recent_movements = BatchMovement.query.order_by(desc(BatchMovement.created_at)).limit(10).all()
+    
     # Get filter options
-    items = Item.query.filter(Item.batch_required == True).order_by(Item.name).all()
-    storage_locations = db.session.query(ItemBatch.storage_location).distinct().all()
+    items = Item.query.order_by(Item.name).all()
+    storage_locations = db.session.query(InventoryBatch.location).distinct().all()
     locations = [loc[0] for loc in storage_locations if loc[0]]
     
     # Calculate batch statistics
     batch_stats = {
-        'total_batches': ItemBatch.query.count(),
-        'active_batches': ItemBatch.query.filter(
+        'total_batches': InventoryBatch.query.count(),
+        'active_batches': InventoryBatch.query.filter(
             db.or_(
-                ItemBatch.qty_raw > 0,
-                ItemBatch.qty_wip_cutting > 0,
-                ItemBatch.qty_wip_bending > 0,
-                ItemBatch.qty_wip_welding > 0,
-                ItemBatch.qty_wip_zinc > 0,
-                ItemBatch.qty_wip_painting > 0,
-                ItemBatch.qty_wip_assembly > 0,
-                ItemBatch.qty_wip_machining > 0,
-                ItemBatch.qty_wip_polishing > 0,
-                ItemBatch.qty_finished > 0
+                InventoryBatch.qty_raw > 0,
+                InventoryBatch.qty_wip > 0,
+                InventoryBatch.qty_finished > 0,
+                InventoryBatch.qty_inspection > 0
             )
         ).count(),
-        'expired_batches': ItemBatch.query.filter(
-            ItemBatch.expiry_date < datetime.now().date()
-        ).count() if hasattr(ItemBatch, 'expiry_date') else 0,
-        'quality_issues': ItemBatch.query.filter(ItemBatch.quality_status == 'defective').count()
+        'expired_batches': InventoryBatch.query.filter(
+            InventoryBatch.expiry_date < datetime.now().date()
+        ).count() if InventoryBatch.query.filter(InventoryBatch.expiry_date != None).count() > 0 else 0,
+        'quality_issues': InventoryBatch.query.filter(InventoryBatch.inspection_status == 'failed').count()
     }
     
     return render_template('inventory/batch_tracking_dashboard.html',
@@ -234,6 +256,8 @@ def batch_wise_view():
                          batches=batches,
                          process_summary=process_summary,
                          stats=batch_stats,
+                         parent_child_data=parent_child_data,
+                         recent_movements=recent_movements,
                          items=items,
                          locations=locations,
                          current_filters={
