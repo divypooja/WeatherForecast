@@ -169,6 +169,69 @@
                         </li>
                     </ul>
                 </div>
+                <div class="card-body">
+                    <!-- Tab Content -->
+                    <div class="tab-content" id="productionTabsContent">
+                        <!-- Dashboard Tab -->
+                        <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5>Production Overview</h5>
+                                    <p>Real-time production status and key metrics.</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5>Quick Actions</h5>
+                                    <a href="{{ url_for('production.list_productions') }}" class="btn btn-primary btn-sm">View All Productions</a>
+                                    <a href="{{ url_for('production.add_production') }}" class="btn btn-success btn-sm">New Production</a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Orders Tab -->
+                        <div class="tab-pane fade" id="orders" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <h5>Production Orders</h5>
+                                    <p>Manage and track production orders.</p>
+                                    <a href="{{ url_for('production.list_productions') }}" class="btn btn-primary">View Production Orders</a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Job Work Tab -->
+                        <div class="tab-pane fade" id="jobwork" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <h5>Job Work Stages</h5>
+                                    <p>Track job work processes and stages.</p>
+                                    <a href="{{ url_for('production.dashboard') }}" class="btn btn-info">Job Work Dashboard</a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Batches Tab -->
+                        <div class="tab-pane fade" id="batches" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <h5>Batch Management</h5>
+                                    <p>Monitor and manage production batches.</p>
+                                    <a href="{{ url_for('inventory.batch_tracking_dashboard') }}" class="btn btn-warning">Batch Tracking</a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Costing Tab -->
+                        <div class="tab-pane fade" id="costing" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <h5>Production Costing</h5>
+                                    <p>Analyze production costs and margins.</p>
+                                    <a href="{{ url_for('production.dashboard') }}" class="btn btn-secondary">Cost Analysis</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
