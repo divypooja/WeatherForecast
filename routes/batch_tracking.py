@@ -239,10 +239,16 @@ def traceability_report():
         batch_id = request.args.get('batch_id', type=int)
         if batch_id:
             batch = InventoryBatch.query.get_or_404(batch_id)
-            # Simple traceability data for now
+            # Get movement history from BatchMovementLedger
+            from models_batch_movement import BatchMovementLedger
+            movements = BatchMovementLedger.query.filter_by(batch_id=batch_id).order_by(
+                BatchMovementLedger.movement_date.desc(),
+                BatchMovementLedger.created_at.desc()
+            ).all()
+            
             traceability_data = {
                 'batch': batch,
-                'movements': batch.movements if hasattr(batch, 'movements') else [],
+                'movements': movements,
                 'total_quantity': batch.total_quantity,
                 'available_quantity': batch.available_quantity
             }

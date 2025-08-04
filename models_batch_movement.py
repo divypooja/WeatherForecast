@@ -22,7 +22,7 @@ class BatchMovementLedger(db.Model):
     ref_number = db.Column(db.String(100))  # Human-readable reference number
     
     # Batch Information - Fixed foreign key reference
-    batch_id = db.Column(db.Integer, db.ForeignKey('item_batches.id'), nullable=False)
+    batch_id = db.Column(db.Integer, db.ForeignKey('inventory_batches.id'), nullable=False)
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     
     # Movement Details
@@ -48,7 +48,7 @@ class BatchMovementLedger(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     
     # Relationships
-    batch = db.relationship('ItemBatch', backref='movement_history')
+    batch = db.relationship('InventoryBatch', backref='movement_history')
     item = db.relationship('Item', backref='batch_movements')
     vendor = db.relationship('Supplier', backref='batch_movements')
     created_by_user = db.relationship('User', backref='batch_movements_created')
@@ -116,7 +116,7 @@ class BatchConsumptionReport(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     
     # Batch Information - Fixed foreign key reference
-    batch_id = db.Column(db.Integer, db.ForeignKey('item_batches.id'), nullable=False)
+    batch_id = db.Column(db.Integer, db.ForeignKey('inventory_batches.id'), nullable=False)
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     batch_number = db.Column(db.String(100), nullable=False)
     
@@ -154,7 +154,7 @@ class BatchConsumptionReport(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    batch = db.relationship('ItemBatch', backref='consumption_report')
+    batch = db.relationship('InventoryBatch', backref='consumption_report')
     item = db.relationship('Item', backref='batch_consumption_reports')
     vendor = db.relationship('Supplier', backref='batch_consumption_reports')
     
