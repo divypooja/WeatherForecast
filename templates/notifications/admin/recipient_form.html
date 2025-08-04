@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Notifications{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-user-plus"></i> {{ title }}</h1>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('notifications.admin_recipients') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Recipients
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Recipient Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Name *</label>
+                                <input type="text" name="name" class="form-control" required 
+                                       value="{{ recipient.name if recipient else '' }}" 
+                                       placeholder="Enter recipient name">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Role</label>
+                                <select name="role" class="form-select" required>
+                                    <option value="">Select Role</option>
+                                    <option value="purchase_team" {{ 'selected' if recipient and recipient.role == 'purchase_team' else '' }}>Purchase Team</option>
+                                    <option value="store" {{ 'selected' if recipient and recipient.role == 'store' else '' }}>Store Manager</option>
+                                    <option value="production_head" {{ 'selected' if recipient and recipient.role == 'production_head' else '' }}>Production Head</option>
+                                    <option value="production_supervisor" {{ 'selected' if recipient and recipient.role == 'production_supervisor' else '' }}>Production Supervisor</option>
+                                    <option value="sales_team" {{ 'selected' if recipient and recipient.role == 'sales_team' else '' }}>Sales Team</option>
+                                    <option value="accounts" {{ 'selected' if recipient and recipient.role == 'accounts' else '' }}>Accounts</option>
+                                    <option value="admin" {{ 'selected' if recipient and recipient.role == 'admin' else '' }}>Admin</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" name="email" class="form-control" 
+                                       value="{{ recipient.email if recipient else '' }}" 
+                                       placeholder="Enter email address">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Phone</label>
+                                <input type="tel" name="phone" class="form-control" 
+                                       value="{{ recipient.phone if recipient else '' }}" 
+                                       placeholder="Enter phone number">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Department</label>
+                                <input type="text" name="department" class="form-control" 
+                                       value="{{ recipient.department if recipient else '' }}" 
+                                       placeholder="Enter department">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check mt-4">
+                                    <input type="checkbox" name="is_active" class="form-check-input" 
+                                           {{ 'checked' if not recipient or recipient.is_active else '' }}>
+                                    <label class="form-check-label">Active</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notification Types -->
+                        <div class="mb-3">
+                            <label class="form-label">Notification Types</label>
+                            <div class="row">
+                                <div class="col-sm-3">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="email_notifications" class="form-check-input" 
+                                               {{ 'checked' if recipient and 'email' in (recipient.notification_types or '') else '' }}>
+                                        <label class="form-check-label">Email</label>
+                                    </div>
+                                </div>
+                                <div class="col-sm-3">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="sms_notifications" class="form-check-input"
+                                               {{ 'checked' if recipient and 'sms' in (recipient.notification_types or '') else '' }}>
+                                        <label class="form-check-label">SMS</label>
+                                    </div>
+                                </div>
+                                <div class="col-sm-3">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="whatsapp_notifications" class="form-check-input"
+                                               {{ 'checked' if recipient and 'whatsapp' in (recipient.notification_types or '') else '' }}>
+                                        <label class="form-check-label">WhatsApp</label>
+                                    </div>
+                                </div>
+                                <div class="col-sm-3">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="in_app_notifications" class="form-check-input"
+                                               {{ 'checked' if recipient and 'in_app' in (recipient.notification_types or '') else '' }}>
+                                        <label class="form-check-label">In-App</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Event Subscriptions -->
+                        <div class="mb-3">
+                            <label class="form-label">Event Subscriptions</label>
+                            <div class="row">
+                                <div class="col-sm-4">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="po_events" class="form-check-input"
+                                               {{ 'checked' if recipient and recipient.po_events else '' }}>
+                                        <label class="form-check-label">Purchase Orders</label>
+                                    </div>
+                                </div>
+                                <div class="col-sm-4">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="grn_events" class="form-check-input"
+                                               {{ 'checked' if recipient and recipient.grn_events else '' }}>
+                                        <label class="form-check-label">GRN Events</label>
+                                    </div>
+                                </div>
+                                <div class="col-sm-4">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="job_work_events" class="form-check-input"
+                                               {{ 'checked' if recipient and recipient.job_work_events else '' }}>
+                                        <label class="form-check-label">Job Work</label>
+                                    </div>
+                                </div>
+                                <div class="col-sm-4">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="production_events" class="form-check-input"
+                                               {{ 'checked' if recipient and recipient.production_events else '' }}>
+                                        <label class="form-check-label">Production</label>
+                                    </div>
+                                </div>
+                                <div class="col-sm-4">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="sales_events" class="form-check-input"
+                                               {{ 'checked' if recipient and recipient.sales_events else '' }}>
+                                        <label class="form-check-label">Sales Orders</label>
+                                    </div>
+                                </div>
+                                <div class="col-sm-4">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="accounts_events" class="form-check-input"
+                                               {{ 'checked' if recipient and recipient.accounts_events else '' }}>
+                                        <label class="form-check-label">Accounts</label>
+                                    </div>
+                                </div>
+                                <div class="col-sm-4">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="inventory_events" class="form-check-input"
+                                               {{ 'checked' if recipient and recipient.inventory_events else '' }}>
+                                        <label class="form-check-label">Inventory</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notification Preferences -->
+                        <div class="mb-3">
+                            <label class="form-label">Notification Preferences</label>
+                            <div class="row">
+                                <div class="col-sm-4">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="immediate_notifications" class="form-check-input"
+                                               {{ 'checked' if recipient and recipient.immediate_notifications else '' }}>
+                                        <label class="form-check-label">Immediate</label>
+                                    </div>
+                                </div>
+                                <div class="col-sm-4">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="daily_summary" class="form-check-input"
+                                               {{ 'checked' if recipient and recipient.daily_summary else '' }}>
+                                        <label class="form-check-label">Daily Summary</label>
+                                    </div>
+                                </div>
+                                <div class="col-sm-4">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="weekly_summary" class="form-check-input"
+                                               {{ 'checked' if recipient and recipient.weekly_summary else '' }}>
+                                        <label class="form-check-label">Weekly Summary</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <div class="form-check">
+                                    <input type="checkbox" name="is_external" class="form-check-input"
+                                           {{ 'checked' if recipient and recipient.is_external else '' }}>
+                                    <label class="form-check-label">External Recipient</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> Save Recipient
+                            </button>
+                            <a href="{{ url_for('notifications.admin_recipients') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
