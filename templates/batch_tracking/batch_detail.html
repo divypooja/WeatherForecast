@@ -357,9 +357,23 @@
             <div class="row">
                 <div class="col-md-8">
                     <label class="form-label">New Storage Location</label>
-                    <input type="text" class="form-control" name="storage_location" 
-                           value="{{ batch.location or '' }}" 
-                           placeholder="Enter storage location..." required>
+                    <select class="form-control" name="storage_location" required>
+                        <option value="">-- Select Location --</option>
+                        <option value="MAIN-STORE" {{ 'selected' if batch.location == 'MAIN-STORE' else '' }}>Main Store</option>
+                        <option value="INSPECTION-AREA" {{ 'selected' if batch.location == 'INSPECTION-AREA' else '' }}>Inspection Area</option>
+                        <option value="PRODUCTION-FLOOR" {{ 'selected' if batch.location == 'PRODUCTION-FLOOR' else '' }}>Production Floor</option>
+                        <option value="FINISHED-GOODS" {{ 'selected' if batch.location == 'FINISHED-GOODS' else '' }}>Finished Goods</option>
+                        <option value="QUARANTINE" {{ 'selected' if batch.location == 'QUARANTINE' else '' }}>Quarantine</option>
+                        <option value="WAREHOUSE-A" {{ 'selected' if batch.location == 'WAREHOUSE-A' else '' }}>Warehouse A</option>
+                        <option value="WAREHOUSE-B" {{ 'selected' if batch.location == 'WAREHOUSE-B' else '' }}>Warehouse B</option>
+                        <option value="SHIPPING-DOCK" {{ 'selected' if batch.location == 'SHIPPING-DOCK' else '' }}>Shipping Dock</option>
+                        <option value="RECEIVING-DOCK" {{ 'selected' if batch.location == 'RECEIVING-DOCK' else '' }}>Receiving Dock</option>
+                        <option value="SCRAP-YARD" {{ 'selected' if batch.location == 'SCRAP-YARD' else '' }}>Scrap Yard</option>
+                        {% if batch.location and batch.location not in ['MAIN-STORE', 'INSPECTION-AREA', 'PRODUCTION-FLOOR', 'FINISHED-GOODS', 'QUARANTINE', 'WAREHOUSE-A', 'WAREHOUSE-B', 'SHIPPING-DOCK', 'RECEIVING-DOCK', 'SCRAP-YARD'] %}
+                        <option value="{{ batch.location }}" selected>{{ batch.location }}</option>
+                        {% endif %}
+                    </select>
+                    <small class="form-text text-muted">Current location: {{ batch.location or 'Not specified' }}</small>
                 </div>
                 <div class="col-md-4 d-flex align-items-end">
                     <button type="button" class="btn btn-warning me-2" onclick="saveStorageLocation()">
