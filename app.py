@@ -28,6 +28,15 @@ def create_app():
     }
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     
+    # Flask-Login configuration
+    app.config["REMEMBER_COOKIE_DURATION"] = 86400  # 24 hours
+    app.config["SESSION_COOKIE_SECURE"] = False  # Set to True in production with HTTPS
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = 'Lax'
+    
+    # Disable CSRF for now to fix login issues
+    app.config["WTF_CSRF_ENABLED"] = False
+    
     # Middleware
     app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
     

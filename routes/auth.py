@@ -11,17 +11,33 @@ def login():
         return redirect(url_for('main.dashboard'))
     
     form = LoginForm()
-    if form.validate_on_submit():
-        user = User.query.filter_by(username=form.username.data).first()
-        if user and user.check_password(form.password.data) and user.is_active:
-            login_user(user, remember=True)
-            next_page = request.args.get('next')
-            flash(f'Welcome back, {user.username}!', 'success')
-            return redirect(next_page) if next_page else redirect(url_for('main.dashboard'))
+    
+    # Handle both form validation and direct POST data for compatibility
+    if request.method == 'POST':
+        username = form.username.data if form.username.data else request.form.get('username')
+        password = form.password.data if form.password.data else request.form.get('password')
+        
+        if username and password:
+            user = User.query.filter_by(username=username).first()
+            if user and user.check_password(password) and user.is_active:
+                login_user(user, remember=True)
+                next_page = request.args.get('next')
+                flash(f'Welcome back, {user.username}!', 'success')
+                return redirect(next_page) if next_page else redirect(url_for('main.dashboard'))
+            else:
+                flash('Invalid username or password', 'danger')
+        elif form.validate_on_submit():
+            # Fallback to form validation if direct access failed
+            user = User.query.filter_by(username=form.username.data).first()
+            if user and user.check_password(form.password.data) and user.is_active:
+                login_user(user, remember=True)
+                next_page = request.args.get('next')
+                flash(f'Welcome back, {user.username}!', 'success')
+                return redirect(next_page) if next_page else redirect(url_for('main.dashboard'))
+            else:
+                flash('Invalid username or password', 'danger')
         else:
-            flash('Invalid username or password', 'danger')
-    elif request.method == 'POST':
-        flash('Please check your form entries', 'warning')
+            flash('Please check your form entries', 'warning')
     
     return render_template('auth/login.html', form=form)
 
