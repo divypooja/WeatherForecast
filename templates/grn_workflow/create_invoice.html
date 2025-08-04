@@ -197,7 +197,7 @@
                                 <tr>
                                     <td>{{ item.item.name if item.item else 'N/A' }}</td>
                                     <td>{{ item.quantity_received }}</td>
-                                    <td>₹{{ "%.2f"|format(item.unit_price) }}</td>
+                                    <td>₹{{ "%.2f"|format(item.rate_per_unit if item.rate_per_unit else 0) }}</td>
                                     <td>₹{{ "%.2f"|format(item.quantity_received * item.rate_per_unit) }}</td>
                                 </tr>
                                 {% endfor %}

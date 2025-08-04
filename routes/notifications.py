@@ -447,7 +447,7 @@ def bulk_test_notifications():
         
         flash('Bulk notification test completed. Check results below.', 'info')
         
-        return render_template('notifications/admin/bulk_test_results.html', test_results=test_results)
+        return render_template('notifications/admin/test.html', test_results=test_results)
         
     except Exception as e:
         flash(f'Error running bulk test: {str(e)}', 'danger')
