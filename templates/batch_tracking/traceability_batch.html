@@ -95,54 +95,58 @@
                 </div>
                 <div class="card-body">
                     <div class="timeline-container">
-                        {% if traceability_data.traceability_chain %}
-                            {% for movement in traceability_data.traceability_chain %}
-                            <div class="timeline-item processing">
+                        {% if traceability_data.movements %}
+                            {% for movement in traceability_data.movements %}
+                            <div class="timeline-item {{ 'received' if movement.ref_type == 'GRN' else 'processing' if movement.ref_type in ['JobWork', 'Production'] else 'completed' if movement.to_state == 'Finished' else 'processing' }}">
                                 <div class="row">
                                     <div class="col-md-8">
                                         <h6 class="mb-1">
-                                            <strong>Job Work {{ movement.job_work_number }}</strong>
-                                            {% if movement.process_name %}
-                                                - {{ movement.process_name }}
+                                            <strong>{{ movement.movement_description }}</strong>
+                                            {% if movement.ref_number %}
+                                                - {{ movement.ref_number }}
                                             {% endif %}
                                         </h6>
                                         <p class="mb-2 text-muted">
-                                            {% if movement.supplier_name %}
-                                                Supplier: <span class="badge badge-info">{{ movement.supplier_name }}</span>
+                                            <strong>{{ movement.ref_type }}</strong>
+                                            {% if movement.vendor and movement.vendor.name %}
+                                                via <span class="badge badge-info">{{ movement.vendor.name }}</span>
                                             {% endif %}
                                         </p>
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <p class="mb-1">
-                                                    <strong>Issued:</strong> {{ movement.quantity_issued or 0 }}
+                                                    <strong>Quantity:</strong> {{ movement.quantity }} {{ movement.unit_of_measure }}
                                                 </p>
-                                                {% if movement.issued_date %}
                                                 <p class="mb-1">
-                                                    <small class="text-muted">{{ movement.issued_date.strftime('%d/%m/%Y') }}</small>
+                                                    <small class="text-muted">{{ movement.movement_date.strftime('%d/%m/%Y') }}</small>
                                                 </p>
-                                                {% endif %}
                                             </div>
                                             <div class="col-md-6">
+                                                {% if movement.cost_per_unit %}
                                                 <p class="mb-1">
-                                                    <strong>Received:</strong> {{ movement.quantity_received or 0 }}
+                                                    <strong>Cost:</strong> ₹{{ "%.2f"|format(movement.cost_per_unit) }}/unit
                                                 </p>
-                                                {% if movement.received_date %}
+                                                {% endif %}
+                                                {% if movement.storage_location %}
                                                 <p class="mb-1">
-                                                    <small class="text-muted">{{ movement.received_date.strftime('%d/%m/%Y') }}</small>
+                                                    <strong>Location:</strong> {{ movement.storage_location }}
                                                 </p>
                                                 {% endif %}
                                             </div>
                                         </div>
-                                        {% if movement.quantity_scrap and movement.quantity_scrap > 0 %}
+                                        {% if movement.notes %}
                                         <p class="mb-1">
-                                            <strong>Scrap:</strong> <span class="text-danger">{{ movement.quantity_scrap }}</span>
+                                            <em class="text-muted">{{ movement.notes }}</em>
                                         </p>
                                         {% endif %}
                                     </div>
                                     <div class="col-md-4 text-right">
-                                        <span class="badge badge-{{ 'success' if movement.status == 'completed' else 'warning' }}">
-                                            {{ movement.status.title() if movement.status else 'Pending' }}
+                                        <span class="badge badge-{{ 'success' if movement.to_state == 'Finished' else 'info' if movement.to_state == 'Raw' else 'warning' if movement.to_state == 'Inspection' else 'primary' }}">
+                                            {{ movement.to_state.replace('_', ' ').title() }}
                                         </span>
+                                        {% if movement.quality_status and movement.quality_status != 'good' %}
+                                        <br><small class="badge badge-warning mt-1">{{ movement.quality_status.title() }}</small>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
